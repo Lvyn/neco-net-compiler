@@ -1,0 +1,12 @@
+.*\.pyc
+.*~
+.*\.o
+.*\.so
+.*/ctypes.h
+.*/ctypes_ext.pxd
+.*/ctypes_ext.pyx
+.*/ctypes_ext.c
+.*/ctypes_extd.c
+.*/ctypes_extd.pxd
+.*/ctypes_extd.pyx
+tests/basics/Makefile

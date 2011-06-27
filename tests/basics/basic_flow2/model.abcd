@@ -1,0 +1,14 @@
+#define MAX 1
+#define OPEN 2
+#define MOVING 3
+#define CLOSED 0
+
+net gate (this) :
+    buffer state : int = OPEN  # 1-safe
+    ([state-(OPEN), state+(MOVING)] ;
+     [state-(MOVING), state+(CLOSED)] ;
+     [state-(CLOSED), state+(MOVING)] ;
+     [state-(MOVING), state+(OPEN)])
+    * [False]
+
+gate(0) | gate(1)

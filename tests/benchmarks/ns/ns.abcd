@@ -1,0 +1,26 @@
+buffer nw : object = ()
+from dolev_yao import *
+
+net Alice (this, peer) :
+    buffer nonce : Nonce = ()
+    [nw+("crypt", ("pub", peer), this, Nonce(this))]
+    ; [nw-("crypt", ("pub", this), Na, Nb), nonce+(Nb) if Na == Nonce(this)]
+    ; [nonce?(Nb), nw+("crypt", ("pub", peer), Nb)]
+
+net Bob (this) :
+    buffer peer : int = ()
+    buffer nonce : Nonce = ()
+    [nw-("crypt", ("pub", this), A,  Na), peer+(A), nonce+(Na)]
+    ; [peer?(A), nonce?(Na), nw+("crypt", ("pub", A),  Na, Nonce(this))]
+    ; [nw-("crypt", ("pub", this), Nb) if Nb == Nonce(this)]
+
+net Mallory (this, init) :
+    buffer knowledge : object = (this, Nonce(this), ("priv", this)) + init
+    buffer spy : object = Spy(("crypt", ("pub", int), int, Nonce),
+                               ("crypt", ("pub", int), Nonce, Nonce),
+                               ("crypt", ("pub", int), Nonce))
+    ([spy?(s), nw-(m), knowledge>>(k), knowledge<<(s.learn(m, k))]
+     ; ([True] + [spy?(s), knowledge?(x), nw+(x) if s.message(x)]))
+    * [False]
+
+Alice(1, 3) | Bob(2) | Mallory(3, (1, ("pub", 1), 2, ("pub", 2)))
