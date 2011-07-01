@@ -1,6 +1,0 @@
-#!/bin/sh
-python asdl.py --output=netir/netir.py netir/netir.asdl
-cp netir/netir.py ../neco/core/gen_netir.py 
-
-python asdl.py --output=cython/cyast.py cython/cython.asdl
-cp cython/cyast.py ../neco/backends/cython/cyast.py 
