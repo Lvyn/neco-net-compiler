@@ -1,12 +1,12 @@
 """ Abstract syntax tree for representing functions and algorithms.
 
-The file gen_netir was automatically generated.
+Uses file netir_gen that was automatically generated.
 """
 
 import inspect, types
 from ast import NodeVisitor, NodeTransformer
-import gen_netir
-from gen_netir import *
+import netir_gen
+from netir_gen import *
 from neco.debug import *
 
 class CompilerVisitor(object):
@@ -190,19 +190,19 @@ class Builder(BuilderBase):
     def __init__(self):
         BuilderBase.__init__(self)
 
-        for name, cls in inspect.getmembers(gen_netir, inspect.isclass):
+        for name, cls in inspect.getmembers(netir_gen, inspect.isclass):
             if issubclass(cls, FunctionDef) and cls != FunctionDef:
                 self.register_function_node(cls)
 
-        for name, cls in inspect.getmembers(gen_netir, inspect.isclass):
+        for name, cls in inspect.getmembers(netir_gen, inspect.isclass):
             if issubclass(cls, Stmt) and cls != Stmt:
                 self.register_emit_node(cls)
 
-        for name, cls in inspect.getmembers(gen_netir, inspect.isclass):
+        for name, cls in inspect.getmembers(netir_gen, inspect.isclass):
             if issubclass(cls, Block) and cls != Block:
                 self.register_block_node(cls)
 
-        for name, cls in inspect.getmembers(gen_netir, inspect.isclass):
+        for name, cls in inspect.getmembers(netir_gen, inspect.isclass):
             if issubclass(cls, Expr) and cls != Block:
                 self.register_expr_node(cls)
 

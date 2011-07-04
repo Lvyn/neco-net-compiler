@@ -10,3 +10,9 @@
 .*/ctypes_extd.pxd
 .*/ctypes_extd.pyx
 tests/basics/Makefile
+# asdl
+asdl/cyast_gen.py
+asdl/netir_gen.py
+neco/backends/cython/cyast_gen.py
+neco/core/netir_gen.py
+.*/.gone/.*

@@ -10,7 +10,7 @@ CLEAN_SUBDIRS = ctypes \
 		tests/benchmarks/railroad \
 		tests/basics
 
-all: ctypes tests
+all: ctypes asdl tests
 
 ctypes:
 	cd $(CTYPES_DIR); $(MAKE)
@@ -19,7 +19,14 @@ tests: ctypes
 	cd $(TESTS_COMMON_DIR); $(MAKE)
 	cd $(TESTS_BASICS_DIR); $(PYTHON) gen_makefile.py
 
+asdl:
+	$(PYTHON) -m snakes.lang.asdl --output=asdl/cyast_gen.py asdl/cython.asdl
+	$(PYTHON) -m snakes.lang.asdl --output=asdl/netir_gen.py asdl/netir.asdl
+	ln -f asdl/cyast_gen.py neco/backends/cython/cyast.py
+	ln -f asdl/netir_gen.py neco/core/
+
 clean: cleandoc
+	rm -f neco/core/netir_gen.py asdl/netir_gen.py
 	find -name *.pyc -exec rm {} \;
 	find -name *~ -exec rm {} \;
 	find -name \#*# -exec rm {} \;
@@ -39,4 +46,4 @@ doc: 	cleandoc
 cleandoc:
 	rm -rf doc/api
 
-.PHONY: ctypes
+.PHONY: ctypes asdl
