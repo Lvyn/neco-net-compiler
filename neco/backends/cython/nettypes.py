@@ -529,6 +529,24 @@ class StaticMarkingType(coretypes.MarkingType):
         builder.end_FunctionDef()
         return to_ast(builder)
 
+    def _gen_C_hash(self, env):
+        builder = Builder()
+        builder.begin_FunctionCDef( name = "marking_hash",
+                                    args = A("self", type = "Marking"),
+                                    returns = E("int"))
+        builder.emit_Return(E("self").attr('__hash__').call())
+        builder.end_FunctionDef()
+        return to_ast(builder)
+
+    def _gen_C_copy(self, env):
+        builder = Builder()
+        builder.begin_FunctionCDef( name = "marking_copy",
+                                    args = A("self", type = "Marking"),
+                                    returns = E("Marking"))
+        builder.emit_Return(E("self").attr('copy').call())
+        builder.end_FunctionDef()
+        return to_ast(builder)
+
     def gen_free_marking_function_call(self, env, marking_name):
         pass
 
@@ -621,7 +639,12 @@ class StaticMarkingType(coretypes.MarkingType):
             if not place_type.is_packed:
                 cls.add_decl( Builder.CVar(self.id_provider.get(place_type)).type(type2str(place_type.type)) )
 
-        return to_ast(cls)
+        capi = []
+        capi.append( self._gen_C_hash(env) )
+        capi.append( self._gen_C_copy(env) )
+        #capi.append( self._gen_C_compare(env) ]
+
+        return [to_ast(cls), capi]
 
 
     def gen_copy(self, env, src_marking_name, dst_marking_name, modified_places):
