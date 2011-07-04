@@ -27,6 +27,7 @@ asdl:
 
 clean: cleandoc
 	rm -f neco/core/netir_gen.py asdl/netir_gen.py
+	rm -f neco/backends/cython/cyast.py asdl/cyast_gen.py
 	find -name *.pyc -exec rm {} \;
 	find -name *~ -exec rm {} \;
 	find -name \#*# -exec rm {} \;

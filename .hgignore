@@ -16,3 +16,4 @@ asdl/netir_gen.py
 neco/backends/cython/cyast_gen.py
 neco/core/netir_gen.py
 .*/.gone/.*
+.gone/.*
