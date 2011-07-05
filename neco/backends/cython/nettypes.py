@@ -457,24 +457,32 @@ class StaticMarkingType(coretypes.MarkingType):
         builder.end_FunctionDef()
         return to_ast(builder)
 
-    def _gen_richcmp_aux(self, builder, tests):
+    def _gen_C_compare_aux(self, builder, tests):
         try:
             test = tests.pop()
-            builder.begin_If(test = test,
-                             orelse = [ E("return 0") ])
-            self._gen_richcmp_aux(builder, tests)
+            # l - r == 0 ?:
+            builder.begin_If(test.eq(E('0')))
+            self._gen_C_compare_aux(builder, tests)
+            # l - r < 0 ?:
+            builder.begin_Elif(test.lt(E('0')))
+            builder.emit_Return(E('-1'))
+            builder.end_If()
+            # else l - r > 0:
+            builder.begin_Else()
+            builder.emit_Return(E('1'))
             builder.end_If()
         except IndexError:
-            builder.emit_Return(E("1"))
+            builder.emit_Return(E('0'))
 
-    def _gen_richcmp(self, env):
+    def _gen_C_compare(self, env):
+
         builder = Builder()
         left_marking_name  = "self"
         right_marking_name = "other"
-        builder.begin_FunctionDef( name = "__richcmp__",
-                                   args = (A("self", type = self.type_name)
-                                           .param(right_marking_name, type = self.type_name)
-                                           .param("op", type = "int")))
+        builder.begin_FunctionCDef( name = "marking_compare",
+                                    args = (A("self", type = self.type_name)
+                                            .param(right_marking_name, type = self.type_name)),
+                                    returns = E("int"))
 
         # TODO: Order places
 
@@ -482,18 +490,33 @@ class StaticMarkingType(coretypes.MarkingType):
         tests = []
         if self._pack:
             if self.packing_enabled:
-                tests.extend(self._pack.gen_tests(left_marking_name=left_marking_name,
-                                                  right_marking_name=right_marking_name))
+                gen = self._pack.gen_tests(left_marking_name=left_marking_name,
+                                           right_marking_name=right_marking_name)
+                for l, r in gen:
+                    tests.append(E(l).sub(E(r)))
 
         for place_type in self.place_types.itervalues():
             if place_type.is_packed:
                 continue
             else:
                 id = self.id_provider.get(place_type)
-                tests.append(place_type.gen_eq(env, left=E(left_marking_name + '.' + id), right=E(right_marking_name + '.' + id)))
+                tests.append(place_type.gen_compare(env, left=E(left_marking_name + '.' + id), right=E(right_marking_name + '.' + id)))
 
         tests.reverse()
-        self._gen_richcmp_aux(builder, tests)
+        self._gen_C_compare_aux(builder, tests)
+        builder.end_FunctionDef()
+        return to_ast(builder)
+
+    def _gen_richcmp(self, env):
+        builder = Builder()
+        left_marking_name = "self"
+        right_marking_name = "other"
+        op_name = "op"
+        builder.begin_FunctionDef( name = "__richcmp__",
+                                   args = (A("self", type = self.type_name)
+                                           .param(right_marking_name, type = self.type_name)
+                                           .param(op_name, type = "int")) )
+        builder.emit_Return(E("marking_compare").call([E(left_marking_name), E(right_marking_name)]).eq(E("0")))
         builder.end_FunctionDef()
         return to_ast(builder)
 
@@ -642,7 +665,7 @@ class StaticMarkingType(coretypes.MarkingType):
         capi = []
         capi.append( self._gen_C_hash(env) )
         capi.append( self._gen_C_copy(env) )
-        #capi.append( self._gen_C_compare(env) ]
+        capi.append( self._gen_C_compare(env) )
 
         return [to_ast(cls), capi]
 
@@ -888,6 +911,9 @@ class BTPlaceType(onesafe.BTPlaceType, CythonPlaceType):
 
     def gen_eq(self, env, left, right):
         return Builder.EqCompare(left, right)
+
+    def gen_compare(self, env, left, right):
+        return E(left).sub(E(right))
 
     def gen_new_place(self, env):
         return E("0")
@@ -1244,8 +1270,7 @@ class PackedPlaceTypes(object):
         for index in range(0, self.native_field_count()):
             left = E(left_marking_name).attr(self.name).subscript(index=str(index))
             right = E(right_marking_name).attr(self.name).subscript(index=str(index))
-            e = Builder.EqCompare(left, right)
-            tests.append(e)
+            tests.append( (left, right, ) )
         return tests
 
 

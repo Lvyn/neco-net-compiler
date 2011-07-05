@@ -169,10 +169,18 @@ class Builder(coreir.BuilderBase):
         or_assign  = _aug_assign(cyast.BitOr())
 
         mult    = _bin_op(cyast.Mult())
+        add    = _bin_op(cyast.Add())
+        sub    = _bin_op(cyast.Sub())
         bit_and = _bin_op(cyast.BitAnd())
         bit_or  = _bin_op(cyast.BitOr())
         bit_xor = _bin_op(cyast.BitXor())
         xor = bit_xor
+
+        def eq(self, right):
+            return Builder.EqCompare(self, right)
+
+        def lt(self, right):
+            return Builder.LtCompare(self, right)
 
     class arguments_helper(object):
         def __init__(self):
@@ -202,6 +210,10 @@ class Builder(coreir.BuilderBase):
     @classmethod
     def EqCompare(cls, left, right):
         return E( cyast.Compare( left = to_ast(left), ops = [ cyast.Eq() ], comparators = [ to_ast(right) ]) )
+
+    @classmethod
+    def LtCompare(cls, left, right):
+        return E( cyast.Compare( left = to_ast(left), ops = [ cyast.Lt() ], comparators = [ to_ast(right) ]) )
 
     @classmethod
     def FunctionDef(cls, **kwargs):
@@ -242,6 +254,13 @@ class Builder(coreir.BuilderBase):
 
     def begin_If(self, *args, **kwargs):
         self.begin_block(to_ast(self.If(*args, **kwargs)))
+
+    def begin_Elif(self, *args, **kwargs):
+        self._current_scope = self._current.orelse
+        self.begin_If(*args, **kwargs)
+
+    def begin_Else(self, *args, **kwargs):
+        self._current_scope = self._current.orelse
 
     def end_If(self):
         assert( isinstance(self._current, cyast.If) )
