@@ -210,3 +210,43 @@ void int_place_type_update(int_place_type_t* left, int_place_type_t* right) {
 // {
 //     printf("true: %d \tfalse: %d \n", pt->positives, pt->negatives);
 // }
+
+
+
+//////////////////////////////////////////////////
+// lists with iterators
+// needed for SPOT
+//////////////////////////////////////////////////
+
+neco_list_t* neco_list_new() {
+    neco_list_t* list = malloc(sizeof(neco_list_t));
+    list->begin = NULL;
+    return list;
+}
+
+void neco_list_push_front(neco_list_t* list, void *elt) {
+    neco_list_node_t* node;
+
+    assert(list != NULL);
+
+    node = malloc(sizeof(neco_list_node_t));
+    node->elt = elt;
+    node->next = list->begin;
+    list->begin = node;
+}
+
+void neco_list_node_delete(neco_list_node_t* node, deletion_callback del) {
+    if (node == NULL)
+	return;
+
+    if (del != NULL)
+	del(node->elt);
+
+    neco_list_node_delete(node->next, del);
+    free(node);
+}
+
+void neco_list_delete(neco_list_t* list, deletion_callback del) {
+    neco_list_node_delete(list->begin, del);
+    free(list);
+}

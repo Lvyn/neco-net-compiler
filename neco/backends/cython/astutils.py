@@ -222,14 +222,26 @@ class Builder(coreir.BuilderBase):
         check_arg(kwargs, "args", cyast.arguments( args = [], vararg = None, kwarg = None, defaults = [] ))
         return check_attrs(cyast.FunctionDef( **kwargs ), body = [], decl = [])
 
+    @classmethod
+    def FunctionCpDef(cls, **kwargs):
+        args_to_ast(kwargs, cyast.FunctionDef._fields)
+        check_arg(kwargs, "lang", cyast.CpDef(public = True, api = True))
+        return cls.FunctionDef(**kwargs)
+
+    @classmethod
+    def FunctionCDef(cls, **kwargs):
+        args_to_ast(kwargs, cyast.FunctionDef._fields)
+        check_arg(kwargs, "lang", cyast.CDef(public = True, api = True))
+        return cls.FunctionDef(**kwargs)
+
     def begin_FunctionDef(self, **kwargs):
         self.begin_base_block(self.FunctionDef(**kwargs))
 
     def begin_FunctionCDef(self, **kwargs):
-        self.begin_FunctionDef(lang = cyast.CDef(public = True), **kwargs)
+        self.begin_FunctionDef(lang = cyast.CDef(public=True, api=True), **kwargs)
 
     def begin_FunctionCPDef(self, **kwargs):
-        self.begin_FunctionDef(lang = cyast.CpDef(public = True), **kwargs)
+        self.begin_FunctionDef(lang = cyast.CpDef(public=True, api=True), **kwargs)
 
     def begin_PrivateFunctionCDef(self, **kwargs):
         self.begin_FunctionDef(lang = cyast.CDef(public = False), **kwargs)
@@ -287,10 +299,11 @@ class Builder(coreir.BuilderBase):
         return E( cyast.Tuple( elts = to_ast(elts) ) )
 
     class class_def_helper(object):
-        def __init__(self, name, bases, lang):
+        def __init__(self, name, bases, lang, **kwargs):
             self.node = cyast.ClassDef(name  = to_ast(name),
                                        bases = to_ast(bases),
-                                       lang  = to_ast(lang))
+                                       lang  = to_ast(lang),
+                                       **kwargs)
 
         def add_method(self, method):
             self.node.body.append(method)
@@ -306,8 +319,8 @@ class Builder(coreir.BuilderBase):
         return cls.class_def_helper(name, bases, cyast.Def())
 
     @classmethod
-    def PublicClassCDef(cls, name, bases = []):
-        return cls.class_def_helper(name, bases, cyast.CDef(public = True))
+    def PublicClassCDef(cls, name, bases = [], **kwargs):
+        return cls.class_def_helper(name, bases, cyast.CDef(public = True), **kwargs)
 
     @classmethod
     def Compare(self, left, ops, comparators):
@@ -365,6 +378,8 @@ class Unparser(_Unparser) :
                 self.fill("cpdef ")
             if tree.lang.public :
                 self.write("public ")
+            if tree.lang.api :
+                self.write("api ")
             self.dispatch(tree.returns)
             self.write(" " + tree.name + "(")
         else :
@@ -388,7 +403,7 @@ class Unparser(_Unparser) :
             self.fill("class ")
             tree.decl = []
         elif isinstance(tree.lang, cyast.CDef) :
-            self.fill("cdef class ")
+            self.fill("cdef public class ")
         else :
             assert False
         self.write(tree.name)
@@ -399,6 +414,13 @@ class Unparser(_Unparser) :
                     self.write(", ")
                 self.dispatch(a)
             self.write(")")
+        if tree.spec:
+            self.write('[object ')
+            self.write(tree.spec.o)
+            self.write(', type ')
+            self.write(tree.spec.t)
+            self.write(']')
+
         self.enter()
         for d in tree.decl :
             self.dispatch(d)

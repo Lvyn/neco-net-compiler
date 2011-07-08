@@ -236,7 +236,6 @@ class Builder(BuilderBase):
         self._current_scope = None
         self._nodes.append(self._current_function)
 
-
     def begin_Elif(self, *args, **kwargs):
         self._current_scope = self._current.orelse
         self.begin_If(*args, **kwargs)

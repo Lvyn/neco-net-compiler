@@ -15,6 +15,7 @@ module Python version "$Revision: SNAKES $"
 			 expr* bases,
 			 stmt* body,
 			 language lang,
+			 type_name_spec? spec,
                          CVar* decl)
               | cdecl
 	      | Return(expr? value)
@@ -100,7 +101,8 @@ module Python version "$Revision: SNAKES $"
         ----------------------------------------------------------------
         -- Cython specific nodes
         ----------------------------------------------------------------
-	language = CDef(bool? public) | Def | CpDef(bool? public)
+	language = CDef(bool? public, bool? api) | Def | CpDef(bool? public, bool? api)
+	type_name_spec = (identifier o, identifier t)
         cdecl = CVar(identifier name,
                      identifier type,
                      expr? init,

@@ -1,4 +1,4 @@
-CFLAGS=-shared -fPIC -Wall -DNDEBUG
+CFLAGS=-shared -fPIC -Wall -DNDEBUG -g
 CFLAGS_DEBUG=-shared -fPIC -Wall -g
 CC=gcc
 

@@ -479,7 +479,7 @@ class StaticMarkingType(coretypes.MarkingType):
         builder = Builder()
         left_marking_name  = "self"
         right_marking_name = "other"
-        builder.begin_FunctionCDef( name = "marking_compare",
+        builder.begin_FunctionCDef( name = "neco_marking_compare",
                                     args = (A("self", type = self.type_name)
                                             .param(right_marking_name, type = self.type_name)),
                                     returns = E("int"))
@@ -516,7 +516,7 @@ class StaticMarkingType(coretypes.MarkingType):
                                    args = (A("self", type = self.type_name)
                                            .param(right_marking_name, type = self.type_name)
                                            .param(op_name, type = "int")) )
-        builder.emit_Return(E("marking_compare").call([E(left_marking_name), E(right_marking_name)]).eq(E("0")))
+        builder.emit_Return(E("neco_marking_compare").call([E(left_marking_name), E(right_marking_name)]).eq(E("0")))
         builder.end_FunctionDef()
         return to_ast(builder)
 
@@ -554,7 +554,7 @@ class StaticMarkingType(coretypes.MarkingType):
 
     def _gen_C_hash(self, env):
         builder = Builder()
-        builder.begin_FunctionCDef( name = "marking_hash",
+        builder.begin_FunctionCDef( name = "neco_marking_hash",
                                     args = A("self", type = "Marking"),
                                     returns = E("int"))
         builder.emit_Return(E("self").attr('__hash__').call())
@@ -563,7 +563,7 @@ class StaticMarkingType(coretypes.MarkingType):
 
     def _gen_C_copy(self, env):
         builder = Builder()
-        builder.begin_FunctionCDef( name = "marking_copy",
+        builder.begin_FunctionCDef( name = "neco_marking_copy",
                                     args = A("self", type = "Marking"),
                                     returns = E("Marking"))
         builder.emit_Return(E("self").attr('copy').call())
@@ -603,7 +603,8 @@ class StaticMarkingType(coretypes.MarkingType):
 
     def gen_api(self, env):
         cls = Builder.PublicClassCDef(name = "Marking",
-                                      bases = [ E("object") ])
+                                      bases = [ E("object") ],
+                                      spec = cyast.type_name_spec(o="Marking", t="MarkingType"))
 
         ################################################################################
         # methods

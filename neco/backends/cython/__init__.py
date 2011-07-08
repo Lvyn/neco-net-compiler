@@ -89,7 +89,7 @@ class Compiler(core.Compiler):
         for decl in self.net._declare:
             env.add_pyx_declaration(decl)
 
-        env.add_pyx_declaration("cimport net")
+        env.add_pyx_declaration("cimport ctypes_ext")
         env.add_pyx_declaration("from snakes.nets import dot")
         env.add_pyx_declaration("import cPickle")
         env.add_pyx_declaration("import StringIO")
@@ -130,7 +130,7 @@ except KeyError:
 
         builder.end_FunctionDef()
         compiled_nodes = to_ast(builder)
-
+        # compiled_nodes = []
         # gen types
         compiled_nodes.append(self.marking_type.gen_api(env))
         compiler = netir.CompilerVisitor(env)
@@ -161,7 +161,6 @@ except KeyError:
         if config.get('profile'):
             f.write("# cython: profile=True\n")
 
-        f.write("cimport net\n")
         f.write(env.pyx_declarations)
 
         for line in ctypes_ext:
@@ -177,26 +176,27 @@ except KeyError:
             Unparser(module_ast, sys.stdout)
 
         path = search_file("ctypes_ext.pxd", self.additional_search_paths)
-        shutil.copyfile(path, "net.pxd")
+        shutil.copyfile(path, "ctypes_ext.pxd")
 
         path = search_file("ctypes.h", self.additional_search_paths)
         shutil.copyfile(path, "ctypes.h")
 
-        f = open("net.pxd", "a")
+        f = open("ctypes_ext.pxd", "a")
         f.write( env.pxd_declarations )
         f.close()
 
         if config.get('debug'):
             print "********************************************************************************"
             print "running cython compiler"
+            print self.additional_search_paths
             print "********************************************************************************"
 
-        name = "net"
-        setup(name=name,
+        self.additional_search_paths = ['/home/thelvyn/my_workspace/neco-spot/']
+        setup(name="net.pyx",
               cmdclass={'build_ext': build_ext},
-              ext_modules=[Extension(name, ["net.pyx"],
+              ext_modules=[Extension("net", ["net.pyx"],
                                      include_dirs = self.additional_search_paths,
-                                     extra_compile_args=[],
+                                     extra_compile_args=['-ggdb'],
                                      extra_link_args=['-lctypes'],
                                      library_dirs = self.additional_search_paths)], # TO DO use params
               script_args=["build_ext", "--inplace"])
@@ -204,11 +204,11 @@ except KeyError:
         if config.get('debug'):
             print "********************************************************************************"
 
-        fp, pathname, description = imp.find_module(name)
+        fp, pathname, description = imp.find_module("net")
 
-        print name
+        print "net"
         try:
-            return imp.load_dynamic(name, pathname, fp)
+            return imp.load_dynamic("net", pathname, fp)
         finally:
             if fp:
                 fp.close()
