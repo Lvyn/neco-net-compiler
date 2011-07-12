@@ -282,8 +282,9 @@ class CompilerVisitor(coreir.CompilerVisitor):
 
         body.append( cyast.For(target=to_ast(E("e")),
                                iter=to_ast(E("succs(m)")),
-                               body=[ cyast.Expr( cyast.Call(func=to_ast(E("ctypes_ext.neco_list_push_front")),
-                                                             args=[to_ast(E("l")), cyast.Name("<void*>e")],
+                               body=[ to_ast(stmt(E("ctypes_ext.__Pyx_INCREF(e)"))),
+                                      cyast.Expr( cyast.Call(func=to_ast(E("ctypes_ext.neco_list_push_front")),
+                                                             args=[to_ast(E("l")), cyast.Name("e")],
                                                              keywords=[],
                                                              starargs=None,
                                                              kwargs=None) ) ] ) )
@@ -315,7 +316,7 @@ class CompilerVisitor(coreir.CompilerVisitor):
                                   decl = [ cyast.CVar( node.marking_name, type = "Marking" )])
 
         f2 = Builder.FunctionCDef( name = "neco_init",
-                                   body = [ E("print 'TEST'"), stmts ],
+                                   body = [ stmts ],
                                    returns = cyast.Name("Marking"),
                                    decl = [ cyast.CVar( node.marking_name, type = "Marking" )])
 

@@ -224,6 +224,15 @@ neco_list_t* neco_list_new() {
     return list;
 }
 
+int neco_list_length(neco_list_t* list) {
+    neco_list_node_t* node = list->begin;
+    int i = 0;
+    for( ; node != NULL; node = node->next) {
+	i++;
+    }
+    return i;
+}
+
 void neco_list_push_front(neco_list_t* list, void *elt) {
     neco_list_node_t* node;
 
