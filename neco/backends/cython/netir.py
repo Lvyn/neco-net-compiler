@@ -269,20 +269,21 @@ class CompilerVisitor(coreir.CompilerVisitor):
         body = []
         body.extend( self.compile( node.body ) )
         body.append( E("return " + node.markingset_variable_name) )
-        f1 = Builder.FunctionCpDef( name = node.function_name,
-                                    args = A(node.marking_argument_name, type = "Marking"),
-                                    body = body,
-                                    returns = cyast.Name("set"),
-                                    decl = [ (Builder.CVar(node.markingset_variable_name)
-                                              .type('set')
-                                              .init(self.env.marking_set_type.gen_new_marking_set(self.env))) ])
+        f1 = Builder.FunctionDef( name = node.function_name,
+                                  args = A(node.marking_argument_name, type = "Marking"),
+                                  body = body,
+                                  returns = cyast.Name("set"),
+                                  decl = [ (Builder.CVar(node.markingset_variable_name)
+                                            .type('set')
+                                            .init(self.env.marking_set_type.gen_new_marking_set(self.env))) ])
 
 
         body = [ E("l = ctypes_ext.neco_list_new()") ]
 
         body.append( cyast.For(target=to_ast(E("e")),
                                iter=to_ast(E("succs(m)")),
-                               body=[ cyast.Expr( cyast.Call(func=to_ast(E("ctypes_ext.neco_list_push_front")),
+                               body=[ to_ast(stmt(E("ctypes_ext.__Pyx_INCREF(e)"))),
+                                      cyast.Expr( cyast.Call(func=to_ast(E("ctypes_ext.neco_list_push_front")),
                                                              args=[to_ast(E("l")), cyast.Name("e")],
                                                              keywords=[],
                                                              starargs=None,
@@ -309,13 +310,13 @@ class CompilerVisitor(coreir.CompilerVisitor):
         stmts.extend( self.compile(node.body) )
         stmts.append( return_stmt )
 
-        f1 = Builder.FunctionCpDef( name = node.function_name,
+        f1 = Builder.FunctionDef( name = node.function_name,
                                   body = stmts,
                                   returns = cyast.Name("Marking"),
                                   decl = [ cyast.CVar( node.marking_name, type = "Marking" )])
 
         f2 = Builder.FunctionCDef( name = "neco_init",
-                                   body = [ E("print 'TEST'"), stmts ],
+                                   body = [ stmts ],
                                    returns = cyast.Name("Marking"),
                                    decl = [ cyast.CVar( node.marking_name, type = "Marking" )])
 

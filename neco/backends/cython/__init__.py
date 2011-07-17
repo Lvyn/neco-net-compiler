@@ -94,12 +94,12 @@ class Compiler(core.Compiler):
         env.add_pyx_declaration("import cPickle")
         env.add_pyx_declaration("import StringIO")
         env.add_pyx_declaration("from time import time")
-        # env.add_pyx_declaration("from dolev_yao import *")
+        env.add_pyx_declaration("from dolev_yao import *")
 
         builder = Builder()
-        builder.begin_FunctionCPDef( name = "state_space",
-                                     returns = E("set"),
-                                     body = [ E("""
+        builder.begin_FunctionDef( name = "state_space",
+                                   returns = E("set"),
+                                   body = [ E("""
 try:
     visited = set()
     visit = set([init()])

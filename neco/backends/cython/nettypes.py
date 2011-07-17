@@ -14,6 +14,9 @@ from maskbitfield import MaskBitfield
 # Registered classes are used as cython classes (cdef)
 ################################################################################
 
+def from_neco_lib(f):
+    return "ctypes_ext.%s" % f
+
 __registered_cython_types = dict()
 
 def register_cython_type(typeinfo, id):
@@ -76,7 +79,7 @@ register_cython_type(TypeInfo.Bool, 'bool')
 register_cython_type(TypeInfo.Char, 'char')
 register_cython_type(TypeInfo.Int, 'int')
 register_cython_type(TypeInfo.Short, 'short')
-register_cython_type(TypeInfo.IntPlace, 'net.int_place_type*')
+register_cython_type(TypeInfo.IntPlace, from_neco_lib('int_place_type*'))
 register_cython_type(TypeInfo.MultiSet, 'MultiSet')
 register_cython_type(TypeInfo.UnsignedChar, 'unsigned char')
 register_cython_type(TypeInfo.UnsignedInt, 'unsigned int')
@@ -192,9 +195,19 @@ class ObjectPlaceType(coretypes.ObjectPlaceType, CythonPlaceType):
         place_expr = self.place_expr(env, marking_name)
         return stmt(E(place_expr).attr('update').call([ multiset ]))
 
+    def gen_dump(self, env, marking_name):
+        place_expr = self.place_expr(env, marking_name)
+        return E("str").call([place_expr])
+
     def add_items(self, env, multiset, marking_name):
         place_expr = self.place_expr(env, marking_name)
         return stmt(E(place_expr).attr('add_items').call([multiset]))
+
+    def gen_compare(self, env, left, right):
+        return E(left).attr('compare').call([E(right)])
+
+    def gen_not_empty(self, env, marking_name):
+        return self.place_expr(env, marking_name)
 
 @provides_by_index_access
 @provides_by_index_deletion
@@ -210,59 +223,70 @@ class IntPlaceType(coretypes.PlaceType, CythonPlaceType):
                                      token_type = place_info.type)
 
     def gen_new_place(self, env):
-        return E("net.int_place_type_new()")
+        return E(from_neco_lib("int_place_type_new()"))
 
     def gen_delete(self, env, marking_name):
         place_expr = self.place_expr(env, marking_name)
-        return stmt(E("net.int_place_type_free").call([ place_expr ]))
+        return stmt(E(from_neco_lib("int_place_type_free")).call([ place_expr ]))
 
     def gen_hash(self, env, marking_name):
         place_expr = self.place_expr(env, marking_name)
-        return E("net.int_place_type_hash").call([ place_expr ])
+        return E(from_neco_lib("int_place_type_hash")).call([ place_expr ])
 
     def gen_eq(self, env, left, right):
-        return E("net.int_place_type_eq").call([ left, right ])
+        return E(from_neco_lib("int_place_type_eq")).call([ left, right ])
 
     @should_not_be_called
     def gen_iterable(self, env, marking_type, marking_name): pass
 
     def gen_remove_token_function_call(self, env, compiled_token, marking_name):
         place_expr = self.place_expr(env, marking_name)
-        return stmt(E("net.int_place_type_rem_by_index").call([ place_expr, compiled_token ]))
+        return stmt(E(from_neco_lib("int_place_type_rem_by_index")).call([ place_expr, compiled_token ]))
 
     def gen_remove_by_index_function_call(self, env, index, marking_name):
         place_expr = self.place_expr(env, marking_name)
-        return stmt(E("net.int_place_type_rem_by_index").call([ place_expr, E(index) ]))
+        return stmt(E(from_neco_lib("int_place_type_rem_by_index")).call([ place_expr, E(index) ]))
 
     def gen_add_token_function_call(self, env, compiled_token, marking_name):
         place_expr = self.place_expr(env, marking_name)
-        return stmt(E("net.int_place_type_add").call([ place_expr, compiled_token ]))
+        return stmt(E(from_neco_lib("int_place_type_add")).call([ place_expr, compiled_token ]))
 
     def gen_build_token(self, env, value):
         return E(repr(value))
 
     def gen_copy(self, env, marking_name):
         place_expr = self.place_expr(env, marking_name)
-        return E("net.int_place_type_copy").call([ place_expr ])
+        return E(from_neco_lib("int_place_type_copy")).call([ place_expr ])
 
     def gen_light_copy(self, env, marking_name):
         place_expr = self.place_expr(env, marking_name)
-        return E("net.int_place_type_light_copy").call([ place_expr ])
+        return E(from_neco_lib("int_place_type_light_copy")).call([ place_expr ])
 
     def gen_get_size_function_call(self, env, marking_name):
         place_expr = self.place_expr(env, marking_name)
-        return E("net.int_place_type_size").call([ place_expr ])
+        return E(from_neco_lib("int_place_type_size")).call([ place_expr ])
 
     def gen_get_token_function_call(self, env, marking_name, index):
         place_expr = self.place_expr(env, marking_name)
-        return E("net.int_place_type_get").call([ place_expr, E(index) ])
+        return E(from_neco_lib("int_place_type_get")).call([ place_expr, E(index) ])
 
     def gen_clear_function_call(self, env, marking_type, marking_name):
         place_expr = self.place_expr(env, marking_name)
-        return E("net.int_place_type_clear").call([ place_expr ])
+        return E(from_neco_lib("int_place_type_clear")).call([ place_expr ])
 
     def gen_build_token(self, env, token):
         return E(repr(token))
+
+    def gen_dump(self, env, marking_name):
+        place_expr = self.place_expr(env, marking_name)
+        return E(from_neco_lib("int_place_type_cstr")).call([ place_expr ])
+
+    def gen_compare(self, env, left, right):
+        return E(from_neco_lib("int_place_type_cmp")).call([ left, right ])
+
+    def gen_not_empty(self, env,marking_name):
+        place_expr = self.place_expr(env, marking_name)
+        return E(from_neco_lib("int_place_type_not_empty")).call([place_expr])
 
     @todo
     def gen_not_empty_function_call(self, env, marking_type, marking_name): pass
@@ -410,6 +434,7 @@ class StaticMarkingType(coretypes.MarkingType):
             if not place_type.is_packed:
                 builder.emit(place_type.gen_delete(env = env,
                                                    marking_name = "self"))
+        #builder.emit(E("print 'marking desalloc'"));
         builder.end_FunctionDef()
         return to_ast(builder)
 
@@ -507,6 +532,43 @@ class StaticMarkingType(coretypes.MarkingType):
         builder.end_FunctionDef()
         return to_ast(builder)
 
+    def _gen_C_marked_aux(self, builder, tests, rs):
+        try:
+            test = tests.pop()
+            r = rs.pop()
+            # l - r == 0 ?:
+            builder.begin_If(test)
+            builder.emit_Return(r)
+            # else l - r > 0:
+            builder.begin_Else()
+            self._gen_C_marked_aux(builder, tests, rs)
+            builder.end_If()
+        except IndexError:
+            builder.emit_Return(E('0'))
+
+    def _gen_C_marked(self, env):
+
+        builder = Builder()
+        left_marking_name  = "self"
+        right_marking_name = "other"
+        builder.begin_FunctionCDef( name = "neco_marked",
+                                    args = (A("self", type = self.type_name)
+                                            .param("place_name", type="object")),
+                                    returns = E("int"))
+
+        i = 0
+        tests = []
+        rs = []
+        for name, place_type in self.place_types.iteritems():
+            id = self.id_provider.get(place_type)
+            tests.append( E(repr(name)).eq(E("place_name")) )
+            rs.append( place_type.gen_not_empty(env, "self") )
+
+        self._gen_C_marked_aux(builder, tests, rs)
+        builder.end_FunctionDef()
+        return to_ast(builder)
+    
+
     def _gen_richcmp(self, env):
         builder = Builder()
         left_marking_name = "self"
@@ -552,6 +614,19 @@ class StaticMarkingType(coretypes.MarkingType):
         builder.end_FunctionDef()
         return to_ast(builder)
 
+    def _gen_C_dump(self, env):
+        builder = Builder()
+        builder.begin_FunctionCDef(name = "neco_marking_dump",
+                                   args = A("self", type="Marking"),
+                                   returns = cyast.Name("char*"),
+                                   decl = [ Builder.CVar( "c_string", type = "char*" ) ])
+        builder.emit(E("py_unicode_string = str(self)"))
+        builder.emit(E("py_byte_string = py_unicode_string.encode('UTF-8')"))
+        builder.emit(E("c_string = py_byte_string"))
+        builder.emit_Return(E("c_string"))
+        builder.end_FunctionDef()
+        return to_ast(builder)
+
     def _gen_C_hash(self, env):
         builder = Builder()
         builder.begin_FunctionCDef( name = "neco_marking_hash",
@@ -572,6 +647,36 @@ class StaticMarkingType(coretypes.MarkingType):
 
     def gen_free_marking_function_call(self, env, marking_name):
         pass
+
+
+    def _gen_str(self, env):
+        items = list(self.place_types.iteritems())
+        items.sort(lambda (n1, t1), (n2, t2) : cmp(n1, n2))
+
+        builder = Builder()
+        builder.begin_FunctionDef( name = "__str__",
+                                   args = A("self") )
+        visited = set()
+        builder.emit(E('s = ""'))
+        for i, (place_name, place_type) in enumerate(items):
+            if i > 0:
+                builder.emit(E('s += ", "'))
+            # if place_type.is_packed:
+            #     if place_type.pack in visited:
+            #         continue
+
+            #     assert(False and "TO DO")
+
+            #     place_type = self.get_place_type_by_name(place_name)
+            #     builder.emit( E('s').add_assign( place_type.gen_dump(env, 'self') ) )
+            # else:
+            place_type = self.get_place_type_by_name(place_name)
+            builder.emit( E( 's += %s' % repr(place_name + ': ')) )
+            builder.emit( E('s').add_assign( E("str").call([place_type.gen_dump(env, 'self')])) )
+
+        builder.emit_Return(E('s'))
+        builder.end_FunctionDef()
+        return to_ast(builder)
 
     @todo
     def _gen_repr(self, env):
@@ -612,7 +717,7 @@ class StaticMarkingType(coretypes.MarkingType):
 
         cls.add_method( self._gen_init(env) )
         cls.add_method( self._gen_dealloc(env) )
-        # cls.add_method( self._gen_repr(env) )
+        cls.add_method( self._gen_str(env) )
         cls.add_method( self._gen_richcmp(env) )
         cls.add_method( self._gen_hash(env) )
         cls.add_method( self._gen_copy(env) )
@@ -663,11 +768,16 @@ class StaticMarkingType(coretypes.MarkingType):
             if not place_type.is_packed:
                 cls.add_decl( Builder.CVar(self.id_provider.get(place_type)).type(type2str(place_type.type)) )
 
+        ################################################################################
+        # C api
+        ################################################################################
+
         capi = []
         capi.append( self._gen_C_hash(env) )
         capi.append( self._gen_C_copy(env) )
         capi.append( self._gen_C_compare(env) )
-
+        capi.append( self._gen_C_dump(env) )
+        capi.append( self._gen_C_marked(env) )
         return [to_ast(cls), capi]
 
 
@@ -919,6 +1029,13 @@ class BTPlaceType(onesafe.BTPlaceType, CythonPlaceType):
     def gen_new_place(self, env):
         return E("0")
 
+    def gen_not_empty(self, env, marking_name):
+        return self.place_expr(env, marking_name)
+
+    def gen_dump(self, env, marking_name):
+        place_expr = self.place_expr(env, marking_name)
+        return place_expr
+
     def gen_iterable(self, env, marking_name):
         place_expr = self.place_expr(env, marking_name)
         return E("range").call([ E(0), place_expr ])
@@ -1086,6 +1203,12 @@ class PackedBT1SPlaceTypeHelper(coretypes.PlaceType, CythonPlaceType):
 
     def gen_build_token(self, env, value):
         return E(1)
+
+    def gen_dump(self, env, marking_name):
+        return self.gen_get_place(env, marking_name)
+
+    def gen_not_empty(self, env, marking_name):
+        return self.gen_get_place(env, marking_name)
 
 ################################################################################
 #

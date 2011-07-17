@@ -8,6 +8,10 @@ class Nonce (object) :
             return False
     def __ne__ (self, other) :
         return not self.__eq__(other)
+    def __lt__ (self, other) :
+        return self._agent < other._agent
+    def __gt__ (self, other) :
+        return self._agent > other._agent
     def __str__ (self) :
         return self.__repr__()
     def __repr__ (self) :
@@ -79,6 +83,29 @@ class Spy (object) :
         if other == None:
             return True
         return not self.__eq__(other)
+    
+    def __lt__ (self, other) :
+        """
+        >>> Spy(str, int) == Spy(int, str)
+        True
+        >>> Spy(str, int) == Spy(int, str, float)
+        False
+        """
+        if other == None:
+            return False
+        return self._types < other._types
+    
+    def __gt__ (self, other) :
+        """
+        >>> Spy(str, int) == Spy(int, str)
+        True
+        >>> Spy(str, int) == Spy(int, str, float)
+        False
+        """
+        if other == None:
+            return True
+        return self._types > other._types
+    
     def __hash__ (self) :
         """
         >>> hash(Spy(str, int)) == hash(Spy(int, str))
