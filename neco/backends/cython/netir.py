@@ -283,7 +283,7 @@ class CompilerVisitor(coreir.CompilerVisitor):
         body.append( cyast.For(target=to_ast(E("e")),
                                iter=to_ast(E("succs(m)")),
                                body=[ cyast.Expr( cyast.Call(func=to_ast(E("ctypes_ext.neco_list_push_front")),
-                                                             args=[to_ast(E("l")), cyast.Name("<void*>e")],
+                                                             args=[to_ast(E("l")), cyast.Name("e")],
                                                              keywords=[],
                                                              starargs=None,
                                                              kwargs=None) ) ] ) )
