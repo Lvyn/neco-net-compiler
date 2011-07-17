@@ -1,6 +1,7 @@
 #include "ctypes.h"
 #include <assert.h>
 #include <stdlib.h>
+#include <string.h>
 
 /////////////////////////////////////////////////////
 // int place type
@@ -10,6 +11,29 @@ int* g_tab2 = NULL; // [256]; // = NULL;
 int  g_tab_size = 0;
 
 #define MAX(a, b) (a) > (b) ? (a) : (b)
+
+char* int_place_type_cstr(int_place_type_t* pt)
+{
+    // TO DO accept bigger strings
+    char tmp[20];
+    char buf[1024];
+    char *ret = NULL;
+    int i, size;
+
+    buf[0] = '\0';
+    strcat(buf, "[");
+
+    size = int_place_type_size(pt);
+    for (i = size-1; i >= 0; i--) {
+	sprintf(tmp, "%d", pt->data[i]);
+	if (i > 0)
+	    strcat(tmp, ", ");
+	strcat(buf, tmp);
+    }
+    strcat(buf, "]");
+    ret = malloc(sizeof(strlen(buf)+1));
+    return ret;
+}
 
 int int_place_type_eq(int_place_type_t* pt1, int_place_type_t* pt2) {
     int i;
@@ -36,6 +60,31 @@ int int_place_type_eq(int_place_type_t* pt1, int_place_type_t* pt2) {
     return 1;
 }
 
+
+int int_place_type_cmp(int_place_type_t* pt1, int_place_type_t* pt2) {
+    int i;
+    int tmp;
+    int size;
+
+    if (pt1 == pt2)
+     	return 0;
+
+    size = pt1->size;
+    tmp = size - pt2->size;
+    if (tmp != 0)
+	return tmp;
+
+    //////////////////////////////////////////////////
+    // ENSURE ORDERED !!!
+    //////////////////////////////////////////////////
+
+    for (i = size-1; i >= 0; i--) {
+	tmp = pt1->data[i] - pt2->data[i];
+	if (tmp != 0)
+	    return tmp;
+    }
+    return 0;
+}
 
 int int_place_type_hash(int_place_type_t* pt) {
     int i;

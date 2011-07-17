@@ -269,13 +269,13 @@ class CompilerVisitor(coreir.CompilerVisitor):
         body = []
         body.extend( self.compile( node.body ) )
         body.append( E("return " + node.markingset_variable_name) )
-        f1 = Builder.FunctionCpDef( name = node.function_name,
-                                    args = A(node.marking_argument_name, type = "Marking"),
-                                    body = body,
-                                    returns = cyast.Name("set"),
-                                    decl = [ (Builder.CVar(node.markingset_variable_name)
-                                              .type('set')
-                                              .init(self.env.marking_set_type.gen_new_marking_set(self.env))) ])
+        f1 = Builder.FunctionDef( name = node.function_name,
+                                  args = A(node.marking_argument_name, type = "Marking"),
+                                  body = body,
+                                  returns = cyast.Name("set"),
+                                  decl = [ (Builder.CVar(node.markingset_variable_name)
+                                            .type('set')
+                                            .init(self.env.marking_set_type.gen_new_marking_set(self.env))) ])
 
 
         body = [ E("l = ctypes_ext.neco_list_new()") ]
@@ -310,7 +310,7 @@ class CompilerVisitor(coreir.CompilerVisitor):
         stmts.extend( self.compile(node.body) )
         stmts.append( return_stmt )
 
-        f1 = Builder.FunctionCpDef( name = node.function_name,
+        f1 = Builder.FunctionDef( name = node.function_name,
                                   body = stmts,
                                   returns = cyast.Name("Marking"),
                                   decl = [ cyast.CVar( node.marking_name, type = "Marking" )])
