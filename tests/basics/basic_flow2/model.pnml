@@ -1,0 +1,1150 @@
+<?xml version="1.0" encoding="utf-8"?>
+<pnml>
+ <snakes version="0.9.13">
+  <plugins>
+   <object type="tuple">
+    <object type="str">
+     snakes.nets
+    </object>
+    <object type="str">
+     snakes.plugins.clusters
+    </object>
+    <object type="str">
+     snakes.plugins.status
+    </object>
+    <object type="str">
+     snakes.plugins.ops
+    </object>
+    <object type="str">
+     snakes.plugins.labels
+    </object>
+   </object>
+  </plugins>
+ </snakes>
+ <net id="(((((basic&amp;basic)&amp;basic)&amp;basic)*basic)|((((basic&amp;basic)&amp;basic)&amp;basic)*basic))">
+  <place id="gate(this=0).internal#1">
+   <type domain="universal"/>
+   <initialMarking>
+    <multiset/>
+   </initialMarking>
+   <status>
+    <name>
+     internal
+    </name>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="net">
+    <object type="str">
+     gate(this=0)
+    </object>
+   </label>
+  </place>
+  <place id="gate(this=0).internal#2">
+   <type domain="universal"/>
+   <initialMarking>
+    <multiset/>
+   </initialMarking>
+   <status>
+    <name>
+     internal
+    </name>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="net">
+    <object type="str">
+     gate(this=0)
+    </object>
+   </label>
+  </place>
+  <place id="gate(this=0).internal#3">
+   <type domain="universal"/>
+   <initialMarking>
+    <multiset/>
+   </initialMarking>
+   <status>
+    <name>
+     internal
+    </name>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="net">
+    <object type="str">
+     gate(this=0)
+    </object>
+   </label>
+  </place>
+  <place id="gate(this=1).internal#1">
+   <type domain="universal"/>
+   <initialMarking>
+    <multiset/>
+   </initialMarking>
+   <status>
+    <name>
+     internal
+    </name>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="net">
+    <object type="str">
+     gate(this=1)
+    </object>
+   </label>
+  </place>
+  <place id="gate(this=1).internal#3">
+   <type domain="universal"/>
+   <initialMarking>
+    <multiset/>
+   </initialMarking>
+   <status>
+    <name>
+     internal
+    </name>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="net">
+    <object type="str">
+     gate(this=1)
+    </object>
+   </label>
+  </place>
+  <place id="gate(this=1).internal#2">
+   <type domain="universal"/>
+   <initialMarking>
+    <multiset/>
+   </initialMarking>
+   <status>
+    <name>
+     internal
+    </name>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="net">
+    <object type="str">
+     gate(this=1)
+    </object>
+   </label>
+  </place>
+  <place id="gate(this=1).state">
+   <type domain="instance">
+    <object name="int" type="class"/>
+   </type>
+   <initialMarking>
+    <multiset>
+     <item>
+      <value>
+       <object type="int">
+        2
+       </object>
+      </value>
+      <multiplicity>
+       1
+      </multiplicity>
+     </item>
+    </multiset>
+   </initialMarking>
+   <status>
+    <name>
+     buffer
+    </name>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="net">
+    <object type="str">
+     gate(this=1)
+    </object>
+   </label>
+   <label name="name">
+    <object type="str">
+     gate(this=1).state
+    </object>
+   </label>
+  </place>
+  <place id="gate(this=0).exit#1">
+   <type domain="universal"/>
+   <initialMarking>
+    <multiset/>
+   </initialMarking>
+   <status>
+    <name>
+     exit
+    </name>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="net">
+    <object type="str">
+     gate(this=0)
+    </object>
+   </label>
+  </place>
+  <place id="gate(this=1).exit#1">
+   <type domain="universal"/>
+   <initialMarking>
+    <multiset/>
+   </initialMarking>
+   <status>
+    <name>
+     exit
+    </name>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="net">
+    <object type="str">
+     gate(this=1)
+    </object>
+   </label>
+  </place>
+  <place id="gate(this=0).state">
+   <type domain="instance">
+    <object name="int" type="class"/>
+   </type>
+   <initialMarking>
+    <multiset>
+     <item>
+      <value>
+       <object type="int">
+        2
+       </object>
+      </value>
+      <multiplicity>
+       1
+      </multiplicity>
+     </item>
+    </multiset>
+   </initialMarking>
+   <status>
+    <name>
+     buffer
+    </name>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="net">
+    <object type="str">
+     gate(this=0)
+    </object>
+   </label>
+   <label name="name">
+    <object type="str">
+     gate(this=0).state
+    </object>
+   </label>
+  </place>
+  <place id="gate(this=0).entry#1">
+   <type domain="universal"/>
+   <initialMarking>
+    <multiset>
+     <item>
+      <value>
+       <token/>
+      </value>
+      <multiplicity>
+       1
+      </multiplicity>
+     </item>
+    </multiset>
+   </initialMarking>
+   <status>
+    <name>
+     entry
+    </name>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="net">
+    <object type="str">
+     gate(this=0)
+    </object>
+   </label>
+  </place>
+  <place id="gate(this=1).entry#1">
+   <type domain="universal"/>
+   <initialMarking>
+    <multiset>
+     <item>
+      <value>
+       <token/>
+      </value>
+      <multiplicity>
+       1
+      </multiplicity>
+     </item>
+    </multiset>
+   </initialMarking>
+   <status>
+    <name>
+     entry
+    </name>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="net">
+    <object type="str">
+     gate(this=1)
+    </object>
+   </label>
+  </place>
+  <transition id="gate(this=0).[state-(3), state+(2) if True]">
+   <status>
+    <name/>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="action">
+    <object type="str">
+     [state-(3), state+(2) if True]
+    </object>
+   </label>
+   <label name="net">
+    <object type="str">
+     gate(this=0)
+    </object>
+   </label>
+   <label name="tag">
+    <object type="str">
+     trans3
+    </object>
+   </label>
+   <label name="ops">
+    <object type="list">
+     <object type="tuple">
+      <object type="str">
+       sequence
+      </object>
+      <object type="int">
+       1
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       loop
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+    </object>
+   </label>
+  </transition>
+  <transition id="gate(this=1).[state-(0), state+(3) if True]">
+   <status>
+    <name/>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="action">
+    <object type="str">
+     [state-(0), state+(3) if True]
+    </object>
+   </label>
+   <label name="net">
+    <object type="str">
+     gate(this=1)
+    </object>
+   </label>
+   <label name="tag">
+    <object type="str">
+     trans6
+    </object>
+   </label>
+   <label name="ops">
+    <object type="list">
+     <object type="tuple">
+      <object type="str">
+       sequence
+      </object>
+      <object type="int">
+       1
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       sequence
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       loop
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       1
+      </object>
+     </object>
+    </object>
+   </label>
+  </transition>
+  <transition id="gate(this=0).[state-(3), state+(0) if True]">
+   <status>
+    <name/>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="action">
+    <object type="str">
+     [state-(3), state+(0) if True]
+    </object>
+   </label>
+   <label name="net">
+    <object type="str">
+     gate(this=0)
+    </object>
+   </label>
+   <label name="tag">
+    <object type="str">
+     trans1
+    </object>
+   </label>
+   <label name="ops">
+    <object type="list">
+     <object type="tuple">
+      <object type="str">
+       sequence
+      </object>
+      <object type="int">
+       1
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       sequence
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       sequence
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       loop
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+    </object>
+   </label>
+  </transition>
+  <transition id="gate(this=1).[state-(3), state+(0) if True]">
+   <status>
+    <name/>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="action">
+    <object type="str">
+     [state-(3), state+(0) if True]
+    </object>
+   </label>
+   <label name="net">
+    <object type="str">
+     gate(this=1)
+    </object>
+   </label>
+   <label name="tag">
+    <object type="str">
+     trans5
+    </object>
+   </label>
+   <label name="ops">
+    <object type="list">
+     <object type="tuple">
+      <object type="str">
+       sequence
+      </object>
+      <object type="int">
+       1
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       sequence
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       sequence
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       loop
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       1
+      </object>
+     </object>
+    </object>
+   </label>
+  </transition>
+  <transition id="gate(this=1).[state-(2), state+(3) if True]">
+   <status>
+    <name/>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="action">
+    <object type="str">
+     [state-(2), state+(3) if True]
+    </object>
+   </label>
+   <label name="net">
+    <object type="str">
+     gate(this=1)
+    </object>
+   </label>
+   <label name="tag">
+    <object type="str">
+     trans4
+    </object>
+   </label>
+   <label name="ops">
+    <object type="list">
+     <object type="tuple">
+      <object type="str">
+       sequence
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       sequence
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       sequence
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       loop
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       1
+      </object>
+     </object>
+    </object>
+   </label>
+  </transition>
+  <transition id="gate(this=0).[state-(2), state+(3) if True]">
+   <status>
+    <name/>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="action">
+    <object type="str">
+     [state-(2), state+(3) if True]
+    </object>
+   </label>
+   <label name="net">
+    <object type="str">
+     gate(this=0)
+    </object>
+   </label>
+   <label name="tag">
+    <object type="str">
+     trans0
+    </object>
+   </label>
+   <label name="ops">
+    <object type="list">
+     <object type="tuple">
+      <object type="str">
+       sequence
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       sequence
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       sequence
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       loop
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+    </object>
+   </label>
+  </transition>
+  <transition id="gate(this=0).[state-(0), state+(3) if True]">
+   <status>
+    <name/>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="action">
+    <object type="str">
+     [state-(0), state+(3) if True]
+    </object>
+   </label>
+   <label name="net">
+    <object type="str">
+     gate(this=0)
+    </object>
+   </label>
+   <label name="tag">
+    <object type="str">
+     trans2
+    </object>
+   </label>
+   <label name="ops">
+    <object type="list">
+     <object type="tuple">
+      <object type="str">
+       sequence
+      </object>
+      <object type="int">
+       1
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       sequence
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       loop
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+    </object>
+   </label>
+  </transition>
+  <transition id="gate(this=1).[state-(3), state+(2) if True]">
+   <status>
+    <name/>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="action">
+    <object type="str">
+     [state-(3), state+(2) if True]
+    </object>
+   </label>
+   <label name="net">
+    <object type="str">
+     gate(this=1)
+    </object>
+   </label>
+   <label name="tag">
+    <object type="str">
+     trans7
+    </object>
+   </label>
+   <label name="ops">
+    <object type="list">
+     <object type="tuple">
+      <object type="str">
+       sequence
+      </object>
+      <object type="int">
+       1
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       loop
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       1
+      </object>
+     </object>
+    </object>
+   </label>
+  </transition>
+  <arc id="gate(this=0).internal#3:gate(this=0).[state-(3), state+(2) if True]" source="gate(this=0).internal#3" target="gate(this=0).[state-(3), state+(2) if True]">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="gate(this=0).state:gate(this=0).[state-(3), state+(2) if True]" source="gate(this=0).state" target="gate(this=0).[state-(3), state+(2) if True]">
+   <inscription>
+    <value>
+     <object type="int">
+      3
+     </object>
+    </value>
+   </inscription>
+  </arc>
+  <arc id="gate(this=0).[state-(3), state+(2) if True]:gate(this=0).entry#1" source="gate(this=0).[state-(3), state+(2) if True]" target="gate(this=0).entry#1">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="gate(this=0).[state-(3), state+(2) if True]:gate(this=0).state" source="gate(this=0).[state-(3), state+(2) if True]" target="gate(this=0).state">
+   <inscription>
+    <value>
+     <object type="int">
+      2
+     </object>
+    </value>
+   </inscription>
+  </arc>
+  <arc id="gate(this=1).internal#2:gate(this=1).[state-(0), state+(3) if True]" source="gate(this=1).internal#2" target="gate(this=1).[state-(0), state+(3) if True]">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="gate(this=1).state:gate(this=1).[state-(0), state+(3) if True]" source="gate(this=1).state" target="gate(this=1).[state-(0), state+(3) if True]">
+   <inscription>
+    <value>
+     <object type="int">
+      0
+     </object>
+    </value>
+   </inscription>
+  </arc>
+  <arc id="gate(this=1).[state-(0), state+(3) if True]:gate(this=1).internal#1" source="gate(this=1).[state-(0), state+(3) if True]" target="gate(this=1).internal#1">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="gate(this=1).[state-(0), state+(3) if True]:gate(this=1).state" source="gate(this=1).[state-(0), state+(3) if True]" target="gate(this=1).state">
+   <inscription>
+    <value>
+     <object type="int">
+      3
+     </object>
+    </value>
+   </inscription>
+  </arc>
+  <arc id="gate(this=0).internal#2:gate(this=0).[state-(3), state+(0) if True]" source="gate(this=0).internal#2" target="gate(this=0).[state-(3), state+(0) if True]">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="gate(this=0).state:gate(this=0).[state-(3), state+(0) if True]" source="gate(this=0).state" target="gate(this=0).[state-(3), state+(0) if True]">
+   <inscription>
+    <value>
+     <object type="int">
+      3
+     </object>
+    </value>
+   </inscription>
+  </arc>
+  <arc id="gate(this=0).[state-(3), state+(0) if True]:gate(this=0).internal#1" source="gate(this=0).[state-(3), state+(0) if True]" target="gate(this=0).internal#1">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="gate(this=0).[state-(3), state+(0) if True]:gate(this=0).state" source="gate(this=0).[state-(3), state+(0) if True]" target="gate(this=0).state">
+   <inscription>
+    <value>
+     <object type="int">
+      0
+     </object>
+    </value>
+   </inscription>
+  </arc>
+  <arc id="gate(this=1).internal#3:gate(this=1).[state-(3), state+(0) if True]" source="gate(this=1).internal#3" target="gate(this=1).[state-(3), state+(0) if True]">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="gate(this=1).state:gate(this=1).[state-(3), state+(0) if True]" source="gate(this=1).state" target="gate(this=1).[state-(3), state+(0) if True]">
+   <inscription>
+    <value>
+     <object type="int">
+      3
+     </object>
+    </value>
+   </inscription>
+  </arc>
+  <arc id="gate(this=1).[state-(3), state+(0) if True]:gate(this=1).internal#2" source="gate(this=1).[state-(3), state+(0) if True]" target="gate(this=1).internal#2">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="gate(this=1).[state-(3), state+(0) if True]:gate(this=1).state" source="gate(this=1).[state-(3), state+(0) if True]" target="gate(this=1).state">
+   <inscription>
+    <value>
+     <object type="int">
+      0
+     </object>
+    </value>
+   </inscription>
+  </arc>
+  <arc id="gate(this=1).entry#1:gate(this=1).[state-(2), state+(3) if True]" source="gate(this=1).entry#1" target="gate(this=1).[state-(2), state+(3) if True]">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="gate(this=1).state:gate(this=1).[state-(2), state+(3) if True]" source="gate(this=1).state" target="gate(this=1).[state-(2), state+(3) if True]">
+   <inscription>
+    <value>
+     <object type="int">
+      2
+     </object>
+    </value>
+   </inscription>
+  </arc>
+  <arc id="gate(this=1).[state-(2), state+(3) if True]:gate(this=1).internal#3" source="gate(this=1).[state-(2), state+(3) if True]" target="gate(this=1).internal#3">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="gate(this=1).[state-(2), state+(3) if True]:gate(this=1).state" source="gate(this=1).[state-(2), state+(3) if True]" target="gate(this=1).state">
+   <inscription>
+    <value>
+     <object type="int">
+      3
+     </object>
+    </value>
+   </inscription>
+  </arc>
+  <arc id="gate(this=0).entry#1:gate(this=0).[state-(2), state+(3) if True]" source="gate(this=0).entry#1" target="gate(this=0).[state-(2), state+(3) if True]">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="gate(this=0).state:gate(this=0).[state-(2), state+(3) if True]" source="gate(this=0).state" target="gate(this=0).[state-(2), state+(3) if True]">
+   <inscription>
+    <value>
+     <object type="int">
+      2
+     </object>
+    </value>
+   </inscription>
+  </arc>
+  <arc id="gate(this=0).[state-(2), state+(3) if True]:gate(this=0).internal#2" source="gate(this=0).[state-(2), state+(3) if True]" target="gate(this=0).internal#2">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="gate(this=0).[state-(2), state+(3) if True]:gate(this=0).state" source="gate(this=0).[state-(2), state+(3) if True]" target="gate(this=0).state">
+   <inscription>
+    <value>
+     <object type="int">
+      3
+     </object>
+    </value>
+   </inscription>
+  </arc>
+  <arc id="gate(this=0).internal#1:gate(this=0).[state-(0), state+(3) if True]" source="gate(this=0).internal#1" target="gate(this=0).[state-(0), state+(3) if True]">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="gate(this=0).state:gate(this=0).[state-(0), state+(3) if True]" source="gate(this=0).state" target="gate(this=0).[state-(0), state+(3) if True]">
+   <inscription>
+    <value>
+     <object type="int">
+      0
+     </object>
+    </value>
+   </inscription>
+  </arc>
+  <arc id="gate(this=0).[state-(0), state+(3) if True]:gate(this=0).internal#3" source="gate(this=0).[state-(0), state+(3) if True]" target="gate(this=0).internal#3">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="gate(this=0).[state-(0), state+(3) if True]:gate(this=0).state" source="gate(this=0).[state-(0), state+(3) if True]" target="gate(this=0).state">
+   <inscription>
+    <value>
+     <object type="int">
+      3
+     </object>
+    </value>
+   </inscription>
+  </arc>
+  <arc id="gate(this=1).internal#1:gate(this=1).[state-(3), state+(2) if True]" source="gate(this=1).internal#1" target="gate(this=1).[state-(3), state+(2) if True]">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="gate(this=1).state:gate(this=1).[state-(3), state+(2) if True]" source="gate(this=1).state" target="gate(this=1).[state-(3), state+(2) if True]">
+   <inscription>
+    <value>
+     <object type="int">
+      3
+     </object>
+    </value>
+   </inscription>
+  </arc>
+  <arc id="gate(this=1).[state-(3), state+(2) if True]:gate(this=1).entry#1" source="gate(this=1).[state-(3), state+(2) if True]" target="gate(this=1).entry#1">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="gate(this=1).[state-(3), state+(2) if True]:gate(this=1).state" source="gate(this=1).[state-(3), state+(2) if True]" target="gate(this=1).state">
+   <inscription>
+    <value>
+     <object type="int">
+      2
+     </object>
+    </value>
+   </inscription>
+  </arc>
+  <clusters>
+   <clusters>
+    <node>
+     gate(this=0).entry#1
+    </node>
+    <clusters>
+     <node>
+      gate(this=0).state
+     </node>
+     <node>
+      gate(this=0).internal#3
+     </node>
+     <clusters>
+      <node>
+       gate(this=0).internal#1
+      </node>
+      <clusters>
+       <node>
+        gate(this=0).internal#2
+       </node>
+       <clusters>
+        <node>
+         gate(this=0).[state-(2), state+(3) if True]
+        </node>
+       </clusters>
+       <clusters>
+        <node>
+         gate(this=0).[state-(3), state+(0) if True]
+        </node>
+       </clusters>
+      </clusters>
+      <clusters>
+       <node>
+        gate(this=0).[state-(0), state+(3) if True]
+       </node>
+      </clusters>
+     </clusters>
+     <clusters>
+      <node>
+       gate(this=0).[state-(3), state+(2) if True]
+      </node>
+     </clusters>
+    </clusters>
+    <clusters>
+     <node>
+      gate(this=0).exit#1
+     </node>
+    </clusters>
+   </clusters>
+   <clusters>
+    <node>
+     gate(this=1).entry#1
+    </node>
+    <clusters>
+     <node>
+      gate(this=1).state
+     </node>
+     <node>
+      gate(this=1).internal#1
+     </node>
+     <clusters>
+      <node>
+       gate(this=1).internal#2
+      </node>
+      <clusters>
+       <node>
+        gate(this=1).internal#3
+       </node>
+       <clusters>
+        <node>
+         gate(this=1).[state-(2), state+(3) if True]
+        </node>
+       </clusters>
+       <clusters>
+        <node>
+         gate(this=1).[state-(3), state+(0) if True]
+        </node>
+       </clusters>
+      </clusters>
+      <clusters>
+       <node>
+        gate(this=1).[state-(0), state+(3) if True]
+       </node>
+      </clusters>
+     </clusters>
+     <clusters>
+      <node>
+       gate(this=1).[state-(3), state+(2) if True]
+      </node>
+     </clusters>
+    </clusters>
+    <clusters>
+     <node>
+      gate(this=1).exit#1
+     </node>
+    </clusters>
+   </clusters>
+  </clusters>
+ </net>
+</pnml>

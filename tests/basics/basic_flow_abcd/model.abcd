@@ -1,0 +1,8 @@
+
+net p1():
+    [True]; [True]
+    
+net p2():
+    [True]; [True]
+
+p1() | p2()
