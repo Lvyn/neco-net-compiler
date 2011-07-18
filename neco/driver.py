@@ -136,24 +136,6 @@ class Driver(object):
             parser.add_option('--Include', '-I', dest='additional_search_paths', action='append', default=[],
                                 help='add additional search paths')
 
-            # parser.add_option('-m', type=str, dest='module', default='spec',
-            #                     help='module containing the Petri net object')
-            # parser.add_option('-n', type=str, dest='netvar', default='net',
-            #                     help='variable holding the Petri net object')
-            # parser.add_option('-l', dest='backend', choices=['cython', 'python'], default='python',
-            #                     help='select backend')
-            # parser.add_option('-o', dest='opt', action='store_true', default=False,
-            #                     help='enable optimisations')
-            # parser.add_option('--pfe', dest='process_flow_elimination', action='store_true', default=False,
-            #                     help='enable process flow elimination')
-            # parser.add_option('--debug', dest='debug', action='store_true', default=False,
-            #                     help='show debug messages')
-            # parser.add_option('--dump', dest='dump', action='store_true', default=False,
-            #                     help='show produced file')
-            # parser.add_option('-p', dest='profile', action='store_true', default=False,
-            #                     help='enable profiling')
-            # parser.add_option('-I', dest='additional_search_paths', action='append', default=[],
-            #                     help='add additional search paths')
             (options, args) = parser.parse_args()
 
 
