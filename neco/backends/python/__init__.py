@@ -67,7 +67,7 @@ class Compiler(core.Compiler):
 
         compiled_nodes = env.gen_imports() + compiled_nodes
         module_ast = flatten_ast(ast.Module(body = compiled_nodes))
-        module_ast = ast.fix_missing_locations(to_ast(module_ast))
+        module_ast = ast.fix_missing_locations(module_ast)
         if config.get('dump'):
             AstPrettyPrinter(file = sys.stdout).visit(module_ast)
 

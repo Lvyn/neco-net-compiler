@@ -153,8 +153,6 @@ class Driver(object):
             self.module_name = options.module
             self.net_var_name = options.netvar
 
-
-
         elif VERSION == (2,7):
             parser = parse.ArgumentParser(name,
                                           argument_default=parse.SUPPRESS,
