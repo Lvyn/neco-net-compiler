@@ -1,6 +1,6 @@
 PYTHONPATH=.:../:../../common/:../../../..:../../..:
 LIBPATH=.:../../common/
-PYTHON=python2.7
+PYTHON=python
 COUNT=1
 LANG=python
 OPTS=0

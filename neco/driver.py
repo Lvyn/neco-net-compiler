@@ -1,4 +1,13 @@
-import subprocess, re, sys, argparse
+import subprocess, re, sys
+if (2,6,0) <= sys.version_info < (2, 7, 0):
+    import optparse as parse
+    VERSION=(2,6)
+elif (2, 7, 0) < sys.version_info < (3,0,0) :
+    import argparse as parse
+    VERSION=(2,7)
+else:
+    raise "bad python version"
+
 import imp, cProfile, pstats
 from time import time
 import os, gc
@@ -101,44 +110,106 @@ class Driver(object):
         """
 
         #print logo
+        print "using python version: ", sys.version
         assert(not self.__class__._instance_)
         self.__class__._instance_ = self
-        parser = argparse.ArgumentParser(name,
-                                         argument_default=argparse.SUPPRESS,
-                                         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-        parser.add_argument('--module', '-m', type=str, dest='module', default='spec',
-                            help='module containing the Petri net object')
-        parser.add_argument('--netvar', '-nv', type=str, dest='netvar', default='net',
-                            help='variable holding the Petri net object')
-        parser.add_argument('--lang', '-l', dest='backend', choices=['cython', 'python'], default='python',
-                            help='select backend')
-        parser.add_argument('--opt', '-o', dest='opt', action='store_true', default=False,
-                            help='enable optimisations')
-        parser.add_argument('--pfe', dest='process_flow_elimination', action='store_true', default=False,
-                            help='enable process flow elimination')
-        parser.add_argument('--debug', dest='debug', action='store_true', default=False,
-                            help='show debug messages')
-        parser.add_argument('--dump', dest='dump', action='store_true', default=False,
-                            help='show produced file')
-        parser.add_argument('--profile', '-p', dest='profile', action='store_true', default=False,
-                            help='enable profiling')
-        parser.add_argument('--Include', '-I', dest='additional_search_paths', action='append', default=[],
-                            help='add additional search paths')
-        args = parser.parse_args()
 
-        config.set(debug    = args.debug,
-                   dump     = args.dump,
-                   optimise = args.opt,
-                   backend  = args.backend,
-                   profile  = args.profile,
-                   process_flow_elimination = args.process_flow_elimination,
-                   additional_search_paths  = args.additional_search_paths,
-                   trace_calls = False)
+        if VERSION == (2,6):
+            parser = parse.OptionParser(name)
 
-        self.lang = args.backend
-        self.profile = args.profile
-        self.module_name = args.module
-        self.net_var_name = args.netvar
+            parser.add_option('--module', '-m', type=str, dest='module', default='spec',
+                                help='module containing the Petri net object')
+            parser.add_option('--netvar', '-n', type=str, dest='netvar', default='net',
+                                help='variable holding the Petri net object')
+            parser.add_option('--lang', '-l', dest='backend', choices=['cython', 'python'], default='python',
+                                help='select backend')
+            parser.add_option('--opt', '-o', dest='opt', action='store_true', default=False,
+                                help='enable optimisations')
+            parser.add_option('--pfe', dest='process_flow_elimination', action='store_true', default=False,
+                                help='enable process flow elimination')
+            parser.add_option('--debug', dest='debug', action='store_true', default=False,
+                                help='show debug messages')
+            parser.add_option('--dump', dest='dump', action='store_true', default=False,
+                                help='show produced file')
+            parser.add_option('--profile', '-p', dest='profile', action='store_true', default=False,
+                                help='enable profiling')
+            parser.add_option('--Include', '-I', dest='additional_search_paths', action='append', default=[],
+                                help='add additional search paths')
+
+            # parser.add_option('-m', type=str, dest='module', default='spec',
+            #                     help='module containing the Petri net object')
+            # parser.add_option('-n', type=str, dest='netvar', default='net',
+            #                     help='variable holding the Petri net object')
+            # parser.add_option('-l', dest='backend', choices=['cython', 'python'], default='python',
+            #                     help='select backend')
+            # parser.add_option('-o', dest='opt', action='store_true', default=False,
+            #                     help='enable optimisations')
+            # parser.add_option('--pfe', dest='process_flow_elimination', action='store_true', default=False,
+            #                     help='enable process flow elimination')
+            # parser.add_option('--debug', dest='debug', action='store_true', default=False,
+            #                     help='show debug messages')
+            # parser.add_option('--dump', dest='dump', action='store_true', default=False,
+            #                     help='show produced file')
+            # parser.add_option('-p', dest='profile', action='store_true', default=False,
+            #                     help='enable profiling')
+            # parser.add_option('-I', dest='additional_search_paths', action='append', default=[],
+            #                     help='add additional search paths')
+            (options, args) = parser.parse_args()
+
+
+            config.set(debug    = options.debug,
+                       dump     = options.dump,
+                       optimise = options.opt,
+                       backend  = options.backend,
+                       profile  = options.profile,
+                       process_flow_elimination = options.process_flow_elimination,
+                       additional_search_paths  = options.additional_search_paths,
+                       trace_calls = False)
+
+            self.lang = options.backend
+            self.profile = options.profile
+            self.module_name = options.module
+            self.net_var_name = options.netvar
+
+
+
+        elif VERSION == (2,7):
+            parser = parse.ArgumentParser(name,
+                                          argument_default=parse.SUPPRESS,
+                                          formatter_class=parse.ArgumentDefaultsHelpFormatter)
+            parser.add_argument('--module', '-m', type=str, dest='module', default='spec',
+                                help='module containing the Petri net object')
+            parser.add_argument('--netvar', '-nv', type=str, dest='netvar', default='net',
+                                help='variable holding the Petri net object')
+            parser.add_argument('--lang', '-l', dest='backend', choices=['cython', 'python'], default='python',
+                                help='select backend')
+            parser.add_argument('--opt', '-o', dest='opt', action='store_true', default=False,
+                                help='enable optimisations')
+            parser.add_argument('--pfe', dest='process_flow_elimination', action='store_true', default=False,
+                                help='enable process flow elimination')
+            parser.add_argument('--debug', dest='debug', action='store_true', default=False,
+                                help='show debug messages')
+            parser.add_argument('--dump', dest='dump', action='store_true', default=False,
+                                help='show produced file')
+            parser.add_argument('--profile', '-p', dest='profile', action='store_true', default=False,
+                                help='enable profiling')
+            parser.add_argument('--Include', '-I', dest='additional_search_paths', action='append', default=[],
+                                help='add additional search paths')
+            args = parser.parse_args()
+
+            config.set(debug    = args.debug,
+                       dump     = args.dump,
+                       optimise = args.opt,
+                       backend  = args.backend,
+                       profile  = args.profile,
+                       process_flow_elimination = args.process_flow_elimination,
+                       additional_search_paths  = args.additional_search_paths,
+                       trace_calls = False)
+
+            self.lang = args.backend
+            self.profile = args.profile
+            self.module_name = args.module
+            self.net_var_name = args.netvar
 
         try:
             fp, pathname, description = imp.find_module(self.module_name)

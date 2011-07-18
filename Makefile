@@ -10,7 +10,7 @@ CLEAN_SUBDIRS = ctypes \
 		tests/benchmarks/railroad \
 		tests/basics
 
-all: ctypes asdl tests
+all: asdl tests ctypes
 
 ctypes:
 	cd $(CTYPES_DIR); $(MAKE)
