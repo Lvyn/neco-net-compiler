@@ -240,7 +240,7 @@ class Unparser:
         self.enter()
         self.dispatch(t.body)
         self.leave()
-        if t.orelse:
+        if hasattr(t, 'orelse') and t.orelse:
             self.fill("else")
             self.enter()
             self.dispatch(t.orelse)
@@ -462,7 +462,7 @@ class Unparser:
             if first:first = False
             else: self.write(", ")
             self.write("*"+t.vararg)
-        if t.kwarg:
+        if t.kwargs:
             if first:first = False
             else: self.write(", ")
             self.write("**"+t.kwarg)

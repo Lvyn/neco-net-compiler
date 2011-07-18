@@ -6,7 +6,8 @@ import neco.config as config
 import neco.core as core
 import neco.core.nettypes as coretypes
 import netir, nettypes, astutils
-from astutils import AstPrettyPrinter, to_ast
+from astutils import to_ast
+from neco.unparse import Unparser
 from utils import Env
 from neco.utils import flatten_ast
 
@@ -71,7 +72,8 @@ class Compiler(core.Compiler):
         if config.get('dump'):
             AstPrettyPrinter(file = sys.stdout).visit(module_ast)
 
-        AstPrettyPrinter(file = open("net.py", "w")).visit(module_ast)
+        f = open("net.py", "w")
+        Unparser(module_ast, f)
 
         fp, pathname, description = imp.find_module("net")
         mod = imp.load_module("net", fp, pathname, description)

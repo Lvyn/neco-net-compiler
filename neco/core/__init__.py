@@ -776,7 +776,7 @@ class SuccTGenerator(object):
             elif output.is_Flush:
                 inner = output.inner
                 if inner.is_Variable:
-                    produced_token = output.name
+                    produced_token = inner.name
                     builder.emit_FlushOut( marking_name = new_marking,
                                            place_name = output.place_name,
                                            token_expr = netir.Name(produced_token) )

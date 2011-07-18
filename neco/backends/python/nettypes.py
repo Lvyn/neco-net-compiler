@@ -96,7 +96,7 @@ class ObjectPlaceType(coretypes.ObjectPlaceType, PythonPlaceType):
 
     def add_items(self, env, multiset, marking_name):
         place_expr = self.place_expr(env, marking_name)
-        return E(place_expr).attr('add_items').call([multiset])
+        return stmt(E(place_expr).attr('add_items').call([multiset]))
 
 ################################################################################
 

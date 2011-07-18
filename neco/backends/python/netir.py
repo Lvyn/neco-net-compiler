@@ -6,7 +6,7 @@ import StringIO
 import neco.config as config
 import neco.core.netir as coreir
 from neco.core.info import *
-from astutils import Builder, E, A, stmt, to_ast, AstPrettyPrinter
+from astutils import Builder, E, A, stmt, to_ast
 from nettypes import type2str
 
 ################################################################################
