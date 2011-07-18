@@ -10,12 +10,12 @@ CLEAN_SUBDIRS = ctypes \
 		tests/benchmarks/railroad \
 		tests/basics
 
-all: asdl tests ctypes
+all: asdl tests
 
 ctypes:
 	cd $(CTYPES_DIR); $(MAKE)
 
-tests: ctypes
+tests:
 	cd $(TESTS_COMMON_DIR); $(MAKE)
 	cd $(TESTS_BASICS_DIR); $(PYTHON) gen_makefile.py
 

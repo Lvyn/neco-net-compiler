@@ -49,7 +49,7 @@ class Compiler(core.Compiler):
         env.add_declaration("from snakes.nets import *")
         env.add_declaration("import cPickle")
         env.add_declaration("import StringIO")
-        env.add_declaration("from dolev_yao import *")
+        #env.add_declaration("from dolev_yao import *")
 
         compiled_nodes = []
 
