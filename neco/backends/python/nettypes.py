@@ -1,12 +1,13 @@
 """ Python basic net types. """
 
-import ast
 from neco.utils import Factory, should_not_be_called, todo
 import neco.utils as utils
 import neco.core.nettypes as coretypes
 from neco.opt import onesafe
-from astutils import Builder, E, A, to_ast, stmt
+from astutils import Builder, E, A, stmt
 from neco.core.info import *
+
+import pyast as ast
 
 ################################################################################
 
@@ -67,22 +68,33 @@ class ObjectPlaceType(coretypes.ObjectPlaceType, PythonPlaceType):
 
     def gen_remove_token_function_call(self, env, compiled_token, marking_name, *args):
         place_expr = self.place_expr(env, marking_name)
-        return stmt( E(place_expr).attr("remove").call([compiled_token]) )
+        return stmt( ast.Call(func=ast.Attribute(value=place_expr,
+                                                 attr="remove"),
+                              args=[compiled_token]
+                              )
+                     )
 
     def gen_add_token_function_call(self, env, compiled_token, marking_name, *args):
         place_expr = self.place_expr(env, marking_name)
-        return stmt( E(place_expr).attr("add").call([compiled_token]) )
+        return stmt( ast.Call(func=ast.Attribute(value=place_expr,
+                                                 attr="add"),
+                              args=[compiled_token]) )
 
     def gen_build_token(self, env, value):
         return E(repr(value))
 
     def gen_copy(self, env, marking_name):
         place_expr = self.place_expr(env, marking_name)
-        return E(place_expr).attr("copy").call()
+        return ast.Call(func=ast.Attribute(value=place_expr,
+                                           attr="copy"
+                                           )
+                        )
 
     def gen_clear_function_call(self, env, marking_name):
         place_expr = self.place_expr(env, marking_name)
-        return stmt( E(place_expr).assign(E("multiset([])")) )
+        return stmt( ast.Assign(targets=[place_expr],
+                                value=ast.Call(func=ast.Name(id="multiset")))
+                     )
 
     def gen_not_empty_function_call(self, env, marking_name):
         return self.place_expr(env, marking_name)
@@ -92,11 +104,17 @@ class ObjectPlaceType(coretypes.ObjectPlaceType, PythonPlaceType):
 
     def add_multiset(self, env, multiset, marking_name):
         place_expr = self.place_expr(env, marking_name)
-        return stmt( E(place_expr).attr('update').call([multiset]) )
+        return stmt( ast.Call(func=ast.Attribute(name=place_expr,
+                                                 attr='update'),
+                              args=[multiset])
+                     )
 
     def add_items(self, env, multiset, marking_name):
         place_expr = self.place_expr(env, marking_name)
-        return stmt(E(place_expr).attr('add_items').call([multiset]))
+        return stmt( ast.Call(func=ast.Attribute(value=place_expr,
+                                                 attr='add_items'),
+                              args=[multiset])
+                     )
 
 ################################################################################
 
@@ -152,35 +170,41 @@ class StaticMarkingType(coretypes.MarkingType):
         return E("Marking()")
 
     def _gen_init(self, env):
-        builder = Builder()
-        builder.begin_FunctionDef( name = '__init__',
-                                   args = A('self').param('alloc', default = 'True') )
+        function = ast.FunctionDef(name='__init__',
+                                   args=A('self').param('alloc', default='True').ast())
 
-        builder.begin_If( test = E('alloc') )
+        if_block = ast.If(test=ast.Name(id='alloc'))
+
         for name, place_type in self.place_types.iteritems():
-            builder.emit( E('self').attr( self.id_provider.get(name) ).assign( place_type.gen_new_place(env) ) )
-        builder.end_If()
-
-        builder.end_FunctionDef()
-        return to_ast(builder)
+            if_block.body.append( ast.Assign(targets=[ast.Attribute(value=ast.Name(id='self'),
+                                                                    attr=self.id_provider.get(name))],
+                                             value=place_type.gen_new_place(env)) )
+        function.body = if_block
+        return function
 
     def _gen_copy(self, env):
-        builder = Builder()
-        builder.begin_FunctionDef( name = 'copy',
-                                   args = A('self').param('alloc', default = 'True') )
+        function = ast.FunctionDef(name='copy',
+                                   args=A('self').param('alloc', default='True').ast())
 
-        builder.emit( E('m = Marking(False)') )
+        tmp = [ast.Assign(targets=[ast.Name(id='m')],
+                          value=ast.Call(func=ast.Name(id='Marking'),
+                                         args=[ast.Name(id='False')])
+                          )
+               ]
         for name, place_type in self.place_types.iteritems():
-            builder.emit( E('m').attr(self.id_provider.get(name)).assign(place_type.gen_copy(env, marking_name = 'self')) )
-        builder.emit_Return(E('m'))
-        builder.end_FunctionDef()
-        return to_ast(builder)
+            tmp.append( ast.Assign(targets=[ast.Attribute(value=ast.Name(id='m'),
+                                                          attr=self.id_provider.get(name))],
+                                   value=place_type.gen_copy(env, marking_name = 'self')
+                                   )
+                        )
+        tmp.append(ast.Return(ast.Name(id='m')))
+        function.body = tmp
+        return function
 
     def _gen_eq(self, env):
-        builder = Builder()
         other = 'other'
-        builder.begin_FunctionDef( name = '__eq__', args = A("self").param(other) )
-
+        function = ast.FunctionDef(name='__eq__',
+                                   args=A('self').param(other).ast())
         return_str = "return ("
         for i, (name, place_type) in enumerate(self.place_types.iteritems()):
             id_name = self.id_provider.get(name)
@@ -189,14 +213,12 @@ class StaticMarkingType(coretypes.MarkingType):
             return_str += "(self.%s == %s.%s)" % (id_name, other, id_name)
         return_str += ")"
 
-        builder.emit( E(return_str) )
-        builder.end_FunctionDef()
-        return to_ast(builder)
+        function.body = [ E(return_str) ]
+        return function
 
     def _gen_hash(self, env):
         builder = Builder()
-        builder.begin_FunctionDef( name = '__hash__', args = A("self") )
-
+        builder.begin_FunctionDef( name = '__hash__', args = A("self").ast() )
         builder.emit( E('h = 0') )
 
         for name, place_type in self.place_types.iteritems():
@@ -205,7 +227,7 @@ class StaticMarkingType(coretypes.MarkingType):
 
         builder.emit_Return(E("h"))
         builder.end_FunctionDef()
-        return to_ast(builder)
+        return builder.ast()
 
     def gen_free_marking_function_call(self, env, marking_name, *args):
         pass
@@ -215,33 +237,41 @@ class StaticMarkingType(coretypes.MarkingType):
         items.sort(lambda (n1, t1), (n2, t2) : cmp(n1, n2))
 
         builder = Builder()
-        builder.begin_FunctionDef( name = "__repr__", args = A("self") )
+        builder.begin_FunctionDef( name = "__repr__", args = A("self").ast() )
 
         builder.emit( E('s = "hdict({"') )
         for (i, (place_name, place_type)) in enumerate(items):
             tmp = ',\n ' if i > 0 else ''
-            builder.emit( E('s').add_assign( E(ast.Str(s = tmp + "'" + place_name + "' : ")).add(E('repr(self.' + self.id_provider.get(place_name) + ')'))) )
+            builder.emit(ast.AugAssign(target=ast.Name(id='s'),
+                                       op=ast.Add(),
+                                       value=ast.BinOp(left=ast.Str(s = tmp + "'" + place_name + "' : "),
+                                                       op=ast.Add(),
+                                                       right=E('repr(self.' + self.id_provider.get(place_name) + ')')
+                                                       )
+                                       )
+                         )
         builder.emit( E('s += "})"') )
         builder.emit_Return(E('s'))
 
         builder.end_FunctionDef()
-        return to_ast(builder)
+        return builder.ast()
 
     def gen_api(self, env):
-        builder = Builder.ClassDef(name  = 'Marking',
-                                   bases = [ E("object") ])
-        builder.add_method(self._gen_init(env))
-        builder.add_method(self._gen_repr(env))
-        builder.add_method(self._gen_eq(env))
-        builder.add_method(self._gen_hash(env))
-        builder.add_method(self._gen_copy(env))
-        return to_ast(builder)
+        cls = ast.ClassDef('Marking', bases=[ast.Name(id='object')])
+        cls.body = [self._gen_init(env),
+                    self._gen_repr(env),
+                    self._gen_eq(env),
+                    self._gen_hash(env),
+                    self._gen_copy(env)]
+        return cls
 
     def gen_copy_marking_function_call(self, env, marking_name, *args):
-        return E(marking_name).attr('copy').call()
+        return ast.Call(func=ast.Attribute(value=ast.Name(id=marking_name),
+                                           attr='copy'))
 
     def gen_get_place(self, env, marking_name, place_name, mutable):
-        return E(marking_name).attr(self.id_provider.get(place_name))
+        return ast.Attribute(value=ast.Name(id=marking_name),
+                             attr=self.id_provider.get(place_name))
 
     def gen_remove_token_function_call(self, env, token, marking_name, place_name, *args):
         place_type = self.get_place_type_by_name(place_name)
@@ -298,10 +328,14 @@ class MarkingSetType(coretypes.MarkingSetType):
         pass
 
     def gen_new_marking_set(self, env):
-        return E('set').call()
+        return ast.Call(func=ast.Name(id='set'))
 
     def gen_add_marking_function_call(self, env, markingset_name, marking_name):
-        return stmt(E(markingset_name).attr('add').call([E(marking_name)]))
+        return stmt(ast.Call(func=ast.Attribute(value=ast.Name(id=markingset_name),
+                                                attr='add'),
+                             args=[E(marking_name)]
+                             )
+                    )
 
 ################################################################################
 # opt
@@ -319,7 +353,7 @@ class OneSafePlaceType(onesafe.OneSafePlaceType, PythonPlaceType):
                                           token_type = TypeInfo.AnyType)
 
     def gen_new_place(self, env):
-        return E("None")
+        return ast.Name(id="None")
 
     @property
     def token_type(self):
@@ -330,7 +364,8 @@ class OneSafePlaceType(onesafe.OneSafePlaceType, PythonPlaceType):
 
     def gen_remove_token_function_call(self, env, compiled_token, marking_name, *args):
         place_expr = self.place_expr(env, marking_name)
-        return E(place_expr).assign(E('None'))
+        return ast.Assign(targets=[place_expr],
+                          value=ast.Name(id='None'))
 
     def gen_add_token_function_call(self, env, compiled_token, marking_name, *args):
         place_expr = self.place_expr(env, marking_name)
@@ -342,7 +377,10 @@ class OneSafePlaceType(onesafe.OneSafePlaceType, PythonPlaceType):
     def gen_copy(self, env, marking_name):
         env.add_import('copy')
         place_expr = self.place_expr(env, marking_name)
-        return E('copy.deepcopy').call([place_expr])
+        return ast.Call(func=ast.Attribute(value=ast.Name(id='copy'),
+                                           attr='deepcopy'),
+                        args=[place_expr])
+        #E('copy.deepcopy').call([place_expr])
 
 ################################################################################
 
@@ -366,11 +404,12 @@ class BTPlaceType(onesafe.BTPlaceType, PythonPlaceType):
                                      token_type = TypeInfo.Int)
 
     def gen_new_place(self, env):
-        return E('0')
+        return ast.Num(n=0)
 
     def gen_iterable(self, env, marking_name):
         place_expr = self.place_expr(env, marking_name)
-        return E('xrange').call([E('0'), place_expr])
+        return ast.Call(func=ast.Name('xrange'),
+                        args=[ast.Num(n=0), place_expr])
 
     def gen_remove_token_function_call( self, env, compiled_token, marking_name, *args):
         place_expr = self.place_expr(env, marking_name)
@@ -408,11 +447,13 @@ class BTOneSafePlaceType(onesafe.BTOneSafePlaceType, PythonPlaceType):
 
     def gen_remove_token_function_call( self, env, compiled_token, marking_name, *args):
         place_expr = self.place_expr(env, marking_name)
-        return E(place_expr).assign(E('True'))
+        return ast.Assign(targets=[place_expr],
+                          value=ast.Name(id='True'))
 
     def gen_add_token_function_call(self, env, compiled_token, marking_name, *args):
         place_expr = self.place_expr(env, marking_name)
-        return E(place_expr).assign(E('False'))
+        return ast.Assign(targets=[place_expr],
+                          value=ast.Name(id='False'))
 
     def gen_copy(self, env, marking_name):
         return self.place_expr(env, marking_name)

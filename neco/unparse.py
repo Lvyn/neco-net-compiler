@@ -462,7 +462,7 @@ class Unparser:
             if first:first = False
             else: self.write(", ")
             self.write("*"+t.vararg)
-        if t.kwargs:
+        if t.kwarg:
             if first:first = False
             else: self.write(", ")
             self.write("**"+t.kwarg)

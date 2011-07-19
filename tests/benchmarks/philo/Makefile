@@ -112,7 +112,7 @@ bench_helena: clean
 prof: clean
 	@$(INITIALIZE) ;\
         $(PYTHON) mkphilo.py -t pnml -c $(COUNT) > "model.pnml" ;\
-	$(PYTHON) $(TESTRUNNER) --backend $(LANG) $(_OPTS) -I$(COMMON) --profile | less
+	$(PYTHON) $(TESTRUNNER) -l $(LANG) $(_OPTS) -I$(COMMON) --profile
 
 helena:
 	@$(INITIALIZE) ;\

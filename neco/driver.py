@@ -213,10 +213,11 @@ class Driver(object):
 
     def run_profile(self):
         print "profiling"
-        self.compile()
-        cProfile.run('driver.Driver._instance_.explore()', 'profile.stats')
-        s = pstats.Stats("profile.stats")
-        s.strip_dirs().sort_stats("time").print_stats()
+        import cProfile
+        cProfile.run('driver.Driver._instance_.compile()', 'profile.prof')
+        #cProfile.run('driver.Driver._instance_.explore()', 'profile.stats')
+        #s = pstats.Stats("profile.stats")
+        #s.strip_dirs().sort_stats("time").print_stats()
 
     def compile(self):
         files = ["net.so", "net.pyx", "net.c", "net.py", "net.pyc", "net.pyo"]

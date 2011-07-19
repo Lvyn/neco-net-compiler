@@ -21,7 +21,6 @@ class CompilerVisitor(object):
     def compile(self, node):
         """compile a node."""
         method = 'compile_' + node.__class__.__name__
-        debug_print("compiling: " + node.__class__.__name__)
         compiler = getattr(self, method, self.cannot_compile)
         return compiler(node)
 
@@ -35,9 +34,67 @@ class CompilerVisitor(object):
         raise CannotCompile(self.backend + " backend cannot compile %s" % node.__class__.__name__)
 
 
+def begin_block(self, node):
+    """ Begin a new block.
+
+    @param: ast block node
+    @type: C{Node}
+    """
+    self._current_scope.append(node)
+    self._parents.append( (self._current, self._current_scope) )
+    self._current = node
+    self._current_scope = node.body
+
+def expr(self, expr_node):
+    """ Get an expression.
+    """
+    return expr_node
+
+def begin_base_block(self, node):
+    """ Begin a base block.
+
+    Begins a base block, a function for instance.
+
+    @param node: ast node class
+    @type node: C{Node}
+    """
+    self._current = node
+    self._current_scope = node.body
+
+def emit(self, stmt_node):
+    """ Add a statement.
+
+    Adds a statements to current node.
+
+    @param stmt_node: ast statement node
+    @type stmt_node: C{Stmt}
+    """
+    self._current_scope.append(stmt_node)
+
+def __caller__(function, cls):
+    def f(self, *args, **kw):
+        return function(self, cls(*args, **kw))
+    return f
+
+def begin_base_block(self, node):
+    """ Begin a base block.
+
+    Begins a base block, a function for instance.
+
+    @param node: ast node class
+    @type node: C{Node}
+    """
+    self._current = node
+    self._current_scope = node.body
+
 class BuilderBase(object):
     """ Utility class for building AST
     """
+
+    begin_block=begin_block
+    begin_base_block=begin_base_block
+    emit=emit
+    expr=expr
 
     class ast_builder(object):
         """
@@ -54,15 +111,6 @@ class BuilderBase(object):
         def ast(self):
             return self._node
 
-    class __Caller__(object):
-        def __init__(self, cls, builder, method):
-            self.cls = cls
-            self.builder = builder
-            self.method = method
-
-        def __call__(self, factory, *args, **kw):
-            return self.method(self.builder, self.cls(*args, **kw) )
-
     def __init__(self):
         """ Build a builder. """
         self._parents = []
@@ -70,6 +118,7 @@ class BuilderBase(object):
         self._current = None
         self._current_scope = None
 
+    @classmethod
     def register_block_node(self, cls):
         """ registers a new block node.
 
@@ -78,12 +127,11 @@ class BuilderBase(object):
         @param cls: ast block class
         @type cls: C{Block}
         """
-        method = types.MethodType(self.__Caller__(cls, self, BuilderBase.begin_block),
-                                  self,
-                                  BuilderBase)
+        method = __caller__(begin_block, cls)
         method_name = "begin_%s" % cls.__name__
         setattr(self, method_name, method)
 
+    @classmethod
     def register_emit_node(self, cls):
         """ registers a new statatement node.
 
@@ -92,12 +140,11 @@ class BuilderBase(object):
         @param cls: ast stmt class
         @type cls: C{Stmt}
         """
-        method = types.MethodType(self.__Caller__(cls, self, BuilderBase.emit),
-                                  self,
-                                  BuilderBase)
+        method = __caller__(emit, cls)
         method_name = "emit_%s" % cls.__name__
         setattr(self, method_name, method)
 
+    @classmethod
     def register_expr_node(self, cls):
         """ registers a new expression node.
 
@@ -105,9 +152,7 @@ class BuilderBase(object):
         @param cls: ast stmt class
         @type cls: C{Expr}
         """
-        method = types.MethodType(self.__Caller__(cls, self, BuilderBase.expr),
-                                  self,
-                                  BuilderBase)
+        method = __caller__(expr, cls)
         method_name = "%s" % cls.__name__
         setattr(self, method_name, method)
 
@@ -120,27 +165,6 @@ class BuilderBase(object):
         assert (self._current == None)
         return self._nodes
 
-    def begin_base_block(self, node):
-        """ Begin a base block.
-
-        Begins a base block, a function for instance.
-
-        @param node: ast node class
-        @type node: C{Node}
-        """
-        self._current = node
-        self._current_scope = node.body
-
-    def begin_block(self, node):
-        """ Begin a new block.
-
-        @param: ast block node
-        @type: C{Node}
-        """
-        self._current_scope.append(node)
-        self._parents.append( (self._current, self._current_scope) )
-        self._current = node
-        self._current_scope = node.body
 
     def end_block(self):
         """ End a block. """
@@ -166,46 +190,25 @@ class BuilderBase(object):
             self._current = node
             self._current_scope = current_scope
 
-    def emit(self, stmt_node):
-        """ Add a statement.
 
-        Adds a statements to current node.
+def begin_function(self, node):
+    assert (self._current == None)
+    assert (isinstance(node, FunctionDef))
+    if getattr(node, "body", None) == None:
+        node.body = []
 
-        @param stmt_node: ast statement node
-        @type stmt_node: C{Stmt}
-        """
-        # assert (isinstance(self._current, Block) or
-        #         isinstance(self._current, FunctionDef))
-        self._current_scope.append(stmt_node)
-
-    def expr(self, expr_node):
-        """ Get an expression.
-        """
-        return expr_node
-
+    self._current_function = node
+    self._current = node
+    self._current_scope = node.body
 
 class Builder(BuilderBase):
     """ utility class for building the AST
     """
+
     def __init__(self):
         BuilderBase.__init__(self)
 
-        for name, cls in inspect.getmembers(netir_gen, inspect.isclass):
-            if issubclass(cls, FunctionDef) and cls != FunctionDef:
-                self.register_function_node(cls)
-
-        for name, cls in inspect.getmembers(netir_gen, inspect.isclass):
-            if issubclass(cls, Stmt) and cls != Stmt:
-                self.register_emit_node(cls)
-
-        for name, cls in inspect.getmembers(netir_gen, inspect.isclass):
-            if issubclass(cls, Block) and cls != Block:
-                self.register_block_node(cls)
-
-        for name, cls in inspect.getmembers(netir_gen, inspect.isclass):
-            if issubclass(cls, Expr) and cls != Block:
-                self.register_expr_node(cls)
-
+    @classmethod
     def register_function_node(self, cls):
         """ Register a new function node class.
 
@@ -214,21 +217,9 @@ class Builder(BuilderBase):
         @param cls: ast function node class
         @type cls: C{FunctionDef}
         """
-        method = types.MethodType(self.__Caller__(cls, self, Builder.begin_function),
-                                  self,
-                                  Builder)
+        method = __caller__(begin_function, cls)
         method_name = "begin_function_%s" % cls.__name__
         setattr(self, method_name, method)
-
-    def begin_function(self, node):
-        assert (self._current == None)
-        assert (isinstance(node, FunctionDef))
-        if getattr(node, "body", None) == None:
-            node.body = []
-
-        self._current_function = node
-        self._current = node
-        self._current_scope = node.body
 
     def end_function(self):
         assert (isinstance(self._current, FunctionDef))
@@ -242,3 +233,19 @@ class Builder(BuilderBase):
 
     def begin_Else(self, *args, **kwargs):
         self._current_scope = self._current.orelse
+
+for name, cls in inspect.getmembers(netir_gen, inspect.isclass):
+    if issubclass(cls, FunctionDef) and cls != FunctionDef:
+        Builder.register_function_node(cls)
+
+for name, cls in inspect.getmembers(netir_gen, inspect.isclass):
+    if issubclass(cls, Block) and cls != Block:
+        Builder.register_block_node(cls)
+
+for name, cls in inspect.getmembers(netir_gen, inspect.isclass):
+    if issubclass(cls, Stmt) and cls != Stmt:
+        Builder.register_emit_node(cls)
+
+for name, cls in inspect.getmembers(netir_gen, inspect.isclass):
+    if issubclass(cls, Expr) and cls != Block:
+        Builder.register_expr_node(cls)

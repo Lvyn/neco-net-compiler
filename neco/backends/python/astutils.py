@@ -30,56 +30,12 @@ def extract_expr(node):
 def _extract_expr(node):
     return extract_python_expr(ast.AST, node)
 
-class _to_ast_transformer(ast.NodeTransformer):
-    def visit(self, node):
-        if hasattr(node, '__ast__'):
-            node = to_ast(node)
-        elif hasattr(node, 'body'):
-            node.body = to_ast(node.body)
-        return self.generic_visit(node)
-
-def to_ast(node):
-    """ Transform a builder or a builder helper into a cython ast.
-    """
-    if hasattr(node, '__ast__'):
-        return node.__ast__()
-    elif isinstance(node, list):
-        return [ to_ast(n) for n in node ]
-    elif isinstance(node, tuple):
-        return tuple([ to_ast(n) for n in node ])
-    elif isinstance(node, ast.AST):
-        return _to_ast_transformer().visit(node)
-    else:
-        return node
-
 def stmt(node):
     """ Transform a builder or a builder helper into a cython statement (ast).
     """
-    if hasattr(node, '__ast__'):
-        node = to_ast( node )
     return ast.Expr( node )
 
-def args_to_ast( d, keys ):
-    for key in keys:
-        if d.has_key(key):
-            d[key] = to_ast(d[key])
-    return d
-
 ################################################################################
-
-def E(arg):
-    """ Extraction helper.
-
-    Extracts an ast from an expression or a statement.
-
-    @param arg: object to extract from.
-    @return: builder helper.
-    @rtype: C{Builder.helper}
-    """
-    if isinstance(arg, Builder.helper):
-        return arg
-    return Builder.Helper(arg)
-
 
 def A(param = None):
     """ Argument construction helper.
@@ -96,7 +52,7 @@ def A(param = None):
 
 ################################################################################
 
-def E(arg):
+def E(str_expr):
     """ Extraction helper.
 
     Extracts an ast from an expression or a statement.
@@ -105,34 +61,31 @@ def E(arg):
     @return: builder helper.
     @rtype: C{Builder.helper}
     """
-    if isinstance(arg, Builder.helper):
-        return arg
-    return Builder.Helper(arg)
+    return _extract_expr(str_expr)
 
 ################################################################################
 
 def _aug_assign(operator):
     def fun(self, value):
-        self.node = ast.AugAssign(target = to_ast(self.node),
+        self.node = ast.AugAssign(target = self.node,
                                   op     = operator,
-                                  value  = to_ast(value));
+                                  value  = value);
         return self
     return fun
-
 def _bin_op(operator):
     def fun(self, right):
-        right = to_ast(right)
-        self.node = ast.BinOp(left  = to_ast(self.node),
+        right = right
+        self.node = ast.BinOp(left  = self.node,
                               op    = operator,
-                              right = to_ast(right))
+                              right = right)
         return self
     return fun
 
 def _compare2(op):
     def fun(self, other):
-        self.node = ast.Compare(left  = to_ast(self.node),
+        self.node = ast.Compare(left  = self.node,
                                 ops   = [ op ],
-                                comparators = [ to_ast(other) ])
+                                comparators = [ other ])
         return self
     return fun
 
@@ -151,35 +104,35 @@ class Builder(coreir.BuilderBase):
 
         @body.setter
         def body(self, e):
-            self.node.body = to_ast(e)
+            self.node.body = e
 
         def call(self, args = []):
-            self.node = ast.Call( func = to_ast(self.node),
-                                  args = to_ast(args),
+            self.node = ast.Call( func = self.node,
+                                  args = args,
                                   keywords = [],
                                   starargs = None,
                                   kwargs = None )
             return self
 
         def args(self, args):
-            self.node.args = to_ast(args)
+            self.node.args = args
             return self
 
         def subscript(self, index=None):
-            self.node = ast.Subscript(value = to_ast(self.node), slice = ast.Index(to_ast(E(index))))
+            self.node = ast.Subscript(value = self.node, slice = ast.Index(index))
             return self
 
         def attr(self, attribute):
             assert( isinstance(attribute, str) )
-            self.node = ast.Attribute(value = to_ast(self.node), attr = attribute)
+            self.node = ast.Attribute(value = self.node, attr = attribute)
             return self
 
         def assign(self, value):
-            self.node = ast.Assign(targets = [ to_ast(self.node) ], value = to_ast(E(value)));
+            self.node = ast.Assign(targets = [ self.node ], value = E(value));
             return self
 
         def init(self, value):
-            self.node.init = to_ast(value)
+            self.node.init = value
             return self
 
         sub_assign = _aug_assign(ast.Sub())
@@ -207,14 +160,14 @@ class Builder(coreir.BuilderBase):
 
     @classmethod
     def FunctionDef(cls, *args, **kwargs):
-        args_to_ast(kwargs, ast.FunctionDef._fields)
+        #args_to_ast(kwargs, ast.FunctionDef._fields)
         check_arg(kwargs, "args", ast.arguments( args = [], vararg = None, kwargs = None, defaults = [] ))
-        return check_attrs(ast.FunctionDef( *(to_ast(args)), **kwargs ), body = [], decorator_list = [])
+        return check_attrs(ast.FunctionDef( *args, **kwargs ), body = [], decorator_list = [])
 
     @classmethod
     def If(self, *args, **kwargs):
-        args_to_ast(kwargs, ast.If._fields)
-        return check_attrs(ast.If( *(to_ast(args)), **kwargs ), body = [], orelse = [])
+        #args_to_ast(kwargs, ast.If._fields)
+        return check_attrs(ast.If( *args, **kwargs ), body = [], orelse = [])
 
     def begin_FunctionDef(self, *args, **kwargs):
         node = self.FunctionDef(*args, **kwargs)
@@ -232,10 +185,10 @@ class Builder(coreir.BuilderBase):
         self.end_base_block()
 
     def emit(self, e):
-        super(Builder, self).emit(to_ast(e))
+        super(Builder, self).emit(e)
 
     def emit_Return(self, value):
-        self.emit( ast.Return( to_ast(E(value)) ) )
+        self.emit( ast.Return( value ) )
 
     def emit_DebugMessage(self, msg):
         self.emit( ast.DebugMessage( message = msg) )
@@ -243,13 +196,16 @@ class Builder(coreir.BuilderBase):
 
     class arguments_helper(object):
         def __init__(self):
-            self.node = ast.arguments(args = [], vararg = None, kwargs = None, defaults = [])
+            self.node = ast.arguments(args = [], vararg = None, kwarg = None, defaults = [])
 
         def param(self, name, default = None):
-            self.node.args.append( to_ast(E(name)) )
+            self.node.args.append( ast.Name(id=name) )
             if default != None:
-                self.node.defaults.append( to_ast(E(default)) )
+                self.node.defaults.append( E(default) )
             return self
+
+        def ast(self):
+            return self.node
 
         def __ast__(self):
             return self.node
@@ -260,17 +216,17 @@ class Builder(coreir.BuilderBase):
 
     class class_def_helper(object):
         def __init__(self, name, bases, body = []):
-            self.node = ast.ClassDef(name  = to_ast(name),
-                                     bases = to_ast(bases),
-                                     body = to_ast(body))
+            self.node = ast.ClassDef(name  = name,
+                                     bases = bases,
+                                     body = body)
 
         def add_method(self, method):
-            self.node.body.append(to_ast(method))
+            self.node.body.append(method)
 
         def add_decl(self, decl):
-            self.node.decl.append(to_ast(decl))
+            self.node.decl.append(decl)
 
-        def __ast__(self):
+        def ast(self):
             return self.node
 
     @classmethod
@@ -279,12 +235,12 @@ class Builder(coreir.BuilderBase):
 
     @classmethod
     def For(cls, *args, **kwargs):
-        args_to_ast(kwargs, ast.For._fields)
+        #args_to_ast(kwargs, ast.For._fields)
         return check_attrs(ast.For(*args, **kwargs), body = [], or_else = [])
 
     @classmethod
     def Compare(self, left, ops, comparators):
-        return E( ast.Compare(left = to_ast(left), ops = to_ast(ops), comparators = to_ast(comparators)) )
+        return E( ast.Compare(left = left, ops = ops, comparators = comparators) )
 
     @classmethod
     def Eq(self):
@@ -293,11 +249,11 @@ class Builder(coreir.BuilderBase):
 
     @classmethod
     def Not(self, node):
-        return ast.UnaryOp(op = ast.Not(), operand = to_ast(node))
+        return ast.UnaryOp(op = ast.Not(), operand = node)
 
     @classmethod
     def Tuple(self, elts):
-        return E( ast.Tuple( elts = to_ast(elts) ) )
+        return ast.Tuple(elts = elts)
 
     def __ast__(self):
         return super(Builder, self).ast()

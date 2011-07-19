@@ -4,7 +4,7 @@ import ast
 import astutils
 import neco.core.netir as coreir
 import inspect, types
-from astutils import to_ast, E
+from astutils import E
 
 ################################################################################
 
@@ -38,7 +38,7 @@ class Env(object):
     def gen_imports(self):
         nodes = []
         for decl in self._declarations:
-            stmt = to_ast(E(decl))
+            stmt = E(decl)
             nodes.append( stmt )
 
         for module in self._imports:

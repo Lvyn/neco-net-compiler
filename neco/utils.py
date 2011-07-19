@@ -75,15 +75,15 @@ class _flatten_ast(ast.NodeTransformer):
     []
 
     """
-    def generic_visit(self, node):
-        if isinstance(node, list):
-            # flatten lists
-            new_node = flatten_lists(node)
-            # flatten childs
-            new_node = [ self.visit(elt) for elt in new_node ]
-            return new_node
+    def visit_list(self, node):
+        # flatten lists
+        new_node = flatten_lists(node)
+        # flatten childs
+        new_node = [ self.visit(elt) for elt in new_node ]
+        return new_node
 
-        elif isinstance(node, ast.AST):
+    def generic_visit(self, node):
+        if isinstance(node, ast.AST):
             for field, old_value in ast.iter_fields(node):
                 old_value = getattr(node, field, None)
                 setattr(node, field, self.visit(old_value))

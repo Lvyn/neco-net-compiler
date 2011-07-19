@@ -6,7 +6,6 @@ import neco.config as config
 import neco.core as core
 import neco.core.nettypes as coretypes
 import netir, nettypes, astutils
-from astutils import to_ast
 from neco.unparse import Unparser
 from utils import Env
 from neco.utils import flatten_ast
@@ -56,18 +55,15 @@ class Compiler(core.Compiler):
 
         compiled_nodes.append(self.marking_type.gen_api(env))
         compiler = netir.CompilerVisitor(env)
-
         for node in self.successor_function_nodes:
             compiled_nodes.append(compiler.compile(node))
-
         for node in self.process_successor_function_nodes:
             compiled_nodes.append(compiler.compile(node))
-
         compiled_nodes.append(compiler.compile(self.init_function_node))
         compiled_nodes.append(compiler.compile(self.main_successor_function_node))
-
         compiled_nodes = env.gen_imports() + compiled_nodes
-        module_ast = flatten_ast(ast.Module(body = compiled_nodes))
+        #module_ast = flatten_ast(ast.Module(body = compiled_nodes))
+        module_ast = ast.Module(body = compiled_nodes)
         module_ast = ast.fix_missing_locations(module_ast)
         if config.get('dump'):
             AstPrettyPrinter(file = sys.stdout).visit(module_ast)

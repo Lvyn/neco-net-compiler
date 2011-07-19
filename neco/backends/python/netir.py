@@ -1,13 +1,14 @@
 """ Python ast compiler. """
 
-import ast
 import cPickle as cPickle
 import StringIO
 import neco.config as config
 import neco.core.netir as coreir
 from neco.core.info import *
-from astutils import Builder, E, A, stmt, to_ast
+from astutils import E, A, stmt
 from nettypes import type2str
+
+import pyast as ast
 
 ################################################################################
 
@@ -25,28 +26,28 @@ class CompilerVisitor(coreir.CompilerVisitor):
                          nl = True)
 
     def compile(self, node):
-        return to_ast(super(CompilerVisitor, self).compile(node))
+        return super(CompilerVisitor, self).compile(node)
 
     def compile_Comment(self, node):
         return []
 
     def compile_If(self, node):
-        return Builder.If( test = self.compile(node.condition),
-                           body = [ self.compile(node.body) ],
-                           orelse = [ self.compile(node.orelse) ] )
+        return ast.If( test = self.compile(node.condition),
+                       body = self.compile(node.body),
+                       orelse = self.compile(node.orelse) )
 
     def compile_Compare(self, node):
-        return Builder.Compare( left = self.compile(node.left),
+        return ast.Compare( left = self.compile(node.left),
                                 ops = [ self.compile(op) for op in node.ops ],
                                 comparators = [ self.compile(comparator) for comparator in node.comparators ] )
 
     def compile_EQ(self, node):
-        return Builder.Eq()
+        return ast.Eq()
 
     def compile_CheckTuple(self, node):
         tuple_info = node.tuple_info
         test = E( "isinstance(" + node.tuple_name +  ", tuple) and len(" + node.tuple_name + ") == " + repr(len(tuple_info)) )
-        return Builder.If( test = test, body = self.compile(node.body) )
+        return ast.If( test = test, body = self.compile(node.body) )
 
     def compile_CheckType(self, node):
         type_info = node.type
@@ -54,16 +55,21 @@ class CompilerVisitor(coreir.CompilerVisitor):
             return self.compile(node.body)
 
         test = E("isinstance(" + node.variable.name + ", " + type2str(node.type) + ")")
-        return Builder.If( test = test, body = self.compile(node.body) )
+        return ast.If( test = test, body = self.compile(node.body) )
 
     def compile_Match(self, node):
         tuple_info = node.tuple_info
         seq = []
-        seq.append( E(Builder.Tuple([ E(name) for name in tuple_info.base() ])).assign(E(tuple_info.name)) )
+        seq.append( ast.Assign(targets=[ast.Tuple(elts=[ ast.Name(id=n) for n in tuple_info.base() ])],
+                               value=ast.Name(id=tuple_info.name)) )
         cur = None
         for component in tuple_info.components:
             if component.is_Value:
-                n = Builder.If( test = E(component.name).Eq(E(repr(component.raw))) )
+                n = ast.If(test=ast.Compare(left=ast.Name(id=component.name),
+                                            ops=[ast.Eq()],
+                                            comparators=[E(repr(component.raw))]
+                                            )
+                           )
                 if cur == None:
                     cur = n
                     seq.append(n)
@@ -78,9 +84,9 @@ class CompilerVisitor(coreir.CompilerVisitor):
 
         return seq
 
-
     def compile_Assign(self, node):
-        return E(node.variable.name).assign(self.compile(node.expr))
+        return ast.Assign(targets=[ast.Name(id=node.variable.name)],
+                          value=self.compile(node.expr))
 
     def compile_Value(self, node):
         place_type = self.env.marking_type.get_place_type_by_name(node.place_name)
@@ -95,7 +101,8 @@ class CompilerVisitor(coreir.CompilerVisitor):
     def compile_FlushIn(self, node):
         destination_place = self.env.marking_type.get_place_type_by_name(node.place_name)
         place_expr = destination_place.place_expr(self.env, node.marking_name)
-        return [ E(node.token_name).assign(place_expr),
+        return [ ast.Assign(targets=[ast.Name(id=node.token_name)],
+                            value=place_expr),
                  destination_place.gen_clear_function_call(self.env, node.marking_name) ]
 
     def compile_FlushOut(self, node):
@@ -121,7 +128,7 @@ class CompilerVisitor(coreir.CompilerVisitor):
             else:
                 raise NotImplementedError, info.component.__class__
 
-        return Builder.Tuple(elts)
+        return ast.Tuple(elts)
 
     def compile_TupleOut(self, node):
         tuple_info = node.tuple_info
@@ -137,7 +144,7 @@ class CompilerVisitor(coreir.CompilerVisitor):
                                                                   place_name = node.place_name )
 
     def compile_TokenEnumeration(self, node):
-        return Builder.For( target = E(node.token_name),
+        return ast.For( target = E(node.token_name),
                             iter = self.env.marking_type.gen_iterable_place( env = self.env,
                                                                              marking_name = node.marking_name,
                                                                              place_name = node.place_name),
@@ -166,7 +173,7 @@ class CompilerVisitor(coreir.CompilerVisitor):
             # gen: i = 0
             pred = E(offset).assign(E('0'))
             # gen: for x in s1
-            child = Builder.For( target = E(name),
+            child = ast.For( target = E(name),
                                  iter = self.env.marking_type.gen_iterable_place( env = self.env,
                                                                                   marking_name = node.marking_name,
                                                                                   place_name = node.place_name) )
@@ -189,7 +196,7 @@ class CompilerVisitor(coreir.CompilerVisitor):
             current = None
             base = None
             for offset2 in offs:
-                n = Builder.If( test = E(offset).NotEq(E(offset2)) )
+                n = ast.If( test = E(offset).NotEq(E(offset2)) )
                 if not base:
                     base = n
                 if current:
@@ -202,7 +209,7 @@ class CompilerVisitor(coreir.CompilerVisitor):
         return base
 
     def compile_GuardCheck(self, node):
-        return Builder.If( test = self.compile(node.condition),
+        return ast.If( test = self.compile(node.condition),
                            body = self.compile(node.body) )
 
     def compile_PyExpr(self, node):
@@ -216,7 +223,8 @@ class CompilerVisitor(coreir.CompilerVisitor):
         return E(node.function_name).call([ self.compile(arg) for arg in node.arguments ])
 
     def compile_ProcedureCall(self, node):
-        return stmt( E(node.function_name).call([ self.compile(arg) for arg in node.arguments ]) )
+        return stmt( ast.Call(func=ast.Name(id=node.function_name),
+                              args=[ self.compile(arg) for arg in node.arguments ]) )
 
     def compile_MarkingCopy(self, node):
         nodes = []
@@ -230,9 +238,15 @@ class CompilerVisitor(coreir.CompilerVisitor):
             dst_place_expr = place_type.place_expr(self.env, marking_name = node.dst_name)
             src_place_expr = place_type.place_expr(self.env, marking_name = node.src_name)
             if names.has_key( place ):
-                nodes.append( E(dst_place_expr).assign(place_type.gen_copy(self.env, node.src_name)) )
+                nodes.append( ast.Assign(targets=[dst_place_expr],
+                                         value=place_type.gen_copy(self.env, node.src_name)
+                                         )
+                              )
             else:
-                nodes.append( E(dst_place_expr).assign(src_place_expr) )
+                nodes.append( ast.Assign(targets=[dst_place_expr],
+                                         value=src_place_expr
+                                         )
+                              )
         return nodes
 
     def compile_AddMarking(self, node):
@@ -266,36 +280,38 @@ class CompilerVisitor(coreir.CompilerVisitor):
     def compile_SuccT(self, node):
         stmts = [ self.compile( node.body ),
                   E('return ' + node.markingset_name) ]
-        return Builder.FunctionDef(name = node.function_name,
-                                   args = A(node.markingset_name).param(node.marking_name),
-                                   body = stmts)
+        return ast.FunctionDef(name = node.function_name,
+                               args = ast.arguments(args=[ast.Name(id=node.markingset_name), ast.Name(id=node.marking_name)]),
+                               body = stmts)
 
     def compile_SuccP(self, node):
         stmts = [ self.compile( node.body ),
                   E('return ' + node.markingset_name) ]
-        return Builder.FunctionDef(name = node.function_name,
-                                   args = A(node.markingset_name).param(node.marking_name),
+        return ast.FunctionDef(name = node.function_name,
+                                   args = ast.arguments(args=[ast.Name(id=node.markingset_name), ast.Name(id=node.marking_name)]),
                                    body = stmts)
 
     def compile_Succs(self, node):
-        body = [ E(node.markingset_variable_name).assign(self.env.marking_set_type.gen_new_marking_set(self.env)) ]
+        body = [ ast.Assign(targets=[ast.Name(id=node.markingset_variable_name)],
+                                     value=self.env.marking_set_type.gen_new_marking_set(self.env)) ]
 
         body.extend( self.compile( node.body ) )
-        body.append( E("return " + node.markingset_variable_name) )
-        return Builder.FunctionDef( name = node.function_name,
-                                    args = A(node.marking_argument_name),
+        body.append( ast.Return(ast.Name(id=node.markingset_variable_name)) )
+        return ast.FunctionDef( name = node.function_name,
+                                    args = ast.arguments(args=[ast.Name(id=node.marking_argument_name)]),
                                     body = body )
 
     def compile_Init(self, node):
-        new_marking = E(node.marking_name).assign(self.env.marking_type.gen_alloc_marking_function_call(self.env))
-        return_stmt = E('return ' + node.marking_name)
+        new_marking = ast.Assign(targets=[ast.Name(id=node.marking_name)],
+                                 value=self.env.marking_type.gen_alloc_marking_function_call(self.env))
+        return_stmt = ast.Return(ast.Name(id=node.marking_name))
 
         stmts = [new_marking]
         stmts.extend( self.compile(node.body) )
         stmts.append( return_stmt )
 
-        return Builder.FunctionDef( name = node.function_name,
-                                    body = stmts )
+        return ast.FunctionDef( name = node.function_name,
+                                body = stmts )
 
     ################################################################################
     # opts
@@ -305,9 +321,12 @@ class CompilerVisitor(coreir.CompilerVisitor):
                                                           marking_name = node.marking_name,
                                                           place_name = node.place_name,
                                                           mutable = False )
-        getnode = E(node.token_name).assign(place_expr)
-        ifnode = Builder.If( test = E(node.token_name).NotEq(E('None')),
-                             body = [ self.compile( node.body ) ] )
+        getnode = ast.Assign(targets=[ast.Name(id=node.token_name)],
+                             value=place_expr)
+        ifnode = ast.If(test=ast.Compare(left=ast.Name(id=node.token_name),
+                                         ops=[ast.NotEq],
+                                         comparators=[ast.Name(id='None')]),
+                        body=[ self.compile( node.body ) ] )
         return [ getnode, ifnode ]
 
     def compile_BTTokenEnumeration(self, node):
@@ -315,13 +334,15 @@ class CompilerVisitor(coreir.CompilerVisitor):
                                                           marking_name = node.marking_name,
                                                           place_name = node.place_name,
                                                           mutable = False )
-        getnode = E(node.token_name).assign(E('dot'))
-        ifnode = Builder.If( test = E(place_expr).Gt(E('0')),
-                             body = [ getnode, self.compile( node.body ) ] )
+        getnode = ast.Assign(targets=[ast.Name(id=node.token_name)],
+                             value=ast.Name(id='dot'))
+        ifnode = ast.If(test=ast.Compare(left=ast.Name(id=place_expr), ops=[ast.Gt()], comparators=[ast.Num('0')]),
+                        body=[ getnode, self.compile( node.body ) ] )
         return [ ifnode ]
 
     def compile_BTOneSafeTokenEnumeration(self, node):
-        getnode = E(node.token_name).assign('dot')
+        getnode = ast.Assign(targets=[ast.Name(id=node.token_name)],
+                             value=ast.Name(id='dot'))
         if node.token_is_used:
             body = [ getnode, self.compile( node.body ) ]
         else:
@@ -331,8 +352,8 @@ class CompilerVisitor(coreir.CompilerVisitor):
                                                           marking_name = node.marking_name,
                                                           place_name = node.place_name,
                                                           mutable = False )
-        ifnode = Builder.If( test = Builder.Not(E(place_expr)),
-                             body = body )
+        ifnode = ast.If( test = ast.UnaryOp(op=ast.Not(), operand=place_expr),
+                         body = body )
         return [ ifnode ]
 
     ################################################################################
