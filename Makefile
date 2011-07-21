@@ -22,7 +22,7 @@ tests:
 asdl:
 	$(PYTHON) -m snakes.lang.asdl --output=asdl/cyast_gen.py asdl/cython.asdl
 	$(PYTHON) -m snakes.lang.asdl --output=asdl/netir_gen.py asdl/netir.asdl
-	ln -f asdl/cyast_gen.py neco/backends/cython/cyast.py
+	ln -f asdl/cyast_gen.py neco/backends/cython/
 	ln -f asdl/netir_gen.py neco/core/
 
 clean: cleandoc

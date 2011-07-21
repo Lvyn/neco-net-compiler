@@ -1,11 +1,11 @@
 """ Cython ast compiler. """
 
-import cyast
 import cPickle as cPickle
 import StringIO
 import neco.core.netir as coreir
 from neco.core.info import *
-from astutils import Builder, E, A, to_ast, stmt
+import cyast
+from cyast import * # Builder, E, A, to_ast, stmt
 from nettypes import is_cython_type, type2str
 ################################################################################
 
@@ -24,9 +24,9 @@ class CompilerVisitor(coreir.CompilerVisitor):
         return cyast.NComment(message=node.message)
 
     def compile_If(self, node):
-        return Builder.If( test = self.compile(node.condition),
-                           body = [ self.compile(node.body) ],
-                           orelse = [ self.compile(node.orelse) ] )
+        return cyast.If( test = self.compile(node.condition),
+                         body = [ self.compile(node.body) ],
+                         orelse = [ self.compile(node.orelse) ] )
 
     def compile_Compare(self, node):
         return Builder.Compare(left = self.compile(node.left),
@@ -47,13 +47,16 @@ class CompilerVisitor(coreir.CompilerVisitor):
         if type_info.is_AnyType:
             return self.compile(node.body)
 
-        test = E("isinstance").call([E(node.variable.name), E(type2str(type_info))])
+        test = cyast.Call(func=cyast.Name('isinstance'),
+                          args=[E(node.variable.name), E(type2str(type_info))])
+
         return Builder.If( test = test, body = self.compile(node.body) )
 
     def compile_Match(self, node):
         tuple_info = node.tuple_info
         seq = []
-        seq.append( Builder.Tuple([ E(name) for name in tuple_info.base() ]).assign(tuple_info.name) )
+        seq.append(cyast.Assign(targets=[cyast.Tuple([ E(name) for name in tuple_info.base() ])],
+                                value=cyast.Name(tuple_info.name)))
         cur = None
         for component in tuple_info.components:
             if component.is_Value:
@@ -77,7 +80,8 @@ class CompilerVisitor(coreir.CompilerVisitor):
 
 
     def compile_Assign(self, node):
-        return E(node.variable.name).assign(self.compile(node.expr))
+        return cyast.Assign(targets=[cyast.Name(node.variable.name)],
+                            value=self.compile(node.expr))
 
     def compile_Value(self, node):
         place_type = self.env.marking_type.get_place_type_by_name(node.place_name)
@@ -91,17 +95,31 @@ class CompilerVisitor(coreir.CompilerVisitor):
 
     def compile_FlushIn(self, node):
         destination_place = self.env.marking_type.get_place_type_by_name(node.place_name)
-        return [ E(node.token_name).assign( self.env.marking_type.gen_get_place( env = self.env,
-                                                                                 marking_name = node.marking_name,
-                                                                                 place_name = node.place_name) ),
-                 destination_place.gen_clear_function_call( env = self.env, marking_name = node.marking_name ) ]
+        return [cyast.Assign(targets=[cyast.Name(node.token_name)],
+                             value=self.env.marking_type.gen_get_place(env=self.env,
+                                                                       marking_name=node.marking_name,
+                                                                       place_name=node.place_name)
+                             ),
+                destination_place.gen_clear_function_call(env=self.env,
+                                                          marking_name=node.marking_name )
+                ]
+
+
+    # For(expr target, expr iter, stmt* body, stmt* orelse)
 
     def compile_FlushOut(self, node):
         destination_place = self.env.marking_type.get_place_type_by_name(node.place_name)
         multiset = self.compile(node.token_expr)
-        return destination_place.add_items( env = self.env,
-                                            multiset = multiset,
-                                            marking_name = node.marking_name )
+        var = self.env.new_variable()
+        # return [ comment, cyast.For(target=cyast.Name(var),
+        #                             iter=multiset,
+        #                             body=[destination_place.gen_add_token_function_call(self.env,
+        #                                                                                 cyast.Name(var),
+        #                                                                                 node.marking_name)]
+        #                             ) ]
+        return destination_place.add_items(env=self.env,
+                                           multiset=multiset,
+                                           marking_name=node.marking_name )
 
     def gen_tuple(self, tuple_info):
         elts = []
@@ -144,14 +162,16 @@ class CompilerVisitor(coreir.CompilerVisitor):
                                                              marking_name = node.marking_name,
                                                              place_name = node.place_name,
                                                              index = index )
-            return [ E( size_var ).assign( place_size ),
-                     Builder.CFor(start = E( 0 ),
-                                  start_op = cyast.LtE(),
-                                  target = E( index ),
-                                  stop_op = cyast.Lt(),
-                                  stop = E( size_var ),
-                                  body = [ E( node.token_name ).assign( get_token ),
-                                           self.compile(node.body) ],
+            return [ cyast.Assign(targets=[cyast.Name(size_var)],
+                                  value=place_size),
+                     Builder.CFor(start=cyast.Num(0),
+                                  start_op=cyast.LtE(),
+                                  target=cyast.Name(index),
+                                  stop_op=cyast.Lt(),
+                                  stop=cyast.Name(size_var),
+                                  body=[ cyast.Assign(targets=[cyast.Name(node.token_name)],
+                                                      value=get_token),
+                                         self.compile(node.body) ],
                                   orelse = [] ) ]
         else:
             return Builder.For( target = E(node.token_name),
@@ -176,7 +196,9 @@ class CompilerVisitor(coreir.CompilerVisitor):
         return E(node.function_name).call([ self.compile(arg) for arg in node.arguments ])
 
     def compile_ProcedureCall(self, node):
-        return stmt(E(node.function_name).call([ self.compile(arg) for arg in node.arguments ]))
+        return stmt(cyast.Call(func=cyast.Name(node.function_name),
+                               args=[ self.compile(arg) for arg in node.arguments ])
+                    )
 
     def compile_MarkingCopy(self, node):
         return self.env.marking_type.gen_copy( env = self.env,
@@ -235,16 +257,18 @@ class CompilerVisitor(coreir.CompilerVisitor):
                 type = self.env.marking_type.get_place_type_by_name(place_info.name).token_type
 
                 if (not type.is_UserType) or (is_cython_type(type)):
-                    decl.append( Builder.CVar( variable.name ).type( type2str(type) ) )
+                    decl.append(cyast.CVar(name=variable.name, type=type2str(type)))
             elif input.is_Test:
                 inner = input.inner
                 if inner.is_Variable:
                     if (not inner.type.is_UserType) or (is_cython_type(inner.type)):
-                        decl.append( Builder.CVar( name = inner.name ).type( type2str(inner.type) ) )
+                        decl.append(cyast.CVar(name=inner.name, type=type2str(inner.type)))
         inter_vars = node.transition_info.intermediary_variables
         for var in inter_vars:
             if (not var.type.is_UserType) or is_cython_type( var.type ):
-                decl.append( Builder.CVar( name = var.name ).type( type2str(var.type) ) )
+                decl.append(cyast.CVar(name=var.name,
+                                       type=type2str(var.type))
+                            )
 
         return to_ast( Builder.FunctionDef(name = node.function_name,
                                            args = (A(node.markingset_name, type = "set")
@@ -269,14 +293,14 @@ class CompilerVisitor(coreir.CompilerVisitor):
         body = []
         body.extend( self.compile( node.body ) )
         body.append( E("return " + node.markingset_variable_name) )
-        f1 = Builder.FunctionDef( name = node.function_name,
-                                  args = A(node.marking_argument_name, type = "Marking"),
-                                  body = body,
-                                  returns = cyast.Name("set"),
-                                  decl = [ (Builder.CVar(node.markingset_variable_name)
-                                            .type('set')
-                                            .init(self.env.marking_set_type.gen_new_marking_set(self.env))) ])
-
+        f1 = Builder.FunctionDef(name=node.function_name,
+                                 args=A(node.marking_argument_name, type = "Marking"),
+                                 body=body,
+                                 returns=cyast.Name("set"),
+                                 decl=[cyast.CVar(name=node.markingset_variable_name,
+                                                  type='set',
+                                                  init=self.env.marking_set_type.gen_new_marking_set(self.env))]
+                                 )
 
         body = [ E("l = ctypes_ext.neco_list_new()") ]
 
@@ -291,19 +315,21 @@ class CompilerVisitor(coreir.CompilerVisitor):
 
         body.append( E("return l") )
 
-        f2 = Builder.FunctionCDef( name = "neco_succs",
-                                   args = A("m", type = "Marking"),
-                                   body = body,
-                                   returns = cyast.Name("ctypes_ext.neco_list*"),
-                                   decl = [ Builder.CVar("l").type("ctypes_ext.neco_list*"),
-                                            Builder.CVar("e").type("Marking")])
+        f2 = Builder.FunctionCDef(name="neco_succs",
+                                  args=A("m", type="Marking"),
+                                  body=body,
+                                  returns=cyast.Name("ctypes_ext.neco_list*"),
+                                  decl=[cyast.CVar(name="l", type="ctypes_ext.neco_list*"),
+                                        cyast.CVar(name="e", type="Marking")]
+                                  )
 
         return [f1, f2]
 
 
 
     def compile_Init(self, node):
-        new_marking = E( node.marking_name ).assign( self.env.marking_type.gen_alloc_marking_function_call(self.env) )
+        new_marking = cyast.Assign(targets=[cyast.Name(node.marking_name)],
+                                   value=self.env.marking_type.gen_alloc_marking_function_call(self.env))
         return_stmt = E( "return {mn}".format(mn = node.marking_name))
 
         stmts = [new_marking]

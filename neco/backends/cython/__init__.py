@@ -15,7 +15,7 @@ import netir, nettypes, astutils
 from utils import Env
 import neco.config as config
 from nettypes import register_cython_type, is_cython_type
-from astutils import Builder, E, Unparser, to_ast
+from cyast import Builder, E, Unparser, to_ast
 
 _backend_ = "cython"
 
@@ -51,12 +51,12 @@ class FactoryManager(core.FactoryManager):
         # add IntPlaceType to select
         select_type = self.select_type
         def select_type_new(info):
-            if info.type.is_Int: # and not info.is_OneSafe:
-                return "IntPlaceType"
-            elif info.type.is_BlackToken: # and not info.is_OneSafe:
-                return "BTPlaceType"
-            else:
-                return select_type(info)
+            # if info.type.is_Int: # and not info.is_OneSafe:
+            #     return "IntPlaceType"
+            # elif info.type.is_BlackToken: # and not info.is_OneSafe:
+            #     return "BTPlaceType"
+            # else:
+            return select_type(info)
         self.select_type = select_type_new
 
 ################################################################################
@@ -81,7 +81,7 @@ class Compiler(core.Compiler):
         self.additional_search_paths.append(".")
 
     def compile(self):
-        env = Env(self.marking_type, self.markingset_type)
+        env = Env(self.global_names, self.marking_type, self.markingset_type)
 
         for (function_name, process_name) in self.successor_functions:
             env.add_successor_function( function_name, process_name )
@@ -191,7 +191,6 @@ except KeyError:
             print self.additional_search_paths
             print "********************************************************************************"
 
-        self.additional_search_paths = ['/home/thelvyn/my_workspace/neco-spot/']
         setup(name="net.pyx",
               cmdclass={'build_ext': build_ext},
               ext_modules=[Extension("net", ["net.pyx"],

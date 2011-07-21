@@ -398,14 +398,17 @@ class Unparser:
         self.dispatch(t.func)
         self.write("(")
         comma = False
-        for e in t.args:
+        begin_kw = len(t.args) - len(t.keywords)
+        for e in t.args[:begin_kw]:
             if comma: self.write(", ")
             else: comma = True
             self.dispatch(e)
-        for e in t.keywords:
+        for ea, ekw in zip(t.args[begin_kw:], t.keywords):
             if comma: self.write(", ")
             else: comma = True
-            self.dispatch(e)
+            self.dispatch(ea)
+            self.write('=')
+            self.dispatch(ekw)
         if t.starargs:
             if comma: self.write(", ")
             else: comma = True

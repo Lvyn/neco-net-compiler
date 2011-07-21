@@ -1,7 +1,7 @@
 include ../../common/Makefile.inc
 
 INITIALIZE=export PYTHONPATH=$(PYTHONPATH) ;\
-	   export LD_LIBRARY_PATH=$(LIBPATH);\
+	   export LD_LIBRARY_PATH=$(LIBPATH):../../common;\
 	   export CC=gcc ;\
 	   export LD=gcc
 

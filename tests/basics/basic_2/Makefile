@@ -11,7 +11,7 @@ all: run
 
 run: clean
 	@$(INITIALIZE) ;\
-	$(PYTHON) $(TESTRUNNER) --statespace --backend $(LANG) $(_OPTS) -I../../common
+	$(PYTHON) $(TESTRUNNER) -l $(LANG) $(_OPTS) -I../../common
 
 clean:
 	@ rm -rf net.* build *~ ctypes.h spec.pyc base_net.h

@@ -1,13 +1,14 @@
 """ Python basic net types. """
 
-import cyast, math
+import math
 import neco.utils as utils
 from neco.utils import Factory, should_not_be_called, todo
 import neco.core.nettypes as coretypes
 from neco.core.nettypes import provides_by_index_access, provides_by_index_deletion
 from neco.core.info import *
 from neco.opt import onesafe
-from astutils import Builder, E, A, to_ast, stmt
+import cyast
+from cyast import *
 from maskbitfield import MaskBitfield
 
 ################################################################################
@@ -148,42 +149,53 @@ class ObjectPlaceType(coretypes.ObjectPlaceType, CythonPlaceType):
                                            token_type = place_info.type)
 
     def gen_new_place(self, env):
-        return E("MultiSet()")
+        return cyast.Call(func=cyast.Name(id="MultiSet"))
 
     def gen_delete(self, env, marking_name):
         return []
 
     def gen_hash(self, env, marking_name):
         place_expr = self.place_expr(env, marking_name)
-        return E(place_expr).attr("hash").call()
+        return cyast.Call(func=cyast.Attribute(value=place_expr,
+                                               attr="hash")
+                          )
 
     def gen_eq(self, env, left, right):
-        return Builder.EqCompare(left, right)
+        return cyast.Compare(left=left, ops=[cyast.Eq()], comparators=[right])
 
     def gen_iterable(self, env, marking_name):
         return self.place_expr(env, marking_name)
 
     def gen_remove_token_function_call(self, env, compiled_token, marking_name):
         place_expr = self.place_expr(env, marking_name)
-        return stmt(E(place_expr).attr('remove').call([ compiled_token ]))
+        return stmt(cyast.Call(func=cyast.Attribute(value=place_expr,
+                                                    attr='remove'),
+                               args=[ compiled_token ])
+                    )
 
     def gen_add_token_function_call(self, env, compiled_token, marking_name):
         place_expr = self.place_expr(env, marking_name)
-        return stmt(E(place_expr).attr('add').call([ compiled_token ]))
+        return stmt(cyast.Call(func=cyast.Attribute(value=place_expr,
+                                                    attr='add'),
+                               args=[ compiled_token ])
+                    )
 
     def gen_build_token(self, env, value):
         return E(repr(value))
 
     def gen_copy(self, env, marking_name):
         place_expr = self.place_expr(env, marking_name)
-        return E(place_expr).attr("copy").call()
+        return cyast.Call(func=cyast.Attribute(value=place_expr,
+                                               attr="copy")
+                          )
 
     def gen_light_copy(self, env, marking_name):
         return self.place_expr(env, marking_name)
 
     def gen_clear_function_call(self, env, marking_name):
         place_expr = self.place_expr(env, marking_name)
-        return E(place_expr).assign("MultiSet()")
+        return cyast.Assign(targets=[place_expr],
+                            value=cyast.Call(func=cyast.Name("MultiSet")))
 
     def gen_not_empty_function_call(self, env, marking_type, marking_name):
         return self.place_expr(env, marking_name)
@@ -193,18 +205,27 @@ class ObjectPlaceType(coretypes.ObjectPlaceType, CythonPlaceType):
 
     def add_multiset(self, env, multiset, marking_name):
         place_expr = self.place_expr(env, marking_name)
-        return stmt(E(place_expr).attr('update').call([ multiset ]))
+        return stmt(cyast.Call(func=cyast.Attribute(value=place_expr,
+                                                    attr='update'),
+                               args=[ multiset ])
+                    )
 
     def gen_dump(self, env, marking_name):
         place_expr = self.place_expr(env, marking_name)
-        return E("str").call([place_expr])
+        return cyast.Call(func=cyast.Name("str"),
+                          args=[place_expr])
 
     def add_items(self, env, multiset, marking_name):
         place_expr = self.place_expr(env, marking_name)
-        return stmt(E(place_expr).attr('add_items').call([multiset]))
+        return stmt(cyast.Call(func=cyast.Attribute(value=place_expr,
+                                                    attr='add_items'),
+                               args=[multiset])
+                    )
 
     def gen_compare(self, env, left, right):
-        return E(left).attr('compare').call([E(right)])
+        return cyast.Call(func=cyast.Attribute(value=left,
+                                               attr='compare'),
+                          args=[right])
 
     def gen_not_empty(self, env, marking_name):
         return self.place_expr(env, marking_name)
@@ -227,66 +248,84 @@ class IntPlaceType(coretypes.PlaceType, CythonPlaceType):
 
     def gen_delete(self, env, marking_name):
         place_expr = self.place_expr(env, marking_name)
-        return stmt(E(from_neco_lib("int_place_type_free")).call([ place_expr ]))
+        return stmt(cyast.Call(func=E(from_neco_lib("int_place_type_free")),
+                               args=[ place_expr ])
+                    )
 
     def gen_hash(self, env, marking_name):
         place_expr = self.place_expr(env, marking_name)
-        return E(from_neco_lib("int_place_type_hash")).call([ place_expr ])
+        return cyast.Call(func=E(from_neco_lib("int_place_type_hash")),
+                          args=[ place_expr ])
 
     def gen_eq(self, env, left, right):
-        return E(from_neco_lib("int_place_type_eq")).call([ left, right ])
+        return cyast.Call(func=E(from_neco_lib("int_place_type_eq")),
+                          args=[ left, right ])
 
     @should_not_be_called
     def gen_iterable(self, env, marking_type, marking_name): pass
 
     def gen_remove_token_function_call(self, env, compiled_token, marking_name):
         place_expr = self.place_expr(env, marking_name)
-        return stmt(E(from_neco_lib("int_place_type_rem_by_index")).call([ place_expr, compiled_token ]))
+        return stmt(cyast.Call(func=E(from_neco_lib("int_place_type_rem_by_index")),
+                               args=[ place_expr, compiled_token ])
+                    )
 
     def gen_remove_by_index_function_call(self, env, index, marking_name):
         place_expr = self.place_expr(env, marking_name)
-        return stmt(E(from_neco_lib("int_place_type_rem_by_index")).call([ place_expr, E(index) ]))
+        return stmt(cyast.Call(func=E(from_neco_lib("int_place_type_rem_by_index")),
+                               args=[ place_expr, E(index) ])
+                    )
 
     def gen_add_token_function_call(self, env, compiled_token, marking_name):
         place_expr = self.place_expr(env, marking_name)
-        return stmt(E(from_neco_lib("int_place_type_add")).call([ place_expr, compiled_token ]))
+        return stmt(cyast.Call(func=E(from_neco_lib("int_place_type_add")),
+                               args=[ place_expr, compiled_token ])
+                    )
 
     def gen_build_token(self, env, value):
         return E(repr(value))
 
     def gen_copy(self, env, marking_name):
         place_expr = self.place_expr(env, marking_name)
-        return E(from_neco_lib("int_place_type_copy")).call([ place_expr ])
+        return cyast.Call(func=E(from_neco_lib("int_place_type_copy")),
+                          args=[ place_expr ])
 
     def gen_light_copy(self, env, marking_name):
         place_expr = self.place_expr(env, marking_name)
-        return E(from_neco_lib("int_place_type_light_copy")).call([ place_expr ])
+        return cyast.Call(func=E(from_neco_lib("int_place_type_light_copy")),
+                          args=[ place_expr ])
 
     def gen_get_size_function_call(self, env, marking_name):
         place_expr = self.place_expr(env, marking_name)
-        return E(from_neco_lib("int_place_type_size")).call([ place_expr ])
+        return cyast.Call(func=E(from_neco_lib("int_place_type_size")),
+                          args=[ place_expr ])
 
     def gen_get_token_function_call(self, env, marking_name, index):
         place_expr = self.place_expr(env, marking_name)
-        return E(from_neco_lib("int_place_type_get")).call([ place_expr, E(index) ])
+        return cyast.Call(func=E(from_neco_lib("int_place_type_get")),
+                          args=[ place_expr, E(index) ])
 
-    def gen_clear_function_call(self, env, marking_type, marking_name):
+    def gen_clear_function_call(self, env, marking_name):
         place_expr = self.place_expr(env, marking_name)
-        return E(from_neco_lib("int_place_type_clear")).call([ place_expr ])
+        return cyast.Call(func=E(from_neco_lib("int_place_type_clear")),
+                          args=[ place_expr ])
 
     def gen_build_token(self, env, token):
         return E(repr(token))
 
     def gen_dump(self, env, marking_name):
         place_expr = self.place_expr(env, marking_name)
-        return E(from_neco_lib("int_place_type_cstr")).call([ place_expr ])
+        return cyast.Call(func=E(from_neco_lib("int_place_type_cstr")),
+                          args=[ place_expr ])
 
     def gen_compare(self, env, left, right):
-        return E(from_neco_lib("int_place_type_cmp")).call([ left, right ])
+        return cyast.Call(func=E(from_neco_lib("int_place_type_cmp")),
+                          args=[ left, right ])
 
     def gen_not_empty(self, env,marking_name):
         place_expr = self.place_expr(env, marking_name)
-        return E(from_neco_lib("int_place_type_not_empty")).call([place_expr])
+        return cyast.Call(func=E(from_neco_lib("int_place_type_not_empty")),
+                          args=[place_expr])
 
     @todo
     def gen_not_empty_function_call(self, env, marking_type, marking_name): pass
@@ -423,7 +462,9 @@ class StaticMarkingType(coretypes.MarkingType):
         return "".join(l)
 
     def gen_alloc_marking_function_call(self, env):
-        return E( self.type_name + "(alloc=True)")
+        return cyast.Call(func=cyast.Name(self.type_name),
+                          args=[cyast.Name('alloc')],
+                          keywords=[cyast.Name('True')])
 
     def _gen_dealloc(self, env):
         builder = Builder()
@@ -434,7 +475,6 @@ class StaticMarkingType(coretypes.MarkingType):
             if not place_type.is_packed:
                 builder.emit(place_type.gen_delete(env = env,
                                                    marking_name = "self"))
-        #builder.emit(E("print 'marking desalloc'"));
         builder.end_FunctionDef()
         return to_ast(builder)
 
@@ -443,7 +483,7 @@ class StaticMarkingType(coretypes.MarkingType):
         builder.begin_FunctionDef( name = "__cinit__",
                                    args = A("self").param("alloc", default = "False"))
 
-        builder.begin_If( E('alloc') )
+        builder.begin_If( cyast.Name('alloc') )
 
         if self._pack:
             builder.emit( self._pack.gen_initialise(env, "self") )
@@ -454,7 +494,10 @@ class StaticMarkingType(coretypes.MarkingType):
                 pass
             else:
                 attr = self.id_provider.get(place_type)
-                builder.emit( E('self').attr(attr).assign( place_type.gen_new_place(env) ) )
+                builder.emit(cyast.Assign(targets=[cyast.Attribute(cyast.Name('self'),
+                                                                   attr=attr)],
+                                          value=place_type.gen_new_place(env) )
+                             )
         builder.end_If()
         builder.end_FunctionDef()
         return to_ast(builder)
@@ -477,7 +520,9 @@ class StaticMarkingType(coretypes.MarkingType):
         # copy places
         for place_type in self.place_types.itervalues():
             if not place_type.is_packed:
-                builder.emit( E('m').attr(self.id_provider.get(place_type)).assign( place_type.gen_copy(env = env, marking_name = 'self') ) )
+                builder.emit(cyast.Assign(targets=[E('m.{place}'.format(place=self.id_provider.get(place_type)))],
+                                          value=place_type.gen_copy(env=env, marking_name='self'))
+                             )
         builder.emit_Return(E("m"))
         builder.end_FunctionDef()
         return to_ast(builder)
@@ -486,18 +531,24 @@ class StaticMarkingType(coretypes.MarkingType):
         try:
             test = tests.pop()
             # l - r == 0 ?:
-            builder.begin_If(test.eq(E('0')))
+            builder.begin_If(cyast.Compare(left=test,
+                                           ops=[cyast.Eq()],
+                                           comparators=[cyast.Num(0)])
+                             )
             self._gen_C_compare_aux(builder, tests)
             # l - r < 0 ?:
-            builder.begin_Elif(test.lt(E('0')))
-            builder.emit_Return(E('-1'))
+            builder.begin_Elif(cyast.Compare(left=test,
+                                             ops=[cyast.Lt()],
+                                             comparators=[cyast.Num(0)])
+                               )
+            builder.emit_Return(cyast.Num(-1))
             builder.end_If()
             # else l - r > 0:
             builder.begin_Else()
-            builder.emit_Return(E('1'))
+            builder.emit_Return(cyast.Num(1))
             builder.end_If()
         except IndexError:
-            builder.emit_Return(E('0'))
+            builder.emit_Return(cyast.Num(0))
 
     def _gen_C_compare(self, env):
 
@@ -518,14 +569,20 @@ class StaticMarkingType(coretypes.MarkingType):
                 gen = self._pack.gen_tests(left_marking_name=left_marking_name,
                                            right_marking_name=right_marking_name)
                 for l, r in gen:
-                    tests.append(E(l).sub(E(r)))
+                    tests.append(cyast.BinOp(left=l,
+                                             op=cyast.Sub(),
+                                             right=r))
 
         for place_type in self.place_types.itervalues():
             if place_type.is_packed:
                 continue
             else:
                 id = self.id_provider.get(place_type)
-                tests.append(place_type.gen_compare(env, left=E(left_marking_name + '.' + id), right=E(right_marking_name + '.' + id)))
+                tests.append(place_type.gen_compare(env,
+                                                    left=cyast.Attribute(value=cyast.Name(left_marking_name),
+                                                                         attr=id),
+                                                    right=cyast.Attribute(value=cyast.Name(right_marking_name),
+                                                                          attr=id)))
 
         tests.reverse()
         self._gen_C_compare_aux(builder, tests)
@@ -544,43 +601,93 @@ class StaticMarkingType(coretypes.MarkingType):
             self._gen_C_marked_aux(builder, tests, rs)
             builder.end_If()
         except IndexError:
-            builder.emit_Return(E('0'))
+            builder.emit_Return(cyast.Num(0))
 
     def _gen_C_marked(self, env):
 
         builder = Builder()
-        left_marking_name  = "self"
-        right_marking_name = "other"
-        builder.begin_FunctionCDef( name = "neco_marked",
-                                    args = (A("self", type = self.type_name)
-                                            .param("place_name", type="object")),
-                                    returns = E("int"))
+        left_marking_name  = 'self'
+        right_marking_name = 'other'
+        builder.begin_FunctionCDef( name = 'neco_marked',
+                                    args = (A('self', type = self.type_name)
+                                            .param('place_name', type='object')),
+                                    returns = cyast.Name('int'))
 
         i = 0
         tests = []
         rs = []
         for name, place_type in self.place_types.iteritems():
             id = self.id_provider.get(place_type)
-            tests.append( E(repr(name)).eq(E("place_name")) )
-            rs.append( place_type.gen_not_empty(env, "self") )
+            tests.append(cyast.Compare(left=E(repr(name)),
+                                       ops=[cyast.Eq()],
+                                       comparators=[cyast.Name('place_name')])
+                         )
+            rs.append( place_type.gen_not_empty(env, 'self') )
 
         self._gen_C_marked_aux(builder, tests, rs)
         builder.end_FunctionDef()
         return to_ast(builder)
-    
 
     def _gen_richcmp(self, env):
         builder = Builder()
-        left_marking_name = "self"
-        right_marking_name = "other"
-        op_name = "op"
-        builder.begin_FunctionDef( name = "__richcmp__",
-                                   args = (A("self", type = self.type_name)
+        left_marking_name  = 'self'
+        right_marking_name = 'other'
+        op_name = 'op'
+        builder.begin_FunctionDef( name = '__richcmp__',
+                                   args = (A('self', type = self.type_name)
                                            .param(right_marking_name, type = self.type_name)
-                                           .param(op_name, type = "int")) )
-        builder.emit_Return(E("neco_marking_compare").call([E(left_marking_name), E(right_marking_name)]).eq(E("0")))
+                                           .param(op_name, type = 'int')) )
+        builder.emit_Return(cyast.Compare(left=cyast.Call(func=cyast.Name('neco_marking_compare'),
+                                                          args=[cyast.Name(left_marking_name),
+                                                                cyast.Name(right_marking_name)]
+                                                          ),
+                                          ops=[cyast.Eq()],
+                                          comparators=[cyast.Num(0)])
+                            )
         builder.end_FunctionDef()
         return to_ast(builder)
+
+
+    # def _gen_richcmp_aux(self, builder, tests):
+    #     try:
+    #         test = tests.pop()
+    #         builder.begin_If(test = test,
+    #                          orelse = [ E("return 0") ])
+    #         self._gen_richcmp_aux(builder, tests)
+    #         builder.end_If()
+    #     except IndexError:
+    #         builder.emit_Return(E("1"))
+
+    # def _gen_richcmp(self, env):
+    #     builder = Builder()
+    #     left_marking_name  = "self"
+    #     right_marking_name = "other"
+    #     builder.begin_FunctionDef( name = "__richcmp__",
+    #                                args = (A("self", type = self.type_name)
+    #                                        .param(right_marking_name, type = self.type_name)
+    #                                        .param("op", type = "int")))
+
+    #     # TODO: Order places
+
+    #     i = 0
+    #     tests = []
+    #     if self._pack:
+    #         if self.packing_enabled:
+    #             tests.extend(self._pack.gen_tests(left_marking_name=left_marking_name,
+    #                                               right_marking_name=right_marking_name))
+
+    #     for place_type in self.place_types.itervalues():
+    #         if place_type.is_packed:
+    #             continue
+    #         else:
+    #             id = self.id_provider.get(place_type)
+    #             tests.append(place_type.gen_eq(env, left=E(left_marking_name + '.' + id), right=E(right_marking_name + '.' + id)))
+
+    #     tests.reverse()
+    #     self._gen_richcmp_aux(builder, tests)
+    #     builder.end_FunctionDef()
+    #     return to_ast(builder)
+
 
     def _gen_hash(self, env):
         builder = Builder()
@@ -595,7 +702,13 @@ class StaticMarkingType(coretypes.MarkingType):
         if self._pack:
             for index in range(0, self._pack.native_field_count()):
                 native_field = self._pack.get_native_field('self', index)
-                builder.emit( E('h').assign(E('h').xor(native_field).mult(E(mult))) )
+                builder.emit( cyast.Assign(targets=[cyast.Name('h')],
+                                           value=cyast.BinOp(left = cyast.BinOp(left=cyast.Name('h'),
+                                                                                op=cyast.BitXor(),
+                                                                                right=native_field),
+                                                             op = cyast.Mult(),
+                                                             right = cyast.Num(mult) ) ) )
+                #E('h').assign(E('h').xor(native_field).mult(E(mult))) )
                 mult += (82520L + i + i)
                 i += 1
 
@@ -603,10 +716,20 @@ class StaticMarkingType(coretypes.MarkingType):
             if not place_type.is_packed:
                 if place_type.type.is_Int or place_type.type.is_Short or place_type.type.is_Char:
                     native_place = self.id_provider.get(place_type)
-                    builder.emit( E('h').assign(E('h').xor(E('self').attr(native_place)).mult(E(mult))) )
+                    builder.emit(E('h = (h ^ self.{place_name}) * {mult}'.format(place_name=native_place,
+                                                                                 mult=mult))
+                                 )
+                                 #builder.emit( E('h').assign(E('h').xor(E('self').attr(native_place)).mult(E(mult))) )
                 else:
                     place_hash = place_type.gen_hash(env, marking_name = "self")
-                    builder.emit( E('h').assign(E('h').xor( place_hash ).mult(E(mult))) )
+                    builder.emit(cyast.Assign(targets=[cyast.Name('h')],
+                                              value=cyast.BinOp(left=cyast.BinOp(left=cyast.Name('h'),
+                                                                                 op=cyast.BitXor(),
+                                                                                 right=place_hash),
+                                                                op=cyast.Mult(),
+                                                                right=cyast.Num(mult))
+                                              )
+                                 )
                 mult += (82521L * i + i)
                 i += 1
 
@@ -632,7 +755,7 @@ class StaticMarkingType(coretypes.MarkingType):
         builder.begin_FunctionCDef( name = "neco_marking_hash",
                                     args = A("self", type = "Marking"),
                                     returns = E("int"))
-        builder.emit_Return(E("self").attr('__hash__').call())
+        builder.emit_Return(E('self.__hash__()'))
         builder.end_FunctionDef()
         return to_ast(builder)
 
@@ -641,7 +764,7 @@ class StaticMarkingType(coretypes.MarkingType):
         builder.begin_FunctionCDef( name = "neco_marking_copy",
                                     args = A("self", type = "Marking"),
                                     returns = E("Marking"))
-        builder.emit_Return(E("self").attr('copy').call())
+        builder.emit_Return(E('self.copy()'))
         builder.end_FunctionDef()
         return to_ast(builder)
 
@@ -672,7 +795,12 @@ class StaticMarkingType(coretypes.MarkingType):
             # else:
             place_type = self.get_place_type_by_name(place_name)
             builder.emit( E( 's += %s' % repr(place_name + ': ')) )
-            builder.emit( E('s').add_assign( E("str").call([place_type.gen_dump(env, 'self')])) )
+            builder.emit(cyast.AugAssign(target=cyast.Name('s'),
+                                         op=cyast.Add(),
+                                         value=cyast.Call(func=cyast.Name("str"),
+                                                          args=[place_type.gen_dump(env, 'self')])
+                                         )
+                         )
 
         builder.emit_Return(E('s'))
         builder.end_FunctionDef()
@@ -762,11 +890,12 @@ class StaticMarkingType(coretypes.MarkingType):
         if self._pack:
             name = '{name}[{count}]'.format(name  = self.id_provider.get(self._pack),
                                             count = self._pack.native_field_count())
-            cls.add_decl( Builder.CVar(name).type(type2str(self._pack.type)) )
+            cls.add_decl( cyast.CVar(name, type=type2str(self._pack.type)) )
 
         for place_type in self.place_types.itervalues():
             if not place_type.is_packed:
-                cls.add_decl( Builder.CVar(self.id_provider.get(place_type)).type(type2str(place_type.type)) )
+                cls.add_decl(cyast.CVar(name=self.id_provider.get(place_type),
+                                        type=type2str(place_type.type)))
 
         ################################################################################
         # C api
@@ -818,19 +947,25 @@ class StaticMarkingType(coretypes.MarkingType):
             place_expr = self.gen_get_place(env,
                                             place_name = place_type.info.name,
                                             marking_name = dst_marking_name)
-            nodes.append( E(place_expr).assign(place_type.gen_copy(env, marking_name = src_marking_name)) )
+            nodes.append(cyast.Assign(targets=[place_expr],
+                                      value=place_type.gen_copy(env, marking_name = src_marking_name))
+                         )
 
 
         for place_type in assign_places:
             place_expr = self.gen_get_place(env,
                                             place_name = place_type.info.name,
                                             marking_name = dst_marking_name)
-            nodes.append( E(place_expr).assign(place_type.gen_light_copy(env, marking_name = src_marking_name)) )
+            nodes.append(cyast.Assign(targets=[place_expr],
+                                      value=place_type.gen_light_copy(env, marking_name = src_marking_name))
+                         )
 
         return to_ast(nodes)
 
     def gen_copy_marking_function_call(self, env, marking_name):
-        return E(marking_name).attr('copy').call()
+        return cyast.Call(func=cyast.Attribute(name=marking_name,
+                                               attr='copy')
+                          )
 
     def gen_get_place(self, env, marking_name, place_name):
         place_type = self.get_place_type_by_name(place_name)
@@ -838,7 +973,8 @@ class StaticMarkingType(coretypes.MarkingType):
         if place_type.is_packed:
             return place_type.pack.gen_get_place(env, marking_name, place_type)
         else:
-            return E(marking_name).attr(self.id_provider.get(place_type))
+            return cyast.Attribute(value=cyast.Name(marking_name),
+                                   attr=self.id_provider.get(place_type))
 
     def gen_get_place_size(self, env, marking_name, place_name):
         place_type = self.get_place_type_by_name(place_name)
@@ -925,10 +1061,12 @@ class MarkingSetType(coretypes.MarkingSetType):
         pass
 
     def gen_new_marking_set(self, env):
-        return E("set").call()
+        return cyast.Call(func=cyast.Name("set"))
 
     def gen_add_marking_function_call(self, env, markingset_name, marking_name):
-        return E(markingset_name).attr(self.add_attribute_name).call([E(marking_name)])
+        return cyast.Call(func=cyast.Attribute(value=cyast.Name(markingset_name),
+                                               attr=self.add_attribute_name),
+                          args=[E(marking_name)])
 
 ################################################################################
 # opt
@@ -972,7 +1110,9 @@ class OneSafePlaceType(onesafe.OneSafePlaceType, CythonPlaceType):
         return E("hash").call([place_expr])
 
     def gen_eq(self, env, left, right):
-        return Builder.EqCompare(left, right)
+        return cyast.Compare(left=left,
+                             ops=[cyast.Eq()],
+                             comparators=[right])
 
     def gen_not_empty_function_call(self, env, marking_name):
         return self.existence_helper_place_type.gen_get_place(env, marking_name = marking_name)
@@ -1021,13 +1161,17 @@ class BTPlaceType(onesafe.BTPlaceType, CythonPlaceType):
         return self.place_expr(env, marking_name)
 
     def gen_eq(self, env, left, right):
-        return Builder.EqCompare(left, right)
+        return cyast.Compare(left=left,
+                             ops=[cyast.Eq()],
+                             comparators=[right])
 
     def gen_compare(self, env, left, right):
-        return E(left).sub(E(right))
+        return cyast.BinOp(left=left,
+                           op=cyast.Sub(),
+                           right=right)
 
     def gen_new_place(self, env):
-        return E("0")
+        return cyast.Num(0)
 
     def gen_not_empty(self, env, marking_name):
         return self.place_expr(env, marking_name)
@@ -1038,15 +1182,20 @@ class BTPlaceType(onesafe.BTPlaceType, CythonPlaceType):
 
     def gen_iterable(self, env, marking_name):
         place_expr = self.place_expr(env, marking_name)
-        return E("range").call([ E(0), place_expr ])
+        return cyast.Call(func=cyast.Name('range'),
+                          args=[ cyast.Num(0), place_expr ])
 
     def gen_remove_token_function_call( self, env, compiled_token, marking_name):
         place_expr = self.place_expr(env, marking_name)
-        return E(place_expr).sub_assign(E(1))
+        return cyast.AugAssign(target=place_expr,
+                               op=cyast.Sub(),
+                               value=cyast.Num(1))
 
     def gen_add_token_function_call(self, env, compiled_token, marking_name):
         place_expr = self.place_expr(env, marking_name)
-        return E(place_expr).add_assign(E(1))
+        return cyast.AugAssign(target=place_expr,
+                               op=cyast.Add(),
+                               value=cyast.Num(1))
 
     def gen_copy(self, env, marking_name):
         return self.place_expr(env, marking_name)
@@ -1120,7 +1269,7 @@ class BT1SPack(object):
                                              pack = self)
 
     def gen_init_value(self, env):
-        return E("0x00")
+        return E("0x0")
 
     def gen_get_place(self, env, marking_name, place_type):
         offset = self._offset_of( place_type )
@@ -1319,7 +1468,9 @@ class PackedPlaceTypes(object):
         return self._bitfield.native_field_count()
 
     def get_native_field(self, marking_name, index):
-        return E(marking_name).attr(self.name).subscript(index=index)
+        return cyast.Subscript(cyast.Attribute(cyast.Name(marking_name),
+                                               attr=self.name),
+                               slice=cyast.Index(cyast.Num(index)))
 
 
     def get_field_native_offset(self, place_type):
@@ -1339,30 +1490,47 @@ class PackedPlaceTypes(object):
     def gen_initialise(self, env, marking_name):
         l = []
         for index in range(0, self.native_field_count()):
-            l.append(E(marking_name).attr(self.name).subscript(index = str(index)).assign(0))
+            l.append( cyast.Assign(targets=[cyast.Subscript(value=cyast.Attribute(value=cyast.Name(marking_name),
+                                                                                  attr=self.name),
+                                                            slice=cyast.Index(cyast.Num(index)))],
+                                   value=cyast.Num(0)) )
         return to_ast(l)
 
     def gen_get_place(self, env, marking_name, place_type):
         place_info = place_type.info
         offset = self._bitfield.get_field_native_offset(self._id_from_place_info(place_info))
         mask = int(~self._bitfield.get_field_mask(self._id_from_place_info(place_info)))
-        return E(marking_name).attr(self.name).subscript(index=str(offset)).bit_and(E(mask))
+        return cyast.BinOp(left=cyast.Subscript(cyast.Attribute(cyast.Name(marking_name),
+                                                                attr=self.name),
+                                                slice=cyast.Index(cyast.Num(offset))),
+                           op=cyast.BitAnd(),
+                           right=E(mask))
 
     def gen_remove_bit(self, env, marking_name, place_type):
         field_name = self._id_from_place_info(place_type.info)
         value = int(self._bitfield.get_field_compatible_mask(field_name, 1))
         offset = self._bitfield.get_field_native_offset(field_name)
-        e = E(marking_name).attr(self.name).subscript(index=offset).xor_assign(E(value))
-        comment = Builder.Comment("vmask:{vmask:#0{anw}b} - place:{place}".format(vmask=value,
-                                                                                  anw=(self._bitfield.native_width + 2),
-                                                                                  place=place_type.info.name))
+        e = cyast.AugAssign(target=cyast.Subscript(value=cyast.Attribute(value=cyast.Name(marking_name),
+                                                                         attr=self.name),
+                                                   slice=cyast.Index(cyast.Num(offset))),
+                            op=cyast.BitXor(),
+                            value=cyast.Num(value))
+        # e = E(marking_name).attr(self.name).subscript(index=offset).xor_assign(E(value))
+        comment = cyast.Comment("vmask:{vmask:#0{anw}b} - place:{place}".format(vmask=value,
+                                                                                anw=(self._bitfield.native_width + 2),
+                                                                                place=place_type.info.name))
         return [ e, comment ]
 
     def gen_set_bit(self, env, marking_name, place_type):
         field_name = self._id_from_place_info(place_type.info)
         value = int(self._bitfield.get_field_compatible_mask(field_name, 1))
         offset = self._bitfield.get_field_native_offset(field_name)
-        e = E(marking_name).attr(self.name).subscript(index=str(offset)).or_assign(E(value))
+        e = cyast.AugAssign(target=cyast.Subscript(value=cyast.Attribute(value=cyast.Name(marking_name),
+                                                                         attr=self.name),
+                                                   slice=cyast.Index(cyast.Num(offset))),
+                            op=cyast.BitOr(),
+                            value=cyast.Num(value))
+        #e = E(marking_name).attr(self.name).subscript(index=str(offset)).or_assign(E(value))
         comment = Builder.Comment("vmask:{vmask:#0{anw}b} - place:{place}".format(vmask=value, anw=(self._bitfield.native_width + 2), place=place_type.info.name))
         return [ e, comment ]
 
@@ -1380,9 +1548,18 @@ class PackedPlaceTypes(object):
     def gen_copy(self, env, src_marking_name, dst_marking_name):
         l = []
         for index in range(0, self.native_field_count()):
-            right = E(src_marking_name).attr(self.name).subscript(index=str(index))
-            e = E(dst_marking_name).attr(self.name).subscript(index=str(index)).assign(right)
-            l.append( e )
+            right = cyast.Subscript(value=cyast.Attribute(value=cyast.Name(src_marking_name),
+                                                          attr=self.name),
+                                    slice=cyast.Index(cyast.Num(index)))
+            left = cyast.Subscript(value=cyast.Attribute(value=cyast.Name(dst_marking_name),
+                                                         attr=self.name),
+                                   slice=cyast.Index(cyast.Num(index)))
+            l.append( cyast.Assign(targets=[left],
+                                   value=right) )
+
+            # right = E(src_marking_name).attr(self.name).subscript(index=str(index))
+            # e = E(dst_marking_name).attr(self.name).subscript(index=str(index)).assign(right)
+            # l.append( e )
 
         return l
 
@@ -1392,8 +1569,12 @@ class PackedPlaceTypes(object):
         """
         tests = []
         for index in range(0, self.native_field_count()):
-            left = E(left_marking_name).attr(self.name).subscript(index=str(index))
-            right = E(right_marking_name).attr(self.name).subscript(index=str(index))
+            left = cyast.Subscript(value=cyast.Attribute(value=cyast.Name(left_marking_name),
+                                                         attr=self.name),
+                                   slice=cyast.Index(cyast.Num(index)))
+            right = cyast.Subscript(value=cyast.Attribute(value=cyast.Name(right_marking_name),
+                                                          attr=self.name),
+                                    slice=cyast.Index(cyast.Num(index)))
             tests.append( (left, right, ) )
         return tests
 
