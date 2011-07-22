@@ -1,0 +1,7214 @@
+<?xml version="1.0" encoding="utf-8"?>
+<pnml>
+ <snakes version="0.9.13">
+  <plugins>
+   <object type="tuple">
+    <object type="str">
+     snakes.nets
+    </object>
+    <object type="str">
+     snakes.plugins.clusters
+    </object>
+    <object type="str">
+     snakes.plugins.status
+    </object>
+    <object type="str">
+     snakes.plugins.ops
+    </object>
+    <object type="str">
+     snakes.plugins.labels
+    </object>
+   </object>
+  </plugins>
+ </snakes>
+ <net id="(((((((((((((basic&amp;basic)&amp;basic)|((basic&amp;basic)&amp;basic))|((basic&amp;basic)&amp;basic))|((basic&amp;basic)&amp;basic))|((basic&amp;basic)&amp;basic))|((basic&amp;basic)&amp;basic))|((basic&amp;basic)&amp;basic))|((basic&amp;basic)&amp;basic))|((basic&amp;basic)&amp;basic))|((basic&amp;basic)&amp;basic))|((basic&amp;basic)&amp;basic))|((basic&amp;basic)&amp;basic))">
+  <declare>
+   from dolev_yao import *
+  </declare>
+  <place id="Alice(this=5,peer=6).entry#1">
+   <type domain="universal"/>
+   <initialMarking>
+    <multiset>
+     <item>
+      <value>
+       <token/>
+      </value>
+      <multiplicity>
+       1
+      </multiplicity>
+     </item>
+    </multiset>
+   </initialMarking>
+   <status>
+    <name>
+     entry
+    </name>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="net">
+    <object type="str">
+     Alice(this=5,peer=6)
+    </object>
+   </label>
+  </place>
+  <place id="Bob(this=8).internal#1">
+   <type domain="universal"/>
+   <initialMarking>
+    <multiset/>
+   </initialMarking>
+   <status>
+    <name>
+     internal
+    </name>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="net">
+    <object type="str">
+     Bob(this=8)
+    </object>
+   </label>
+  </place>
+  <place id="Bob(this=8).internal#2">
+   <type domain="universal"/>
+   <initialMarking>
+    <multiset/>
+   </initialMarking>
+   <status>
+    <name>
+     internal
+    </name>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="net">
+    <object type="str">
+     Bob(this=8)
+    </object>
+   </label>
+  </place>
+  <place id="Bob(this=2).exit#1">
+   <type domain="universal"/>
+   <initialMarking>
+    <multiset/>
+   </initialMarking>
+   <status>
+    <name>
+     exit
+    </name>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="net">
+    <object type="str">
+     Bob(this=2)
+    </object>
+   </label>
+  </place>
+  <place id="Alice(this=3,peer=4).internal#2">
+   <type domain="universal"/>
+   <initialMarking>
+    <multiset/>
+   </initialMarking>
+   <status>
+    <name>
+     internal
+    </name>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="net">
+    <object type="str">
+     Alice(this=3,peer=4)
+    </object>
+   </label>
+  </place>
+  <place id="Alice(this=3,peer=4).internal#1">
+   <type domain="universal"/>
+   <initialMarking>
+    <multiset/>
+   </initialMarking>
+   <status>
+    <name>
+     internal
+    </name>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="net">
+    <object type="str">
+     Alice(this=3,peer=4)
+    </object>
+   </label>
+  </place>
+  <place id="Alice(this=5,peer=6).internal#2">
+   <type domain="universal"/>
+   <initialMarking>
+    <multiset/>
+   </initialMarking>
+   <status>
+    <name>
+     internal
+    </name>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="net">
+    <object type="str">
+     Alice(this=5,peer=6)
+    </object>
+   </label>
+  </place>
+  <place id="Alice(this=5,peer=6).internal#1">
+   <type domain="universal"/>
+   <initialMarking>
+    <multiset/>
+   </initialMarking>
+   <status>
+    <name>
+     internal
+    </name>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="net">
+    <object type="str">
+     Alice(this=5,peer=6)
+    </object>
+   </label>
+  </place>
+  <place id="Alice(this=3,peer=4).nonce">
+   <type domain="instance">
+    <object type="pickle">
+     cdolev_yao
+Nonce
+p1
+.
+    </object>
+   </type>
+   <initialMarking>
+    <multiset/>
+   </initialMarking>
+   <status>
+    <name>
+     buffer
+    </name>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="net">
+    <object type="str">
+     Alice(this=3,peer=4)
+    </object>
+   </label>
+   <label name="name">
+    <object type="str">
+     Alice(this=3,peer=4).nonce
+    </object>
+   </label>
+  </place>
+  <place id="Bob(this=2).entry#1">
+   <type domain="universal"/>
+   <initialMarking>
+    <multiset>
+     <item>
+      <value>
+       <token/>
+      </value>
+      <multiplicity>
+       1
+      </multiplicity>
+     </item>
+    </multiset>
+   </initialMarking>
+   <status>
+    <name>
+     entry
+    </name>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="net">
+    <object type="str">
+     Bob(this=2)
+    </object>
+   </label>
+  </place>
+  <place id="Alice(this=3,peer=4).entry#1">
+   <type domain="universal"/>
+   <initialMarking>
+    <multiset>
+     <item>
+      <value>
+       <token/>
+      </value>
+      <multiplicity>
+       1
+      </multiplicity>
+     </item>
+    </multiset>
+   </initialMarking>
+   <status>
+    <name>
+     entry
+    </name>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="net">
+    <object type="str">
+     Alice(this=3,peer=4)
+    </object>
+   </label>
+  </place>
+  <place id="Alice(this=1,peer=2).exit#1">
+   <type domain="universal"/>
+   <initialMarking>
+    <multiset/>
+   </initialMarking>
+   <status>
+    <name>
+     exit
+    </name>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="net">
+    <object type="str">
+     Alice(this=1,peer=2)
+    </object>
+   </label>
+  </place>
+  <place id="Alice(this=7,peer=8).internal#2">
+   <type domain="universal"/>
+   <initialMarking>
+    <multiset/>
+   </initialMarking>
+   <status>
+    <name>
+     internal
+    </name>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="net">
+    <object type="str">
+     Alice(this=7,peer=8)
+    </object>
+   </label>
+  </place>
+  <place id="Alice(this=7,peer=8).internal#1">
+   <type domain="universal"/>
+   <initialMarking>
+    <multiset/>
+   </initialMarking>
+   <status>
+    <name>
+     internal
+    </name>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="net">
+    <object type="str">
+     Alice(this=7,peer=8)
+    </object>
+   </label>
+  </place>
+  <place id="Bob(this=6).nonce">
+   <type domain="instance">
+    <object type="pickle">
+     cdolev_yao
+Nonce
+p1
+.
+    </object>
+   </type>
+   <initialMarking>
+    <multiset/>
+   </initialMarking>
+   <status>
+    <name>
+     buffer
+    </name>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="net">
+    <object type="str">
+     Bob(this=6)
+    </object>
+   </label>
+   <label name="name">
+    <object type="str">
+     Bob(this=6).nonce
+    </object>
+   </label>
+  </place>
+  <place id="Bob(this=6).internal#2">
+   <type domain="universal"/>
+   <initialMarking>
+    <multiset/>
+   </initialMarking>
+   <status>
+    <name>
+     internal
+    </name>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="net">
+    <object type="str">
+     Bob(this=6)
+    </object>
+   </label>
+  </place>
+  <place id="Bob(this=6).internal#1">
+   <type domain="universal"/>
+   <initialMarking>
+    <multiset/>
+   </initialMarking>
+   <status>
+    <name>
+     internal
+    </name>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="net">
+    <object type="str">
+     Bob(this=6)
+    </object>
+   </label>
+  </place>
+  <place id="Alice(this=1,peer=2).nonce">
+   <type domain="instance">
+    <object type="pickle">
+     cdolev_yao
+Nonce
+p1
+.
+    </object>
+   </type>
+   <initialMarking>
+    <multiset/>
+   </initialMarking>
+   <status>
+    <name>
+     buffer
+    </name>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="net">
+    <object type="str">
+     Alice(this=1,peer=2)
+    </object>
+   </label>
+   <label name="name">
+    <object type="str">
+     Alice(this=1,peer=2).nonce
+    </object>
+   </label>
+  </place>
+  <place id="Alice(this=10,peer=11).exit#1">
+   <type domain="universal"/>
+   <initialMarking>
+    <multiset/>
+   </initialMarking>
+   <status>
+    <name>
+     exit
+    </name>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="net">
+    <object type="str">
+     Alice(this=10,peer=11)
+    </object>
+   </label>
+  </place>
+  <place id="Alice(this=9,peer=10).internal#2">
+   <type domain="universal"/>
+   <initialMarking>
+    <multiset/>
+   </initialMarking>
+   <status>
+    <name>
+     internal
+    </name>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="net">
+    <object type="str">
+     Alice(this=9,peer=10)
+    </object>
+   </label>
+  </place>
+  <place id="Alice(this=9,peer=10).internal#1">
+   <type domain="universal"/>
+   <initialMarking>
+    <multiset/>
+   </initialMarking>
+   <status>
+    <name>
+     internal
+    </name>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="net">
+    <object type="str">
+     Alice(this=9,peer=10)
+    </object>
+   </label>
+  </place>
+  <place id="Bob(this=2).internal#2">
+   <type domain="universal"/>
+   <initialMarking>
+    <multiset/>
+   </initialMarking>
+   <status>
+    <name>
+     internal
+    </name>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="net">
+    <object type="str">
+     Bob(this=2)
+    </object>
+   </label>
+  </place>
+  <place id="Bob(this=2).internal#1">
+   <type domain="universal"/>
+   <initialMarking>
+    <multiset/>
+   </initialMarking>
+   <status>
+    <name>
+     internal
+    </name>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="net">
+    <object type="str">
+     Bob(this=2)
+    </object>
+   </label>
+  </place>
+  <place id="Bob(this=10).peer">
+   <type domain="instance">
+    <object name="int" type="class"/>
+   </type>
+   <initialMarking>
+    <multiset/>
+   </initialMarking>
+   <status>
+    <name>
+     buffer
+    </name>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="net">
+    <object type="str">
+     Bob(this=10)
+    </object>
+   </label>
+   <label name="name">
+    <object type="str">
+     Bob(this=10).peer
+    </object>
+   </label>
+  </place>
+  <place id="Alice(this=10,peer=11).entry#1">
+   <type domain="universal"/>
+   <initialMarking>
+    <multiset>
+     <item>
+      <value>
+       <token/>
+      </value>
+      <multiplicity>
+       1
+      </multiplicity>
+     </item>
+    </multiset>
+   </initialMarking>
+   <status>
+    <name>
+     entry
+    </name>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="net">
+    <object type="str">
+     Alice(this=10,peer=11)
+    </object>
+   </label>
+  </place>
+  <place id="Bob(this=11).internal#2">
+   <type domain="universal"/>
+   <initialMarking>
+    <multiset/>
+   </initialMarking>
+   <status>
+    <name>
+     internal
+    </name>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="net">
+    <object type="str">
+     Bob(this=11)
+    </object>
+   </label>
+  </place>
+  <place id="Bob(this=6).exit#1">
+   <type domain="universal"/>
+   <initialMarking>
+    <multiset/>
+   </initialMarking>
+   <status>
+    <name>
+     exit
+    </name>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="net">
+    <object type="str">
+     Bob(this=6)
+    </object>
+   </label>
+  </place>
+  <place id="Alice(this=5,peer=6).exit#1">
+   <type domain="universal"/>
+   <initialMarking>
+    <multiset/>
+   </initialMarking>
+   <status>
+    <name>
+     exit
+    </name>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="net">
+    <object type="str">
+     Alice(this=5,peer=6)
+    </object>
+   </label>
+  </place>
+  <place id="Bob(this=4).entry#1">
+   <type domain="universal"/>
+   <initialMarking>
+    <multiset>
+     <item>
+      <value>
+       <token/>
+      </value>
+      <multiplicity>
+       1
+      </multiplicity>
+     </item>
+    </multiset>
+   </initialMarking>
+   <status>
+    <name>
+     entry
+    </name>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="net">
+    <object type="str">
+     Bob(this=4)
+    </object>
+   </label>
+  </place>
+  <place id="Bob(this=11).internal#1">
+   <type domain="universal"/>
+   <initialMarking>
+    <multiset/>
+   </initialMarking>
+   <status>
+    <name>
+     internal
+    </name>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="net">
+    <object type="str">
+     Bob(this=11)
+    </object>
+   </label>
+  </place>
+  <place id="Bob(this=11).exit#1">
+   <type domain="universal"/>
+   <initialMarking>
+    <multiset/>
+   </initialMarking>
+   <status>
+    <name>
+     exit
+    </name>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="net">
+    <object type="str">
+     Bob(this=11)
+    </object>
+   </label>
+  </place>
+  <place id="Alice(this=1,peer=2).internal#2">
+   <type domain="universal"/>
+   <initialMarking>
+    <multiset/>
+   </initialMarking>
+   <status>
+    <name>
+     internal
+    </name>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="net">
+    <object type="str">
+     Alice(this=1,peer=2)
+    </object>
+   </label>
+  </place>
+  <place id="Alice(this=1,peer=2).internal#1">
+   <type domain="universal"/>
+   <initialMarking>
+    <multiset/>
+   </initialMarking>
+   <status>
+    <name>
+     internal
+    </name>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="net">
+    <object type="str">
+     Alice(this=1,peer=2)
+    </object>
+   </label>
+  </place>
+  <place id="Alice(this=9,peer=10).entry#1">
+   <type domain="universal"/>
+   <initialMarking>
+    <multiset>
+     <item>
+      <value>
+       <token/>
+      </value>
+      <multiplicity>
+       1
+      </multiplicity>
+     </item>
+    </multiset>
+   </initialMarking>
+   <status>
+    <name>
+     entry
+    </name>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="net">
+    <object type="str">
+     Alice(this=9,peer=10)
+    </object>
+   </label>
+  </place>
+  <place id="Bob(this=8).nonce">
+   <type domain="instance">
+    <object type="pickle">
+     cdolev_yao
+Nonce
+p1
+.
+    </object>
+   </type>
+   <initialMarking>
+    <multiset/>
+   </initialMarking>
+   <status>
+    <name>
+     buffer
+    </name>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="net">
+    <object type="str">
+     Bob(this=8)
+    </object>
+   </label>
+   <label name="name">
+    <object type="str">
+     Bob(this=8).nonce
+    </object>
+   </label>
+  </place>
+  <place id="Bob(this=8).exit#1">
+   <type domain="universal"/>
+   <initialMarking>
+    <multiset/>
+   </initialMarking>
+   <status>
+    <name>
+     exit
+    </name>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="net">
+    <object type="str">
+     Bob(this=8)
+    </object>
+   </label>
+  </place>
+  <place id="Bob(this=6).peer">
+   <type domain="instance">
+    <object name="int" type="class"/>
+   </type>
+   <initialMarking>
+    <multiset/>
+   </initialMarking>
+   <status>
+    <name>
+     buffer
+    </name>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="net">
+    <object type="str">
+     Bob(this=6)
+    </object>
+   </label>
+   <label name="name">
+    <object type="str">
+     Bob(this=6).peer
+    </object>
+   </label>
+  </place>
+  <place id="Bob(this=4).exit#1">
+   <type domain="universal"/>
+   <initialMarking>
+    <multiset/>
+   </initialMarking>
+   <status>
+    <name>
+     exit
+    </name>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="net">
+    <object type="str">
+     Bob(this=4)
+    </object>
+   </label>
+  </place>
+  <place id="Bob(this=6).entry#1">
+   <type domain="universal"/>
+   <initialMarking>
+    <multiset>
+     <item>
+      <value>
+       <token/>
+      </value>
+      <multiplicity>
+       1
+      </multiplicity>
+     </item>
+    </multiset>
+   </initialMarking>
+   <status>
+    <name>
+     entry
+    </name>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="net">
+    <object type="str">
+     Bob(this=6)
+    </object>
+   </label>
+  </place>
+  <place id="Bob(this=4).internal#1">
+   <type domain="universal"/>
+   <initialMarking>
+    <multiset/>
+   </initialMarking>
+   <status>
+    <name>
+     internal
+    </name>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="net">
+    <object type="str">
+     Bob(this=4)
+    </object>
+   </label>
+  </place>
+  <place id="Bob(this=10).nonce">
+   <type domain="instance">
+    <object type="pickle">
+     cdolev_yao
+Nonce
+p1
+.
+    </object>
+   </type>
+   <initialMarking>
+    <multiset/>
+   </initialMarking>
+   <status>
+    <name>
+     buffer
+    </name>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="net">
+    <object type="str">
+     Bob(this=10)
+    </object>
+   </label>
+   <label name="name">
+    <object type="str">
+     Bob(this=10).nonce
+    </object>
+   </label>
+  </place>
+  <place id="Bob(this=4).internal#2">
+   <type domain="universal"/>
+   <initialMarking>
+    <multiset/>
+   </initialMarking>
+   <status>
+    <name>
+     internal
+    </name>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="net">
+    <object type="str">
+     Bob(this=4)
+    </object>
+   </label>
+  </place>
+  <place id="Alice(this=7,peer=8).nonce">
+   <type domain="instance">
+    <object type="pickle">
+     cdolev_yao
+Nonce
+p1
+.
+    </object>
+   </type>
+   <initialMarking>
+    <multiset/>
+   </initialMarking>
+   <status>
+    <name>
+     buffer
+    </name>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="net">
+    <object type="str">
+     Alice(this=7,peer=8)
+    </object>
+   </label>
+   <label name="name">
+    <object type="str">
+     Alice(this=7,peer=8).nonce
+    </object>
+   </label>
+  </place>
+  <place id="Bob(this=11).entry#1">
+   <type domain="universal"/>
+   <initialMarking>
+    <multiset>
+     <item>
+      <value>
+       <token/>
+      </value>
+      <multiplicity>
+       1
+      </multiplicity>
+     </item>
+    </multiset>
+   </initialMarking>
+   <status>
+    <name>
+     entry
+    </name>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="net">
+    <object type="str">
+     Bob(this=11)
+    </object>
+   </label>
+  </place>
+  <place id="Bob(this=8).entry#1">
+   <type domain="universal"/>
+   <initialMarking>
+    <multiset>
+     <item>
+      <value>
+       <token/>
+      </value>
+      <multiplicity>
+       1
+      </multiplicity>
+     </item>
+    </multiset>
+   </initialMarking>
+   <status>
+    <name>
+     entry
+    </name>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="net">
+    <object type="str">
+     Bob(this=8)
+    </object>
+   </label>
+  </place>
+  <place id="Alice(this=3,peer=4).exit#1">
+   <type domain="universal"/>
+   <initialMarking>
+    <multiset/>
+   </initialMarking>
+   <status>
+    <name>
+     exit
+    </name>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="net">
+    <object type="str">
+     Alice(this=3,peer=4)
+    </object>
+   </label>
+  </place>
+  <place id="Bob(this=11).nonce">
+   <type domain="instance">
+    <object type="pickle">
+     cdolev_yao
+Nonce
+p1
+.
+    </object>
+   </type>
+   <initialMarking>
+    <multiset/>
+   </initialMarking>
+   <status>
+    <name>
+     buffer
+    </name>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="net">
+    <object type="str">
+     Bob(this=11)
+    </object>
+   </label>
+   <label name="name">
+    <object type="str">
+     Bob(this=11).nonce
+    </object>
+   </label>
+  </place>
+  <place id="Bob(this=10).entry#1">
+   <type domain="universal"/>
+   <initialMarking>
+    <multiset>
+     <item>
+      <value>
+       <token/>
+      </value>
+      <multiplicity>
+       1
+      </multiplicity>
+     </item>
+    </multiset>
+   </initialMarking>
+   <status>
+    <name>
+     entry
+    </name>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="net">
+    <object type="str">
+     Bob(this=10)
+    </object>
+   </label>
+  </place>
+  <place id="Alice(this=9,peer=10).exit#1">
+   <type domain="universal"/>
+   <initialMarking>
+    <multiset/>
+   </initialMarking>
+   <status>
+    <name>
+     exit
+    </name>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="net">
+    <object type="str">
+     Alice(this=9,peer=10)
+    </object>
+   </label>
+  </place>
+  <place id="Bob(this=2).peer">
+   <type domain="instance">
+    <object name="int" type="class"/>
+   </type>
+   <initialMarking>
+    <multiset/>
+   </initialMarking>
+   <status>
+    <name>
+     buffer
+    </name>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="net">
+    <object type="str">
+     Bob(this=2)
+    </object>
+   </label>
+   <label name="name">
+    <object type="str">
+     Bob(this=2).peer
+    </object>
+   </label>
+  </place>
+  <place id="Bob(this=8).peer">
+   <type domain="instance">
+    <object name="int" type="class"/>
+   </type>
+   <initialMarking>
+    <multiset/>
+   </initialMarking>
+   <status>
+    <name>
+     buffer
+    </name>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="net">
+    <object type="str">
+     Bob(this=8)
+    </object>
+   </label>
+   <label name="name">
+    <object type="str">
+     Bob(this=8).peer
+    </object>
+   </label>
+  </place>
+  <place id="Bob(this=11).peer">
+   <type domain="instance">
+    <object name="int" type="class"/>
+   </type>
+   <initialMarking>
+    <multiset/>
+   </initialMarking>
+   <status>
+    <name>
+     buffer
+    </name>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="net">
+    <object type="str">
+     Bob(this=11)
+    </object>
+   </label>
+   <label name="name">
+    <object type="str">
+     Bob(this=11).peer
+    </object>
+   </label>
+  </place>
+  <place id="Bob(this=4).peer">
+   <type domain="instance">
+    <object name="int" type="class"/>
+   </type>
+   <initialMarking>
+    <multiset/>
+   </initialMarking>
+   <status>
+    <name>
+     buffer
+    </name>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="net">
+    <object type="str">
+     Bob(this=4)
+    </object>
+   </label>
+   <label name="name">
+    <object type="str">
+     Bob(this=4).peer
+    </object>
+   </label>
+  </place>
+  <place id="Bob(this=4).nonce">
+   <type domain="instance">
+    <object type="pickle">
+     cdolev_yao
+Nonce
+p1
+.
+    </object>
+   </type>
+   <initialMarking>
+    <multiset/>
+   </initialMarking>
+   <status>
+    <name>
+     buffer
+    </name>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="net">
+    <object type="str">
+     Bob(this=4)
+    </object>
+   </label>
+   <label name="name">
+    <object type="str">
+     Bob(this=4).nonce
+    </object>
+   </label>
+  </place>
+  <place id="Bob(this=2).nonce">
+   <type domain="instance">
+    <object type="pickle">
+     cdolev_yao
+Nonce
+p1
+.
+    </object>
+   </type>
+   <initialMarking>
+    <multiset/>
+   </initialMarking>
+   <status>
+    <name>
+     buffer
+    </name>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="net">
+    <object type="str">
+     Bob(this=2)
+    </object>
+   </label>
+   <label name="name">
+    <object type="str">
+     Bob(this=2).nonce
+    </object>
+   </label>
+  </place>
+  <place id="Alice(this=9,peer=10).nonce">
+   <type domain="instance">
+    <object type="pickle">
+     cdolev_yao
+Nonce
+p1
+.
+    </object>
+   </type>
+   <initialMarking>
+    <multiset/>
+   </initialMarking>
+   <status>
+    <name>
+     buffer
+    </name>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="net">
+    <object type="str">
+     Alice(this=9,peer=10)
+    </object>
+   </label>
+   <label name="name">
+    <object type="str">
+     Alice(this=9,peer=10).nonce
+    </object>
+   </label>
+  </place>
+  <place id="Alice(this=10,peer=11).internal#2">
+   <type domain="universal"/>
+   <initialMarking>
+    <multiset/>
+   </initialMarking>
+   <status>
+    <name>
+     internal
+    </name>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="net">
+    <object type="str">
+     Alice(this=10,peer=11)
+    </object>
+   </label>
+  </place>
+  <place id="Alice(this=10,peer=11).internal#1">
+   <type domain="universal"/>
+   <initialMarking>
+    <multiset/>
+   </initialMarking>
+   <status>
+    <name>
+     internal
+    </name>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="net">
+    <object type="str">
+     Alice(this=10,peer=11)
+    </object>
+   </label>
+  </place>
+  <place id="Alice(this=7,peer=8).entry#1">
+   <type domain="universal"/>
+   <initialMarking>
+    <multiset>
+     <item>
+      <value>
+       <token/>
+      </value>
+      <multiplicity>
+       1
+      </multiplicity>
+     </item>
+    </multiset>
+   </initialMarking>
+   <status>
+    <name>
+     entry
+    </name>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="net">
+    <object type="str">
+     Alice(this=7,peer=8)
+    </object>
+   </label>
+  </place>
+  <place id="Alice(this=1,peer=2).entry#1">
+   <type domain="universal"/>
+   <initialMarking>
+    <multiset>
+     <item>
+      <value>
+       <token/>
+      </value>
+      <multiplicity>
+       1
+      </multiplicity>
+     </item>
+    </multiset>
+   </initialMarking>
+   <status>
+    <name>
+     entry
+    </name>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="net">
+    <object type="str">
+     Alice(this=1,peer=2)
+    </object>
+   </label>
+  </place>
+  <place id="nw">
+   <type domain="instance">
+    <object name="object" type="class"/>
+   </type>
+   <initialMarking>
+    <multiset/>
+   </initialMarking>
+   <status>
+    <name>
+     buffer
+    </name>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="net">
+    <object type="str">
+     Alice(this=1,peer=2)
+    </object>
+   </label>
+   <label name="name">
+    <object type="str">
+     nw
+    </object>
+   </label>
+  </place>
+  <place id="Bob(this=10).exit#1">
+   <type domain="universal"/>
+   <initialMarking>
+    <multiset/>
+   </initialMarking>
+   <status>
+    <name>
+     exit
+    </name>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="net">
+    <object type="str">
+     Bob(this=10)
+    </object>
+   </label>
+  </place>
+  <place id="Alice(this=7,peer=8).exit#1">
+   <type domain="universal"/>
+   <initialMarking>
+    <multiset/>
+   </initialMarking>
+   <status>
+    <name>
+     exit
+    </name>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="net">
+    <object type="str">
+     Alice(this=7,peer=8)
+    </object>
+   </label>
+  </place>
+  <place id="Alice(this=10,peer=11).nonce">
+   <type domain="instance">
+    <object type="pickle">
+     cdolev_yao
+Nonce
+p1
+.
+    </object>
+   </type>
+   <initialMarking>
+    <multiset/>
+   </initialMarking>
+   <status>
+    <name>
+     buffer
+    </name>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="net">
+    <object type="str">
+     Alice(this=10,peer=11)
+    </object>
+   </label>
+   <label name="name">
+    <object type="str">
+     Alice(this=10,peer=11).nonce
+    </object>
+   </label>
+  </place>
+  <place id="Alice(this=5,peer=6).nonce">
+   <type domain="instance">
+    <object type="pickle">
+     cdolev_yao
+Nonce
+p1
+.
+    </object>
+   </type>
+   <initialMarking>
+    <multiset/>
+   </initialMarking>
+   <status>
+    <name>
+     buffer
+    </name>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="net">
+    <object type="str">
+     Alice(this=5,peer=6)
+    </object>
+   </label>
+   <label name="name">
+    <object type="str">
+     Alice(this=5,peer=6).nonce
+    </object>
+   </label>
+  </place>
+  <place id="Bob(this=10).internal#2">
+   <type domain="universal"/>
+   <initialMarking>
+    <multiset/>
+   </initialMarking>
+   <status>
+    <name>
+     internal
+    </name>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="net">
+    <object type="str">
+     Bob(this=10)
+    </object>
+   </label>
+  </place>
+  <place id="Bob(this=10).internal#1">
+   <type domain="universal"/>
+   <initialMarking>
+    <multiset/>
+   </initialMarking>
+   <status>
+    <name>
+     internal
+    </name>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="net">
+    <object type="str">
+     Bob(this=10)
+    </object>
+   </label>
+  </place>
+  <transition id="Bob(this=6).[nw-(('crypt', ('pub', 6), Nb)) if (Nb) == ((Nonce)(6))]">
+   <guard>
+    <expression>
+     (Nb) == ((Nonce)(6))
+    </expression>
+   </guard>
+   <status>
+    <name/>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="action">
+    <object type="str">
+     [nw-(('crypt', ('pub', 6), Nb)) if (Nb) == ((Nonce)(6))]
+    </object>
+   </label>
+   <label name="net">
+    <object type="str">
+     Bob(this=6)
+    </object>
+   </label>
+   <label name="tag">
+    <object type="str">
+     trans17
+    </object>
+   </label>
+   <label name="ops">
+    <object type="list">
+     <object type="tuple">
+      <object type="str">
+       sequence
+      </object>
+      <object type="int">
+       1
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       1
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+    </object>
+   </label>
+  </transition>
+  <transition id="Bob(this=2).[nw-(('crypt', ('pub', 2), A, Na)), peer+(A), nonce+(Na) if True]">
+   <status>
+    <name/>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="action">
+    <object type="str">
+     [nw-(('crypt', ('pub', 2), A, Na)), peer+(A), nonce+(Na) if True]
+    </object>
+   </label>
+   <label name="net">
+    <object type="str">
+     Bob(this=2)
+    </object>
+   </label>
+   <label name="tag">
+    <object type="str">
+     trans3
+    </object>
+   </label>
+   <label name="ops">
+    <object type="list">
+     <object type="tuple">
+      <object type="str">
+       sequence
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       sequence
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       1
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+    </object>
+   </label>
+  </transition>
+  <transition id="Bob(this=8).[peer?(A), nonce?(Na), nw+(('crypt', ('pub', A), Na, (Nonce)(8))) if True]">
+   <status>
+    <name/>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="action">
+    <object type="str">
+     [peer?(A), nonce?(Na), nw+(('crypt', ('pub', A), Na, (Nonce)(8))) if True]
+    </object>
+   </label>
+   <label name="net">
+    <object type="str">
+     Bob(this=8)
+    </object>
+   </label>
+   <label name="tag">
+    <object type="str">
+     trans22
+    </object>
+   </label>
+   <label name="ops">
+    <object type="list">
+     <object type="tuple">
+      <object type="str">
+       sequence
+      </object>
+      <object type="int">
+       1
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       sequence
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       1
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+    </object>
+   </label>
+  </transition>
+  <transition id="Bob(this=4).[peer?(A), nonce?(Na), nw+(('crypt', ('pub', A), Na, (Nonce)(4))) if True]">
+   <status>
+    <name/>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="action">
+    <object type="str">
+     [peer?(A), nonce?(Na), nw+(('crypt', ('pub', A), Na, (Nonce)(4))) if True]
+    </object>
+   </label>
+   <label name="net">
+    <object type="str">
+     Bob(this=4)
+    </object>
+   </label>
+   <label name="tag">
+    <object type="str">
+     trans10
+    </object>
+   </label>
+   <label name="ops">
+    <object type="list">
+     <object type="tuple">
+      <object type="str">
+       sequence
+      </object>
+      <object type="int">
+       1
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       sequence
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       1
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+    </object>
+   </label>
+  </transition>
+  <transition id="Bob(this=8).[nw-(('crypt', ('pub', 8), A, Na)), peer+(A), nonce+(Na) if True]">
+   <status>
+    <name/>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="action">
+    <object type="str">
+     [nw-(('crypt', ('pub', 8), A, Na)), peer+(A), nonce+(Na) if True]
+    </object>
+   </label>
+   <label name="net">
+    <object type="str">
+     Bob(this=8)
+    </object>
+   </label>
+   <label name="tag">
+    <object type="str">
+     trans21
+    </object>
+   </label>
+   <label name="ops">
+    <object type="list">
+     <object type="tuple">
+      <object type="str">
+       sequence
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       sequence
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       1
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+    </object>
+   </label>
+  </transition>
+  <transition id="Bob(this=10).[nw-(('crypt', ('pub', 10), A, Na)), peer+(A), nonce+(Na) if True]">
+   <status>
+    <name/>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="action">
+    <object type="str">
+     [nw-(('crypt', ('pub', 10), A, Na)), peer+(A), nonce+(Na) if True]
+    </object>
+   </label>
+   <label name="net">
+    <object type="str">
+     Bob(this=10)
+    </object>
+   </label>
+   <label name="tag">
+    <object type="str">
+     trans27
+    </object>
+   </label>
+   <label name="ops">
+    <object type="list">
+     <object type="tuple">
+      <object type="str">
+       sequence
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       sequence
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       1
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+    </object>
+   </label>
+  </transition>
+  <transition id="Bob(this=6).[peer?(A), nonce?(Na), nw+(('crypt', ('pub', A), Na, (Nonce)(6))) if True]">
+   <status>
+    <name/>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="action">
+    <object type="str">
+     [peer?(A), nonce?(Na), nw+(('crypt', ('pub', A), Na, (Nonce)(6))) if True]
+    </object>
+   </label>
+   <label name="net">
+    <object type="str">
+     Bob(this=6)
+    </object>
+   </label>
+   <label name="tag">
+    <object type="str">
+     trans16
+    </object>
+   </label>
+   <label name="ops">
+    <object type="list">
+     <object type="tuple">
+      <object type="str">
+       sequence
+      </object>
+      <object type="int">
+       1
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       sequence
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       1
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+    </object>
+   </label>
+  </transition>
+  <transition id="Alice(this=7,peer=8).[nw-(('crypt', ('pub', 7), Na, Nb)), nonce+(Nb) if (Na) == ((Nonce)(7))]">
+   <guard>
+    <expression>
+     (Na) == ((Nonce)(7))
+    </expression>
+   </guard>
+   <status>
+    <name/>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="action">
+    <object type="str">
+     [nw-(('crypt', ('pub', 7), Na, Nb)), nonce+(Nb) if (Na) == ((Nonce)(7))]
+    </object>
+   </label>
+   <label name="net">
+    <object type="str">
+     Alice(this=7,peer=8)
+    </object>
+   </label>
+   <label name="tag">
+    <object type="str">
+     trans19
+    </object>
+   </label>
+   <label name="ops">
+    <object type="list">
+     <object type="tuple">
+      <object type="str">
+       sequence
+      </object>
+      <object type="int">
+       1
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       sequence
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       1
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+    </object>
+   </label>
+  </transition>
+  <transition id="Alice(this=10,peer=11).[nw+(('crypt', ('pub', 11), 10, (Nonce)(10))) if True]">
+   <status>
+    <name/>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="action">
+    <object type="str">
+     [nw+(('crypt', ('pub', 11), 10, (Nonce)(10))) if True]
+    </object>
+   </label>
+   <label name="net">
+    <object type="str">
+     Alice(this=10,peer=11)
+    </object>
+   </label>
+   <label name="tag">
+    <object type="str">
+     trans30
+    </object>
+   </label>
+   <label name="ops">
+    <object type="list">
+     <object type="tuple">
+      <object type="str">
+       sequence
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       sequence
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       1
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+    </object>
+   </label>
+  </transition>
+  <transition id="Alice(this=7,peer=8).[nw+(('crypt', ('pub', 8), 7, (Nonce)(7))) if True]">
+   <status>
+    <name/>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="action">
+    <object type="str">
+     [nw+(('crypt', ('pub', 8), 7, (Nonce)(7))) if True]
+    </object>
+   </label>
+   <label name="net">
+    <object type="str">
+     Alice(this=7,peer=8)
+    </object>
+   </label>
+   <label name="tag">
+    <object type="str">
+     trans18
+    </object>
+   </label>
+   <label name="ops">
+    <object type="list">
+     <object type="tuple">
+      <object type="str">
+       sequence
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       sequence
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       1
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+    </object>
+   </label>
+  </transition>
+  <transition id="Alice(this=1,peer=2).[nw+(('crypt', ('pub', 2), 1, (Nonce)(1))) if True]">
+   <status>
+    <name/>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="action">
+    <object type="str">
+     [nw+(('crypt', ('pub', 2), 1, (Nonce)(1))) if True]
+    </object>
+   </label>
+   <label name="net">
+    <object type="str">
+     Alice(this=1,peer=2)
+    </object>
+   </label>
+   <label name="tag">
+    <object type="str">
+     trans0
+    </object>
+   </label>
+   <label name="ops">
+    <object type="list">
+     <object type="tuple">
+      <object type="str">
+       sequence
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       sequence
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+    </object>
+   </label>
+  </transition>
+  <transition id="Alice(this=10,peer=11).[nonce?(Nb), nw+(('crypt', ('pub', 11), Nb)) if True]">
+   <status>
+    <name/>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="action">
+    <object type="str">
+     [nonce?(Nb), nw+(('crypt', ('pub', 11), Nb)) if True]
+    </object>
+   </label>
+   <label name="net">
+    <object type="str">
+     Alice(this=10,peer=11)
+    </object>
+   </label>
+   <label name="tag">
+    <object type="str">
+     trans32
+    </object>
+   </label>
+   <label name="ops">
+    <object type="list">
+     <object type="tuple">
+      <object type="str">
+       sequence
+      </object>
+      <object type="int">
+       1
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       1
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+    </object>
+   </label>
+  </transition>
+  <transition id="Alice(this=5,peer=6).[nonce?(Nb), nw+(('crypt', ('pub', 6), Nb)) if True]">
+   <status>
+    <name/>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="action">
+    <object type="str">
+     [nonce?(Nb), nw+(('crypt', ('pub', 6), Nb)) if True]
+    </object>
+   </label>
+   <label name="net">
+    <object type="str">
+     Alice(this=5,peer=6)
+    </object>
+   </label>
+   <label name="tag">
+    <object type="str">
+     trans14
+    </object>
+   </label>
+   <label name="ops">
+    <object type="list">
+     <object type="tuple">
+      <object type="str">
+       sequence
+      </object>
+      <object type="int">
+       1
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       1
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+    </object>
+   </label>
+  </transition>
+  <transition id="Alice(this=3,peer=4).[nonce?(Nb), nw+(('crypt', ('pub', 4), Nb)) if True]">
+   <status>
+    <name/>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="action">
+    <object type="str">
+     [nonce?(Nb), nw+(('crypt', ('pub', 4), Nb)) if True]
+    </object>
+   </label>
+   <label name="net">
+    <object type="str">
+     Alice(this=3,peer=4)
+    </object>
+   </label>
+   <label name="tag">
+    <object type="str">
+     trans8
+    </object>
+   </label>
+   <label name="ops">
+    <object type="list">
+     <object type="tuple">
+      <object type="str">
+       sequence
+      </object>
+      <object type="int">
+       1
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       1
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+    </object>
+   </label>
+  </transition>
+  <transition id="Alice(this=7,peer=8).[nonce?(Nb), nw+(('crypt', ('pub', 8), Nb)) if True]">
+   <status>
+    <name/>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="action">
+    <object type="str">
+     [nonce?(Nb), nw+(('crypt', ('pub', 8), Nb)) if True]
+    </object>
+   </label>
+   <label name="net">
+    <object type="str">
+     Alice(this=7,peer=8)
+    </object>
+   </label>
+   <label name="tag">
+    <object type="str">
+     trans20
+    </object>
+   </label>
+   <label name="ops">
+    <object type="list">
+     <object type="tuple">
+      <object type="str">
+       sequence
+      </object>
+      <object type="int">
+       1
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       1
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+    </object>
+   </label>
+  </transition>
+  <transition id="Bob(this=4).[nw-(('crypt', ('pub', 4), Nb)) if (Nb) == ((Nonce)(4))]">
+   <guard>
+    <expression>
+     (Nb) == ((Nonce)(4))
+    </expression>
+   </guard>
+   <status>
+    <name/>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="action">
+    <object type="str">
+     [nw-(('crypt', ('pub', 4), Nb)) if (Nb) == ((Nonce)(4))]
+    </object>
+   </label>
+   <label name="net">
+    <object type="str">
+     Bob(this=4)
+    </object>
+   </label>
+   <label name="tag">
+    <object type="str">
+     trans11
+    </object>
+   </label>
+   <label name="ops">
+    <object type="list">
+     <object type="tuple">
+      <object type="str">
+       sequence
+      </object>
+      <object type="int">
+       1
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       1
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+    </object>
+   </label>
+  </transition>
+  <transition id="Alice(this=3,peer=4).[nw-(('crypt', ('pub', 3), Na, Nb)), nonce+(Nb) if (Na) == ((Nonce)(3))]">
+   <guard>
+    <expression>
+     (Na) == ((Nonce)(3))
+    </expression>
+   </guard>
+   <status>
+    <name/>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="action">
+    <object type="str">
+     [nw-(('crypt', ('pub', 3), Na, Nb)), nonce+(Nb) if (Na) == ((Nonce)(3))]
+    </object>
+   </label>
+   <label name="net">
+    <object type="str">
+     Alice(this=3,peer=4)
+    </object>
+   </label>
+   <label name="tag">
+    <object type="str">
+     trans7
+    </object>
+   </label>
+   <label name="ops">
+    <object type="list">
+     <object type="tuple">
+      <object type="str">
+       sequence
+      </object>
+      <object type="int">
+       1
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       sequence
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       1
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+    </object>
+   </label>
+  </transition>
+  <transition id="Bob(this=8).[nw-(('crypt', ('pub', 8), Nb)) if (Nb) == ((Nonce)(8))]">
+   <guard>
+    <expression>
+     (Nb) == ((Nonce)(8))
+    </expression>
+   </guard>
+   <status>
+    <name/>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="action">
+    <object type="str">
+     [nw-(('crypt', ('pub', 8), Nb)) if (Nb) == ((Nonce)(8))]
+    </object>
+   </label>
+   <label name="net">
+    <object type="str">
+     Bob(this=8)
+    </object>
+   </label>
+   <label name="tag">
+    <object type="str">
+     trans23
+    </object>
+   </label>
+   <label name="ops">
+    <object type="list">
+     <object type="tuple">
+      <object type="str">
+       sequence
+      </object>
+      <object type="int">
+       1
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       1
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+    </object>
+   </label>
+  </transition>
+  <transition id="Alice(this=1,peer=2).[nw-(('crypt', ('pub', 1), Na, Nb)), nonce+(Nb) if (Na) == ((Nonce)(1))]">
+   <guard>
+    <expression>
+     (Na) == ((Nonce)(1))
+    </expression>
+   </guard>
+   <status>
+    <name/>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="action">
+    <object type="str">
+     [nw-(('crypt', ('pub', 1), Na, Nb)), nonce+(Nb) if (Na) == ((Nonce)(1))]
+    </object>
+   </label>
+   <label name="net">
+    <object type="str">
+     Alice(this=1,peer=2)
+    </object>
+   </label>
+   <label name="tag">
+    <object type="str">
+     trans1
+    </object>
+   </label>
+   <label name="ops">
+    <object type="list">
+     <object type="tuple">
+      <object type="str">
+       sequence
+      </object>
+      <object type="int">
+       1
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       sequence
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+    </object>
+   </label>
+  </transition>
+  <transition id="Alice(this=1,peer=2).[nonce?(Nb), nw+(('crypt', ('pub', 2), Nb)) if True]">
+   <status>
+    <name/>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="action">
+    <object type="str">
+     [nonce?(Nb), nw+(('crypt', ('pub', 2), Nb)) if True]
+    </object>
+   </label>
+   <label name="net">
+    <object type="str">
+     Alice(this=1,peer=2)
+    </object>
+   </label>
+   <label name="tag">
+    <object type="str">
+     trans2
+    </object>
+   </label>
+   <label name="ops">
+    <object type="list">
+     <object type="tuple">
+      <object type="str">
+       sequence
+      </object>
+      <object type="int">
+       1
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+    </object>
+   </label>
+  </transition>
+  <transition id="Bob(this=11).[nw-(('crypt', ('pub', 11), A, Na)), peer+(A), nonce+(Na) if True]">
+   <status>
+    <name/>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="action">
+    <object type="str">
+     [nw-(('crypt', ('pub', 11), A, Na)), peer+(A), nonce+(Na) if True]
+    </object>
+   </label>
+   <label name="net">
+    <object type="str">
+     Bob(this=11)
+    </object>
+   </label>
+   <label name="tag">
+    <object type="str">
+     trans33
+    </object>
+   </label>
+   <label name="ops">
+    <object type="list">
+     <object type="tuple">
+      <object type="str">
+       sequence
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       sequence
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       1
+      </object>
+     </object>
+    </object>
+   </label>
+  </transition>
+  <transition id="Alice(this=5,peer=6).[nw-(('crypt', ('pub', 5), Na, Nb)), nonce+(Nb) if (Na) == ((Nonce)(5))]">
+   <guard>
+    <expression>
+     (Na) == ((Nonce)(5))
+    </expression>
+   </guard>
+   <status>
+    <name/>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="action">
+    <object type="str">
+     [nw-(('crypt', ('pub', 5), Na, Nb)), nonce+(Nb) if (Na) == ((Nonce)(5))]
+    </object>
+   </label>
+   <label name="net">
+    <object type="str">
+     Alice(this=5,peer=6)
+    </object>
+   </label>
+   <label name="tag">
+    <object type="str">
+     trans13
+    </object>
+   </label>
+   <label name="ops">
+    <object type="list">
+     <object type="tuple">
+      <object type="str">
+       sequence
+      </object>
+      <object type="int">
+       1
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       sequence
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       1
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+    </object>
+   </label>
+  </transition>
+  <transition id="Bob(this=10).[peer?(A), nonce?(Na), nw+(('crypt', ('pub', A), Na, (Nonce)(10))) if True]">
+   <status>
+    <name/>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="action">
+    <object type="str">
+     [peer?(A), nonce?(Na), nw+(('crypt', ('pub', A), Na, (Nonce)(10))) if True]
+    </object>
+   </label>
+   <label name="net">
+    <object type="str">
+     Bob(this=10)
+    </object>
+   </label>
+   <label name="tag">
+    <object type="str">
+     trans28
+    </object>
+   </label>
+   <label name="ops">
+    <object type="list">
+     <object type="tuple">
+      <object type="str">
+       sequence
+      </object>
+      <object type="int">
+       1
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       sequence
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       1
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+    </object>
+   </label>
+  </transition>
+  <transition id="Bob(this=11).[nw-(('crypt', ('pub', 11), Nb)) if (Nb) == ((Nonce)(11))]">
+   <guard>
+    <expression>
+     (Nb) == ((Nonce)(11))
+    </expression>
+   </guard>
+   <status>
+    <name/>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="action">
+    <object type="str">
+     [nw-(('crypt', ('pub', 11), Nb)) if (Nb) == ((Nonce)(11))]
+    </object>
+   </label>
+   <label name="net">
+    <object type="str">
+     Bob(this=11)
+    </object>
+   </label>
+   <label name="tag">
+    <object type="str">
+     trans35
+    </object>
+   </label>
+   <label name="ops">
+    <object type="list">
+     <object type="tuple">
+      <object type="str">
+       sequence
+      </object>
+      <object type="int">
+       1
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       1
+      </object>
+     </object>
+    </object>
+   </label>
+  </transition>
+  <transition id="Alice(this=10,peer=11).[nw-(('crypt', ('pub', 10), Na, Nb)), nonce+(Nb) if (Na) == ((Nonce)(10))]">
+   <guard>
+    <expression>
+     (Na) == ((Nonce)(10))
+    </expression>
+   </guard>
+   <status>
+    <name/>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="action">
+    <object type="str">
+     [nw-(('crypt', ('pub', 10), Na, Nb)), nonce+(Nb) if (Na) == ((Nonce)(10))]
+    </object>
+   </label>
+   <label name="net">
+    <object type="str">
+     Alice(this=10,peer=11)
+    </object>
+   </label>
+   <label name="tag">
+    <object type="str">
+     trans31
+    </object>
+   </label>
+   <label name="ops">
+    <object type="list">
+     <object type="tuple">
+      <object type="str">
+       sequence
+      </object>
+      <object type="int">
+       1
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       sequence
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       1
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+    </object>
+   </label>
+  </transition>
+  <transition id="Alice(this=9,peer=10).[nonce?(Nb), nw+(('crypt', ('pub', 10), Nb)) if True]">
+   <status>
+    <name/>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="action">
+    <object type="str">
+     [nonce?(Nb), nw+(('crypt', ('pub', 10), Nb)) if True]
+    </object>
+   </label>
+   <label name="net">
+    <object type="str">
+     Alice(this=9,peer=10)
+    </object>
+   </label>
+   <label name="tag">
+    <object type="str">
+     trans26
+    </object>
+   </label>
+   <label name="ops">
+    <object type="list">
+     <object type="tuple">
+      <object type="str">
+       sequence
+      </object>
+      <object type="int">
+       1
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       1
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+    </object>
+   </label>
+  </transition>
+  <transition id="Bob(this=10).[nw-(('crypt', ('pub', 10), Nb)) if (Nb) == ((Nonce)(10))]">
+   <guard>
+    <expression>
+     (Nb) == ((Nonce)(10))
+    </expression>
+   </guard>
+   <status>
+    <name/>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="action">
+    <object type="str">
+     [nw-(('crypt', ('pub', 10), Nb)) if (Nb) == ((Nonce)(10))]
+    </object>
+   </label>
+   <label name="net">
+    <object type="str">
+     Bob(this=10)
+    </object>
+   </label>
+   <label name="tag">
+    <object type="str">
+     trans29
+    </object>
+   </label>
+   <label name="ops">
+    <object type="list">
+     <object type="tuple">
+      <object type="str">
+       sequence
+      </object>
+      <object type="int">
+       1
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       1
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+    </object>
+   </label>
+  </transition>
+  <transition id="Bob(this=4).[nw-(('crypt', ('pub', 4), A, Na)), peer+(A), nonce+(Na) if True]">
+   <status>
+    <name/>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="action">
+    <object type="str">
+     [nw-(('crypt', ('pub', 4), A, Na)), peer+(A), nonce+(Na) if True]
+    </object>
+   </label>
+   <label name="net">
+    <object type="str">
+     Bob(this=4)
+    </object>
+   </label>
+   <label name="tag">
+    <object type="str">
+     trans9
+    </object>
+   </label>
+   <label name="ops">
+    <object type="list">
+     <object type="tuple">
+      <object type="str">
+       sequence
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       sequence
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       1
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+    </object>
+   </label>
+  </transition>
+  <transition id="Bob(this=11).[peer?(A), nonce?(Na), nw+(('crypt', ('pub', A), Na, (Nonce)(11))) if True]">
+   <status>
+    <name/>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="action">
+    <object type="str">
+     [peer?(A), nonce?(Na), nw+(('crypt', ('pub', A), Na, (Nonce)(11))) if True]
+    </object>
+   </label>
+   <label name="net">
+    <object type="str">
+     Bob(this=11)
+    </object>
+   </label>
+   <label name="tag">
+    <object type="str">
+     trans34
+    </object>
+   </label>
+   <label name="ops">
+    <object type="list">
+     <object type="tuple">
+      <object type="str">
+       sequence
+      </object>
+      <object type="int">
+       1
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       sequence
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       1
+      </object>
+     </object>
+    </object>
+   </label>
+  </transition>
+  <transition id="Alice(this=5,peer=6).[nw+(('crypt', ('pub', 6), 5, (Nonce)(5))) if True]">
+   <status>
+    <name/>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="action">
+    <object type="str">
+     [nw+(('crypt', ('pub', 6), 5, (Nonce)(5))) if True]
+    </object>
+   </label>
+   <label name="net">
+    <object type="str">
+     Alice(this=5,peer=6)
+    </object>
+   </label>
+   <label name="tag">
+    <object type="str">
+     trans12
+    </object>
+   </label>
+   <label name="ops">
+    <object type="list">
+     <object type="tuple">
+      <object type="str">
+       sequence
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       sequence
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       1
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+    </object>
+   </label>
+  </transition>
+  <transition id="Alice(this=9,peer=10).[nw+(('crypt', ('pub', 10), 9, (Nonce)(9))) if True]">
+   <status>
+    <name/>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="action">
+    <object type="str">
+     [nw+(('crypt', ('pub', 10), 9, (Nonce)(9))) if True]
+    </object>
+   </label>
+   <label name="net">
+    <object type="str">
+     Alice(this=9,peer=10)
+    </object>
+   </label>
+   <label name="tag">
+    <object type="str">
+     trans24
+    </object>
+   </label>
+   <label name="ops">
+    <object type="list">
+     <object type="tuple">
+      <object type="str">
+       sequence
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       sequence
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       1
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+    </object>
+   </label>
+  </transition>
+  <transition id="Bob(this=6).[nw-(('crypt', ('pub', 6), A, Na)), peer+(A), nonce+(Na) if True]">
+   <status>
+    <name/>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="action">
+    <object type="str">
+     [nw-(('crypt', ('pub', 6), A, Na)), peer+(A), nonce+(Na) if True]
+    </object>
+   </label>
+   <label name="net">
+    <object type="str">
+     Bob(this=6)
+    </object>
+   </label>
+   <label name="tag">
+    <object type="str">
+     trans15
+    </object>
+   </label>
+   <label name="ops">
+    <object type="list">
+     <object type="tuple">
+      <object type="str">
+       sequence
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       sequence
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       1
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+    </object>
+   </label>
+  </transition>
+  <transition id="Alice(this=9,peer=10).[nw-(('crypt', ('pub', 9), Na, Nb)), nonce+(Nb) if (Na) == ((Nonce)(9))]">
+   <guard>
+    <expression>
+     (Na) == ((Nonce)(9))
+    </expression>
+   </guard>
+   <status>
+    <name/>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="action">
+    <object type="str">
+     [nw-(('crypt', ('pub', 9), Na, Nb)), nonce+(Nb) if (Na) == ((Nonce)(9))]
+    </object>
+   </label>
+   <label name="net">
+    <object type="str">
+     Alice(this=9,peer=10)
+    </object>
+   </label>
+   <label name="tag">
+    <object type="str">
+     trans25
+    </object>
+   </label>
+   <label name="ops">
+    <object type="list">
+     <object type="tuple">
+      <object type="str">
+       sequence
+      </object>
+      <object type="int">
+       1
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       sequence
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       1
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+    </object>
+   </label>
+  </transition>
+  <transition id="Alice(this=3,peer=4).[nw+(('crypt', ('pub', 4), 3, (Nonce)(3))) if True]">
+   <status>
+    <name/>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="action">
+    <object type="str">
+     [nw+(('crypt', ('pub', 4), 3, (Nonce)(3))) if True]
+    </object>
+   </label>
+   <label name="net">
+    <object type="str">
+     Alice(this=3,peer=4)
+    </object>
+   </label>
+   <label name="tag">
+    <object type="str">
+     trans6
+    </object>
+   </label>
+   <label name="ops">
+    <object type="list">
+     <object type="tuple">
+      <object type="str">
+       sequence
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       sequence
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       1
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+    </object>
+   </label>
+  </transition>
+  <transition id="Bob(this=2).[peer?(A), nonce?(Na), nw+(('crypt', ('pub', A), Na, (Nonce)(2))) if True]">
+   <status>
+    <name/>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="action">
+    <object type="str">
+     [peer?(A), nonce?(Na), nw+(('crypt', ('pub', A), Na, (Nonce)(2))) if True]
+    </object>
+   </label>
+   <label name="net">
+    <object type="str">
+     Bob(this=2)
+    </object>
+   </label>
+   <label name="tag">
+    <object type="str">
+     trans4
+    </object>
+   </label>
+   <label name="ops">
+    <object type="list">
+     <object type="tuple">
+      <object type="str">
+       sequence
+      </object>
+      <object type="int">
+       1
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       sequence
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       1
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+    </object>
+   </label>
+  </transition>
+  <transition id="Bob(this=2).[nw-(('crypt', ('pub', 2), Nb)) if (Nb) == ((Nonce)(2))]">
+   <guard>
+    <expression>
+     (Nb) == ((Nonce)(2))
+    </expression>
+   </guard>
+   <status>
+    <name/>
+    <value>
+     <object type="NoneType"/>
+    </value>
+   </status>
+   <label name="action">
+    <object type="str">
+     [nw-(('crypt', ('pub', 2), Nb)) if (Nb) == ((Nonce)(2))]
+    </object>
+   </label>
+   <label name="net">
+    <object type="str">
+     Bob(this=2)
+    </object>
+   </label>
+   <label name="tag">
+    <object type="str">
+     trans5
+    </object>
+   </label>
+   <label name="ops">
+    <object type="list">
+     <object type="tuple">
+      <object type="str">
+       sequence
+      </object>
+      <object type="int">
+       1
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       1
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+     <object type="tuple">
+      <object type="str">
+       parallel
+      </object>
+      <object type="int">
+       0
+      </object>
+     </object>
+    </object>
+   </label>
+  </transition>
+  <arc id="Bob(this=6).internal#2:Bob(this=6).[nw-(('crypt', ('pub', 6), Nb)) if (Nb) == ((Nonce)(6))]" source="Bob(this=6).internal#2" target="Bob(this=6).[nw-(('crypt', ('pub', 6), Nb)) if (Nb) == ((Nonce)(6))]">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="nw:Bob(this=6).[nw-(('crypt', ('pub', 6), Nb)) if (Nb) == ((Nonce)(6))]" source="nw" target="Bob(this=6).[nw-(('crypt', ('pub', 6), Nb)) if (Nb) == ((Nonce)(6))]">
+   <inscription>
+    <tuple>
+     <value>
+      <object type="str">
+       crypt
+      </object>
+     </value>
+     <tuple>
+      <value>
+       <object type="str">
+        pub
+       </object>
+      </value>
+      <value>
+       <object type="int">
+        6
+       </object>
+      </value>
+     </tuple>
+     <variable>
+      Nb
+     </variable>
+    </tuple>
+   </inscription>
+  </arc>
+  <arc id="Bob(this=6).[nw-(('crypt', ('pub', 6), Nb)) if (Nb) == ((Nonce)(6))]:Bob(this=6).exit#1" source="Bob(this=6).[nw-(('crypt', ('pub', 6), Nb)) if (Nb) == ((Nonce)(6))]" target="Bob(this=6).exit#1">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="Bob(this=2).entry#1:Bob(this=2).[nw-(('crypt', ('pub', 2), A, Na)), peer+(A), nonce+(Na) if True]" source="Bob(this=2).entry#1" target="Bob(this=2).[nw-(('crypt', ('pub', 2), A, Na)), peer+(A), nonce+(Na) if True]">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="nw:Bob(this=2).[nw-(('crypt', ('pub', 2), A, Na)), peer+(A), nonce+(Na) if True]" source="nw" target="Bob(this=2).[nw-(('crypt', ('pub', 2), A, Na)), peer+(A), nonce+(Na) if True]">
+   <inscription>
+    <tuple>
+     <value>
+      <object type="str">
+       crypt
+      </object>
+     </value>
+     <tuple>
+      <value>
+       <object type="str">
+        pub
+       </object>
+      </value>
+      <value>
+       <object type="int">
+        2
+       </object>
+      </value>
+     </tuple>
+     <variable>
+      A
+     </variable>
+     <variable>
+      Na
+     </variable>
+    </tuple>
+   </inscription>
+  </arc>
+  <arc id="Bob(this=2).[nw-(('crypt', ('pub', 2), A, Na)), peer+(A), nonce+(Na) if True]:Bob(this=2).nonce" source="Bob(this=2).[nw-(('crypt', ('pub', 2), A, Na)), peer+(A), nonce+(Na) if True]" target="Bob(this=2).nonce">
+   <inscription>
+    <variable>
+     Na
+    </variable>
+   </inscription>
+  </arc>
+  <arc id="Bob(this=2).[nw-(('crypt', ('pub', 2), A, Na)), peer+(A), nonce+(Na) if True]:Bob(this=2).internal#2" source="Bob(this=2).[nw-(('crypt', ('pub', 2), A, Na)), peer+(A), nonce+(Na) if True]" target="Bob(this=2).internal#2">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="Bob(this=2).[nw-(('crypt', ('pub', 2), A, Na)), peer+(A), nonce+(Na) if True]:Bob(this=2).peer" source="Bob(this=2).[nw-(('crypt', ('pub', 2), A, Na)), peer+(A), nonce+(Na) if True]" target="Bob(this=2).peer">
+   <inscription>
+    <variable>
+     A
+    </variable>
+   </inscription>
+  </arc>
+  <arc id="Bob(this=8).peer:Bob(this=8).[peer?(A), nonce?(Na), nw+(('crypt', ('pub', A), Na, (Nonce)(8))) if True]" source="Bob(this=8).peer" target="Bob(this=8).[peer?(A), nonce?(Na), nw+(('crypt', ('pub', A), Na, (Nonce)(8))) if True]">
+   <inscription>
+    <test>
+     <variable>
+      A
+     </variable>
+    </test>
+   </inscription>
+  </arc>
+  <arc id="Bob(this=8).nonce:Bob(this=8).[peer?(A), nonce?(Na), nw+(('crypt', ('pub', A), Na, (Nonce)(8))) if True]" source="Bob(this=8).nonce" target="Bob(this=8).[peer?(A), nonce?(Na), nw+(('crypt', ('pub', A), Na, (Nonce)(8))) if True]">
+   <inscription>
+    <test>
+     <variable>
+      Na
+     </variable>
+    </test>
+   </inscription>
+  </arc>
+  <arc id="Bob(this=8).internal#2:Bob(this=8).[peer?(A), nonce?(Na), nw+(('crypt', ('pub', A), Na, (Nonce)(8))) if True]" source="Bob(this=8).internal#2" target="Bob(this=8).[peer?(A), nonce?(Na), nw+(('crypt', ('pub', A), Na, (Nonce)(8))) if True]">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="Bob(this=8).[peer?(A), nonce?(Na), nw+(('crypt', ('pub', A), Na, (Nonce)(8))) if True]:Bob(this=8).internal#1" source="Bob(this=8).[peer?(A), nonce?(Na), nw+(('crypt', ('pub', A), Na, (Nonce)(8))) if True]" target="Bob(this=8).internal#1">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="Bob(this=8).[peer?(A), nonce?(Na), nw+(('crypt', ('pub', A), Na, (Nonce)(8))) if True]:nw" source="Bob(this=8).[peer?(A), nonce?(Na), nw+(('crypt', ('pub', A), Na, (Nonce)(8))) if True]" target="nw">
+   <inscription>
+    <tuple>
+     <value>
+      <object type="str">
+       crypt
+      </object>
+     </value>
+     <tuple>
+      <value>
+       <object type="str">
+        pub
+       </object>
+      </value>
+      <variable>
+       A
+      </variable>
+     </tuple>
+     <variable>
+      Na
+     </variable>
+     <expression>
+      (Nonce)(8)
+     </expression>
+    </tuple>
+   </inscription>
+  </arc>
+  <arc id="Bob(this=4).nonce:Bob(this=4).[peer?(A), nonce?(Na), nw+(('crypt', ('pub', A), Na, (Nonce)(4))) if True]" source="Bob(this=4).nonce" target="Bob(this=4).[peer?(A), nonce?(Na), nw+(('crypt', ('pub', A), Na, (Nonce)(4))) if True]">
+   <inscription>
+    <test>
+     <variable>
+      Na
+     </variable>
+    </test>
+   </inscription>
+  </arc>
+  <arc id="Bob(this=4).internal#1:Bob(this=4).[peer?(A), nonce?(Na), nw+(('crypt', ('pub', A), Na, (Nonce)(4))) if True]" source="Bob(this=4).internal#1" target="Bob(this=4).[peer?(A), nonce?(Na), nw+(('crypt', ('pub', A), Na, (Nonce)(4))) if True]">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="Bob(this=4).peer:Bob(this=4).[peer?(A), nonce?(Na), nw+(('crypt', ('pub', A), Na, (Nonce)(4))) if True]" source="Bob(this=4).peer" target="Bob(this=4).[peer?(A), nonce?(Na), nw+(('crypt', ('pub', A), Na, (Nonce)(4))) if True]">
+   <inscription>
+    <test>
+     <variable>
+      A
+     </variable>
+    </test>
+   </inscription>
+  </arc>
+  <arc id="Bob(this=4).[peer?(A), nonce?(Na), nw+(('crypt', ('pub', A), Na, (Nonce)(4))) if True]:Bob(this=4).internal#2" source="Bob(this=4).[peer?(A), nonce?(Na), nw+(('crypt', ('pub', A), Na, (Nonce)(4))) if True]" target="Bob(this=4).internal#2">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="Bob(this=4).[peer?(A), nonce?(Na), nw+(('crypt', ('pub', A), Na, (Nonce)(4))) if True]:nw" source="Bob(this=4).[peer?(A), nonce?(Na), nw+(('crypt', ('pub', A), Na, (Nonce)(4))) if True]" target="nw">
+   <inscription>
+    <tuple>
+     <value>
+      <object type="str">
+       crypt
+      </object>
+     </value>
+     <tuple>
+      <value>
+       <object type="str">
+        pub
+       </object>
+      </value>
+      <variable>
+       A
+      </variable>
+     </tuple>
+     <variable>
+      Na
+     </variable>
+     <expression>
+      (Nonce)(4)
+     </expression>
+    </tuple>
+   </inscription>
+  </arc>
+  <arc id="Bob(this=8).entry#1:Bob(this=8).[nw-(('crypt', ('pub', 8), A, Na)), peer+(A), nonce+(Na) if True]" source="Bob(this=8).entry#1" target="Bob(this=8).[nw-(('crypt', ('pub', 8), A, Na)), peer+(A), nonce+(Na) if True]">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="nw:Bob(this=8).[nw-(('crypt', ('pub', 8), A, Na)), peer+(A), nonce+(Na) if True]" source="nw" target="Bob(this=8).[nw-(('crypt', ('pub', 8), A, Na)), peer+(A), nonce+(Na) if True]">
+   <inscription>
+    <tuple>
+     <value>
+      <object type="str">
+       crypt
+      </object>
+     </value>
+     <tuple>
+      <value>
+       <object type="str">
+        pub
+       </object>
+      </value>
+      <value>
+       <object type="int">
+        8
+       </object>
+      </value>
+     </tuple>
+     <variable>
+      A
+     </variable>
+     <variable>
+      Na
+     </variable>
+    </tuple>
+   </inscription>
+  </arc>
+  <arc id="Bob(this=8).[nw-(('crypt', ('pub', 8), A, Na)), peer+(A), nonce+(Na) if True]:Bob(this=8).peer" source="Bob(this=8).[nw-(('crypt', ('pub', 8), A, Na)), peer+(A), nonce+(Na) if True]" target="Bob(this=8).peer">
+   <inscription>
+    <variable>
+     A
+    </variable>
+   </inscription>
+  </arc>
+  <arc id="Bob(this=8).[nw-(('crypt', ('pub', 8), A, Na)), peer+(A), nonce+(Na) if True]:Bob(this=8).nonce" source="Bob(this=8).[nw-(('crypt', ('pub', 8), A, Na)), peer+(A), nonce+(Na) if True]" target="Bob(this=8).nonce">
+   <inscription>
+    <variable>
+     Na
+    </variable>
+   </inscription>
+  </arc>
+  <arc id="Bob(this=8).[nw-(('crypt', ('pub', 8), A, Na)), peer+(A), nonce+(Na) if True]:Bob(this=8).internal#2" source="Bob(this=8).[nw-(('crypt', ('pub', 8), A, Na)), peer+(A), nonce+(Na) if True]" target="Bob(this=8).internal#2">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="Bob(this=10).entry#1:Bob(this=10).[nw-(('crypt', ('pub', 10), A, Na)), peer+(A), nonce+(Na) if True]" source="Bob(this=10).entry#1" target="Bob(this=10).[nw-(('crypt', ('pub', 10), A, Na)), peer+(A), nonce+(Na) if True]">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="nw:Bob(this=10).[nw-(('crypt', ('pub', 10), A, Na)), peer+(A), nonce+(Na) if True]" source="nw" target="Bob(this=10).[nw-(('crypt', ('pub', 10), A, Na)), peer+(A), nonce+(Na) if True]">
+   <inscription>
+    <tuple>
+     <value>
+      <object type="str">
+       crypt
+      </object>
+     </value>
+     <tuple>
+      <value>
+       <object type="str">
+        pub
+       </object>
+      </value>
+      <value>
+       <object type="int">
+        10
+       </object>
+      </value>
+     </tuple>
+     <variable>
+      A
+     </variable>
+     <variable>
+      Na
+     </variable>
+    </tuple>
+   </inscription>
+  </arc>
+  <arc id="Bob(this=10).[nw-(('crypt', ('pub', 10), A, Na)), peer+(A), nonce+(Na) if True]:Bob(this=10).peer" source="Bob(this=10).[nw-(('crypt', ('pub', 10), A, Na)), peer+(A), nonce+(Na) if True]" target="Bob(this=10).peer">
+   <inscription>
+    <variable>
+     A
+    </variable>
+   </inscription>
+  </arc>
+  <arc id="Bob(this=10).[nw-(('crypt', ('pub', 10), A, Na)), peer+(A), nonce+(Na) if True]:Bob(this=10).internal#1" source="Bob(this=10).[nw-(('crypt', ('pub', 10), A, Na)), peer+(A), nonce+(Na) if True]" target="Bob(this=10).internal#1">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="Bob(this=10).[nw-(('crypt', ('pub', 10), A, Na)), peer+(A), nonce+(Na) if True]:Bob(this=10).nonce" source="Bob(this=10).[nw-(('crypt', ('pub', 10), A, Na)), peer+(A), nonce+(Na) if True]" target="Bob(this=10).nonce">
+   <inscription>
+    <variable>
+     Na
+    </variable>
+   </inscription>
+  </arc>
+  <arc id="Bob(this=6).internal#1:Bob(this=6).[peer?(A), nonce?(Na), nw+(('crypt', ('pub', A), Na, (Nonce)(6))) if True]" source="Bob(this=6).internal#1" target="Bob(this=6).[peer?(A), nonce?(Na), nw+(('crypt', ('pub', A), Na, (Nonce)(6))) if True]">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="Bob(this=6).nonce:Bob(this=6).[peer?(A), nonce?(Na), nw+(('crypt', ('pub', A), Na, (Nonce)(6))) if True]" source="Bob(this=6).nonce" target="Bob(this=6).[peer?(A), nonce?(Na), nw+(('crypt', ('pub', A), Na, (Nonce)(6))) if True]">
+   <inscription>
+    <test>
+     <variable>
+      Na
+     </variable>
+    </test>
+   </inscription>
+  </arc>
+  <arc id="Bob(this=6).peer:Bob(this=6).[peer?(A), nonce?(Na), nw+(('crypt', ('pub', A), Na, (Nonce)(6))) if True]" source="Bob(this=6).peer" target="Bob(this=6).[peer?(A), nonce?(Na), nw+(('crypt', ('pub', A), Na, (Nonce)(6))) if True]">
+   <inscription>
+    <test>
+     <variable>
+      A
+     </variable>
+    </test>
+   </inscription>
+  </arc>
+  <arc id="Bob(this=6).[peer?(A), nonce?(Na), nw+(('crypt', ('pub', A), Na, (Nonce)(6))) if True]:Bob(this=6).internal#2" source="Bob(this=6).[peer?(A), nonce?(Na), nw+(('crypt', ('pub', A), Na, (Nonce)(6))) if True]" target="Bob(this=6).internal#2">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="Bob(this=6).[peer?(A), nonce?(Na), nw+(('crypt', ('pub', A), Na, (Nonce)(6))) if True]:nw" source="Bob(this=6).[peer?(A), nonce?(Na), nw+(('crypt', ('pub', A), Na, (Nonce)(6))) if True]" target="nw">
+   <inscription>
+    <tuple>
+     <value>
+      <object type="str">
+       crypt
+      </object>
+     </value>
+     <tuple>
+      <value>
+       <object type="str">
+        pub
+       </object>
+      </value>
+      <variable>
+       A
+      </variable>
+     </tuple>
+     <variable>
+      Na
+     </variable>
+     <expression>
+      (Nonce)(6)
+     </expression>
+    </tuple>
+   </inscription>
+  </arc>
+  <arc id="Alice(this=7,peer=8).internal#1:Alice(this=7,peer=8).[nw-(('crypt', ('pub', 7), Na, Nb)), nonce+(Nb) if (Na) == ((Nonce)(7))]" source="Alice(this=7,peer=8).internal#1" target="Alice(this=7,peer=8).[nw-(('crypt', ('pub', 7), Na, Nb)), nonce+(Nb) if (Na) == ((Nonce)(7))]">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="nw:Alice(this=7,peer=8).[nw-(('crypt', ('pub', 7), Na, Nb)), nonce+(Nb) if (Na) == ((Nonce)(7))]" source="nw" target="Alice(this=7,peer=8).[nw-(('crypt', ('pub', 7), Na, Nb)), nonce+(Nb) if (Na) == ((Nonce)(7))]">
+   <inscription>
+    <tuple>
+     <value>
+      <object type="str">
+       crypt
+      </object>
+     </value>
+     <tuple>
+      <value>
+       <object type="str">
+        pub
+       </object>
+      </value>
+      <value>
+       <object type="int">
+        7
+       </object>
+      </value>
+     </tuple>
+     <variable>
+      Na
+     </variable>
+     <variable>
+      Nb
+     </variable>
+    </tuple>
+   </inscription>
+  </arc>
+  <arc id="Alice(this=7,peer=8).[nw-(('crypt', ('pub', 7), Na, Nb)), nonce+(Nb) if (Na) == ((Nonce)(7))]:Alice(this=7,peer=8).internal#2" source="Alice(this=7,peer=8).[nw-(('crypt', ('pub', 7), Na, Nb)), nonce+(Nb) if (Na) == ((Nonce)(7))]" target="Alice(this=7,peer=8).internal#2">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="Alice(this=7,peer=8).[nw-(('crypt', ('pub', 7), Na, Nb)), nonce+(Nb) if (Na) == ((Nonce)(7))]:Alice(this=7,peer=8).nonce" source="Alice(this=7,peer=8).[nw-(('crypt', ('pub', 7), Na, Nb)), nonce+(Nb) if (Na) == ((Nonce)(7))]" target="Alice(this=7,peer=8).nonce">
+   <inscription>
+    <variable>
+     Nb
+    </variable>
+   </inscription>
+  </arc>
+  <arc id="Alice(this=10,peer=11).entry#1:Alice(this=10,peer=11).[nw+(('crypt', ('pub', 11), 10, (Nonce)(10))) if True]" source="Alice(this=10,peer=11).entry#1" target="Alice(this=10,peer=11).[nw+(('crypt', ('pub', 11), 10, (Nonce)(10))) if True]">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="Alice(this=10,peer=11).[nw+(('crypt', ('pub', 11), 10, (Nonce)(10))) if True]:Alice(this=10,peer=11).internal#1" source="Alice(this=10,peer=11).[nw+(('crypt', ('pub', 11), 10, (Nonce)(10))) if True]" target="Alice(this=10,peer=11).internal#1">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="Alice(this=10,peer=11).[nw+(('crypt', ('pub', 11), 10, (Nonce)(10))) if True]:nw" source="Alice(this=10,peer=11).[nw+(('crypt', ('pub', 11), 10, (Nonce)(10))) if True]" target="nw">
+   <inscription>
+    <tuple>
+     <value>
+      <object type="str">
+       crypt
+      </object>
+     </value>
+     <tuple>
+      <value>
+       <object type="str">
+        pub
+       </object>
+      </value>
+      <value>
+       <object type="int">
+        11
+       </object>
+      </value>
+     </tuple>
+     <value>
+      <object type="int">
+       10
+      </object>
+     </value>
+     <expression>
+      (Nonce)(10)
+     </expression>
+    </tuple>
+   </inscription>
+  </arc>
+  <arc id="Alice(this=7,peer=8).entry#1:Alice(this=7,peer=8).[nw+(('crypt', ('pub', 8), 7, (Nonce)(7))) if True]" source="Alice(this=7,peer=8).entry#1" target="Alice(this=7,peer=8).[nw+(('crypt', ('pub', 8), 7, (Nonce)(7))) if True]">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="Alice(this=7,peer=8).[nw+(('crypt', ('pub', 8), 7, (Nonce)(7))) if True]:Alice(this=7,peer=8).internal#1" source="Alice(this=7,peer=8).[nw+(('crypt', ('pub', 8), 7, (Nonce)(7))) if True]" target="Alice(this=7,peer=8).internal#1">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="Alice(this=7,peer=8).[nw+(('crypt', ('pub', 8), 7, (Nonce)(7))) if True]:nw" source="Alice(this=7,peer=8).[nw+(('crypt', ('pub', 8), 7, (Nonce)(7))) if True]" target="nw">
+   <inscription>
+    <tuple>
+     <value>
+      <object type="str">
+       crypt
+      </object>
+     </value>
+     <tuple>
+      <value>
+       <object type="str">
+        pub
+       </object>
+      </value>
+      <value>
+       <object type="int">
+        8
+       </object>
+      </value>
+     </tuple>
+     <value>
+      <object type="int">
+       7
+      </object>
+     </value>
+     <expression>
+      (Nonce)(7)
+     </expression>
+    </tuple>
+   </inscription>
+  </arc>
+  <arc id="Alice(this=1,peer=2).entry#1:Alice(this=1,peer=2).[nw+(('crypt', ('pub', 2), 1, (Nonce)(1))) if True]" source="Alice(this=1,peer=2).entry#1" target="Alice(this=1,peer=2).[nw+(('crypt', ('pub', 2), 1, (Nonce)(1))) if True]">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="Alice(this=1,peer=2).[nw+(('crypt', ('pub', 2), 1, (Nonce)(1))) if True]:Alice(this=1,peer=2).internal#2" source="Alice(this=1,peer=2).[nw+(('crypt', ('pub', 2), 1, (Nonce)(1))) if True]" target="Alice(this=1,peer=2).internal#2">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="Alice(this=1,peer=2).[nw+(('crypt', ('pub', 2), 1, (Nonce)(1))) if True]:nw" source="Alice(this=1,peer=2).[nw+(('crypt', ('pub', 2), 1, (Nonce)(1))) if True]" target="nw">
+   <inscription>
+    <tuple>
+     <value>
+      <object type="str">
+       crypt
+      </object>
+     </value>
+     <tuple>
+      <value>
+       <object type="str">
+        pub
+       </object>
+      </value>
+      <value>
+       <object type="int">
+        2
+       </object>
+      </value>
+     </tuple>
+     <value>
+      <object type="int">
+       1
+      </object>
+     </value>
+     <expression>
+      (Nonce)(1)
+     </expression>
+    </tuple>
+   </inscription>
+  </arc>
+  <arc id="Alice(this=10,peer=11).internal#2:Alice(this=10,peer=11).[nonce?(Nb), nw+(('crypt', ('pub', 11), Nb)) if True]" source="Alice(this=10,peer=11).internal#2" target="Alice(this=10,peer=11).[nonce?(Nb), nw+(('crypt', ('pub', 11), Nb)) if True]">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="Alice(this=10,peer=11).nonce:Alice(this=10,peer=11).[nonce?(Nb), nw+(('crypt', ('pub', 11), Nb)) if True]" source="Alice(this=10,peer=11).nonce" target="Alice(this=10,peer=11).[nonce?(Nb), nw+(('crypt', ('pub', 11), Nb)) if True]">
+   <inscription>
+    <test>
+     <variable>
+      Nb
+     </variable>
+    </test>
+   </inscription>
+  </arc>
+  <arc id="Alice(this=10,peer=11).[nonce?(Nb), nw+(('crypt', ('pub', 11), Nb)) if True]:Alice(this=10,peer=11).exit#1" source="Alice(this=10,peer=11).[nonce?(Nb), nw+(('crypt', ('pub', 11), Nb)) if True]" target="Alice(this=10,peer=11).exit#1">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="Alice(this=10,peer=11).[nonce?(Nb), nw+(('crypt', ('pub', 11), Nb)) if True]:nw" source="Alice(this=10,peer=11).[nonce?(Nb), nw+(('crypt', ('pub', 11), Nb)) if True]" target="nw">
+   <inscription>
+    <tuple>
+     <value>
+      <object type="str">
+       crypt
+      </object>
+     </value>
+     <tuple>
+      <value>
+       <object type="str">
+        pub
+       </object>
+      </value>
+      <value>
+       <object type="int">
+        11
+       </object>
+      </value>
+     </tuple>
+     <variable>
+      Nb
+     </variable>
+    </tuple>
+   </inscription>
+  </arc>
+  <arc id="Alice(this=5,peer=6).internal#2:Alice(this=5,peer=6).[nonce?(Nb), nw+(('crypt', ('pub', 6), Nb)) if True]" source="Alice(this=5,peer=6).internal#2" target="Alice(this=5,peer=6).[nonce?(Nb), nw+(('crypt', ('pub', 6), Nb)) if True]">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="Alice(this=5,peer=6).nonce:Alice(this=5,peer=6).[nonce?(Nb), nw+(('crypt', ('pub', 6), Nb)) if True]" source="Alice(this=5,peer=6).nonce" target="Alice(this=5,peer=6).[nonce?(Nb), nw+(('crypt', ('pub', 6), Nb)) if True]">
+   <inscription>
+    <test>
+     <variable>
+      Nb
+     </variable>
+    </test>
+   </inscription>
+  </arc>
+  <arc id="Alice(this=5,peer=6).[nonce?(Nb), nw+(('crypt', ('pub', 6), Nb)) if True]:Alice(this=5,peer=6).exit#1" source="Alice(this=5,peer=6).[nonce?(Nb), nw+(('crypt', ('pub', 6), Nb)) if True]" target="Alice(this=5,peer=6).exit#1">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="Alice(this=5,peer=6).[nonce?(Nb), nw+(('crypt', ('pub', 6), Nb)) if True]:nw" source="Alice(this=5,peer=6).[nonce?(Nb), nw+(('crypt', ('pub', 6), Nb)) if True]" target="nw">
+   <inscription>
+    <tuple>
+     <value>
+      <object type="str">
+       crypt
+      </object>
+     </value>
+     <tuple>
+      <value>
+       <object type="str">
+        pub
+       </object>
+      </value>
+      <value>
+       <object type="int">
+        6
+       </object>
+      </value>
+     </tuple>
+     <variable>
+      Nb
+     </variable>
+    </tuple>
+   </inscription>
+  </arc>
+  <arc id="Alice(this=3,peer=4).nonce:Alice(this=3,peer=4).[nonce?(Nb), nw+(('crypt', ('pub', 4), Nb)) if True]" source="Alice(this=3,peer=4).nonce" target="Alice(this=3,peer=4).[nonce?(Nb), nw+(('crypt', ('pub', 4), Nb)) if True]">
+   <inscription>
+    <test>
+     <variable>
+      Nb
+     </variable>
+    </test>
+   </inscription>
+  </arc>
+  <arc id="Alice(this=3,peer=4).internal#1:Alice(this=3,peer=4).[nonce?(Nb), nw+(('crypt', ('pub', 4), Nb)) if True]" source="Alice(this=3,peer=4).internal#1" target="Alice(this=3,peer=4).[nonce?(Nb), nw+(('crypt', ('pub', 4), Nb)) if True]">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="Alice(this=3,peer=4).[nonce?(Nb), nw+(('crypt', ('pub', 4), Nb)) if True]:Alice(this=3,peer=4).exit#1" source="Alice(this=3,peer=4).[nonce?(Nb), nw+(('crypt', ('pub', 4), Nb)) if True]" target="Alice(this=3,peer=4).exit#1">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="Alice(this=3,peer=4).[nonce?(Nb), nw+(('crypt', ('pub', 4), Nb)) if True]:nw" source="Alice(this=3,peer=4).[nonce?(Nb), nw+(('crypt', ('pub', 4), Nb)) if True]" target="nw">
+   <inscription>
+    <tuple>
+     <value>
+      <object type="str">
+       crypt
+      </object>
+     </value>
+     <tuple>
+      <value>
+       <object type="str">
+        pub
+       </object>
+      </value>
+      <value>
+       <object type="int">
+        4
+       </object>
+      </value>
+     </tuple>
+     <variable>
+      Nb
+     </variable>
+    </tuple>
+   </inscription>
+  </arc>
+  <arc id="Alice(this=7,peer=8).nonce:Alice(this=7,peer=8).[nonce?(Nb), nw+(('crypt', ('pub', 8), Nb)) if True]" source="Alice(this=7,peer=8).nonce" target="Alice(this=7,peer=8).[nonce?(Nb), nw+(('crypt', ('pub', 8), Nb)) if True]">
+   <inscription>
+    <test>
+     <variable>
+      Nb
+     </variable>
+    </test>
+   </inscription>
+  </arc>
+  <arc id="Alice(this=7,peer=8).internal#2:Alice(this=7,peer=8).[nonce?(Nb), nw+(('crypt', ('pub', 8), Nb)) if True]" source="Alice(this=7,peer=8).internal#2" target="Alice(this=7,peer=8).[nonce?(Nb), nw+(('crypt', ('pub', 8), Nb)) if True]">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="Alice(this=7,peer=8).[nonce?(Nb), nw+(('crypt', ('pub', 8), Nb)) if True]:Alice(this=7,peer=8).exit#1" source="Alice(this=7,peer=8).[nonce?(Nb), nw+(('crypt', ('pub', 8), Nb)) if True]" target="Alice(this=7,peer=8).exit#1">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="Alice(this=7,peer=8).[nonce?(Nb), nw+(('crypt', ('pub', 8), Nb)) if True]:nw" source="Alice(this=7,peer=8).[nonce?(Nb), nw+(('crypt', ('pub', 8), Nb)) if True]" target="nw">
+   <inscription>
+    <tuple>
+     <value>
+      <object type="str">
+       crypt
+      </object>
+     </value>
+     <tuple>
+      <value>
+       <object type="str">
+        pub
+       </object>
+      </value>
+      <value>
+       <object type="int">
+        8
+       </object>
+      </value>
+     </tuple>
+     <variable>
+      Nb
+     </variable>
+    </tuple>
+   </inscription>
+  </arc>
+  <arc id="Bob(this=4).internal#2:Bob(this=4).[nw-(('crypt', ('pub', 4), Nb)) if (Nb) == ((Nonce)(4))]" source="Bob(this=4).internal#2" target="Bob(this=4).[nw-(('crypt', ('pub', 4), Nb)) if (Nb) == ((Nonce)(4))]">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="nw:Bob(this=4).[nw-(('crypt', ('pub', 4), Nb)) if (Nb) == ((Nonce)(4))]" source="nw" target="Bob(this=4).[nw-(('crypt', ('pub', 4), Nb)) if (Nb) == ((Nonce)(4))]">
+   <inscription>
+    <tuple>
+     <value>
+      <object type="str">
+       crypt
+      </object>
+     </value>
+     <tuple>
+      <value>
+       <object type="str">
+        pub
+       </object>
+      </value>
+      <value>
+       <object type="int">
+        4
+       </object>
+      </value>
+     </tuple>
+     <variable>
+      Nb
+     </variable>
+    </tuple>
+   </inscription>
+  </arc>
+  <arc id="Bob(this=4).[nw-(('crypt', ('pub', 4), Nb)) if (Nb) == ((Nonce)(4))]:Bob(this=4).exit#1" source="Bob(this=4).[nw-(('crypt', ('pub', 4), Nb)) if (Nb) == ((Nonce)(4))]" target="Bob(this=4).exit#1">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="Alice(this=3,peer=4).internal#2:Alice(this=3,peer=4).[nw-(('crypt', ('pub', 3), Na, Nb)), nonce+(Nb) if (Na) == ((Nonce)(3))]" source="Alice(this=3,peer=4).internal#2" target="Alice(this=3,peer=4).[nw-(('crypt', ('pub', 3), Na, Nb)), nonce+(Nb) if (Na) == ((Nonce)(3))]">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="nw:Alice(this=3,peer=4).[nw-(('crypt', ('pub', 3), Na, Nb)), nonce+(Nb) if (Na) == ((Nonce)(3))]" source="nw" target="Alice(this=3,peer=4).[nw-(('crypt', ('pub', 3), Na, Nb)), nonce+(Nb) if (Na) == ((Nonce)(3))]">
+   <inscription>
+    <tuple>
+     <value>
+      <object type="str">
+       crypt
+      </object>
+     </value>
+     <tuple>
+      <value>
+       <object type="str">
+        pub
+       </object>
+      </value>
+      <value>
+       <object type="int">
+        3
+       </object>
+      </value>
+     </tuple>
+     <variable>
+      Na
+     </variable>
+     <variable>
+      Nb
+     </variable>
+    </tuple>
+   </inscription>
+  </arc>
+  <arc id="Alice(this=3,peer=4).[nw-(('crypt', ('pub', 3), Na, Nb)), nonce+(Nb) if (Na) == ((Nonce)(3))]:Alice(this=3,peer=4).internal#1" source="Alice(this=3,peer=4).[nw-(('crypt', ('pub', 3), Na, Nb)), nonce+(Nb) if (Na) == ((Nonce)(3))]" target="Alice(this=3,peer=4).internal#1">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="Alice(this=3,peer=4).[nw-(('crypt', ('pub', 3), Na, Nb)), nonce+(Nb) if (Na) == ((Nonce)(3))]:Alice(this=3,peer=4).nonce" source="Alice(this=3,peer=4).[nw-(('crypt', ('pub', 3), Na, Nb)), nonce+(Nb) if (Na) == ((Nonce)(3))]" target="Alice(this=3,peer=4).nonce">
+   <inscription>
+    <variable>
+     Nb
+    </variable>
+   </inscription>
+  </arc>
+  <arc id="Bob(this=8).internal#1:Bob(this=8).[nw-(('crypt', ('pub', 8), Nb)) if (Nb) == ((Nonce)(8))]" source="Bob(this=8).internal#1" target="Bob(this=8).[nw-(('crypt', ('pub', 8), Nb)) if (Nb) == ((Nonce)(8))]">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="nw:Bob(this=8).[nw-(('crypt', ('pub', 8), Nb)) if (Nb) == ((Nonce)(8))]" source="nw" target="Bob(this=8).[nw-(('crypt', ('pub', 8), Nb)) if (Nb) == ((Nonce)(8))]">
+   <inscription>
+    <tuple>
+     <value>
+      <object type="str">
+       crypt
+      </object>
+     </value>
+     <tuple>
+      <value>
+       <object type="str">
+        pub
+       </object>
+      </value>
+      <value>
+       <object type="int">
+        8
+       </object>
+      </value>
+     </tuple>
+     <variable>
+      Nb
+     </variable>
+    </tuple>
+   </inscription>
+  </arc>
+  <arc id="Bob(this=8).[nw-(('crypt', ('pub', 8), Nb)) if (Nb) == ((Nonce)(8))]:Bob(this=8).exit#1" source="Bob(this=8).[nw-(('crypt', ('pub', 8), Nb)) if (Nb) == ((Nonce)(8))]" target="Bob(this=8).exit#1">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="Alice(this=1,peer=2).internal#2:Alice(this=1,peer=2).[nw-(('crypt', ('pub', 1), Na, Nb)), nonce+(Nb) if (Na) == ((Nonce)(1))]" source="Alice(this=1,peer=2).internal#2" target="Alice(this=1,peer=2).[nw-(('crypt', ('pub', 1), Na, Nb)), nonce+(Nb) if (Na) == ((Nonce)(1))]">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="nw:Alice(this=1,peer=2).[nw-(('crypt', ('pub', 1), Na, Nb)), nonce+(Nb) if (Na) == ((Nonce)(1))]" source="nw" target="Alice(this=1,peer=2).[nw-(('crypt', ('pub', 1), Na, Nb)), nonce+(Nb) if (Na) == ((Nonce)(1))]">
+   <inscription>
+    <tuple>
+     <value>
+      <object type="str">
+       crypt
+      </object>
+     </value>
+     <tuple>
+      <value>
+       <object type="str">
+        pub
+       </object>
+      </value>
+      <value>
+       <object type="int">
+        1
+       </object>
+      </value>
+     </tuple>
+     <variable>
+      Na
+     </variable>
+     <variable>
+      Nb
+     </variable>
+    </tuple>
+   </inscription>
+  </arc>
+  <arc id="Alice(this=1,peer=2).[nw-(('crypt', ('pub', 1), Na, Nb)), nonce+(Nb) if (Na) == ((Nonce)(1))]:Alice(this=1,peer=2).nonce" source="Alice(this=1,peer=2).[nw-(('crypt', ('pub', 1), Na, Nb)), nonce+(Nb) if (Na) == ((Nonce)(1))]" target="Alice(this=1,peer=2).nonce">
+   <inscription>
+    <variable>
+     Nb
+    </variable>
+   </inscription>
+  </arc>
+  <arc id="Alice(this=1,peer=2).[nw-(('crypt', ('pub', 1), Na, Nb)), nonce+(Nb) if (Na) == ((Nonce)(1))]:Alice(this=1,peer=2).internal#1" source="Alice(this=1,peer=2).[nw-(('crypt', ('pub', 1), Na, Nb)), nonce+(Nb) if (Na) == ((Nonce)(1))]" target="Alice(this=1,peer=2).internal#1">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="Alice(this=1,peer=2).internal#1:Alice(this=1,peer=2).[nonce?(Nb), nw+(('crypt', ('pub', 2), Nb)) if True]" source="Alice(this=1,peer=2).internal#1" target="Alice(this=1,peer=2).[nonce?(Nb), nw+(('crypt', ('pub', 2), Nb)) if True]">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="Alice(this=1,peer=2).nonce:Alice(this=1,peer=2).[nonce?(Nb), nw+(('crypt', ('pub', 2), Nb)) if True]" source="Alice(this=1,peer=2).nonce" target="Alice(this=1,peer=2).[nonce?(Nb), nw+(('crypt', ('pub', 2), Nb)) if True]">
+   <inscription>
+    <test>
+     <variable>
+      Nb
+     </variable>
+    </test>
+   </inscription>
+  </arc>
+  <arc id="Alice(this=1,peer=2).[nonce?(Nb), nw+(('crypt', ('pub', 2), Nb)) if True]:Alice(this=1,peer=2).exit#1" source="Alice(this=1,peer=2).[nonce?(Nb), nw+(('crypt', ('pub', 2), Nb)) if True]" target="Alice(this=1,peer=2).exit#1">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="Alice(this=1,peer=2).[nonce?(Nb), nw+(('crypt', ('pub', 2), Nb)) if True]:nw" source="Alice(this=1,peer=2).[nonce?(Nb), nw+(('crypt', ('pub', 2), Nb)) if True]" target="nw">
+   <inscription>
+    <tuple>
+     <value>
+      <object type="str">
+       crypt
+      </object>
+     </value>
+     <tuple>
+      <value>
+       <object type="str">
+        pub
+       </object>
+      </value>
+      <value>
+       <object type="int">
+        2
+       </object>
+      </value>
+     </tuple>
+     <variable>
+      Nb
+     </variable>
+    </tuple>
+   </inscription>
+  </arc>
+  <arc id="Bob(this=11).entry#1:Bob(this=11).[nw-(('crypt', ('pub', 11), A, Na)), peer+(A), nonce+(Na) if True]" source="Bob(this=11).entry#1" target="Bob(this=11).[nw-(('crypt', ('pub', 11), A, Na)), peer+(A), nonce+(Na) if True]">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="nw:Bob(this=11).[nw-(('crypt', ('pub', 11), A, Na)), peer+(A), nonce+(Na) if True]" source="nw" target="Bob(this=11).[nw-(('crypt', ('pub', 11), A, Na)), peer+(A), nonce+(Na) if True]">
+   <inscription>
+    <tuple>
+     <value>
+      <object type="str">
+       crypt
+      </object>
+     </value>
+     <tuple>
+      <value>
+       <object type="str">
+        pub
+       </object>
+      </value>
+      <value>
+       <object type="int">
+        11
+       </object>
+      </value>
+     </tuple>
+     <variable>
+      A
+     </variable>
+     <variable>
+      Na
+     </variable>
+    </tuple>
+   </inscription>
+  </arc>
+  <arc id="Bob(this=11).[nw-(('crypt', ('pub', 11), A, Na)), peer+(A), nonce+(Na) if True]:Bob(this=11).peer" source="Bob(this=11).[nw-(('crypt', ('pub', 11), A, Na)), peer+(A), nonce+(Na) if True]" target="Bob(this=11).peer">
+   <inscription>
+    <variable>
+     A
+    </variable>
+   </inscription>
+  </arc>
+  <arc id="Bob(this=11).[nw-(('crypt', ('pub', 11), A, Na)), peer+(A), nonce+(Na) if True]:Bob(this=11).internal#2" source="Bob(this=11).[nw-(('crypt', ('pub', 11), A, Na)), peer+(A), nonce+(Na) if True]" target="Bob(this=11).internal#2">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="Bob(this=11).[nw-(('crypt', ('pub', 11), A, Na)), peer+(A), nonce+(Na) if True]:Bob(this=11).nonce" source="Bob(this=11).[nw-(('crypt', ('pub', 11), A, Na)), peer+(A), nonce+(Na) if True]" target="Bob(this=11).nonce">
+   <inscription>
+    <variable>
+     Na
+    </variable>
+   </inscription>
+  </arc>
+  <arc id="Alice(this=5,peer=6).internal#1:Alice(this=5,peer=6).[nw-(('crypt', ('pub', 5), Na, Nb)), nonce+(Nb) if (Na) == ((Nonce)(5))]" source="Alice(this=5,peer=6).internal#1" target="Alice(this=5,peer=6).[nw-(('crypt', ('pub', 5), Na, Nb)), nonce+(Nb) if (Na) == ((Nonce)(5))]">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="nw:Alice(this=5,peer=6).[nw-(('crypt', ('pub', 5), Na, Nb)), nonce+(Nb) if (Na) == ((Nonce)(5))]" source="nw" target="Alice(this=5,peer=6).[nw-(('crypt', ('pub', 5), Na, Nb)), nonce+(Nb) if (Na) == ((Nonce)(5))]">
+   <inscription>
+    <tuple>
+     <value>
+      <object type="str">
+       crypt
+      </object>
+     </value>
+     <tuple>
+      <value>
+       <object type="str">
+        pub
+       </object>
+      </value>
+      <value>
+       <object type="int">
+        5
+       </object>
+      </value>
+     </tuple>
+     <variable>
+      Na
+     </variable>
+     <variable>
+      Nb
+     </variable>
+    </tuple>
+   </inscription>
+  </arc>
+  <arc id="Alice(this=5,peer=6).[nw-(('crypt', ('pub', 5), Na, Nb)), nonce+(Nb) if (Na) == ((Nonce)(5))]:Alice(this=5,peer=6).internal#2" source="Alice(this=5,peer=6).[nw-(('crypt', ('pub', 5), Na, Nb)), nonce+(Nb) if (Na) == ((Nonce)(5))]" target="Alice(this=5,peer=6).internal#2">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="Alice(this=5,peer=6).[nw-(('crypt', ('pub', 5), Na, Nb)), nonce+(Nb) if (Na) == ((Nonce)(5))]:Alice(this=5,peer=6).nonce" source="Alice(this=5,peer=6).[nw-(('crypt', ('pub', 5), Na, Nb)), nonce+(Nb) if (Na) == ((Nonce)(5))]" target="Alice(this=5,peer=6).nonce">
+   <inscription>
+    <variable>
+     Nb
+    </variable>
+   </inscription>
+  </arc>
+  <arc id="Bob(this=10).peer:Bob(this=10).[peer?(A), nonce?(Na), nw+(('crypt', ('pub', A), Na, (Nonce)(10))) if True]" source="Bob(this=10).peer" target="Bob(this=10).[peer?(A), nonce?(Na), nw+(('crypt', ('pub', A), Na, (Nonce)(10))) if True]">
+   <inscription>
+    <test>
+     <variable>
+      A
+     </variable>
+    </test>
+   </inscription>
+  </arc>
+  <arc id="Bob(this=10).internal#1:Bob(this=10).[peer?(A), nonce?(Na), nw+(('crypt', ('pub', A), Na, (Nonce)(10))) if True]" source="Bob(this=10).internal#1" target="Bob(this=10).[peer?(A), nonce?(Na), nw+(('crypt', ('pub', A), Na, (Nonce)(10))) if True]">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="Bob(this=10).nonce:Bob(this=10).[peer?(A), nonce?(Na), nw+(('crypt', ('pub', A), Na, (Nonce)(10))) if True]" source="Bob(this=10).nonce" target="Bob(this=10).[peer?(A), nonce?(Na), nw+(('crypt', ('pub', A), Na, (Nonce)(10))) if True]">
+   <inscription>
+    <test>
+     <variable>
+      Na
+     </variable>
+    </test>
+   </inscription>
+  </arc>
+  <arc id="Bob(this=10).[peer?(A), nonce?(Na), nw+(('crypt', ('pub', A), Na, (Nonce)(10))) if True]:Bob(this=10).internal#2" source="Bob(this=10).[peer?(A), nonce?(Na), nw+(('crypt', ('pub', A), Na, (Nonce)(10))) if True]" target="Bob(this=10).internal#2">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="Bob(this=10).[peer?(A), nonce?(Na), nw+(('crypt', ('pub', A), Na, (Nonce)(10))) if True]:nw" source="Bob(this=10).[peer?(A), nonce?(Na), nw+(('crypt', ('pub', A), Na, (Nonce)(10))) if True]" target="nw">
+   <inscription>
+    <tuple>
+     <value>
+      <object type="str">
+       crypt
+      </object>
+     </value>
+     <tuple>
+      <value>
+       <object type="str">
+        pub
+       </object>
+      </value>
+      <variable>
+       A
+      </variable>
+     </tuple>
+     <variable>
+      Na
+     </variable>
+     <expression>
+      (Nonce)(10)
+     </expression>
+    </tuple>
+   </inscription>
+  </arc>
+  <arc id="Bob(this=11).internal#1:Bob(this=11).[nw-(('crypt', ('pub', 11), Nb)) if (Nb) == ((Nonce)(11))]" source="Bob(this=11).internal#1" target="Bob(this=11).[nw-(('crypt', ('pub', 11), Nb)) if (Nb) == ((Nonce)(11))]">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="nw:Bob(this=11).[nw-(('crypt', ('pub', 11), Nb)) if (Nb) == ((Nonce)(11))]" source="nw" target="Bob(this=11).[nw-(('crypt', ('pub', 11), Nb)) if (Nb) == ((Nonce)(11))]">
+   <inscription>
+    <tuple>
+     <value>
+      <object type="str">
+       crypt
+      </object>
+     </value>
+     <tuple>
+      <value>
+       <object type="str">
+        pub
+       </object>
+      </value>
+      <value>
+       <object type="int">
+        11
+       </object>
+      </value>
+     </tuple>
+     <variable>
+      Nb
+     </variable>
+    </tuple>
+   </inscription>
+  </arc>
+  <arc id="Bob(this=11).[nw-(('crypt', ('pub', 11), Nb)) if (Nb) == ((Nonce)(11))]:Bob(this=11).exit#1" source="Bob(this=11).[nw-(('crypt', ('pub', 11), Nb)) if (Nb) == ((Nonce)(11))]" target="Bob(this=11).exit#1">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="Alice(this=10,peer=11).internal#1:Alice(this=10,peer=11).[nw-(('crypt', ('pub', 10), Na, Nb)), nonce+(Nb) if (Na) == ((Nonce)(10))]" source="Alice(this=10,peer=11).internal#1" target="Alice(this=10,peer=11).[nw-(('crypt', ('pub', 10), Na, Nb)), nonce+(Nb) if (Na) == ((Nonce)(10))]">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="nw:Alice(this=10,peer=11).[nw-(('crypt', ('pub', 10), Na, Nb)), nonce+(Nb) if (Na) == ((Nonce)(10))]" source="nw" target="Alice(this=10,peer=11).[nw-(('crypt', ('pub', 10), Na, Nb)), nonce+(Nb) if (Na) == ((Nonce)(10))]">
+   <inscription>
+    <tuple>
+     <value>
+      <object type="str">
+       crypt
+      </object>
+     </value>
+     <tuple>
+      <value>
+       <object type="str">
+        pub
+       </object>
+      </value>
+      <value>
+       <object type="int">
+        10
+       </object>
+      </value>
+     </tuple>
+     <variable>
+      Na
+     </variable>
+     <variable>
+      Nb
+     </variable>
+    </tuple>
+   </inscription>
+  </arc>
+  <arc id="Alice(this=10,peer=11).[nw-(('crypt', ('pub', 10), Na, Nb)), nonce+(Nb) if (Na) == ((Nonce)(10))]:Alice(this=10,peer=11).internal#2" source="Alice(this=10,peer=11).[nw-(('crypt', ('pub', 10), Na, Nb)), nonce+(Nb) if (Na) == ((Nonce)(10))]" target="Alice(this=10,peer=11).internal#2">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="Alice(this=10,peer=11).[nw-(('crypt', ('pub', 10), Na, Nb)), nonce+(Nb) if (Na) == ((Nonce)(10))]:Alice(this=10,peer=11).nonce" source="Alice(this=10,peer=11).[nw-(('crypt', ('pub', 10), Na, Nb)), nonce+(Nb) if (Na) == ((Nonce)(10))]" target="Alice(this=10,peer=11).nonce">
+   <inscription>
+    <variable>
+     Nb
+    </variable>
+   </inscription>
+  </arc>
+  <arc id="Alice(this=9,peer=10).internal#1:Alice(this=9,peer=10).[nonce?(Nb), nw+(('crypt', ('pub', 10), Nb)) if True]" source="Alice(this=9,peer=10).internal#1" target="Alice(this=9,peer=10).[nonce?(Nb), nw+(('crypt', ('pub', 10), Nb)) if True]">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="Alice(this=9,peer=10).nonce:Alice(this=9,peer=10).[nonce?(Nb), nw+(('crypt', ('pub', 10), Nb)) if True]" source="Alice(this=9,peer=10).nonce" target="Alice(this=9,peer=10).[nonce?(Nb), nw+(('crypt', ('pub', 10), Nb)) if True]">
+   <inscription>
+    <test>
+     <variable>
+      Nb
+     </variable>
+    </test>
+   </inscription>
+  </arc>
+  <arc id="Alice(this=9,peer=10).[nonce?(Nb), nw+(('crypt', ('pub', 10), Nb)) if True]:Alice(this=9,peer=10).exit#1" source="Alice(this=9,peer=10).[nonce?(Nb), nw+(('crypt', ('pub', 10), Nb)) if True]" target="Alice(this=9,peer=10).exit#1">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="Alice(this=9,peer=10).[nonce?(Nb), nw+(('crypt', ('pub', 10), Nb)) if True]:nw" source="Alice(this=9,peer=10).[nonce?(Nb), nw+(('crypt', ('pub', 10), Nb)) if True]" target="nw">
+   <inscription>
+    <tuple>
+     <value>
+      <object type="str">
+       crypt
+      </object>
+     </value>
+     <tuple>
+      <value>
+       <object type="str">
+        pub
+       </object>
+      </value>
+      <value>
+       <object type="int">
+        10
+       </object>
+      </value>
+     </tuple>
+     <variable>
+      Nb
+     </variable>
+    </tuple>
+   </inscription>
+  </arc>
+  <arc id="Bob(this=10).internal#2:Bob(this=10).[nw-(('crypt', ('pub', 10), Nb)) if (Nb) == ((Nonce)(10))]" source="Bob(this=10).internal#2" target="Bob(this=10).[nw-(('crypt', ('pub', 10), Nb)) if (Nb) == ((Nonce)(10))]">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="nw:Bob(this=10).[nw-(('crypt', ('pub', 10), Nb)) if (Nb) == ((Nonce)(10))]" source="nw" target="Bob(this=10).[nw-(('crypt', ('pub', 10), Nb)) if (Nb) == ((Nonce)(10))]">
+   <inscription>
+    <tuple>
+     <value>
+      <object type="str">
+       crypt
+      </object>
+     </value>
+     <tuple>
+      <value>
+       <object type="str">
+        pub
+       </object>
+      </value>
+      <value>
+       <object type="int">
+        10
+       </object>
+      </value>
+     </tuple>
+     <variable>
+      Nb
+     </variable>
+    </tuple>
+   </inscription>
+  </arc>
+  <arc id="Bob(this=10).[nw-(('crypt', ('pub', 10), Nb)) if (Nb) == ((Nonce)(10))]:Bob(this=10).exit#1" source="Bob(this=10).[nw-(('crypt', ('pub', 10), Nb)) if (Nb) == ((Nonce)(10))]" target="Bob(this=10).exit#1">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="Bob(this=4).entry#1:Bob(this=4).[nw-(('crypt', ('pub', 4), A, Na)), peer+(A), nonce+(Na) if True]" source="Bob(this=4).entry#1" target="Bob(this=4).[nw-(('crypt', ('pub', 4), A, Na)), peer+(A), nonce+(Na) if True]">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="nw:Bob(this=4).[nw-(('crypt', ('pub', 4), A, Na)), peer+(A), nonce+(Na) if True]" source="nw" target="Bob(this=4).[nw-(('crypt', ('pub', 4), A, Na)), peer+(A), nonce+(Na) if True]">
+   <inscription>
+    <tuple>
+     <value>
+      <object type="str">
+       crypt
+      </object>
+     </value>
+     <tuple>
+      <value>
+       <object type="str">
+        pub
+       </object>
+      </value>
+      <value>
+       <object type="int">
+        4
+       </object>
+      </value>
+     </tuple>
+     <variable>
+      A
+     </variable>
+     <variable>
+      Na
+     </variable>
+    </tuple>
+   </inscription>
+  </arc>
+  <arc id="Bob(this=4).[nw-(('crypt', ('pub', 4), A, Na)), peer+(A), nonce+(Na) if True]:Bob(this=4).nonce" source="Bob(this=4).[nw-(('crypt', ('pub', 4), A, Na)), peer+(A), nonce+(Na) if True]" target="Bob(this=4).nonce">
+   <inscription>
+    <variable>
+     Na
+    </variable>
+   </inscription>
+  </arc>
+  <arc id="Bob(this=4).[nw-(('crypt', ('pub', 4), A, Na)), peer+(A), nonce+(Na) if True]:Bob(this=4).internal#1" source="Bob(this=4).[nw-(('crypt', ('pub', 4), A, Na)), peer+(A), nonce+(Na) if True]" target="Bob(this=4).internal#1">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="Bob(this=4).[nw-(('crypt', ('pub', 4), A, Na)), peer+(A), nonce+(Na) if True]:Bob(this=4).peer" source="Bob(this=4).[nw-(('crypt', ('pub', 4), A, Na)), peer+(A), nonce+(Na) if True]" target="Bob(this=4).peer">
+   <inscription>
+    <variable>
+     A
+    </variable>
+   </inscription>
+  </arc>
+  <arc id="Bob(this=11).nonce:Bob(this=11).[peer?(A), nonce?(Na), nw+(('crypt', ('pub', A), Na, (Nonce)(11))) if True]" source="Bob(this=11).nonce" target="Bob(this=11).[peer?(A), nonce?(Na), nw+(('crypt', ('pub', A), Na, (Nonce)(11))) if True]">
+   <inscription>
+    <test>
+     <variable>
+      Na
+     </variable>
+    </test>
+   </inscription>
+  </arc>
+  <arc id="Bob(this=11).internal#2:Bob(this=11).[peer?(A), nonce?(Na), nw+(('crypt', ('pub', A), Na, (Nonce)(11))) if True]" source="Bob(this=11).internal#2" target="Bob(this=11).[peer?(A), nonce?(Na), nw+(('crypt', ('pub', A), Na, (Nonce)(11))) if True]">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="Bob(this=11).peer:Bob(this=11).[peer?(A), nonce?(Na), nw+(('crypt', ('pub', A), Na, (Nonce)(11))) if True]" source="Bob(this=11).peer" target="Bob(this=11).[peer?(A), nonce?(Na), nw+(('crypt', ('pub', A), Na, (Nonce)(11))) if True]">
+   <inscription>
+    <test>
+     <variable>
+      A
+     </variable>
+    </test>
+   </inscription>
+  </arc>
+  <arc id="Bob(this=11).[peer?(A), nonce?(Na), nw+(('crypt', ('pub', A), Na, (Nonce)(11))) if True]:Bob(this=11).internal#1" source="Bob(this=11).[peer?(A), nonce?(Na), nw+(('crypt', ('pub', A), Na, (Nonce)(11))) if True]" target="Bob(this=11).internal#1">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="Bob(this=11).[peer?(A), nonce?(Na), nw+(('crypt', ('pub', A), Na, (Nonce)(11))) if True]:nw" source="Bob(this=11).[peer?(A), nonce?(Na), nw+(('crypt', ('pub', A), Na, (Nonce)(11))) if True]" target="nw">
+   <inscription>
+    <tuple>
+     <value>
+      <object type="str">
+       crypt
+      </object>
+     </value>
+     <tuple>
+      <value>
+       <object type="str">
+        pub
+       </object>
+      </value>
+      <variable>
+       A
+      </variable>
+     </tuple>
+     <variable>
+      Na
+     </variable>
+     <expression>
+      (Nonce)(11)
+     </expression>
+    </tuple>
+   </inscription>
+  </arc>
+  <arc id="Alice(this=5,peer=6).entry#1:Alice(this=5,peer=6).[nw+(('crypt', ('pub', 6), 5, (Nonce)(5))) if True]" source="Alice(this=5,peer=6).entry#1" target="Alice(this=5,peer=6).[nw+(('crypt', ('pub', 6), 5, (Nonce)(5))) if True]">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="Alice(this=5,peer=6).[nw+(('crypt', ('pub', 6), 5, (Nonce)(5))) if True]:Alice(this=5,peer=6).internal#1" source="Alice(this=5,peer=6).[nw+(('crypt', ('pub', 6), 5, (Nonce)(5))) if True]" target="Alice(this=5,peer=6).internal#1">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="Alice(this=5,peer=6).[nw+(('crypt', ('pub', 6), 5, (Nonce)(5))) if True]:nw" source="Alice(this=5,peer=6).[nw+(('crypt', ('pub', 6), 5, (Nonce)(5))) if True]" target="nw">
+   <inscription>
+    <tuple>
+     <value>
+      <object type="str">
+       crypt
+      </object>
+     </value>
+     <tuple>
+      <value>
+       <object type="str">
+        pub
+       </object>
+      </value>
+      <value>
+       <object type="int">
+        6
+       </object>
+      </value>
+     </tuple>
+     <value>
+      <object type="int">
+       5
+      </object>
+     </value>
+     <expression>
+      (Nonce)(5)
+     </expression>
+    </tuple>
+   </inscription>
+  </arc>
+  <arc id="Alice(this=9,peer=10).entry#1:Alice(this=9,peer=10).[nw+(('crypt', ('pub', 10), 9, (Nonce)(9))) if True]" source="Alice(this=9,peer=10).entry#1" target="Alice(this=9,peer=10).[nw+(('crypt', ('pub', 10), 9, (Nonce)(9))) if True]">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="Alice(this=9,peer=10).[nw+(('crypt', ('pub', 10), 9, (Nonce)(9))) if True]:Alice(this=9,peer=10).internal#2" source="Alice(this=9,peer=10).[nw+(('crypt', ('pub', 10), 9, (Nonce)(9))) if True]" target="Alice(this=9,peer=10).internal#2">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="Alice(this=9,peer=10).[nw+(('crypt', ('pub', 10), 9, (Nonce)(9))) if True]:nw" source="Alice(this=9,peer=10).[nw+(('crypt', ('pub', 10), 9, (Nonce)(9))) if True]" target="nw">
+   <inscription>
+    <tuple>
+     <value>
+      <object type="str">
+       crypt
+      </object>
+     </value>
+     <tuple>
+      <value>
+       <object type="str">
+        pub
+       </object>
+      </value>
+      <value>
+       <object type="int">
+        10
+       </object>
+      </value>
+     </tuple>
+     <value>
+      <object type="int">
+       9
+      </object>
+     </value>
+     <expression>
+      (Nonce)(9)
+     </expression>
+    </tuple>
+   </inscription>
+  </arc>
+  <arc id="Bob(this=6).entry#1:Bob(this=6).[nw-(('crypt', ('pub', 6), A, Na)), peer+(A), nonce+(Na) if True]" source="Bob(this=6).entry#1" target="Bob(this=6).[nw-(('crypt', ('pub', 6), A, Na)), peer+(A), nonce+(Na) if True]">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="nw:Bob(this=6).[nw-(('crypt', ('pub', 6), A, Na)), peer+(A), nonce+(Na) if True]" source="nw" target="Bob(this=6).[nw-(('crypt', ('pub', 6), A, Na)), peer+(A), nonce+(Na) if True]">
+   <inscription>
+    <tuple>
+     <value>
+      <object type="str">
+       crypt
+      </object>
+     </value>
+     <tuple>
+      <value>
+       <object type="str">
+        pub
+       </object>
+      </value>
+      <value>
+       <object type="int">
+        6
+       </object>
+      </value>
+     </tuple>
+     <variable>
+      A
+     </variable>
+     <variable>
+      Na
+     </variable>
+    </tuple>
+   </inscription>
+  </arc>
+  <arc id="Bob(this=6).[nw-(('crypt', ('pub', 6), A, Na)), peer+(A), nonce+(Na) if True]:Bob(this=6).nonce" source="Bob(this=6).[nw-(('crypt', ('pub', 6), A, Na)), peer+(A), nonce+(Na) if True]" target="Bob(this=6).nonce">
+   <inscription>
+    <variable>
+     Na
+    </variable>
+   </inscription>
+  </arc>
+  <arc id="Bob(this=6).[nw-(('crypt', ('pub', 6), A, Na)), peer+(A), nonce+(Na) if True]:Bob(this=6).internal#1" source="Bob(this=6).[nw-(('crypt', ('pub', 6), A, Na)), peer+(A), nonce+(Na) if True]" target="Bob(this=6).internal#1">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="Bob(this=6).[nw-(('crypt', ('pub', 6), A, Na)), peer+(A), nonce+(Na) if True]:Bob(this=6).peer" source="Bob(this=6).[nw-(('crypt', ('pub', 6), A, Na)), peer+(A), nonce+(Na) if True]" target="Bob(this=6).peer">
+   <inscription>
+    <variable>
+     A
+    </variable>
+   </inscription>
+  </arc>
+  <arc id="Alice(this=9,peer=10).internal#2:Alice(this=9,peer=10).[nw-(('crypt', ('pub', 9), Na, Nb)), nonce+(Nb) if (Na) == ((Nonce)(9))]" source="Alice(this=9,peer=10).internal#2" target="Alice(this=9,peer=10).[nw-(('crypt', ('pub', 9), Na, Nb)), nonce+(Nb) if (Na) == ((Nonce)(9))]">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="nw:Alice(this=9,peer=10).[nw-(('crypt', ('pub', 9), Na, Nb)), nonce+(Nb) if (Na) == ((Nonce)(9))]" source="nw" target="Alice(this=9,peer=10).[nw-(('crypt', ('pub', 9), Na, Nb)), nonce+(Nb) if (Na) == ((Nonce)(9))]">
+   <inscription>
+    <tuple>
+     <value>
+      <object type="str">
+       crypt
+      </object>
+     </value>
+     <tuple>
+      <value>
+       <object type="str">
+        pub
+       </object>
+      </value>
+      <value>
+       <object type="int">
+        9
+       </object>
+      </value>
+     </tuple>
+     <variable>
+      Na
+     </variable>
+     <variable>
+      Nb
+     </variable>
+    </tuple>
+   </inscription>
+  </arc>
+  <arc id="Alice(this=9,peer=10).[nw-(('crypt', ('pub', 9), Na, Nb)), nonce+(Nb) if (Na) == ((Nonce)(9))]:Alice(this=9,peer=10).internal#1" source="Alice(this=9,peer=10).[nw-(('crypt', ('pub', 9), Na, Nb)), nonce+(Nb) if (Na) == ((Nonce)(9))]" target="Alice(this=9,peer=10).internal#1">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="Alice(this=9,peer=10).[nw-(('crypt', ('pub', 9), Na, Nb)), nonce+(Nb) if (Na) == ((Nonce)(9))]:Alice(this=9,peer=10).nonce" source="Alice(this=9,peer=10).[nw-(('crypt', ('pub', 9), Na, Nb)), nonce+(Nb) if (Na) == ((Nonce)(9))]" target="Alice(this=9,peer=10).nonce">
+   <inscription>
+    <variable>
+     Nb
+    </variable>
+   </inscription>
+  </arc>
+  <arc id="Alice(this=3,peer=4).entry#1:Alice(this=3,peer=4).[nw+(('crypt', ('pub', 4), 3, (Nonce)(3))) if True]" source="Alice(this=3,peer=4).entry#1" target="Alice(this=3,peer=4).[nw+(('crypt', ('pub', 4), 3, (Nonce)(3))) if True]">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="Alice(this=3,peer=4).[nw+(('crypt', ('pub', 4), 3, (Nonce)(3))) if True]:Alice(this=3,peer=4).internal#2" source="Alice(this=3,peer=4).[nw+(('crypt', ('pub', 4), 3, (Nonce)(3))) if True]" target="Alice(this=3,peer=4).internal#2">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="Alice(this=3,peer=4).[nw+(('crypt', ('pub', 4), 3, (Nonce)(3))) if True]:nw" source="Alice(this=3,peer=4).[nw+(('crypt', ('pub', 4), 3, (Nonce)(3))) if True]" target="nw">
+   <inscription>
+    <tuple>
+     <value>
+      <object type="str">
+       crypt
+      </object>
+     </value>
+     <tuple>
+      <value>
+       <object type="str">
+        pub
+       </object>
+      </value>
+      <value>
+       <object type="int">
+        4
+       </object>
+      </value>
+     </tuple>
+     <value>
+      <object type="int">
+       3
+      </object>
+     </value>
+     <expression>
+      (Nonce)(3)
+     </expression>
+    </tuple>
+   </inscription>
+  </arc>
+  <arc id="Bob(this=2).nonce:Bob(this=2).[peer?(A), nonce?(Na), nw+(('crypt', ('pub', A), Na, (Nonce)(2))) if True]" source="Bob(this=2).nonce" target="Bob(this=2).[peer?(A), nonce?(Na), nw+(('crypt', ('pub', A), Na, (Nonce)(2))) if True]">
+   <inscription>
+    <test>
+     <variable>
+      Na
+     </variable>
+    </test>
+   </inscription>
+  </arc>
+  <arc id="Bob(this=2).internal#2:Bob(this=2).[peer?(A), nonce?(Na), nw+(('crypt', ('pub', A), Na, (Nonce)(2))) if True]" source="Bob(this=2).internal#2" target="Bob(this=2).[peer?(A), nonce?(Na), nw+(('crypt', ('pub', A), Na, (Nonce)(2))) if True]">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="Bob(this=2).peer:Bob(this=2).[peer?(A), nonce?(Na), nw+(('crypt', ('pub', A), Na, (Nonce)(2))) if True]" source="Bob(this=2).peer" target="Bob(this=2).[peer?(A), nonce?(Na), nw+(('crypt', ('pub', A), Na, (Nonce)(2))) if True]">
+   <inscription>
+    <test>
+     <variable>
+      A
+     </variable>
+    </test>
+   </inscription>
+  </arc>
+  <arc id="Bob(this=2).[peer?(A), nonce?(Na), nw+(('crypt', ('pub', A), Na, (Nonce)(2))) if True]:Bob(this=2).internal#1" source="Bob(this=2).[peer?(A), nonce?(Na), nw+(('crypt', ('pub', A), Na, (Nonce)(2))) if True]" target="Bob(this=2).internal#1">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="Bob(this=2).[peer?(A), nonce?(Na), nw+(('crypt', ('pub', A), Na, (Nonce)(2))) if True]:nw" source="Bob(this=2).[peer?(A), nonce?(Na), nw+(('crypt', ('pub', A), Na, (Nonce)(2))) if True]" target="nw">
+   <inscription>
+    <tuple>
+     <value>
+      <object type="str">
+       crypt
+      </object>
+     </value>
+     <tuple>
+      <value>
+       <object type="str">
+        pub
+       </object>
+      </value>
+      <variable>
+       A
+      </variable>
+     </tuple>
+     <variable>
+      Na
+     </variable>
+     <expression>
+      (Nonce)(2)
+     </expression>
+    </tuple>
+   </inscription>
+  </arc>
+  <arc id="Bob(this=2).internal#1:Bob(this=2).[nw-(('crypt', ('pub', 2), Nb)) if (Nb) == ((Nonce)(2))]" source="Bob(this=2).internal#1" target="Bob(this=2).[nw-(('crypt', ('pub', 2), Nb)) if (Nb) == ((Nonce)(2))]">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <arc id="nw:Bob(this=2).[nw-(('crypt', ('pub', 2), Nb)) if (Nb) == ((Nonce)(2))]" source="nw" target="Bob(this=2).[nw-(('crypt', ('pub', 2), Nb)) if (Nb) == ((Nonce)(2))]">
+   <inscription>
+    <tuple>
+     <value>
+      <object type="str">
+       crypt
+      </object>
+     </value>
+     <tuple>
+      <value>
+       <object type="str">
+        pub
+       </object>
+      </value>
+      <value>
+       <object type="int">
+        2
+       </object>
+      </value>
+     </tuple>
+     <variable>
+      Nb
+     </variable>
+    </tuple>
+   </inscription>
+  </arc>
+  <arc id="Bob(this=2).[nw-(('crypt', ('pub', 2), Nb)) if (Nb) == ((Nonce)(2))]:Bob(this=2).exit#1" source="Bob(this=2).[nw-(('crypt', ('pub', 2), Nb)) if (Nb) == ((Nonce)(2))]" target="Bob(this=2).exit#1">
+   <inscription>
+    <text>
+     1
+    </text>
+   </inscription>
+  </arc>
+  <clusters>
+   <node>
+    nw
+   </node>
+   <clusters>
+    <clusters>
+     <clusters>
+      <clusters>
+       <clusters>
+        <clusters>
+         <clusters>
+          <clusters>
+           <clusters>
+            <clusters>
+             <clusters>
+              <node>
+               Alice(this=1,peer=2).internal#1
+              </node>
+              <node>
+               Alice(this=1,peer=2).nonce
+              </node>
+              <clusters>
+               <node>
+                Alice(this=1,peer=2).internal#2
+               </node>
+               <clusters>
+                <node>
+                 Alice(this=1,peer=2).[nw+(('crypt', ('pub', 2), 1, (Nonce)(1))) if True]
+                </node>
+                <node>
+                 Alice(this=1,peer=2).entry#1
+                </node>
+               </clusters>
+               <clusters>
+                <node>
+                 Alice(this=1,peer=2).[nw-(('crypt', ('pub', 1), Na, Nb)), nonce+(Nb) if (Na) == ((Nonce)(1))]
+                </node>
+               </clusters>
+              </clusters>
+              <clusters>
+               <node>
+                Alice(this=1,peer=2).exit#1
+               </node>
+               <node>
+                Alice(this=1,peer=2).[nonce?(Nb), nw+(('crypt', ('pub', 2), Nb)) if True]
+               </node>
+              </clusters>
+             </clusters>
+             <clusters>
+              <node>
+               Bob(this=2).internal#1
+              </node>
+              <clusters>
+               <node>
+                Bob(this=2).peer
+               </node>
+               <node>
+                Bob(this=2).nonce
+               </node>
+               <node>
+                Bob(this=2).internal#2
+               </node>
+               <clusters>
+                <node>
+                 Bob(this=2).[nw-(('crypt', ('pub', 2), A, Na)), peer+(A), nonce+(Na) if True]
+                </node>
+                <node>
+                 Bob(this=2).entry#1
+                </node>
+               </clusters>
+               <clusters>
+                <node>
+                 Bob(this=2).[peer?(A), nonce?(Na), nw+(('crypt', ('pub', A), Na, (Nonce)(2))) if True]
+                </node>
+               </clusters>
+              </clusters>
+              <clusters>
+               <node>
+                Bob(this=2).exit#1
+               </node>
+               <node>
+                Bob(this=2).[nw-(('crypt', ('pub', 2), Nb)) if (Nb) == ((Nonce)(2))]
+               </node>
+              </clusters>
+             </clusters>
+            </clusters>
+            <clusters>
+             <node>
+              Alice(this=3,peer=4).internal#1
+             </node>
+             <node>
+              Alice(this=3,peer=4).nonce
+             </node>
+             <clusters>
+              <node>
+               Alice(this=3,peer=4).internal#2
+              </node>
+              <clusters>
+               <node>
+                Alice(this=3,peer=4).[nw+(('crypt', ('pub', 4), 3, (Nonce)(3))) if True]
+               </node>
+               <node>
+                Alice(this=3,peer=4).entry#1
+               </node>
+              </clusters>
+              <clusters>
+               <node>
+                Alice(this=3,peer=4).[nw-(('crypt', ('pub', 3), Na, Nb)), nonce+(Nb) if (Na) == ((Nonce)(3))]
+               </node>
+              </clusters>
+             </clusters>
+             <clusters>
+              <node>
+               Alice(this=3,peer=4).exit#1
+              </node>
+              <node>
+               Alice(this=3,peer=4).[nonce?(Nb), nw+(('crypt', ('pub', 4), Nb)) if True]
+              </node>
+             </clusters>
+            </clusters>
+           </clusters>
+           <clusters>
+            <node>
+             Bob(this=4).internal#2
+            </node>
+            <clusters>
+             <node>
+              Bob(this=4).peer
+             </node>
+             <node>
+              Bob(this=4).internal#1
+             </node>
+             <node>
+              Bob(this=4).nonce
+             </node>
+             <clusters>
+              <node>
+               Bob(this=4).entry#1
+              </node>
+              <node>
+               Bob(this=4).[nw-(('crypt', ('pub', 4), A, Na)), peer+(A), nonce+(Na) if True]
+              </node>
+             </clusters>
+             <clusters>
+              <node>
+               Bob(this=4).[peer?(A), nonce?(Na), nw+(('crypt', ('pub', A), Na, (Nonce)(4))) if True]
+              </node>
+             </clusters>
+            </clusters>
+            <clusters>
+             <node>
+              Bob(this=4).exit#1
+             </node>
+             <node>
+              Bob(this=4).[nw-(('crypt', ('pub', 4), Nb)) if (Nb) == ((Nonce)(4))]
+             </node>
+            </clusters>
+           </clusters>
+          </clusters>
+          <clusters>
+           <node>
+            Alice(this=5,peer=6).internal#2
+           </node>
+           <node>
+            Alice(this=5,peer=6).nonce
+           </node>
+           <clusters>
+            <node>
+             Alice(this=5,peer=6).internal#1
+            </node>
+            <clusters>
+             <node>
+              Alice(this=5,peer=6).[nw+(('crypt', ('pub', 6), 5, (Nonce)(5))) if True]
+             </node>
+             <node>
+              Alice(this=5,peer=6).entry#1
+             </node>
+            </clusters>
+            <clusters>
+             <node>
+              Alice(this=5,peer=6).[nw-(('crypt', ('pub', 5), Na, Nb)), nonce+(Nb) if (Na) == ((Nonce)(5))]
+             </node>
+            </clusters>
+           </clusters>
+           <clusters>
+            <node>
+             Alice(this=5,peer=6).exit#1
+            </node>
+            <node>
+             Alice(this=5,peer=6).[nonce?(Nb), nw+(('crypt', ('pub', 6), Nb)) if True]
+            </node>
+           </clusters>
+          </clusters>
+         </clusters>
+         <clusters>
+          <node>
+           Bob(this=6).internal#2
+          </node>
+          <clusters>
+           <node>
+            Bob(this=6).nonce
+           </node>
+           <node>
+            Bob(this=6).peer
+           </node>
+           <node>
+            Bob(this=6).internal#1
+           </node>
+           <clusters>
+            <node>
+             Bob(this=6).entry#1
+            </node>
+            <node>
+             Bob(this=6).[nw-(('crypt', ('pub', 6), A, Na)), peer+(A), nonce+(Na) if True]
+            </node>
+           </clusters>
+           <clusters>
+            <node>
+             Bob(this=6).[peer?(A), nonce?(Na), nw+(('crypt', ('pub', A), Na, (Nonce)(6))) if True]
+            </node>
+           </clusters>
+          </clusters>
+          <clusters>
+           <node>
+            Bob(this=6).exit#1
+           </node>
+           <node>
+            Bob(this=6).[nw-(('crypt', ('pub', 6), Nb)) if (Nb) == ((Nonce)(6))]
+           </node>
+          </clusters>
+         </clusters>
+        </clusters>
+        <clusters>
+         <node>
+          Alice(this=7,peer=8).internal#2
+         </node>
+         <node>
+          Alice(this=7,peer=8).nonce
+         </node>
+         <clusters>
+          <node>
+           Alice(this=7,peer=8).internal#1
+          </node>
+          <clusters>
+           <node>
+            Alice(this=7,peer=8).[nw+(('crypt', ('pub', 8), 7, (Nonce)(7))) if True]
+           </node>
+           <node>
+            Alice(this=7,peer=8).entry#1
+           </node>
+          </clusters>
+          <clusters>
+           <node>
+            Alice(this=7,peer=8).[nw-(('crypt', ('pub', 7), Na, Nb)), nonce+(Nb) if (Na) == ((Nonce)(7))]
+           </node>
+          </clusters>
+         </clusters>
+         <clusters>
+          <node>
+           Alice(this=7,peer=8).exit#1
+          </node>
+          <node>
+           Alice(this=7,peer=8).[nonce?(Nb), nw+(('crypt', ('pub', 8), Nb)) if True]
+          </node>
+         </clusters>
+        </clusters>
+       </clusters>
+       <clusters>
+        <node>
+         Bob(this=8).internal#1
+        </node>
+        <clusters>
+         <node>
+          Bob(this=8).internal#2
+         </node>
+         <node>
+          Bob(this=8).peer
+         </node>
+         <node>
+          Bob(this=8).nonce
+         </node>
+         <clusters>
+          <node>
+           Bob(this=8).[nw-(('crypt', ('pub', 8), A, Na)), peer+(A), nonce+(Na) if True]
+          </node>
+          <node>
+           Bob(this=8).entry#1
+          </node>
+         </clusters>
+         <clusters>
+          <node>
+           Bob(this=8).[peer?(A), nonce?(Na), nw+(('crypt', ('pub', A), Na, (Nonce)(8))) if True]
+          </node>
+         </clusters>
+        </clusters>
+        <clusters>
+         <node>
+          Bob(this=8).[nw-(('crypt', ('pub', 8), Nb)) if (Nb) == ((Nonce)(8))]
+         </node>
+         <node>
+          Bob(this=8).exit#1
+         </node>
+        </clusters>
+       </clusters>
+      </clusters>
+      <clusters>
+       <node>
+        Alice(this=9,peer=10).internal#1
+       </node>
+       <node>
+        Alice(this=9,peer=10).nonce
+       </node>
+       <clusters>
+        <node>
+         Alice(this=9,peer=10).internal#2
+        </node>
+        <clusters>
+         <node>
+          Alice(this=9,peer=10).entry#1
+         </node>
+         <node>
+          Alice(this=9,peer=10).[nw+(('crypt', ('pub', 10), 9, (Nonce)(9))) if True]
+         </node>
+        </clusters>
+        <clusters>
+         <node>
+          Alice(this=9,peer=10).[nw-(('crypt', ('pub', 9), Na, Nb)), nonce+(Nb) if (Na) == ((Nonce)(9))]
+         </node>
+        </clusters>
+       </clusters>
+       <clusters>
+        <node>
+         Alice(this=9,peer=10).exit#1
+        </node>
+        <node>
+         Alice(this=9,peer=10).[nonce?(Nb), nw+(('crypt', ('pub', 10), Nb)) if True]
+        </node>
+       </clusters>
+      </clusters>
+     </clusters>
+     <clusters>
+      <node>
+       Bob(this=10).internal#2
+      </node>
+      <clusters>
+       <node>
+        Bob(this=10).internal#1
+       </node>
+       <node>
+        Bob(this=10).nonce
+       </node>
+       <node>
+        Bob(this=10).peer
+       </node>
+       <clusters>
+        <node>
+         Bob(this=10).[nw-(('crypt', ('pub', 10), A, Na)), peer+(A), nonce+(Na) if True]
+        </node>
+        <node>
+         Bob(this=10).entry#1
+        </node>
+       </clusters>
+       <clusters>
+        <node>
+         Bob(this=10).[peer?(A), nonce?(Na), nw+(('crypt', ('pub', A), Na, (Nonce)(10))) if True]
+        </node>
+       </clusters>
+      </clusters>
+      <clusters>
+       <node>
+        Bob(this=10).exit#1
+       </node>
+       <node>
+        Bob(this=10).[nw-(('crypt', ('pub', 10), Nb)) if (Nb) == ((Nonce)(10))]
+       </node>
+      </clusters>
+     </clusters>
+    </clusters>
+    <clusters>
+     <node>
+      Alice(this=10,peer=11).internal#2
+     </node>
+     <node>
+      Alice(this=10,peer=11).nonce
+     </node>
+     <clusters>
+      <node>
+       Alice(this=10,peer=11).internal#1
+      </node>
+      <clusters>
+       <node>
+        Alice(this=10,peer=11).[nw+(('crypt', ('pub', 11), 10, (Nonce)(10))) if True]
+       </node>
+       <node>
+        Alice(this=10,peer=11).entry#1
+       </node>
+      </clusters>
+      <clusters>
+       <node>
+        Alice(this=10,peer=11).[nw-(('crypt', ('pub', 10), Na, Nb)), nonce+(Nb) if (Na) == ((Nonce)(10))]
+       </node>
+      </clusters>
+     </clusters>
+     <clusters>
+      <node>
+       Alice(this=10,peer=11).exit#1
+      </node>
+      <node>
+       Alice(this=10,peer=11).[nonce?(Nb), nw+(('crypt', ('pub', 11), Nb)) if True]
+      </node>
+     </clusters>
+    </clusters>
+   </clusters>
+   <clusters>
+    <node>
+     Bob(this=11).internal#1
+    </node>
+    <clusters>
+     <node>
+      Bob(this=11).nonce
+     </node>
+     <node>
+      Bob(this=11).internal#2
+     </node>
+     <node>
+      Bob(this=11).peer
+     </node>
+     <clusters>
+      <node>
+       Bob(this=11).[nw-(('crypt', ('pub', 11), A, Na)), peer+(A), nonce+(Na) if True]
+      </node>
+      <node>
+       Bob(this=11).entry#1
+      </node>
+     </clusters>
+     <clusters>
+      <node>
+       Bob(this=11).[peer?(A), nonce?(Na), nw+(('crypt', ('pub', A), Na, (Nonce)(11))) if True]
+      </node>
+     </clusters>
+    </clusters>
+    <clusters>
+     <node>
+      Bob(this=11).[nw-(('crypt', ('pub', 11), Nb)) if (Nb) == ((Nonce)(11))]
+     </node>
+     <node>
+      Bob(this=11).exit#1
+     </node>
+    </clusters>
+   </clusters>
+  </clusters>
+ </net>
+</pnml>

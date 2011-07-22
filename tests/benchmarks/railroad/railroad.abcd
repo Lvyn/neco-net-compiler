@@ -1,0 +1,53 @@
+from snakes.nets import *
+
+const MAX = 5
+const OPEN = 2
+const MOVING = 1
+const CLOSED = 0
+
+## green lights on tracks
+buffer green_all : BlackToken = dot  # 1-safe
+buffer green_one : int = tuple(range(MAX))  # color-safe
+
+## commands to the gate
+buffer down : BlackToken = ()  # 1-safe
+buffer up : BlackToken = ()  # 1-safe
+
+## commands to the controller
+buffer enter : BlackToken = ()  # unsafe
+buffer leave : int = ()  # color-safe
+
+## messages gate -> controller
+buffer done : int = ()  # color-safe
+
+net gate () :
+    buffer state : int = OPEN  # 1-safe
+    ([down-(dot), state-(OPEN), state+(MOVING)] ;
+     [state-(MOVING), state+(CLOSED), done+(CLOSED)] ;
+     [up-(dot), state-(CLOSED), state+(MOVING)] ;
+     [state-(MOVING), state+(OPEN), done+(OPEN)])
+    * [False]
+
+net track (this) :
+    buffer crossing : BlackToken = ()  # 1-safe
+    ([enter+(dot), green_all-(dot), green_one-(this)] ;
+     [green_all?(dot), crossing+(dot)] ;
+     [crossing-(dot), leave+(this)])
+    * [False]
+
+net controller () :
+    buffer count : int = 0  # 1-safe
+    (([enter-(dot), count-(c), count+(c+1), down+(dot) if c == 0]
+      ; [done-(CLOSED), green_all+(dot)])
+     + [enter-(dot), count-(c), count+(c+1), green_all+(dot) if c > 0]
+     + ([leave-(t), green_one+(t), count-(c), count+(c-1), up+(dot) if c == 1]
+        ; [done-(OPEN)])
+     + [leave-(t), green_one+(t), count-(c), count+(c-1) if c > 1])
+    * [False]
+
+gate() | controller()
+| track(0)
+| track(1)
+| track(2)
+| track(3)
+| track(4)

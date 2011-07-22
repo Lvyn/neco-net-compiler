@@ -1,0 +1,146 @@
+module netir version "$Revision: 1 $"
+{
+    Node =
+	FunctionDef
+	| Expr
+	| Stmt
+
+    FunctionDef =
+	Init(identifier function_name,
+	     identifier marking_name,
+	     Stmt* body)
+
+	| SuccT(identifier function_name,
+		identifier markingset_name,
+		identifier marking_name,
+		Stmt* body,
+		TransitionInfo transition_info)
+
+	| SuccP(identifier function_name,
+		identifier markingset_name,
+		identifier marking_name,
+		Stmt* body,
+		ProcessInfo process_info)
+
+	| Succs(identifier function_name,
+		identifier marking_argument_name,
+		identifier markingset_variable_name,
+		Stmt* body)
+    Block =
+	TokenEnumeration(identifier token_name,
+			 identifier marking_name,
+			 identifier place_name,
+			 bool token_is_used,
+			 str? use_index,
+			 Stmt* body)
+
+	| MultiTokenEnumeration(identifier* token_names,
+				identifier* offset_names,
+				identifier marking_name,
+				identifier place_name,
+				Stmt* body)
+
+	| NotEmpty(identifier marking_name,
+		   identifier place_name,
+		   Stmt* body)
+
+	| GuardCheck(Expr condition,
+		     Stmt* body)
+
+	| If(Expr condition,
+	     Stmt* body,
+	     Stmt* orelse)
+
+	| Match(TupleInfo tuple_info,
+		Stmt* body)
+
+	| CheckTuple(identifier tuple_name,
+		     TupleInfo tuple_info,
+		     Stmt* body)
+
+	| CheckType(VariableInfo variable,
+		    TypeInfo type,
+		    Stmt* body)
+    Stmt =
+   	 AddToken(identifier marking_name,
+		  identifier place_name,
+		  Expr token_expr)
+
+	| RemToken(identifier marking_name,
+		   identifier place_name,
+		   Expr token_expr,
+		   str? use_index)
+
+	| MarkingCopy(identifier dst_name,
+		      identifier src_name,
+		      PlaceInfo* mod)
+
+	| AddMarking(identifier markingset_name,
+		     identifier marking_name)
+
+
+	| FlushIn(identifier token_name,
+		  identifier marking_name,
+		  identifier place_name)
+
+	| FlushOut(identifier marking_name,
+		   identifier place_name,
+		   Expr token_expr)
+
+	| RemToken(identifier marking_name,
+		   identifier place_name,
+		   Expr token_expr)
+
+	| RemTuple(identifier marking_name,
+		   identifier place_name,
+		   Expr tuple_expr)
+
+	| TupleOut(identifier marking_name,
+		   identifier place_name,
+		   TupleInfo  tuple_info)
+
+	| ProcedureCall(identifier function_name,
+			Expr* arguments)
+
+	| Assign(Name variable,
+		 Expr expr)
+
+	| Print(str message)
+
+	| UpdateFlow(identifier marking_name,
+		     PlaceInfo place_info)
+
+	| Comment(str message)
+    Expr =
+	PyExpr(string expr)
+
+	| ReadFlow(identifier marking_name,
+		   identifier process_name)
+
+	| FunctionCall(identifier function_name,
+		       Expr* arguments)
+
+	| Token(object value,
+		identifier place_name)
+
+	| Name(identifier name)
+
+	| Value(object value, identifier place_name)
+
+        | Tuple(Expr* components)
+
+	| Compare(Expr left,
+		  operator* ops,
+		  Expr* comparators)
+
+	| Pickle( object obj )
+
+	| FlowCheck(identifier marking_name,
+		    Expr? current_flow,
+		    PlaceInfo place_info)
+    PComponent =
+	PVar(identifier name)
+	| PValue(object value)
+
+    operator = EQ
+}
