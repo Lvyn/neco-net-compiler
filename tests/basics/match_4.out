@@ -1,0 +1,10 @@
+check - markings
+count - 2
+begin marking
+s1 - 
+s2 - (2, (2, (3, 4)))
+end marking
+begin marking
+s1 - (1, (2, (3, 4)))
+s2 - 
+end marking

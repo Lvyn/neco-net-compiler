@@ -1,0 +1,226 @@
+check - markings
+count - 16
+begin marking
+gate(0).e - 
+gate(0).i#1 - dot
+gate(0).i#2 - 
+gate(0).i#3 - 
+gate(0).state - 'MOVING'
+gate(0).x - 
+gate(1).e - 
+gate(1).i#1 - 
+gate(1).i#2 - dot
+gate(1).i#3 - 
+gate(1).state - 'CLOSED'
+gate(1).x - 
+end marking
+begin marking
+gate(0).e - 
+gate(0).i#1 - 
+gate(0).i#2 - dot
+gate(0).i#3 - 
+gate(0).state - 'CLOSED'
+gate(0).x - 
+gate(1).e - 
+gate(1).i#1 - 
+gate(1).i#2 - dot
+gate(1).i#3 - 
+gate(1).state - 'CLOSED'
+gate(1).x - 
+end marking
+begin marking
+gate(0).e - 
+gate(0).i#1 - 
+gate(0).i#2 - 
+gate(0).i#3 - dot
+gate(0).state - 'MOVING'
+gate(0).x - 
+gate(1).e - 
+gate(1).i#1 - dot
+gate(1).i#2 - 
+gate(1).i#3 - 
+gate(1).state - 'MOVING'
+gate(1).x - 
+end marking
+begin marking
+gate(0).e - 
+gate(0).i#1 - 
+gate(0).i#2 - 
+gate(0).i#3 - dot
+gate(0).state - 'MOVING'
+gate(0).x - 
+gate(1).e - dot
+gate(1).i#1 - 
+gate(1).i#2 - 
+gate(1).i#3 - 
+gate(1).state - 'OPEN'
+gate(1).x - 
+end marking
+begin marking
+gate(0).e - dot
+gate(0).i#1 - 
+gate(0).i#2 - 
+gate(0).i#3 - 
+gate(0).state - 'OPEN'
+gate(0).x - 
+gate(1).e - 
+gate(1).i#1 - 
+gate(1).i#2 - dot
+gate(1).i#3 - 
+gate(1).state - 'CLOSED'
+gate(1).x - 
+end marking
+begin marking
+gate(0).e - 
+gate(0).i#1 - 
+gate(0).i#2 - 
+gate(0).i#3 - dot
+gate(0).state - 'MOVING'
+gate(0).x - 
+gate(1).e - 
+gate(1).i#1 - 
+gate(1).i#2 - 
+gate(1).i#3 - dot
+gate(1).state - 'MOVING'
+gate(1).x - 
+end marking
+begin marking
+gate(0).e - 
+gate(0).i#1 - 
+gate(0).i#2 - dot
+gate(0).i#3 - 
+gate(0).state - 'CLOSED'
+gate(0).x - 
+gate(1).e - 
+gate(1).i#1 - 
+gate(1).i#2 - 
+gate(1).i#3 - dot
+gate(1).state - 'MOVING'
+gate(1).x - 
+end marking
+begin marking
+gate(0).e - dot
+gate(0).i#1 - 
+gate(0).i#2 - 
+gate(0).i#3 - 
+gate(0).state - 'OPEN'
+gate(0).x - 
+gate(1).e - 
+gate(1).i#1 - dot
+gate(1).i#2 - 
+gate(1).i#3 - 
+gate(1).state - 'MOVING'
+gate(1).x - 
+end marking
+begin marking
+gate(0).e - 
+gate(0).i#1 - 
+gate(0).i#2 - 
+gate(0).i#3 - dot
+gate(0).state - 'MOVING'
+gate(0).x - 
+gate(1).e - 
+gate(1).i#1 - 
+gate(1).i#2 - dot
+gate(1).i#3 - 
+gate(1).state - 'CLOSED'
+gate(1).x - 
+end marking
+begin marking
+gate(0).e - 
+gate(0).i#1 - dot
+gate(0).i#2 - 
+gate(0).i#3 - 
+gate(0).state - 'MOVING'
+gate(0).x - 
+gate(1).e - 
+gate(1).i#1 - dot
+gate(1).i#2 - 
+gate(1).i#3 - 
+gate(1).state - 'MOVING'
+gate(1).x - 
+end marking
+begin marking
+gate(0).e - dot
+gate(0).i#1 - 
+gate(0).i#2 - 
+gate(0).i#3 - 
+gate(0).state - 'OPEN'
+gate(0).x - 
+gate(1).e - dot
+gate(1).i#1 - 
+gate(1).i#2 - 
+gate(1).i#3 - 
+gate(1).state - 'OPEN'
+gate(1).x - 
+end marking
+begin marking
+gate(0).e - 
+gate(0).i#1 - 
+gate(0).i#2 - dot
+gate(0).i#3 - 
+gate(0).state - 'CLOSED'
+gate(0).x - 
+gate(1).e - 
+gate(1).i#1 - dot
+gate(1).i#2 - 
+gate(1).i#3 - 
+gate(1).state - 'MOVING'
+gate(1).x - 
+end marking
+begin marking
+gate(0).e - dot
+gate(0).i#1 - 
+gate(0).i#2 - 
+gate(0).i#3 - 
+gate(0).state - 'OPEN'
+gate(0).x - 
+gate(1).e - 
+gate(1).i#1 - 
+gate(1).i#2 - 
+gate(1).i#3 - dot
+gate(1).state - 'MOVING'
+gate(1).x - 
+end marking
+begin marking
+gate(0).e - 
+gate(0).i#1 - 
+gate(0).i#2 - dot
+gate(0).i#3 - 
+gate(0).state - 'CLOSED'
+gate(0).x - 
+gate(1).e - dot
+gate(1).i#1 - 
+gate(1).i#2 - 
+gate(1).i#3 - 
+gate(1).state - 'OPEN'
+gate(1).x - 
+end marking
+begin marking
+gate(0).e - 
+gate(0).i#1 - dot
+gate(0).i#2 - 
+gate(0).i#3 - 
+gate(0).state - 'MOVING'
+gate(0).x - 
+gate(1).e - 
+gate(1).i#1 - 
+gate(1).i#2 - 
+gate(1).i#3 - dot
+gate(1).state - 'MOVING'
+gate(1).x - 
+end marking
+begin marking
+gate(0).e - 
+gate(0).i#1 - dot
+gate(0).i#2 - 
+gate(0).i#3 - 
+gate(0).state - 'MOVING'
+gate(0).x - 
+gate(1).e - dot
+gate(1).i#1 - 
+gate(1).i#2 - 
+gate(1).i#3 - 
+gate(1).state - 'OPEN'
+gate(1).x - 
+end marking

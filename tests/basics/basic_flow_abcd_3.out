@@ -1,0 +1,146 @@
+check - markings
+count - 12
+begin marking
+b0 - 
+b1 - 
+p1().e - 
+p1().i#1 - 
+p1().i#2 - dot
+p1().x - 
+p2().e - 
+p2().i#1 - dot
+p2().i#2 - 
+p2().x - 
+end marking
+begin marking
+b0 - 
+b1 - 1
+p1().e - 
+p1().i#1 - 
+p1().i#2 - 
+p1().x - dot
+p2().e - dot
+p2().i#1 - 
+p2().i#2 - 
+p2().x - 
+end marking
+begin marking
+b0 - 1
+b1 - 
+p1().e - dot
+p1().i#1 - 
+p1().i#2 - 
+p1().x - 
+p2().e - dot
+p2().i#1 - 
+p2().i#2 - 
+p2().x - 
+end marking
+begin marking
+b0 - 
+b1 - 
+p1().e - 
+p1().i#1 - 
+p1().i#2 - 
+p1().x - dot
+p2().e - 
+p2().i#1 - dot
+p2().i#2 - 
+p2().x - 
+end marking
+begin marking
+b0 - 
+b1 - 
+p1().e - 
+p1().i#1 - 
+p1().i#2 - dot
+p1().x - 
+p2().e - 
+p2().i#1 - 
+p2().i#2 - 
+p2().x - dot
+end marking
+begin marking
+b0 - 
+b1 - 1
+p1().e - 
+p1().i#1 - 
+p1().i#2 - dot
+p1().x - 
+p2().e - 
+p2().i#1 - 
+p2().i#2 - dot
+p2().x - 
+end marking
+begin marking
+b0 - 1
+b1 - 
+p1().e - 
+p1().i#1 - dot
+p1().i#2 - 
+p1().x - 
+p2().e - dot
+p2().i#1 - 
+p2().i#2 - 
+p2().x - 
+end marking
+begin marking
+b0 - 
+b1 - 1
+p1().e - 
+p1().i#1 - 
+p1().i#2 - 
+p1().x - dot
+p2().e - 
+p2().i#1 - 
+p2().i#2 - dot
+p2().x - 
+end marking
+begin marking
+b0 - 1
+b1 - 
+p1().e - dot
+p1().i#1 - 
+p1().i#2 - 
+p1().x - 
+p2().e - 
+p2().i#1 - 
+p2().i#2 - dot
+p2().x - 
+end marking
+begin marking
+b0 - 
+b1 - 1
+p1().e - 
+p1().i#1 - 
+p1().i#2 - dot
+p1().x - 
+p2().e - dot
+p2().i#1 - 
+p2().i#2 - 
+p2().x - 
+end marking
+begin marking
+b0 - 
+b1 - 
+p1().e - 
+p1().i#1 - 
+p1().i#2 - 
+p1().x - dot
+p2().e - 
+p2().i#1 - 
+p2().i#2 - 
+p2().x - dot
+end marking
+begin marking
+b0 - 1
+b1 - 
+p1().e - 
+p1().i#1 - dot
+p1().i#2 - 
+p1().x - 
+p2().e - 
+p2().i#1 - 
+p2().i#2 - dot
+p2().x - 
+end marking

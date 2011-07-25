@@ -141,7 +141,8 @@ def run_test(module_name, lang='python', opt=False, pfe=False):
     args = ['python', "../../neco",
             '-m', module_name,
             '-dm', got,
-            '-l', lang]
+            '-l', lang,
+            '-I../common']
     if opt:
         args.append('--opt')
     if pfe:

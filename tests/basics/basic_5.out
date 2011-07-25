@@ -1,0 +1,18 @@
+check - markings
+count - 4
+begin marking
+s1 - 3 5
+s2 - 
+end marking
+begin marking
+s1 - 3
+s2 - 11
+end marking
+begin marking
+s1 - 5
+s2 - 7
+end marking
+begin marking
+s1 - 
+s2 - 11 7
+end marking
