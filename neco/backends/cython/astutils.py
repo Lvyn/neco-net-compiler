@@ -2,7 +2,7 @@
 """
 import ast, sys
 import neco.core.netir as coreir
-import cyast
+import cyast, cyast_gen
 from neco.utils import flatten_lists
 from neco import unparse
 from neco.unparse import Unparser as _Unparser
@@ -26,7 +26,7 @@ def to_ast(node):
         return [ to_ast(n) for n in node ]
     elif isinstance(node, tuple):
         return tuple([ to_ast(n) for n in node ])
-    elif isinstance(node, cyast._AST):
+    elif isinstance(node, cyast_gen._AST):
         return _to_ast_transformer().visit(node)
     else:
         return node
@@ -36,7 +36,7 @@ def stmt(node):
     """
     if hasattr(node, '__ast__'):
         node = to_ast( node )
-    return cyast.Expr( node )
+    return cyast_gen.Expr( node )
 
 def args_to_ast( d, keys ):
     for key in keys:
@@ -47,7 +47,7 @@ def args_to_ast( d, keys ):
 ################################################################################
 
 def _extract_expr(expr):
-    return Python2Cythyon().visit( extract_python_expr(cyast._AST, expr) )
+    return Python2Cythyon().visit( extract_python_expr(cyast_gen._AST, expr) )
 
 ################################################################################
 
@@ -184,7 +184,7 @@ class Builder(coreir.BuilderBase):
 
     class arguments_helper(object):
         def __init__(self):
-            self.node = cyast.arguments(args = [], vararg = None, kwargs = None, defaults = [])
+            self.node = cyast_gen.arguments(args = [], vararg = None, kwargs = None, defaults = [])
 
         def param(self, name, default = None, type = None):
             annot = to_ast(E(type)) if type else None
@@ -217,10 +217,10 @@ class Builder(coreir.BuilderBase):
 
     @classmethod
     def FunctionDef(cls, **kwargs):
-        args_to_ast(kwargs, cyast.FunctionDef._fields)
+        args_to_ast(kwargs, cyast_gen.FunctionDef._fields)
         check_arg(kwargs, "lang", cyast.Def())
         check_arg(kwargs, "args", cyast.arguments( args = [], vararg = None, kwarg = None, defaults = [] ))
-        return check_attrs(cyast.FunctionDef( **kwargs ), body = [], decl = [])
+        return check_attrs(cyast_gen.FunctionDef( **kwargs ), body = [], decl = [])
 
     @classmethod
     def FunctionCpDef(cls, **kwargs):
@@ -230,8 +230,8 @@ class Builder(coreir.BuilderBase):
 
     @classmethod
     def FunctionCDef(cls, **kwargs):
-        args_to_ast(kwargs, cyast.FunctionDef._fields)
-        check_arg(kwargs, "lang", cyast.CDef(public = True, api = True))
+        args_to_ast(kwargs, cyast_gen.FunctionDef._fields)
+        check_arg(kwargs, "lang", cyast_gen.CDef(public = True, api = True))
         return cls.FunctionDef(**kwargs)
 
     def begin_FunctionDef(self, **kwargs):
@@ -261,8 +261,8 @@ class Builder(coreir.BuilderBase):
     @classmethod
     def If(cls, *args, **kwargs):
         args = to_ast(args)
-        args_to_ast(kwargs, cyast.If._fields)
-        return check_attrs(cyast.If(*args, **kwargs), body = [], or_else = [])
+        args_to_ast(kwargs, cyast_gen.If._fields)
+        return check_attrs(cyast_gen.If(*args, **kwargs), body = [], or_else = [])
 
     def begin_If(self, *args, **kwargs):
         self.begin_block(to_ast(self.If(*args, **kwargs)))
@@ -275,12 +275,12 @@ class Builder(coreir.BuilderBase):
         self._current_scope = self._current.orelse
 
     def end_If(self):
-        assert( isinstance(self._current, cyast.If) )
+        assert( isinstance(self._current, cyast_gen.If) )
         self._current = to_ast( self._current )
         self.end_block()
 
     def end_FunctionDef(self):
-        assert( isinstance(self._current, cyast.FunctionDef) )
+        assert( isinstance(self._current, cyast_gen.FunctionDef) )
         self._current.body = to_ast( flatten_lists(self._current.body) )
         if( self._current.body == []):
             self._current.body.append( cyast.Pass() )
@@ -300,10 +300,10 @@ class Builder(coreir.BuilderBase):
 
     class class_def_helper(object):
         def __init__(self, name, bases, lang, **kwargs):
-            self.node = cyast.ClassDef(name  = to_ast(name),
-                                       bases = to_ast(bases),
-                                       lang  = to_ast(lang),
-                                       **kwargs)
+            self.node = cyast_gen.ClassDef(name  = to_ast(name),
+                                           bases = to_ast(bases),
+                                           lang  = to_ast(lang),
+                                           **kwargs)
 
         def add_method(self, method):
             self.node.body.append(method)

@@ -251,7 +251,7 @@ class Driver(object):
             end = time()
             print "exploration time: ", end - start
             print "len visited = %d" % (len(ss))
-            return (end - start, st)
+            return (end - start, ss)
         else:
             visited = set()
             visit = set([net.init()])

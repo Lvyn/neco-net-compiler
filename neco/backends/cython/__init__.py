@@ -94,7 +94,7 @@ class Compiler(core.Compiler):
         env.add_pyx_declaration("import cPickle")
         env.add_pyx_declaration("import StringIO")
         env.add_pyx_declaration("from time import time")
-        env.add_pyx_declaration("from dolev_yao import *")
+        #env.add_pyx_declaration("from dolev_yao import *")
 
         builder = Builder()
         builder.begin_FunctionDef( name = "state_space",
@@ -191,7 +191,6 @@ except KeyError:
             print self.additional_search_paths
             print "********************************************************************************"
 
-        self.additional_search_paths = ['/home/thelvyn/my_workspace/neco-spot/']
         setup(name="net.pyx",
               cmdclass={'build_ext': build_ext},
               ext_modules=[Extension("net", ["net.pyx"],
