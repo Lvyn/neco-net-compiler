@@ -24,7 +24,7 @@ class multiset(hdict):
 
     def __add__(self, other):
         new = self.copy()
-        new.update(other)
+        new.add_items(other)
         return new
 
     def copy(self):
