@@ -2,9 +2,9 @@ from snakes.nets import *
 
 net = PetriNet('Net')
 s1 = Place('s1', [dot], tBlackToken)
-s1.is_OneSafe = True
+s1.one_safe = True
 s2 = Place('s2', [], tBlackToken)
-s2.is_OneSafe = False
+s2.one_safe = True
 
 net.add_place(s1)
 net.add_place(s2)

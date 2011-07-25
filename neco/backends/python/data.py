@@ -3,6 +3,12 @@
 from snakes.hashables import hdict
 import operator
 
+def dump(e):
+    if hasattr(e, '__dump__'):
+        return e.__dump__()
+    else:
+        return str(e)
+
 class multiset(hdict):
     """
     """

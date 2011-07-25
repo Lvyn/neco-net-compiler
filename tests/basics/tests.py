@@ -115,7 +115,7 @@ class SpecReader(FileReader):
         s = self.readline()
         m = re.match(r"begin marking", s)
         if not m:
-            raise FormatError("syntax error at line %s" % self.line)
+            raise FormatError("%s: syntax error at line %s" % (self.filename, self.line))
         s = self.readline()
         while not re.match(r"end marking", s):
             m = re.match(r'(?P<place>[a-z0-9().#\'`]+)\s*-\s*(?P<tokens>(\'?\w*\'?\s)*)', s)
@@ -163,6 +163,8 @@ def run_test(module_name, lang='python', opt=False, pfe=False):
 common_cases = ['basic_1',
                 'basic_2',
                 'basic_3',
+                'basic_4',
+                'basic_5',
                 'basic_flow_1',
                 'basic_flow_2',
                 'basic_flow_3',
@@ -195,7 +197,14 @@ if __name__ == '__main__':
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--clean', '-C', dest='clean', action='store_true', default=False,
                         help='remove all produced files')
+    parser.add_argument('--run-test', '-r', dest='run', action='append', default=[],
+                        help='run a test case')
+    parser.add_argument('--lang', '-l', dest='lang', action='append', default=[],
+                        help='run a test case')
     args = parser.parse_args()
+    langs = args.lang
+    if len(langs) == 0:
+        langs = ['Python']
     if args.clean:
         l = common_cases
         l.extend(flow_control_cases)
@@ -217,8 +226,21 @@ if __name__ == '__main__':
             os.remove('net.py')
         except: pass
         exit(0)
+    elif args.run:
+        for lang in langs:
+            llang = lang.lower()
+            print "*** {lang} without optimisations ***".format(lang=lang)
+            for test in args.run:
+                run_test(test, lang=llang)
 
-    for lang in ['Python', 'Cython']:
+            print
+            print "*** {lang} with optimisations ***".format(lang=lang)
+            for test in args.run:
+                run_test(test, lang=llang, opt=True)
+
+
+            exit(0)
+    for lang in langs:
         llang = lang.lower()
         print "*** {lang} without optimisations ***".format(lang=lang)
         for test in common_cases:

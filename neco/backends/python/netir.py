@@ -38,8 +38,8 @@ class CompilerVisitor(coreir.CompilerVisitor):
 
     def compile_Compare(self, node):
         return ast.Compare( left = self.compile(node.left),
-                                ops = [ self.compile(op) for op in node.ops ],
-                                comparators = [ self.compile(comparator) for comparator in node.comparators ] )
+                            ops = [ self.compile(op) for op in node.ops ],
+                            comparators = [ self.compile(comparator) for comparator in node.comparators ] )
 
     def compile_EQ(self, node):
         return ast.Eq()
@@ -324,7 +324,7 @@ class CompilerVisitor(coreir.CompilerVisitor):
         getnode = ast.Assign(targets=[ast.Name(id=node.token_name)],
                              value=place_expr)
         ifnode = ast.If(test=ast.Compare(left=ast.Name(id=node.token_name),
-                                         ops=[ast.NotEq],
+                                         ops=[ast.NotEq()],
                                          comparators=[ast.Name(id='None')]),
                         body=[ self.compile( node.body ) ] )
         return [ getnode, ifnode ]
@@ -336,7 +336,7 @@ class CompilerVisitor(coreir.CompilerVisitor):
                                                           mutable = False )
         getnode = ast.Assign(targets=[ast.Name(id=node.token_name)],
                              value=ast.Name(id='dot'))
-        ifnode = ast.If(test=ast.Compare(left=ast.Name(id=place_expr), ops=[ast.Gt()], comparators=[ast.Num('0')]),
+        ifnode = ast.If(test=ast.Compare(left=place_expr, ops=[ast.Gt()], comparators=[ast.Num(0)]),
                         body=[ getnode, self.compile( node.body ) ] )
         return [ ifnode ]
 
@@ -364,7 +364,7 @@ class CompilerVisitor(coreir.CompilerVisitor):
         return self.env.marking_type.gen_check_flow(env = self.env,
                                                     marking_name = node.marking_name,
                                                     place_info = node.place_info,
-                                                    current_flow = E(current_flow.name))
+                                                    current_flow = ast.Name(node.current_flow.name))
 
     def compile_ReadFlow(self, node):
         return self.env.marking_type.gen_read_flow(env=self.env,

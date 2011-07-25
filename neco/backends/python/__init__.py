@@ -45,7 +45,7 @@ class Compiler(core.Compiler):
         for decl in self.net._declare:
             env.add_declaration(decl)
 
-        env.add_declaration("from neco.backends.python.data import multiset")
+        env.add_declaration("from neco.backends.python.data import multiset, dump")
         env.add_declaration("from snakes.nets import *")
         env.add_declaration("import cPickle")
         env.add_declaration("import StringIO")

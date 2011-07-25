@@ -1,6 +1,9 @@
 import ast
 from ast import *
 
+def Name(id):
+    return ast.Name(id=id)
+
 def Call(func, args=[], keywords=[], starargs=None, kwargs=None):
     return ast.Call(func, args, keywords, starargs, kwargs)
 
@@ -24,3 +27,6 @@ def Tuple(elts=[]):
 
 def ClassDef(name, bases=[], body=[], decorator_list=[]):
     return ast.ClassDef(name, bases, body, decorator_list)
+
+def List(elts):
+    return ast.List(elts=elts)
