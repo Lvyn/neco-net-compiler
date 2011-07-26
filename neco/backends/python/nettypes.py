@@ -137,9 +137,6 @@ class StaticMarkingType(coretypes.MarkingType):
     def gen_types(self, select_type):
         """
         """
-        print "gen flow: ", self.flow_control_places
-        print "gen one safe: ", self.one_safe_places
-        print "gen places: ", self.places
         for place_info in self.flow_control_places:
             try:
                 self._process_place_types[place_info.process_name].add_place(place_info)

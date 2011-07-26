@@ -8,10 +8,19 @@ class Nonce (object) :
             return False
     def __ne__ (self, other) :
         return not self.__eq__(other)
+
     def __lt__ (self, other) :
-        return self._agent < other._agent
+        if self.__class__ == other.__class__:
+            return self._agent < other._agent
+        else:
+            return self.__class__ < other.__class__
+
     def __gt__ (self, other) :
-        return self._agent > other._agent
+        if self.__class__ == other.__class__:
+            return self._agent > other._agent
+        else:
+            return self.__class__ > other.__class__
+
     def __str__ (self) :
         return self.__repr__()
     def __repr__ (self) :

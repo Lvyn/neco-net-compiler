@@ -192,6 +192,7 @@ class MultiSet:
         # #return reduce(operator.xor, ( [hash(i) for i in self._data.items()] ), 252756382)
 
     def __richcmp__(self, other, op):
+        print "richcmp !!!"
         if op == 2: # ==
             assert False
 
@@ -217,34 +218,38 @@ class MultiSet:
         self_types  = self._tvc.keys()
         other_types = other._tvc.keys()
 
-        if self_types < other_types:
-            return -1
-        elif self_types > other_types:
-            return 1
-        else: # self_types == other_types
-            for type_name in self._tvc:
-                self_values  = self._tvc[type_name]
-                other_values = other._tvc[type_name]
+        try:
+            if self_types < other_types:
+                return -1
+            elif self_types > other_types:
+                return 1
+            else: # self_types == other_types
+                for type_name in self._tvc:
+                    self_values  = self._tvc[type_name]
+                    other_values = other._tvc[type_name]
 
-                self_values_keys  = self_values.keys()
-                other_values_keys = other_values.keys()
+                    self_values_keys  = self_values.keys()
+                    other_values_keys = other_values.keys()
 
-                if self_values_keys < other_values_keys:
-                    return -1
-                elif self_values_keys > other_values_keys:
-                    return 1
-                else: # self_values == other_values.values
-                    for val in self_values_keys:
-                        if self_values[val] < other_values[val]:
-                            return -1
-                        elif self_values[val] > other_values[val]:
-                            return 1
-                        else:
-                            continue
-                        #endif
-                #endif
-            return 0
+                    if self_values_keys < other_values_keys:
+                        return -1
+                    elif self_values_keys > other_values_keys:
+                        return 1
+                    else: # self_values == other_values.values
+                        for val in self_values_keys:
+                            if self_values[val] < other_values[val]:
+                                return -1
+                            elif self_values[val] > other_values[val]:
+                                return 1
+                            else:
+                                continue
+                        #endif                    
+                    #endif
+                return 0
         #endif
+        except KeyError as e:
+            print e
+            print
 
     def update(self, other):
         for elt in other:

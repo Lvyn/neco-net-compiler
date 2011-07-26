@@ -4,7 +4,7 @@ import ast, cyast, astutils
 import neco.core.netir as coreir
 import inspect, types
 
-from astutils import to_ast
+from cyast import to_ast
 
 ################################################################################
 
@@ -17,7 +17,8 @@ def _str_list_to_endlstr(list):
 class Env(object):
     """ Compiling environment used for compiling with Cython backend. """
 
-    def __init__(self, marking_type, marking_set_type):
+    def __init__(self, word_set, marking_type, marking_set_type):
+        self._word_set = word_set
         self._marking_type = marking_type
         self._marking_set_type = marking_set_type
 
@@ -27,6 +28,18 @@ class Env(object):
         self._c_declarations = []
 
         self._successor_functions = []
+
+    ################################################################################
+
+    def new_variable(self, base=""):
+        """
+
+        @param self:
+        @type self: C{}
+        @param base:
+        @type base: C{}
+        """
+        return self._word_set.fresh(base)
 
     @property
     def marking_type(self):
