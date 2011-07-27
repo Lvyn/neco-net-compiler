@@ -87,13 +87,12 @@ register_cython_type(TypeInfo.UnsignedInt, 'unsigned int')
 
 ################################################################################
 
-
-
 class CythonPlaceType(object):
     """ Base class for cython place types. """
 
     _packed_place_ = False
     _revelant_ = True # should be dumped
+    _helper_ = False
 
     def place_expr(self, env, marking_name):
         """ Get an ast builder corresponding to place access.
@@ -119,6 +118,11 @@ class CythonPlaceType(object):
         """ C{True} if place should be used in dump, C{False} otherwise """
         return getattr(self, 'revelant', self.__class__._revelant_)
 
+    @property
+    def is_helper(self):
+        """ C{True} if place is a helper, C{False} otherwise """
+        return self.__class__._helper_
+
 ################################################################################
 
 def packed_place(cls):
@@ -140,6 +144,27 @@ def packed_place(cls):
 
     """
     cls._packed_place_ = True
+    return cls
+
+def helper_place_type(cls):
+    """ Decorator for packed places.
+
+    >>> class MyPlaceType(CythonPlaceType):
+    ...     pass
+    >>>
+    >>> MyPlaceType().is_helper
+    False
+
+    >>> @helper_place_type
+    ... class MyPlaceType(CythonPlaceType):
+    ...     pass
+    >>>
+    >>> MyPlaceType().is_helper
+    True
+
+
+    """
+    cls._helper_ = True
     return cls
 
 def not_revelant(cls):
@@ -432,29 +457,35 @@ class StaticMarkingType(coretypes.MarkingType):
     def __gen_flow_control_place_type(self, place_info):
         process_name = place_info.process_name
         try:
-            # place type already exists
-            place_type = self._process_place_types[process_name]
-            self.place_types[place_info.name] = place_type
+            flow_place_type = self._process_place_types[process_name] # throws KeyError
         except KeyError:
-            # place type does not exist: create new place type
-
+            # flow place type does not exist: create new place type
             new_id = self.id_provider.new(base = 'flow_')
             dummy = PlaceInfo.Dummy(new_id,
                                     flow_control = True,
                                     process_name = place_info.process_name)
             self.id_provider.set(dummy, new_id)
 
-            helper = FlowPlaceTypeHelper(dummy, self)
-            helper.add_place(place_info)
-            for pi in self.flow_control_places:
-                if pi.process_name == process_name:
-                   helper.add_place(pi)
-            needed_bits = helper.needed_bits
+            flow_place_type = FlowPlaceType(dummy, self)
+            self.place_types[new_id] = flow_place_type
+            self._process_place_types[process_name] = flow_place_type
 
+            # add all flow control places to flow place and create helpers
+            # this is needed to allocate place in self._pack
+            flow_place_type.add_helper(place_info)
+            for info in self.flow_control_places:
+                if info.process_name == process_name:
+                   flow_place_type.add_helper(info)
+            # get size to allocate
+            needed_bits = flow_place_type.needed_bits
+
+            # pack flow place
             self._pack.add_place(dummy, bits = needed_bits)
-            helper.pack = self._pack
-            self.place_types[place_info.name] = helper
-            self._process_place_types[process_name] = helper
+            flow_place_type.pack = self._pack
+
+        # flow_place_type and helpers exist
+        self.place_types[place_info.name] = flow_place_type.get_helper(place_info)
+
 
     def __gen_place_type(self, place_info, select_type):
         place_name = place_info.name
@@ -506,7 +537,9 @@ class StaticMarkingType(coretypes.MarkingType):
                                    args = A("self", type="Marking") )
 
         for place_type in self.place_types.itervalues():
-            if not place_type.is_packed:
+            if place_type.is_packed or place_type.is_helper:
+                pass
+            else:
                 builder.emit(place_type.gen_delete(env = env,
                                                    marking_name = "self"))
         builder.end_FunctionDef()
@@ -524,7 +557,7 @@ class StaticMarkingType(coretypes.MarkingType):
 
         # init places
         for place_type in self.place_types.itervalues():
-            if place_type.is_packed:
+            if place_type.is_packed or place_type.is_helper:
                 pass
             else:
                 attr = self.id_provider.get(place_type)
@@ -553,7 +586,9 @@ class StaticMarkingType(coretypes.MarkingType):
 
         # copy places
         for place_type in self.place_types.itervalues():
-            if not place_type.is_packed:
+            if place_type.is_packed or place_type.is_helper:
+                pass
+            else:
                 builder.emit(cyast.Assign(targets=[E('m.{place}'.format(place=self.id_provider.get(place_type)))],
                                           value=place_type.gen_copy(env=env, marking_name='self'))
                              )
@@ -608,7 +643,7 @@ class StaticMarkingType(coretypes.MarkingType):
                                              right=r))
 
         for place_type in self.place_types.itervalues():
-            if place_type.is_packed:
+            if place_type.is_packed or place_type.is_helper:
                 continue
             else:
                 id = self.id_provider.get(place_type)
@@ -746,7 +781,9 @@ class StaticMarkingType(coretypes.MarkingType):
                 i += 1
 
         for place_type in self.place_types.itervalues():
-            if not place_type.is_packed:
+            if place_type.is_packed or place_type.is_helper:
+                pass
+            else:
                 if place_type.type.is_Int or place_type.type.is_Short or place_type.type.is_Char:
                     native_place = self.id_provider.get(place_type)
                     builder.emit(E('h = (h ^ self.{place_name}) * {mult}'.format(place_name=native_place,
@@ -1010,21 +1047,27 @@ class StaticMarkingType(coretypes.MarkingType):
             nodes.append( self._pack.gen_copy(env, src_marking_name = src_marking_name, dst_marking_name = dst_marking_name) )
 
         for place_type in copy_places:
-            place_expr = self.gen_get_place(env,
-                                            place_name = place_type.info.name,
-                                            marking_name = dst_marking_name)
-            nodes.append(cyast.Assign(targets=[place_expr],
-                                      value=place_type.gen_copy(env, marking_name = src_marking_name))
-                         )
+            if place_type.is_helper or place_type.is_packed:
+                pass
+            else:
+                place_expr = self.gen_get_place(env,
+                                                place_name = place_type.info.name,
+                                                marking_name = dst_marking_name)
+                nodes.append(cyast.Assign(targets=[place_expr],
+                                          value=place_type.gen_copy(env, marking_name = src_marking_name))
+                             )
 
 
         for place_type in assign_places:
-            place_expr = self.gen_get_place(env,
-                                            place_name = place_type.info.name,
-                                            marking_name = dst_marking_name)
-            nodes.append(cyast.Assign(targets=[place_expr],
-                                      value=place_type.gen_light_copy(env, marking_name = src_marking_name))
-                         )
+            if place_type.is_helper or place_type.is_packed:
+                pass
+            else:
+                place_expr = self.gen_get_place(env,
+                                                place_name = place_type.info.name,
+                                                marking_name = dst_marking_name)
+                nodes.append(cyast.Assign(targets=[place_expr],
+                                          value=place_type.gen_light_copy(env, marking_name = src_marking_name))
+                             )
 
         return to_ast(nodes)
 
@@ -1485,18 +1528,20 @@ class PackedBT1SPlaceTypeHelper(coretypes.PlaceType, CythonPlaceType):
 #
 ################################################################################
 
+@not_revelant
 @packed_place
-class FlowPlaceTypeHelper(coretypes.PlaceType, CythonPlaceType):
+class FlowPlaceType(coretypes.PlaceType, CythonPlaceType):
 
     def __init__(self, place_info, marking_type):
         self.pack = None
         self._counter = 0
         self._places = {}
+        self._helpers = {}
         coretypes.PlaceType.__init__(self,
-                                     place_info = place_info,
-                                     marking_type = marking_type,
-                                     type = TypeInfo.UnsignedInt,
-                                     token_type = TypeInfo.UnsignedInt)
+                                     place_info=place_info,
+                                     marking_type=marking_type,
+                                     type=TypeInfo.UnsignedInt,
+                                     token_type=TypeInfo.UnsignedInt)
 
     @property
     def max(self):
@@ -1528,7 +1573,7 @@ class FlowPlaceTypeHelper(coretypes.PlaceType, CythonPlaceType):
     @should_not_be_called
     def gen_light_copy(self, env, marking_name): pass
 
-    def add_place(self, place_info):
+    def add_helper(self, place_info):
         """ Adds a flow control place.
 
         @param place_info: flow control place to be added
@@ -1537,8 +1582,12 @@ class FlowPlaceTypeHelper(coretypes.PlaceType, CythonPlaceType):
         assert(place_info.flow_control)
         if self._places.has_key(place_info.name):
             return
+        self._helpers[place_info.name] = FlowPlaceTypeHelper(place_info, self.marking_type, self)
         self._places[place_info.name] = self._counter
         self._counter += 1
+
+    def get_helper(self, place_info):
+        return self._helpers[place_info.name]
 
     def gen_check_flow(self, env, marking_name, place_info, current_flow):
         next_flow = self._places[place_info.name]
@@ -1561,22 +1610,77 @@ class FlowPlaceTypeHelper(coretypes.PlaceType, CythonPlaceType):
                                    place_type = self,
                                    integer = self._places[place_info.name]) ]
 
-    def gen_read_flow(self, env, marking_name):
+    def gen_read_flow(self, env, marking_name, place_type):
         return self.pack.gen_get_place(env = env,
                                        marking_name = marking_name,
                                        place_type = self)
 
-    def gen_dump(self, env, marking_name):
-        
+    def gen_dump(self, env, marking_name, place_info):
         for (place_name, next_flow) in self._places.iteritems():
-            mask = int(self.pack.field_compatible_mask(self.info, next_flow))
-            check =  Builder.EqCompare(self.place_expr(env, marking_name), E(mask))
-            return cyast.BinOp(left=cyast.Str(place_name),
-                               op=cyast.Add(),
-                               right=cyast.IfExp(test=check,
-                                                 body=cyast.Str('dot'),
-                                                 orelse=cyast.Str(''))
-                               )
+            if place_name == place_info.name:
+                mask = int(self.pack.field_compatible_mask(self.info, next_flow))
+                check =  Builder.EqCompare(self.place_expr(env, marking_name), E(mask))
+                return cyast.BinOp(left=cyast.Str('\n' + place_name + ' - '),
+                                   op=cyast.Add(),
+                                   right=cyast.IfExp(test=check,
+                                                     body=cyast.Str('dot'),
+                                                     orelse=cyast.Str(''))
+                                   )
+        assert(False)
+
+@helper_place_type
+class FlowPlaceTypeHelper(coretypes.PlaceType, CythonPlaceType):
+
+    def __init__(self, place_info, marking_type, flow_place_type):
+        self.flow_place_type = flow_place_type
+        coretypes.PlaceType.__init__(self,
+                                     place_info = place_info,
+                                     marking_type = marking_type,
+                                     type = TypeInfo.UnsignedInt,
+                                     token_type = TypeInfo.UnsignedInt)
+
+    @should_not_be_called
+    def gen_new_place(self, env): pass
+
+    @should_not_be_called
+    def gen_delete(self, env, marking_name): pass
+
+    @should_not_be_called
+    def gen_iterable(self, env, marking_name): pass
+
+    @should_not_be_called
+    def gen_remove_token_function_call(self, *args, **kwargs): pass
+
+    @should_not_be_called
+    def gen_add_token_function_call(self, *args, **kwargs): pass
+
+    @should_not_be_called
+    def gen_copy(self, env, marking_name): pass
+
+    @should_not_be_called
+    def gen_light_copy(self, env, marking_name): pass
+
+    def gen_check_flow(self, env, marking_name, place_info, current_flow):
+        return self.flow_place_type.gen_check_flow(env, marking_name, place_info, current_flow)
+
+        mask = int(self.pack.field_compatible_mask(self.info, next_flow))
+        return Builder.EqCompare(current_flow, E(mask))
+
+    def gen_update_flow(self, env, marking_name, place_info):
+        """ Get an ast representing the flow update.
+
+        @param place_info: place requesting flow control.
+        @type place_info: C{PlaceInfo}
+        """
+        return self.flow_place_type.gen_update_flow(env, marking_name, place_info)
+
+    def gen_read_flow(self, env, marking_name):
+        return self.flow_place_type.gen_read_flow(env=env,
+                                                  marking_name=marking_name,
+                                                  place_type=self)
+
+    def gen_dump(self, env, marking_name):
+        return self.flow_place_type.gen_dump(env, marking_name, self.info)
 
 ################################################################################
 
@@ -1688,7 +1792,6 @@ class PackedPlaceTypes(object):
                                                                         attr=self.name),
                                                   slice=cyast.Index(cyast.Num(offset)))],
                          value=right)
-        
         comment = Builder.Comment("mask: {mask:#0{anw}b} vmask:{vmask:#0{anw}b} - place:{place}"
                                   .format(mask=mask, vmask=vmask, anw=(self._bitfield.native_width + 2), place=place_type.info.name))
         return [ e, comment ]

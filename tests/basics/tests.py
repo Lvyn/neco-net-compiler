@@ -161,6 +161,8 @@ def run_test(module_name, lang='python', opt=False, pfe=False):
         print e_reader.markings
         print "got: "
         print g_reader.markings
+        return False
+    return True
 
 common_cases = set(['basic_1',
                     'basic_2',
@@ -242,21 +244,36 @@ if __name__ == '__main__':
         print "common : ", common_cases
         print "flow_control_cases : ", flow_control_cases
 
+    succeeded = 0
+    failed = 0
+
     for lang in langs:
         llang = lang.lower()
         if args.noopts or args.all:
             print "*** {lang} without optimisations ***".format(lang=lang)
-            for test in common_cases:
-                run_test(test, lang=llang)
-
+            for test in sorted(common_cases):
+                if run_test(test, lang=llang):
+                    succeeded += 1
+                else:
+                    failed += 1
             print
         if args.opts or args.all:
             print "*** {lang} with optimisations ***".format(lang=lang)
-            for test in common_cases:
-                run_test(test, lang=llang, opt=True)
-
+            for test in sorted(common_cases):
+                if run_test(test, lang=llang, opt=True):
+                    succeeded += 1
+                else:
+                    failed += 1
             print
         if args.pfe or args.all:
             print "*** {lang} with optimisations and flow control compression ***".format(lang=lang)
-            for test in flow_control_cases:
-                run_test(test, lang=llang, opt=True, pfe=True)
+            for test in sorted(flow_control_cases):
+                if run_test(test, lang=llang, opt=True, pfe=True):
+                    succeeded += 1
+                else:
+                    failed += 1
+            print
+    print "{tests} tests ran".format(tests=str(succeeded + failed))
+    print "{succeeded} succeeded".format(succeeded=str(succeeded))
+    print "{failed} failed".format(failed=str(failed))
+
