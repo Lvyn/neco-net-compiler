@@ -352,13 +352,14 @@ class CompilerVisitor(coreir.CompilerVisitor):
     # opts
     ################################################################################
     def compile_OneSafeTokenEnumeration(self, node):
-        getnode = E( node.token_name ).assign( self.env.marking_type.gen_get_place( env = self.env,
-                                                                                    marking_name = node.marking_name,
-                                                                                    place_name = node.place_name) )
+        getnode = cyast.Assign(targets=[cyast.Name(node.token_name)],
+                               value=self.env.marking_type.gen_get_place( env = self.env,
+                                                                          marking_name = node.marking_name,
+                                                                          place_name = node.place_name) )
 
         place_type = self.env.marking_type.get_place_type_by_name( node.place_name )
 
-        ifnode = Builder.If( test = place_type.gen_not_empty_function_call(self.env, marking_name = node.marking_name),
+        ifnode = Builder.If( test = place_type.gen_not_empty(self.env, marking_name = node.marking_name),
                              body = [ getnode, self.compile( node.body ) ] )
         return [ to_ast(ifnode) ]
 

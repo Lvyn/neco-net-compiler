@@ -4,6 +4,23 @@ import operator
 # Multisets
 ################################################################################
 
+cpdef dump(object obj):
+    if hasattr(obj, '__dump__'):
+        return obj.__dump__()
+    else:
+        return str(obj)
+
+cpdef _compare(object left, object right):
+    if hasattr(left, 'compare'):
+        return left.compare(right)
+    else:
+        if left == right:
+            return 0
+        elif left < right:
+            return -1
+        else:
+            return 1
+
 cdef class MultiSet:
     cdef dict _data
 
@@ -13,8 +30,13 @@ cdef class MultiSet:
         @param initial_data: list of elements (eventually with repetitions
         @type initial_data: C{dict}
         """
+        cdef int i
+        cdef object e
+
         self._data = {}
-        self._data.update(initial_data)
+        for e, count in initial_data.iteritems():
+            for 0 <= i < count:
+                self.add(e)
 
     cdef MultiSet copy(MultiSet self):
         """ copy the MultiSet
@@ -27,7 +49,7 @@ cdef class MultiSet:
 
     def __add__(MultiSet self, MultiSet other):
         cdef MultiSet new = self.copy()
-        new._data.update(other._data)
+        new.add_items(other)
         return new
 
     cdef void add(MultiSet self, object elt):
@@ -36,7 +58,7 @@ cdef class MultiSet:
         @param elt: element to be added
         @type elt: C{object}
         """
-        try :
+        try:
             self._data[elt] += 1
         except KeyError :
             self._data[elt] = 1
@@ -63,9 +85,14 @@ cdef class MultiSet:
             del self._data[elt]
 
     def __iter__(MultiSet self):
-        """ iterator over the values (with repetitions)
+        """ iterator over the values (without repetitions)
         """
-        return self._data.__iter__()
+        cdef list l = []
+        cdef int i
+        for e, c in self._data.iteritems():
+            for 0 <= i < c:
+                l.append(e)
+        return l.__iter__()
 
     def __str__(MultiSet self):
         """ return a human readable string representation
@@ -73,7 +100,12 @@ cdef class MultiSet:
         @return: human readable string representation of the MultiSet
         @rtype: C{str}
         """
-        return "{%s}" % ", ".join([str(x) for x in self])
+        l = []
+        for elt, count in self._data.iteritems():
+            for 0 <= i < count:
+                l.append(elt)
+
+        return "{%s}" % ", ".join([str(x) for x in l])
 
     def __repr__(MultiSet self):
         """ return a string representation that is suitable for C{eval}
@@ -81,7 +113,12 @@ cdef class MultiSet:
         @return: precise string representation of the MultiSet
         @rtype: C{str}
         """
-        return "MultiSet([%s])" % ", ".join([repr(x) for x in self])
+        l = []
+        for elt, count in self._data.iteritems():
+            for 0 <= i < count:
+                l.append(elt)
+
+        return "MultiSet([%s])" % ", ".join([repr(x) for x in l])
 
     def __len__(MultiSet self):
         """ number of elements, including repetitions
@@ -233,6 +270,17 @@ cdef class MultiSet:
     cdef list domain(MultiSet self):
         return self._data.keys()
 
+    cpdef __dump__(MultiSet self):
+        cdef list l = []
+        cdef int i
+        cdef str s
+        for elt, count in self._data.iteritems():
+            for 0 <= i < count:
+                l.append(elt)
+        s = ''
+        for e in l:
+            s += dump(e) + ' '
+        return s
 
 # def class_name_lower(cls):
 #     return str.lower(cls.__class__.__name__)

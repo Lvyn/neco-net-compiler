@@ -162,36 +162,35 @@ def run_test(module_name, lang='python', opt=False, pfe=False):
         print "got: "
         print g_reader.markings
 
-common_cases = ['basic_1',
-                'basic_2',
-                'basic_3',
-                'basic_4',
-                'basic_5',
-                'basic_flow_1',
-                'basic_flow_2',
-                'basic_flow_3',
-                'basic_flow_abcd_1',
-                'basic_flow_abcd_2',
-                'basic_flow_abcd_3',
-                'basic_flow_abcd_4',
-                'basic_flush_1',
-                'match_1',
-                'match_2',
-                'match_3',
-                'match_4',
-                'match_5',
-                'match_6',
-                'basic_one_safe_1',
-                'basic_one_safe_2']
+common_cases = set(['basic_1',
+                    'basic_2',
+                    'basic_3',
+                    'basic_4',
+                    'basic_5',
+                    'basic_flow_1',
+                    'basic_flow_2',
+                    'basic_flow_3',
+                    'basic_flow_abcd_1',
+                    'basic_flow_abcd_2',
+                    'basic_flow_abcd_3',
+                    'basic_flow_abcd_4',
+                    'basic_flush_1',
+                    'match_1',
+                    'match_2',
+                    'match_3',
+                    'match_4',
+                    'match_5',
+                    'match_6',
+                    'basic_one_safe_1',
+                    'basic_one_safe_2'])
 
-flow_control_cases = [ 'basic_flow_1',
-                       'basic_flow_2',
-                       'basic_flow_3',
-                       'basic_flow_abcd_1',
-                       'basic_flow_abcd_2',
-                       'basic_flow_abcd_3',
-                       'basic_flow_abcd_4' ]
-
+flow_control_cases = set([ 'basic_flow_1',
+                           'basic_flow_2',
+                           'basic_flow_3',
+                           'basic_flow_abcd_1',
+                           'basic_flow_abcd_2',
+                           'basic_flow_abcd_3',
+                           'basic_flow_abcd_4' ])
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser("Tests runner",
@@ -199,6 +198,14 @@ if __name__ == '__main__':
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--clean', '-C', dest='clean', action='store_true', default=False,
                         help='remove all produced files')
+    parser.add_argument('--noopts', '-n', dest='noopts', action='store_true', default=False,
+                        help='run without optimisations')
+    parser.add_argument('--opts', '-o', dest='opts', action='store_true', default=False,
+                        help='run with optimisations')
+    parser.add_argument('--pfe', '-p', dest='pfe', action='store_true', default=False,
+                        help='run process flow elimination')
+    parser.add_argument('--all', '-a', dest='all', action='store_true', default=False,
+                        help='run all')
     parser.add_argument('--run-test', '-r', dest='run', action='append', default=[],
                         help='run a test case')
     parser.add_argument('--lang', '-l', dest='lang', action='append', default=[],
@@ -228,32 +235,28 @@ if __name__ == '__main__':
             os.remove('net.py')
         except: pass
         exit(0)
-    elif args.run:
-        for lang in langs:
-            llang = lang.lower()
+
+    if args.run:
+        common_cases.intersection_update(args.run)
+        flow_control_cases.intersection_update(args.run)
+        print "common : ", common_cases
+        print "flow_control_cases : ", flow_control_cases
+
+    for lang in langs:
+        llang = lang.lower()
+        if args.noopts or args.all:
             print "*** {lang} without optimisations ***".format(lang=lang)
-            for test in args.run:
+            for test in common_cases:
                 run_test(test, lang=llang)
 
             print
+        if args.opts or args.all:
             print "*** {lang} with optimisations ***".format(lang=lang)
-            for test in args.run:
+            for test in common_cases:
                 run_test(test, lang=llang, opt=True)
 
-
-            exit(0)
-    for lang in langs:
-        llang = lang.lower()
-        print "*** {lang} without optimisations ***".format(lang=lang)
-        for test in common_cases:
-            run_test(test, lang=llang)
-
-        print
-        print "*** {lang} with optimisations ***".format(lang=lang)
-        for test in common_cases:
-            run_test(test, lang=llang, opt=True)
-
-        print
-        print "*** {lang} with optimisations and flow control compression ***".format(lang=lang)
-        for test in flow_control_cases:
-            run_test(test, lang=llang, opt=True, pfe=True)
+            print
+        if args.pfe or args.all:
+            print "*** {lang} with optimisations and flow control compression ***".format(lang=lang)
+            for test in flow_control_cases:
+                run_test(test, lang=llang, opt=True, pfe=True)
