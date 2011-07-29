@@ -133,6 +133,8 @@ class Driver(object):
                               help='add additional search paths')
             parser.add_option('--explore', '-e', dest='explore', action='store_true', default=False,
                               help='compute state space')
+            parser.add_option('--dump-makrings', '-d', dest='dump_markings', type=str, default=None,
+                              help='dump markings')
 
             (options, args) = parser.parse_args()
 
@@ -145,6 +147,7 @@ class Driver(object):
                        additional_search_paths  = options.additional_search_paths,
                        trace_calls = False)
 
+            self.dump_markings = options.dump_markings
             self.lang = options.backend
             self.profile = options.profile
             self.module_name = options.module
