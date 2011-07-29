@@ -131,6 +131,8 @@ class Driver(object):
                               help='enable profiling')
             parser.add_option('--Include', '-I', dest='additional_search_paths', action='append', default=[],
                               help='add additional search paths')
+            parser.add_option('--explore', '-e', dest='explore', action='store_true', default=False,
+                              help='compute state space')
 
             (options, args) = parser.parse_args()
 
@@ -147,6 +149,7 @@ class Driver(object):
             self.profile = options.profile
             self.module_name = options.module
             self.net_var_name = options.netvar
+            self.do_explore = options.explore
 
         elif VERSION == (2,7):
             parser = parse.ArgumentParser(name,
@@ -172,6 +175,9 @@ class Driver(object):
                                 help='enable profiling')
             parser.add_argument('--Include', '-I', dest='additional_search_paths', action='append', default=[],
                                 help='add additional search paths')
+            parser.add_argument('--explore', '-e', dest='explore', action='store_true', default=False,
+                                help='compute state space')
+
             args = parser.parse_args()
 
             config.set(debug    = args.debug,
@@ -188,6 +194,7 @@ class Driver(object):
             self.profile = args.profile
             self.module_name = args.module
             self.net_var_name = args.netvar
+            self.do_explore = args.explore
 
         try:
             fp, pathname, description = imp.find_module(self.module_name)
@@ -207,16 +214,17 @@ class Driver(object):
             self.run_profile()
         else:
             self.compile()
-            t, visited = self.explore()
-            if self.dump_markings:
-                if self.dump_markings == 'stdout':
-                    dfile = sys.stdout
-                else:
-                    dfile = open(self.dump_markings, 'w')
-                dfile.write("check - markings\n")
-                dfile.write("count - %d\n" % len(visited))
-                for s in visited:
-                    dfile.write(s.__dump__())
+            if self.do_explore or self.dump_markings:
+                t, visited = self.explore()
+                if self.dump_markings:
+                    if self.dump_markings == 'stdout':
+                        dfile = sys.stdout
+                    else:
+                        dfile = open(self.dump_markings, 'w')
+                    dfile.write("check - markings\n")
+                    dfile.write("count - %d\n" % len(visited))
+                    for s in visited:
+                        dfile.write(s.__dump__())
 
 
     def run_profile(self):
