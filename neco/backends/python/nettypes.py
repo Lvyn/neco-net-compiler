@@ -59,17 +59,17 @@ class ObjectPlaceType(coretypes.ObjectPlaceType, PythonPlaceType):
                                            type = TypeInfo.MultiSet,
                                            token_type = place_info.type)
 
-    def gen_new_place(self, env):
+    def new_place_expr(self, env):
         return E("multiset([])")
 
-    def gen_get_size(self, env, marking_name):
+    def size_expr(self, env, marking_name):
         place_expr = self.place_expr(env, marking_name)
         return E('len').call([E(place_expr)])
 
-    def gen_iterable(self, env, marking_name):
+    def iterable_expr(self, env, marking_name):
         return self.place_expr(env, marking_name)
 
-    def gen_remove_token_function_call(self, env, compiled_token, marking_name, *args):
+    def remove_token_stmt(self, env, compiled_token, marking_name, *args):
         place_expr = self.place_expr(env, marking_name)
         return stmt( ast.Call(func=ast.Attribute(value=place_expr,
                                                  attr="remove"),
@@ -77,49 +77,47 @@ class ObjectPlaceType(coretypes.ObjectPlaceType, PythonPlaceType):
                               )
                      )
 
-    def gen_add_token_function_call(self, env, compiled_token, marking_name, *args):
+    def add_token_stmt(self, env, compiled_token, marking_name, *args):
         place_expr = self.place_expr(env, marking_name)
         return stmt( ast.Call(func=ast.Attribute(value=place_expr,
                                                  attr="add"),
                               args=[compiled_token]) )
 
-    def gen_build_token(self, env, value):
+    def token_expr(self, env, value):
         return E(repr(value))
 
-    def gen_copy(self, env, marking_name):
+    def copy_expr(self, env, marking_name):
         place_expr = self.place_expr(env, marking_name)
         return ast.Call(func=ast.Attribute(value=place_expr,
                                            attr="copy"
                                            )
                         )
 
-    def gen_clear_function_call(self, env, marking_name):
+    def clear_stmt(self, env, marking_name):
         place_expr = self.place_expr(env, marking_name)
         return stmt( ast.Assign(targets=[place_expr],
                                 value=ast.Call(func=ast.Name(id="multiset")))
                      )
 
-    def gen_not_empty_function_call(self, env, marking_name):
+    def not_empty_expr(self, env, marking_name):
         return self.place_expr(env, marking_name)
 
-    def gen_build_token(self, env, token):
-        return E(repr(token))
 
-    def add_multiset(self, env, multiset, marking_name):
+    def add_multiset_stmt(self, env, multiset, marking_name):
         place_expr = self.place_expr(env, marking_name)
         return stmt( ast.Call(func=ast.Attribute(name=place_expr,
                                                  attr='update'),
                               args=[multiset])
                      )
 
-    def add_items(self, env, multiset, marking_name):
+    def add_items_stmt(self, env, multiset, marking_name):
         place_expr = self.place_expr(env, marking_name)
         return stmt( ast.Call(func=ast.Attribute(value=place_expr,
                                                  attr='add_items'),
                               args=[multiset])
                      )
 
-    def gen_dump(self, env, marking_name):
+    def dump_expr(self, env, marking_name):
         place_expr = self.place_expr(env, marking_name)
         return ast.Call(func=ast.Attribute(value=place_expr,
                                            attr='__dump__'))
@@ -171,10 +169,10 @@ class StaticMarkingType(coretypes.MarkingType):
             else:
                 self.place_types[place_name] = place_type
 
-    def gen_alloc_marking_function_call(self, env, *args):
+    def new_marking_expr(self, env, *args):
         return E("Marking()")
 
-    def _gen_init(self, env):
+    def gen_init_method(self, env):
         function = ast.FunctionDef(name='__init__',
                                    args=A('self').param('alloc', default='True').ast())
 
@@ -183,11 +181,11 @@ class StaticMarkingType(coretypes.MarkingType):
         for name, place_type in self.place_types.iteritems():
             if_block.body.append( ast.Assign(targets=[ast.Attribute(value=ast.Name(id='self'),
                                                                     attr=self.id_provider.get(name))],
-                                             value=place_type.gen_new_place(env)) )
+                                             value=place_type.new_place_expr(env)) )
         function.body = if_block
         return function
 
-    def _gen_copy(self, env):
+    def gen_copy_method(self, env):
         function = ast.FunctionDef(name='copy',
                                    args=A('self').param('alloc', default='True').ast())
 
@@ -199,14 +197,14 @@ class StaticMarkingType(coretypes.MarkingType):
         for name, place_type in self.place_types.iteritems():
             tmp.append( ast.Assign(targets=[ast.Attribute(value=ast.Name(id='m'),
                                                           attr=self.id_provider.get(name))],
-                                   value=place_type.gen_copy(env, marking_name = 'self')
+                                   value=place_type.copy_expr(env, marking_name = 'self')
                                    )
                         )
         tmp.append(ast.Return(ast.Name(id='m')))
         function.body = tmp
         return function
 
-    def _gen_eq(self, env):
+    def gen_eq_method(self, env):
         other = 'other'
         function = ast.FunctionDef(name='__eq__',
                                    args=A('self').param(other).ast())
@@ -221,7 +219,7 @@ class StaticMarkingType(coretypes.MarkingType):
         function.body = [ E(return_str) ]
         return function
 
-    def _gen_hash(self, env):
+    def gen_hash_method(self, env):
         builder = Builder()
         builder.begin_FunctionDef( name = '__hash__', args = A("self").ast() )
         builder.emit( E('h = 0') )
@@ -234,10 +232,10 @@ class StaticMarkingType(coretypes.MarkingType):
         builder.end_FunctionDef()
         return builder.ast()
 
-    def gen_free_marking_function_call(self, env, marking_name, *args):
+    def free_marking_stmt(self, env, marking_name, *args):
         pass
 
-    def _gen_repr(self, env):
+    def gen_repr_method(self, env):
         items = list(self.place_types.iteritems())
         items.sort(lambda (n1, t1), (n2, t2) : cmp(n1, n2))
 
@@ -261,7 +259,7 @@ class StaticMarkingType(coretypes.MarkingType):
         builder.end_FunctionDef()
         return builder.ast()
 
-    def _gen_dump(self, env):
+    def gen_dump_method(self, env):
         items = list(self.place_types.iteritems())
         items.sort(lambda (n1, t1), (n2, t2) : cmp(n1, n2))
 
@@ -271,13 +269,13 @@ class StaticMarkingType(coretypes.MarkingType):
         builder.emit( E('s = "begin marking"') )
         for (i, (place_name, place_type)) in enumerate(items):
             if place_type.is_ProcessPlace:
-                builder.emit( place_type.gen_dump(env, 'self', 's') )
+                builder.emit( place_type.dump_expr(env, 'self', 's') )
             else:
                 builder.emit(ast.AugAssign(target=ast.Name(id='s'),
                                            op=ast.Add(),
                                            value=ast.BinOp(left=ast.Str(s = "\n" + place_name + " - "),
                                                            op=ast.Add(),
-                                                           right=place_type.gen_dump(env, 'self'))
+                                                           right=place_type.dump_expr(env, 'self'))
                                            )
                              )
 
@@ -289,15 +287,15 @@ class StaticMarkingType(coretypes.MarkingType):
 
     def gen_api(self, env):
         cls = ast.ClassDef('Marking', bases=[ast.Name(id='object')])
-        cls.body = [self._gen_init(env),
-                    self._gen_repr(env),
-                    self._gen_eq(env),
-                    self._gen_hash(env),
-                    self._gen_copy(env),
-                    self._gen_dump(env)]
+        cls.body = [self.gen_init_method(env),
+                    self.gen_repr_method(env),
+                    self.gen_eq_method(env),
+                    self.gen_hash_method(env),
+                    self.gen_copy_method(env),
+                    self.gen_dump_method(env)]
         return cls
 
-    def gen_copy_marking_function_call(self, env, marking_name, *args):
+    def copy_marking_expr(self, env, marking_name, *args):
         return ast.Call(func=ast.Attribute(value=ast.Name(id=marking_name),
                                            attr='copy'))
 
@@ -305,26 +303,26 @@ class StaticMarkingType(coretypes.MarkingType):
         return ast.Attribute(value=ast.Name(id=marking_name),
                              attr=self.id_provider.get(place_name))
 
-    def gen_remove_token_function_call(self, env, token, marking_name, place_name, *args):
-        place_type = self.get_place_type_by_name(place_name)
-        return place_type.gen_remove_token_function_call(env = env,
-                                                         compiled_token = token,
-                                                         marking_name = marking_name,
-                                                         *args)
+    # def remove_token_stmt(self, env, token, marking_name, place_name, *args):
+    #     place_type = self.get_place_type_by_name(place_name)
+    #     return place_type.gen_remove_token_function_call(env = env,
+    #                                                      compiled_token = token,
+    #                                                      marking_name = marking_name,
+    #                                                      *args)
 
-    def gen_add_token_function_call(self, env, token, marking_name, place_name, *args):
-        place_type = self.get_place_type_by_name(place_name)
-        return place_type.gen_add_token_function_call(env = env,
-                                                      compiled_token = token,
-                                                      marking_name = marking_name,
-                                                      *args)
+    # def add_token_stmt(self, env, token, marking_name, place_name, *args):
+    #     place_type = self.get_place_type_by_name(place_name)
+    #     return place_type.gen_add_token_function_call(env = env,
+    #                                                   compiled_token = token,
+    #                                                   marking_name = marking_name,
+    #                                                   *args)
 
-    def gen_iterable_place(self, env, marking_name, place_name):
-        return self.get_place_type_by_name(place_name).gen_iterable(env, marking_name)
+    # def gen_iterable_place(self, env, marking_name, place_name):
+    #     return self.get_place_type_by_name(place_name).gen_iterable(env, marking_name)
 
-    def gen_build_token(self, env, place_name, value):
-        place_type = self.get_place_type_by_name(place_name)
-        return place_type.gen_build_token(env, value)
+    # def gen_build_token(self, env, place_name, value):
+    #     place_type = self.get_place_type_by_name(place_name)
+    #     return place_type.gen_build_token(env, value)
 
     ################################################################################
     # Flow elimination
@@ -359,10 +357,10 @@ class MarkingSetType(coretypes.MarkingSetType):
     def gen_api(self, env):
         pass
 
-    def gen_new_marking_set(self, env):
+    def new_marking_set_expr(self, env):
         return ast.Call(func=ast.Name(id='set'))
 
-    def gen_add_marking_function_call(self, env, markingset_name, marking_name):
+    def add_marking_stmt(self, env, markingset_name, marking_name):
         return stmt(ast.Call(func=ast.Attribute(value=ast.Name(id=markingset_name),
                                                 attr='add'),
                              args=[E(marking_name)]
@@ -384,7 +382,7 @@ class OneSafePlaceType(onesafe.OneSafePlaceType, PythonPlaceType):
                                           type = TypeInfo.AnyType,
                                           token_type = TypeInfo.AnyType)
 
-    def gen_new_place(self, env):
+    def new_place_expr(self, env):
         return ast.Name(id="None")
 
     @property
@@ -392,29 +390,29 @@ class OneSafePlaceType(onesafe.OneSafePlaceType, PythonPlaceType):
         return self.info.type
 
     @should_not_be_called
-    def gen_iterable(self, env, marking_name): pass
+    def iterable_expr(self, env, marking_name): pass
 
-    def gen_remove_token_function_call(self, env, compiled_token, marking_name, *args):
+    def remove_token_stmt(self, env, compiled_token, marking_name, *args):
         place_expr = self.place_expr(env, marking_name)
         return ast.Assign(targets=[place_expr],
                           value=ast.Name(id='None'))
 
-    def gen_add_token_function_call(self, env, compiled_token, marking_name, *args):
+    def add_token_stmt(self, env, compiled_token, marking_name, *args):
         place_expr = self.place_expr(env, marking_name)
         return ast.Assign(targets=[place_expr],
                           value=compiled_token)
 
-    def gen_build_token(self, env, value):
+    def token_expr(self, env, value):
         return E(repr(value))
 
-    def gen_copy(self, env, marking_name):
+    def copy_expr(self, env, marking_name):
         env.add_import('copy')
         place_expr = self.place_expr(env, marking_name)
         return ast.Call(func=ast.Attribute(value=ast.Name(id='copy'),
                                            attr='deepcopy'),
                         args=[place_expr])
 
-    def gen_dump(self, env, marking_name):
+    def dump_expr(self, env, marking_name):
         place_expr = self.place_expr(env, marking_name)
         return ast.IfExp(test=place_expr,
                          body=ast.Call(func=ast.Name('dump'),
@@ -442,33 +440,33 @@ class BTPlaceType(onesafe.BTPlaceType, PythonPlaceType):
                                      type = TypeInfo.Int,
                                      token_type = TypeInfo.Int)
 
-    def gen_new_place(self, env):
+    def new_place_expr(self, env):
         return ast.Num(n=0)
 
-    def gen_iterable(self, env, marking_name):
+    def iterable_expr(self, env, marking_name):
         place_expr = self.place_expr(env, marking_name)
         return ast.Call(func=ast.Name('xrange'),
                         args=[ast.Num(n=0), place_expr])
 
-    def gen_remove_token_function_call( self, env, compiled_token, marking_name, *args):
+    def remove_token_stmt( self, env, compiled_token, marking_name, *args):
         place_expr = self.place_expr(env, marking_name)
         return ast.AugAssign(target=place_expr,
                              op=ast.Sub(),
                              value=ast.Num(1))
 
-    def gen_add_token_function_call(self, env, compiled_token, marking_name, *args):
+    def add_token_stmt(self, env, compiled_token, marking_name, *args):
         place_expr = self.place_expr(env, marking_name)
         return ast.AugAssign(target=place_expr,
                              op=ast.Add(),
                              value=ast.Num(1))
 
-    def gen_copy(self, env, marking_name):
+    def copy_expr(self, env, marking_name):
         return self.place_expr(env, marking_name)
 
-    def gen_build_token(self, env, value):
+    def token_expr(self, env, value):
         return E('dot')
 
-    def gen_dump(self, env, marking_name):
+    def dump_expr(self, env, marking_name):
         place_expr = self.place_expr(env, marking_name)
         return ast.Call(func=E("' '.join"),
                         args=[ast.BinOp(left=ast.List([ast.Str('dot')]),
@@ -490,29 +488,29 @@ class BTOneSafePlaceType(onesafe.BTOneSafePlaceType, PythonPlaceType):
                                             type = TypeInfo.Bool,
                                             token_type = TypeInfo.BlackToken)
 
-    def gen_new_place(self, env):
+    def new_place_expr(self, env):
         return E('True')
 
     @should_not_be_called
-    def gen_iterable(self, env, marking_name): pass
+    def iterable_expr(self, env, marking_name): pass
 
-    def gen_remove_token_function_call( self, env, compiled_token, marking_name, *args):
+    def remove_token_stmt( self, env, compiled_token, marking_name, *args):
         place_expr = self.place_expr(env, marking_name)
         return ast.Assign(targets=[place_expr],
                           value=ast.Name(id='True'))
 
-    def gen_add_token_function_call(self, env, compiled_token, marking_name, *args):
+    def add_token_stmt(self, env, compiled_token, marking_name, *args):
         place_expr = self.place_expr(env, marking_name)
         return ast.Assign(targets=[place_expr],
                           value=ast.Name(id='False'))
 
-    def gen_copy(self, env, marking_name):
+    def copy_expr(self, env, marking_name):
         return self.place_expr(env, marking_name)
 
-    def gen_build_token(self, env, value):
+    def token_expr(self, env, value):
         return E('dot')
 
-    def gen_dump(self, env, marking_name):
+    def dump_expr(self, env, marking_name):
         place_expr = self.place_expr(env, marking_name)
         return ast.IfExp(test=ast.UnaryOp(op=ast.Not(), operand=place_expr),
                          body=ast.Str('dot'),
@@ -553,7 +551,7 @@ class FlowPlaceType(coretypes.PlaceType, PythonPlaceType):
         """
         return TypeInfo.Int
 
-    def gen_new_place(self, env):
+    def new_place_expr(self, env):
         """ Produce a new empty place.
 
         @returns: empty place expression
@@ -562,15 +560,15 @@ class FlowPlaceType(coretypes.PlaceType, PythonPlaceType):
         return E("0")
 
     @should_not_be_called
-    def gen_iterable(self, env, marking_name): pass
+    def iterable_expr(self, env, marking_name): pass
 
     @should_not_be_called
-    def gen_remove_token_function_call( self, *args, **kwargs): pass
+    def remove_token_stmt( self, *args, **kwargs): pass
 
     @should_not_be_called
-    def gen_add_token_function_call(self, *args, **kwargs): pass
+    def add_token_stmt(self, *args, **kwargs): pass
 
-    def gen_copy(self, env, marking_name):
+    def copy_expr(self, env, marking_name):
         """ produce an expression corresponding to a copy of the place.
 
         @param env: compiling environment
@@ -614,7 +612,7 @@ class FlowPlaceType(coretypes.PlaceType, PythonPlaceType):
     def gen_read_flow(self, env, marking_name):
         return self.place_expr(env, marking_name)
 
-    def gen_dump(self, env, marking_name, variable):
+    def dump_expr(self, env, marking_name, variable):
         place_expr =  self.place_expr(env, marking_name)
         l = []
         for place in self._places:

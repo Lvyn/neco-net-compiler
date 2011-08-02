@@ -90,7 +90,7 @@ class CompilerVisitor(coreir.CompilerVisitor):
 
     def compile_Value(self, node):
         place_type = self.env.marking_type.get_place_type_by_name(node.place_name)
-        return place_type.gen_build_token(self.env, node.value.raw)
+        return place_type.token_expr(self.env, node.value.raw)
 
     def compile_Pickle(self, node):
         output = StringIO.StringIO()
@@ -103,14 +103,14 @@ class CompilerVisitor(coreir.CompilerVisitor):
         place_expr = destination_place.place_expr(self.env, node.marking_name)
         return [ ast.Assign(targets=[ast.Name(id=node.token_name)],
                             value=place_expr),
-                 destination_place.gen_clear_function_call(self.env, node.marking_name) ]
+                 destination_place.clear_stmt(self.env, node.marking_name) ]
 
     def compile_FlushOut(self, node):
         destination_place = self.env.marking_type.get_place_type_by_name(node.place_name)
         multiset = self.compile(node.token_expr)
-        return destination_place.add_items( env = self.env,
-                                            multiset = multiset,
-                                            marking_name = node.marking_name )
+        return destination_place.add_items_stmt( env = self.env,
+                                                 multiset = multiset,
+                                                 marking_name = node.marking_name )
 
     def gen_tuple(self, tuple_info):
         elts = []
@@ -133,10 +133,10 @@ class CompilerVisitor(coreir.CompilerVisitor):
     def compile_TupleOut(self, node):
         tuple_info = node.tuple_info
         tuple = self.gen_tuple(tuple_info)
-        return self.env.marking_type.gen_add_token_function_call(env = self.env,
-                                                                 token = tuple,
-                                                                 marking_name = node.marking_name,
-                                                                 place_name = node.place_name)
+        place_type = self.env.marking_type.get_place_type_by_name(node.place_name)
+        return place_type.add_token_stmt(env = self.env,
+                                         compiled_token = tuple,
+                                         marking_name = node.marking_name)
 
     def compile_NotEmpty(self, node):
         return self.env.marking_type.gen_not_empty_function_call( env = self.env,
@@ -144,11 +144,11 @@ class CompilerVisitor(coreir.CompilerVisitor):
                                                                   place_name = node.place_name )
 
     def compile_TokenEnumeration(self, node):
-        return ast.For( target = E(node.token_name),
-                            iter = self.env.marking_type.gen_iterable_place( env = self.env,
-                                                                             marking_name = node.marking_name,
-                                                                             place_name = node.place_name),
-                            body = [ self.compile(node.body) ] )
+        place_type = self.env.marking_type.get_place_type_by_name(node.place_name)
+        return ast.For(target = E(node.token_name),
+                       iter = place_type.iterable_expr(env = self.env,
+                                                       marking_name = node.marking_name),
+                       body = [ self.compile(node.body) ])
 
     def compile_MultiTokenEnumeration(self, node):
         """
@@ -174,9 +174,9 @@ class CompilerVisitor(coreir.CompilerVisitor):
             pred = E(offset).assign(E('0'))
             # gen: for x in s1
             child = ast.For( target = E(name),
-                                 iter = self.env.marking_type.gen_iterable_place( env = self.env,
-                                                                                  marking_name = node.marking_name,
-                                                                                  place_name = node.place_name) )
+                                 iter = self.env.marking_type.iterable_expr( env = self.env,
+                                                                             marking_name = node.marking_name,
+                                                                             place_name = node.place_name) )
             # gen: i += 1
             child.body.append( E(offset).add_assign(E('1')) )
             # initial block
@@ -239,7 +239,7 @@ class CompilerVisitor(coreir.CompilerVisitor):
             src_place_expr = place_type.place_expr(self.env, marking_name = node.src_name)
             if names.has_key( place ):
                 nodes.append( ast.Assign(targets=[dst_place_expr],
-                                         value=place_type.gen_copy(self.env, node.src_name)
+                                         value=place_type.copy_expr(self.env, node.src_name)
                                          )
                               )
             else:
@@ -250,32 +250,32 @@ class CompilerVisitor(coreir.CompilerVisitor):
         return nodes
 
     def compile_AddMarking(self, node):
-        return self.env.marking_set_type.gen_add_marking_function_call(env = self.env,
-                                                                       markingset_name = node.markingset_name,
-                                                                       marking_name = node.marking_name)
+        return self.env.marking_set_type.add_marking_stmt(env = self.env,
+                                                          markingset_name = node.markingset_name,
+                                                          marking_name = node.marking_name)
 
     def compile_AddToken(self, node):
-        return self.env.marking_type.gen_add_token_function_call(env = self.env,
-                                                                 token = self.compile(node.token_expr),
-                                                                 marking_name = node.marking_name,
-                                                                 place_name = node.place_name)
+        place_type = self.env.marking_type.get_place_type_by_name(node.place_name)
+        return place_type.add_token_stmt(env = self.env,
+                                         compiled_token = self.compile(node.token_expr),
+                                         marking_name = node.marking_name)
 
     def compile_RemToken(self, node):
-        return self.env.marking_type.gen_remove_token_function_call(env = self.env,
-                                                                    token = self.compile(node.token_expr),
-                                                                    marking_name = node.marking_name,
-                                                                    place_name = node.place_name)
+        place_type = self.env.marking_type.get_place_type_by_name(node.place_name)
+        return place_type.remove_token_stmt(env = self.env,
+                                            compiled_token = self.compile(node.token_expr),
+                                            marking_name = node.marking_name)
 
     def compile_RemTuple(self, node):
-        return self.env.marking_type.gen_remove_token_function_call(env = self.env,
-                                                                    token = self.compile(node.tuple_expr),
-                                                                    marking_name = node.marking_name,
-                                                                    place_name = node.place_name)
+        place_type = self.env.marking_type.get_place_type_by_name(node.place_name)
+        return place_type.remove_token_stmt(env = self.env,
+                                            compiled_token = self.compile(node.tuple_expr),
+                                            marking_name = node.marking_name)
 
     def compile_Token(self, node):
-        return self.env.marking_type.gen_build_token(env = self.env,
-                                                     place_name = node.place_name,
-                                                     value = node.value)
+        place_type = self.env.marking_type.get_place_type_by_name(node.place_name)
+        return place_type.token_expr(env = self.env,
+                                     value = node.value)
 
     def compile_SuccT(self, node):
         stmts = [ self.compile( node.body ),
@@ -293,7 +293,7 @@ class CompilerVisitor(coreir.CompilerVisitor):
 
     def compile_Succs(self, node):
         body = [ ast.Assign(targets=[ast.Name(id=node.markingset_variable_name)],
-                                     value=self.env.marking_set_type.gen_new_marking_set(self.env)) ]
+                                     value=self.env.marking_set_type.new_marking_set_expr(self.env)) ]
 
         body.extend( self.compile( node.body ) )
         body.append( ast.Return(ast.Name(id=node.markingset_variable_name)) )
@@ -303,7 +303,7 @@ class CompilerVisitor(coreir.CompilerVisitor):
 
     def compile_Init(self, node):
         new_marking = ast.Assign(targets=[ast.Name(id=node.marking_name)],
-                                 value=self.env.marking_type.gen_alloc_marking_function_call(self.env))
+                                 value=self.env.marking_type.new_marking_expr(self.env))
         return_stmt = ast.Return(ast.Name(id=node.marking_name))
 
         stmts = [new_marking]

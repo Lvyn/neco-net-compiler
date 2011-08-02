@@ -155,43 +155,37 @@ class MarkingType(object):
         pass
 
     @abstractmethod
-    def gen_alloc_marking_function_call(self, marking_name, *args):
-        """ Produce an alloc function call for the representation.
+    def new_marking_expr(self, marking_name, *args):
+        """ Build an expression producing a new marking.
+        """
+        pass
+
+    @abstractmethod
+    def free_marking_stmt(self, marking_name, *args):
+        """ Produce a \"free\" stmt for deleting a marking.
+        """
+        pass
+
+    @abstractmethod
+    def copy_marking_expr(self, marking_name, *args):
+        """ Produce a copy expression for the marking.
 
         @return: function call
         @rtype: implementation specific, see backends
         """
         pass
 
-    @abstractmethod
-    def gen_free_marking_function_call(self, marking_name, *args):
-        """ Produce a free function call for the representation.
+    # @abstractmethod
+    # def remove_token_stmt(self, token_name, marking_name, place_name, *args):
+    #     """ Produce a remove token statement for the representation.
+    #     """
+    #     pass
 
-        @return: function call
-        @rtype: implementation specific, see backends
-        """
-        pass
-
-    @abstractmethod
-    def gen_copy_marking_function_call(self, marking_name, *args):
-        """ Produce a copy function call for the representation.
-
-        @return: function call
-        @rtype: implementation specific, see backends
-        """
-        pass
-
-    @abstractmethod
-    def gen_remove_token_function_call(self, token_name, marking_name, place_name, *args):
-        """ Produce a remove token function call for the representation.
-        """
-        pass
-
-    @abstractmethod
-    def gen_add_token_function_call(self, token_name, marking_name, place_name, *args):
-        """ Produce a add token function call for the representation.
-        """
-        pass
+    # @abstractmethod
+    # def add_token_stmt(self, token_name, marking_name, place_name, *args):
+    #     """ Produce a add token statement for the representation.
+    #     """
+    #     pass
 
 
 ################################################################################
@@ -217,7 +211,7 @@ class MarkingSetType(object):
         pass
 
     @abstractmethod
-    def gen_add_marking_function_call(self, marking_set_name, marking_name):
+    def add_marking_stmt(self, marking_set_name, marking_name):
         """ Produce a add marking function call for the marking set structure.
         """
         pass

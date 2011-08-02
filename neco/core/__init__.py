@@ -819,7 +819,7 @@ class Compiler(object):
     This class is used to produce a library from a snake.nets.PetriNet.
     """
 
-    def __init__(self, net, factory_manager = FactoryManager()):
+    def __init__(self, net, factory_manager = FactoryManager(), atoms = []):
         """ Initialise the compiler from a Petri net.
 
         builds the basic info structure from the snakes petri net representation
@@ -850,6 +850,10 @@ class Compiler(object):
 
         self.global_names = WordSet([])
         self._successor_functions = []
+        # TODO hardcoded for testing
+        self.atoms = [ info.AtomInfo(atom, ['s1', 's2']) for atom in atoms ]
+        print "atoms : ", self.atoms
+
     @property
     def successor_functions(self):
         return self._successor_functions

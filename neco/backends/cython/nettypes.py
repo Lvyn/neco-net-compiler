@@ -93,6 +93,7 @@ class CythonPlaceType(object):
     _packed_place_ = False
     _revelant_ = True # should be dumped
     _helper_ = False
+    _checking_need_helper_ = True
 
     def place_expr(self, env, marking_name):
         """ Get an ast builder corresponding to place access.
@@ -122,6 +123,10 @@ class CythonPlaceType(object):
     def is_helper(self):
         """ C{True} if place is a helper, C{False} otherwise """
         return self.__class__._helper_
+
+    @property
+    def checking_need_helper(self):
+        return self._checking_need_helper_
 
 ################################################################################
 
@@ -190,8 +195,32 @@ def not_revelant(cls):
     cls._revelant_ = False
     return cls
 
+def checking_without_helper(cls):
+    """ Decorator for place types that do not need a helper to support checking.
+
+    A non revelant place will not be used in a dump.
+
+    >>> class MyPlaceType(CythonPlaceType):
+    ...     pass
+    >>>
+    >>> MyPlaceType().is_revelant
+    True
+
+    >>> @not_revelant
+    ... class MyPlaceType(CythonPlaceType):
+    ...     pass
+    >>>
+    >>> MyPlaceType().is_revelant
+    False
+
+
+    """
+    cls._checking_need_helper_ = False
+    return cls
+
 ################################################################################
 
+@checking_without_helper
 class ObjectPlaceType(coretypes.ObjectPlaceType, CythonPlaceType):
     """ Python implementation of fallback place type. """
 
@@ -202,88 +231,84 @@ class ObjectPlaceType(coretypes.ObjectPlaceType, CythonPlaceType):
                                            type = TypeInfo.MultiSet,
                                            token_type = place_info.type)
 
-    def gen_new_place(self, env):
+    def new_place_expr(self, env):
         return cyast.Call(func=cyast.Name(id="MultiSet"))
 
-    def gen_delete(self, env, marking_name):
+    def delete_stmt(self, env, marking_name):
         return []
 
-    def gen_hash(self, env, marking_name):
+    def hash_expr(self, env, marking_name):
         place_expr = self.place_expr(env, marking_name)
         return cyast.Call(func=cyast.Attribute(value=place_expr,
                                                attr="hash")
                           )
 
-    def gen_eq(self, env, left, right):
+    def eq_expr(self, env, left, right):
         return cyast.Compare(left=left, ops=[cyast.Eq()], comparators=[right])
 
-    def gen_iterable(self, env, marking_name):
+    def iterable_expr(self, env, marking_name):
         return self.place_expr(env, marking_name)
 
-    def gen_remove_token_function_call(self, env, compiled_token, marking_name):
+    def remove_token_stmt(self, env, compiled_token, marking_name):
         place_expr = self.place_expr(env, marking_name)
         return stmt(cyast.Call(func=cyast.Attribute(value=place_expr,
                                                     attr='remove'),
                                args=[ compiled_token ])
                     )
 
-    def gen_add_token_function_call(self, env, compiled_token, marking_name):
+    def add_token_stmt(self, env, compiled_token, marking_name):
         place_expr = self.place_expr(env, marking_name)
         return stmt(cyast.Call(func=cyast.Attribute(value=place_expr,
                                                     attr='add'),
                                args=[ compiled_token ])
                     )
-
-    def gen_build_token(self, env, value):
-        return E(repr(value))
-
-    def gen_copy(self, env, marking_name):
+    def copy_expr(self, env, marking_name):
         place_expr = self.place_expr(env, marking_name)
         return cyast.Call(func=cyast.Attribute(value=place_expr,
                                                attr="copy")
                           )
 
-    def gen_light_copy(self, env, marking_name):
+    def light_copy_expr(self, env, marking_name):
         return self.place_expr(env, marking_name)
 
-    def gen_clear_function_call(self, env, marking_name):
+    def clear_stmt(self, env, marking_name):
         place_expr = self.place_expr(env, marking_name)
         return cyast.Assign(targets=[place_expr],
                             value=cyast.Call(func=cyast.Name("MultiSet")))
 
-    def gen_not_empty_function_call(self, env, marking_type, marking_name):
+    def not_empty_expr(self, env, marking_type, marking_name):
         return self.place_expr(env, marking_name)
 
-    def gen_build_token(self, env, token):
+    def token_expr(self, env, token):
         return E(repr(token))
 
-    def add_multiset(self, env, multiset, marking_name):
+    def add_multiset_expr(self, env, multiset, marking_name):
         place_expr = self.place_expr(env, marking_name)
         return stmt(cyast.Call(func=cyast.Attribute(value=place_expr,
                                                     attr='update'),
                                args=[ multiset ])
                     )
 
-    def gen_dump(self, env, marking_name):
+    def dump_expr(self, env, marking_name):
         place_expr = self.place_expr(env, marking_name)
         return cyast.Call(func=cyast.Name("dump"),
                           args=[place_expr])
 
-    def add_items(self, env, multiset, marking_name):
+    def add_items_stmt(self, env, multiset, marking_name):
         place_expr = self.place_expr(env, marking_name)
         return stmt(cyast.Call(func=cyast.Attribute(value=place_expr,
                                                     attr='add_items'),
                                args=[multiset])
                     )
 
-    def gen_compare(self, env, left_marking_name, right_marking_name):
+    def compare_expr(self, env, left_marking_name, right_marking_name):
         left  = self.place_expr(env, left_marking_name)
         right = self.place_expr(env, right_marking_name)
         return cyast.Call(func=cyast.Attribute(value=left,
                                                attr='compare'),
                           args=[right])
 
-    def gen_not_empty(self, env, marking_name):
+    def not_empty_expr(self, env, marking_name):
         return self.place_expr(env, marking_name)
 
 @provides_by_index_access
@@ -299,100 +324,97 @@ class IntPlaceType(coretypes.PlaceType, CythonPlaceType):
                                      type = TypeInfo.IntPlace,
                                      token_type = place_info.type)
 
-    def gen_new_place(self, env):
+    def new_place_expr(self, env):
         return E(from_neco_lib("int_place_type_new()"))
 
-    def gen_delete(self, env, marking_name):
+    def delete_stmt(self, env, marking_name):
         place_expr = self.place_expr(env, marking_name)
         return stmt(cyast.Call(func=E(from_neco_lib("int_place_type_free")),
                                args=[ place_expr ])
                     )
 
-    def gen_hash(self, env, marking_name):
+    def hash_expr(self, env, marking_name):
         place_expr = self.place_expr(env, marking_name)
         return cyast.Call(func=E(from_neco_lib("int_place_type_hash")),
                           args=[ place_expr ])
 
-    def gen_eq(self, env, left, right):
+    def eq_expr(self, env, left, right):
         return cyast.Call(func=E(from_neco_lib("int_place_type_eq")),
                           args=[ left, right ])
 
     @should_not_be_called
-    def gen_iterable(self, env, marking_type, marking_name): pass
+    def iterable_expr(self, env, marking_type, marking_name): pass
 
-    def gen_remove_token_function_call(self, env, compiled_token, marking_name):
+    def remove_token_stmt(self, env, compiled_token, marking_name):
         place_expr = self.place_expr(env, marking_name)
         return stmt(cyast.Call(func=E(from_neco_lib("int_place_type_rem_by_index")),
                                args=[ place_expr, compiled_token ])
                     )
 
-    def gen_remove_by_index_function_call(self, env, index, marking_name):
+    def remove_by_index_stmt(self, env, index, marking_name):
         place_expr = self.place_expr(env, marking_name)
         return stmt(cyast.Call(func=E(from_neco_lib("int_place_type_rem_by_index")),
                                args=[ place_expr, E(index) ])
                     )
 
-    def gen_add_token_function_call(self, env, compiled_token, marking_name):
+    def add_token_stmt(self, env, compiled_token, marking_name):
         place_expr = self.place_expr(env, marking_name)
         return stmt(cyast.Call(func=E(from_neco_lib("int_place_type_add")),
                                args=[ place_expr, compiled_token ])
                     )
 
-    def gen_build_token(self, env, value):
-        return E(repr(value))
-
-    def gen_copy(self, env, marking_name):
+    def copy_expr(self, env, marking_name):
         place_expr = self.place_expr(env, marking_name)
         return cyast.Call(func=E(from_neco_lib("int_place_type_copy")),
                           args=[ place_expr ])
 
-    def gen_light_copy(self, env, marking_name):
+    def light_copy_expr(self, env, marking_name):
         place_expr = self.place_expr(env, marking_name)
         return cyast.Call(func=E(from_neco_lib("int_place_type_light_copy")),
                           args=[ place_expr ])
 
-    def gen_get_size_function_call(self, env, marking_name):
+    def get_size_expr(self, env, marking_name):
         place_expr = self.place_expr(env, marking_name)
         return cyast.Call(func=E(from_neco_lib("int_place_type_size")),
                           args=[ place_expr ])
 
-    def gen_get_token_function_call(self, env, marking_name, index):
+    def get_token_expr(self, env, marking_name, index):
         place_expr = self.place_expr(env, marking_name)
         return cyast.Call(func=E(from_neco_lib("int_place_type_get")),
                           args=[ place_expr, E(index) ])
 
-    def gen_clear_function_call(self, env, marking_name):
+    def clear_stmt(self, env, marking_name):
         place_expr = self.place_expr(env, marking_name)
         return cyast.Call(func=E(from_neco_lib("int_place_type_clear")),
                           args=[ place_expr ])
 
-    def gen_build_token(self, env, token):
+    def token_expr(self, env, token):
         return E(repr(token))
 
-    def gen_dump(self, env, marking_name):
+    def dump_expr(self, env, marking_name):
         place_expr = self.place_expr(env, marking_name)
         return cyast.Call(func=E(from_neco_lib("int_place_type_cstr")),
                           args=[ place_expr ])
 
-    def gen_compare(self, env, left_marking_name, right_marking_name):
+    def compare_expr(self, env, left_marking_name, right_marking_name):
         left  = self.place_expr(env, left_marking_name)
         right = self.place_expr(env, right_marking_name)
         return cyast.Call(func=E(from_neco_lib("int_place_type_cmp")),
                           args=[ left, right ])
 
-    def gen_not_empty(self, env,marking_name):
+    def not_empty_expr(self, env,marking_name):
         place_expr = self.place_expr(env, marking_name)
         return cyast.Call(func=E(from_neco_lib("int_place_type_not_empty")),
                           args=[place_expr])
 
     @todo
-    def gen_not_empty_function_call(self, env, marking_type, marking_name): pass
+    def not_empty_expr(self, env, marking_type, marking_name): pass
 
     @todo
-    def add_multiset(self, env, multiset, marking_type, marking_name): pass
+    def add_multiset_expr(self, env, multiset, marking_type, marking_name): pass
 
     @todo
-    def add_items(self, env, multiset, marking_type, marking_name): pass
+    def add_items_stmt(self, env, multiset, marking_type, marking_name): pass
 
 
 ################################################################################
@@ -432,24 +454,22 @@ class StaticMarkingType(coretypes.MarkingType):
     def __gen_one_safe_place_type(self, place_info):
         if place_info.type.is_BlackToken:
             # register a new place type
-            helper = PackedBT1SPlaceTypeHelper( place_info, self, pack = self._pack )
+            pt = PackedBT1SPlaceType( place_info, self, pack = self._pack )
             self._pack.add_place( place_info, bits = 1 )
-            # use helper as place type
-            self.place_types[place_info.name] = helper
+            self.place_types[place_info.name] = pt
         else: # 1s not BT
-            # create a helper
             new_id = self.id_provider.new('one_safe_')
             dummy = PlaceInfo.Dummy( new_id, one_safe = True )
             self.id_provider.set(dummy, new_id)
 
-            helper = PackedBT1SPlaceTypeHelper( dummy, self, pack = self._pack )
-            helper.revelant = False
+            pt = PackedBT1SPlaceType( dummy, self, pack = self._pack )
+            pt.revelant = False
             self._pack.add_place( dummy, bits = 1 )
-            # remember helper
-            self.place_types[new_id] = helper
+            # remember place type
+            self.place_types[new_id] = pt
 
             # create the place
-            place_type = OneSafePlaceType(place_info, self, helper)
+            place_type = OneSafePlaceType(place_info, self, pt)
             # remember place type
             self.place_types[place_info.name] = place_type
 
@@ -526,12 +546,12 @@ class StaticMarkingType(coretypes.MarkingType):
         l.append("MARKING DUMP END\n")
         return "".join(l)
 
-    def gen_alloc_marking_function_call(self, env):
+    def new_marking_expr(self, env):
         return cyast.Call(func=cyast.Name(self.type_name),
                           args=[cyast.Name('alloc')],
                           keywords=[cyast.Name('True')])
 
-    def _gen_dealloc(self, env):
+    def gen_dealloc_method(self, env):
         builder = Builder()
         builder.begin_FunctionDef( name = "__dealloc__",
                                    args = A("self", type="Marking") )
@@ -540,12 +560,12 @@ class StaticMarkingType(coretypes.MarkingType):
             if place_type.is_packed or place_type.is_helper:
                 pass
             else:
-                builder.emit(place_type.gen_delete(env = env,
+                builder.emit(place_type.delete_stmt(env = env,
                                                    marking_name = "self"))
         builder.end_FunctionDef()
         return to_ast(builder)
 
-    def _gen_init(self, env):
+    def gen_init_method(self, env):
         builder = Builder()
         builder.begin_FunctionDef( name = "__cinit__",
                                    args = A("self").param("alloc", default = "False"))
@@ -563,13 +583,13 @@ class StaticMarkingType(coretypes.MarkingType):
                 attr = self.id_provider.get(place_type)
                 builder.emit(cyast.Assign(targets=[cyast.Attribute(cyast.Name('self'),
                                                                    attr=attr)],
-                                          value=place_type.gen_new_place(env) )
+                                          value=place_type.new_place_expr(env) )
                              )
         builder.end_If()
         builder.end_FunctionDef()
         return to_ast(builder)
 
-    def _gen_copy(self, env):
+    def gen_copy_method(self, env):
         builder = Builder()
         builder.begin_FunctionCDef( name = "copy",
                                     args = A("self"),
@@ -582,7 +602,7 @@ class StaticMarkingType(coretypes.MarkingType):
 
         # copy packs
         if self._pack:
-            builder.emit( self._pack.gen_copy(env, src_marking_name = "self", dst_marking_name = "m") )
+            builder.emit( self._pack.copy_expr(env, src_marking_name = "self", dst_marking_name = "m") )
 
         # copy places
         for place_type in self.place_types.itervalues():
@@ -590,7 +610,7 @@ class StaticMarkingType(coretypes.MarkingType):
                 pass
             else:
                 builder.emit(cyast.Assign(targets=[E('m.{place}'.format(place=self.id_provider.get(place_type)))],
-                                          value=place_type.gen_copy(env=env, marking_name='self'))
+                                          value=place_type.copy_expr(env=env, marking_name='self'))
                              )
         builder.emit_Return(E("m"))
         builder.end_FunctionDef()
@@ -627,7 +647,8 @@ class StaticMarkingType(coretypes.MarkingType):
         builder.begin_FunctionCDef( name = "neco_marking_compare",
                                     args = (A("self", type = self.type_name)
                                             .param(right_marking_name, type = self.type_name)),
-                                    returns = E("int"))
+                                    returns = E("int"),
+                                    public=True, api=True)
 
         # TODO: Order places
 
@@ -647,7 +668,7 @@ class StaticMarkingType(coretypes.MarkingType):
                 continue
             else:
                 id = self.id_provider.get(place_type)
-                tests.append(place_type.gen_compare(env,
+                tests.append(place_type.compare_expr(env,
                                                     left_marking_name='self',
                                                     right_marking_name='other')
                              )
@@ -679,7 +700,8 @@ class StaticMarkingType(coretypes.MarkingType):
         builder.begin_FunctionCDef( name = 'neco_marked',
                                     args = (A('self', type = self.type_name)
                                             .param('place_name', type='object')),
-                                    returns = cyast.Name('int'))
+                                    returns = cyast.Name('int'),
+                                    public=True, api=True)
 
         i = 0
         tests = []
@@ -690,13 +712,13 @@ class StaticMarkingType(coretypes.MarkingType):
                                        ops=[cyast.Eq()],
                                        comparators=[cyast.Name('place_name')])
                          )
-            rs.append( place_type.gen_not_empty(env, 'self') )
+            rs.append( place_type.not_empty_expr(env, 'self') )
 
         self._gen_C_marked_aux(builder, tests, rs)
         builder.end_FunctionDef()
         return to_ast(builder)
 
-    def _gen_richcmp(self, env):
+    def gen_richcmp_method(self, env):
         builder = Builder()
         left_marking_name  = 'self'
         right_marking_name = 'other'
@@ -715,49 +737,7 @@ class StaticMarkingType(coretypes.MarkingType):
         builder.end_FunctionDef()
         return to_ast(builder)
 
-
-    # def _gen_richcmp_aux(self, builder, tests):
-    #     try:
-    #         test = tests.pop()
-    #         builder.begin_If(test = test,
-    #                          orelse = [ E("return 0") ])
-    #         self._gen_richcmp_aux(builder, tests)
-    #         builder.end_If()
-    #     except IndexError:
-    #         builder.emit_Return(E("1"))
-
-    # def _gen_richcmp(self, env):
-    #     builder = Builder()
-    #     left_marking_name  = "self"
-    #     right_marking_name = "other"
-    #     builder.begin_FunctionDef( name = "__richcmp__",
-    #                                args = (A("self", type = self.type_name)
-    #                                        .param(right_marking_name, type = self.type_name)
-    #                                        .param("op", type = "int")))
-
-    #     # TODO: Order places
-
-    #     i = 0
-    #     tests = []
-    #     if self._pack:
-    #         if self.packing_enabled:
-    #             tests.extend(self._pack.gen_tests(left_marking_name=left_marking_name,
-    #                                               right_marking_name=right_marking_name))
-
-    #     for place_type in self.place_types.itervalues():
-    #         if place_type.is_packed:
-    #             continue
-    #         else:
-    #             id = self.id_provider.get(place_type)
-    #             tests.append(place_type.gen_eq(env, left=E(left_marking_name + '.' + id), right=E(right_marking_name + '.' + id)))
-
-    #     tests.reverse()
-    #     self._gen_richcmp_aux(builder, tests)
-    #     builder.end_FunctionDef()
-    #     return to_ast(builder)
-
-
-    def _gen_hash(self, env):
+    def gen_hash_method(self, env):
         builder = Builder()
         builder.begin_FunctionDef( name = "__hash__",
                                    args = A("self", type = "Marking"),
@@ -791,7 +771,7 @@ class StaticMarkingType(coretypes.MarkingType):
                                  )
                                  #builder.emit( E('h').assign(E('h').xor(E('self').attr(native_place)).mult(E(mult))) )
                 else:
-                    place_hash = place_type.gen_hash(env, marking_name = "self")
+                    place_hash = place_type.hash_expr(env, marking_name = "self")
                     builder.emit(cyast.Assign(targets=[cyast.Name('h')],
                                               value=cyast.BinOp(left=cyast.BinOp(left=cyast.Name('h'),
                                                                                  op=cyast.BitXor(),
@@ -812,7 +792,8 @@ class StaticMarkingType(coretypes.MarkingType):
         builder.begin_FunctionCDef(name = "neco_marking_dump",
                                    args = A("self", type="Marking"),
                                    returns = cyast.Name("char*"),
-                                   decl = [ Builder.CVar( "c_string", type = "char*" ) ])
+                                   decl = [ Builder.CVar( "c_string", type = "char*" ) ],
+                                   public=True, api=True)
         builder.emit(E("py_unicode_string = str(self)"))
         builder.emit(E("py_byte_string = py_unicode_string.encode('UTF-8')"))
         builder.emit(E("c_string = py_byte_string"))
@@ -824,7 +805,8 @@ class StaticMarkingType(coretypes.MarkingType):
         builder = Builder()
         builder.begin_FunctionCDef( name = "neco_marking_hash",
                                     args = A("self", type = "Marking"),
-                                    returns = E("int"))
+                                    returns = E("int"),
+                                    public=True, api=True)
         builder.emit_Return(E('self.__hash__()'))
         builder.end_FunctionDef()
         return to_ast(builder)
@@ -833,16 +815,28 @@ class StaticMarkingType(coretypes.MarkingType):
         builder = Builder()
         builder.begin_FunctionCDef( name = "neco_marking_copy",
                                     args = A("self", type = "Marking"),
-                                    returns = E("Marking"))
+                                    returns = E("Marking"),
+                                    public=True, api=True)
         builder.emit_Return(E('self.copy()'))
         builder.end_FunctionDef()
         return to_ast(builder)
 
-    def gen_free_marking_function_call(self, env, marking_name):
+    def _gen_C_check(self, env):
+        builder = Builder()
+        builder.begin_FunctionCDef(name="neco_marking_check",
+                                   args=(A("self", type=self.type_name)
+                                         .param("atom", type=type2str(TypeInfo.Int))),
+                                   returns=E(type2str(TypeInfo.Int)),
+                                   public=True, api=True)
+        builder.emit_Return(E("self.check(atom)"))
+        builder.end_FunctionDef()
+        return to_ast(builder)
+
+    def free_marking_stmt(self, env, marking_name):
         pass
 
 
-    def _gen_str(self, env):
+    def gen_str_method(self, env):
         items = list(self.place_types.iteritems())
         items.sort(lambda (n1, t1), (n2, t2) : cmp(n1, n2))
 
@@ -861,7 +855,7 @@ class StaticMarkingType(coretypes.MarkingType):
             #     assert(False and "TO DO")
 
             #     place_type = self.get_place_type_by_name(place_name)
-            #     builder.emit( E('s').add_assign( place_type.gen_dump(env, 'self') ) )
+            #     builder.emit( E('s').add_assign( place_type.dump_expr(env, 'self') ) )
             # else:
             place_type = self.get_place_type_by_name(place_name)
             builder.emit( E( 's += %s' % repr(place_name + ': ')) )
@@ -869,7 +863,7 @@ class StaticMarkingType(coretypes.MarkingType):
             builder.emit(cyast.AugAssign(target=cyast.Name('s'),
                                          op=cyast.Add(),
                                          value=cyast.Call(func=cyast.Name("str"),
-                                                          args=[place_type.gen_dump(env, 'self')])
+                                                          args=[place_type.dump_expr(env, 'self')])
                                          )
                          )
 
@@ -889,7 +883,7 @@ class StaticMarkingType(coretypes.MarkingType):
 
         visited = set()
         for i,(place_name, place_type) in enumerate(items):
-            tmp = ',\n       ' if i > 0 else ''
+            tmp = ',\n' if i > 0 else ''
             if place_type.is_packed:
                 if place_type.pack in visited:
                     continue
@@ -905,7 +899,7 @@ class StaticMarkingType(coretypes.MarkingType):
         builder.end_FunctionDef()
         return to_ast(builder)
 
-    def _gen_dump(self, env):
+    def dump_expr_method(self, env):
         items = list(self.place_types.iteritems())
         items.sort(lambda (n1, t1), (n2, t2) : cmp(n1, n2))
 
@@ -920,18 +914,81 @@ class StaticMarkingType(coretypes.MarkingType):
                 if isinstance(place_type, FlowPlaceTypeHelper):
                     builder.emit(cyast.AugAssign(target=ast.Name(id='s'),
                                                  op=ast.Add(),
-                                                 value=place_type.gen_dump(env, 'self')))
+                                                 value=place_type.dump_expr(env, 'self')))
                 else:
                     builder.emit(cyast.AugAssign(target=ast.Name(id='s'),
                                                  op=ast.Add(),
                                                  value=ast.BinOp(left=cyast.Str(s='\n' + place_name + " - "),
                                                                  op=cyast.Add(),
-                                                                 right=place_type.gen_dump(env, 'self'))
+                                                                 right=place_type.dump_expr(env, 'self'))
                                                  )
                                  )
         builder.emit(E('s += "\\nend marking\\n"'))
         builder.emit_Return(E('s'))
         print i, place_name
+
+        builder.end_FunctionDef()
+        return to_ast(builder)
+
+    def gen_atom_case(self, env, builder, atom, checked_id, first=False):
+        """ Produce a if/elif case in ckeck functions.
+
+        @param builder:
+        @type builder: C{}
+        @param atom:
+        @type atom: C{}
+        @param first:
+        @type first: C{}
+        """
+        if first:
+            builder.begin_If(test=cyast.Compare(left=cyast.Name(checked_id),
+                                                ops=[cyast.Eq()],
+                                                comparators=[cyast.Num(atom.id)]))
+        else:
+            builder.begin_Elif(test=cyast.Compare(left=cyast.Name(checked_id),
+                                                  ops=[cyast.Eq()],
+                                                  comparators=[cyast.Num(atom.id)]))
+        builder.emit(cyast.Comment("atom: {name}".format(name=atom.name)))
+
+        for place_name in atom.place_names:
+            place_type = self.get_place_type_by_name(place_name)
+            if place_type.checking_need_helper:
+                raise RuntimeError("TODO")
+            else:
+                builder.emit(cyast.Assign(targets=[cyast.Name(place_name)],
+                                          value=self.gen_get_place(env,
+                                                                   place_name = place_name,
+                                                                   marking_name = 'self')
+                                          )
+                             )
+        builder.emit_Return(cyast.Call(func=cyast.Name(atom.name),
+                                       args=[ cyast.Name(place_name) for place_name in atom.place_names ]))
+        return
+
+    def gen_check_method(self, env):
+        """ Produce simple checking method.
+
+        The method has the following signature:
+        C{cdef int check(Marking self, int atom)}
+
+        @param env: compiling environment.
+        """
+        checked_id = 'atom'
+        builder = Builder()
+        builder.begin_FunctionCDef(name='check',
+                                   args=(A('self', type=self.type_name)
+                                         .param(checked_id, type='int')),
+                                   returns = cyast.Name('int'))
+
+        for atom in self.atoms[0:1]:
+            self.gen_atom_case(env, builder, atom, checked_id, True)
+        for atom in self.atoms[1:]:
+            self.gen_atom_case(env, builder, atom, checked_id)
+        for atom in self.atoms:
+            builder.end_If()
+
+        # should not be rachable in produced code, so we inform about an invalid ID
+        builder.emit(E('raise RuntimeError("invalid atom ID")'))
 
         builder.end_FunctionDef()
         return to_ast(builder)
@@ -945,13 +1002,14 @@ class StaticMarkingType(coretypes.MarkingType):
         # methods
         ################################################################################
 
-        cls.add_method( self._gen_init(env) )
-        cls.add_method( self._gen_dealloc(env) )
-        #cls.add_method( self._gen_str(env) )
-        cls.add_method( self._gen_richcmp(env) )
-        cls.add_method( self._gen_hash(env) )
-        cls.add_method( self._gen_copy(env) )
-        cls.add_method( self._gen_dump(env) )
+        cls.add_method( self.gen_init_method(env) )
+        cls.add_method( self.gen_dealloc_method(env) )
+        #cls.add_method( self.gen_str_method(env) )
+        cls.add_method( self.gen_richcmp_method(env) )
+        cls.add_method( self.gen_hash_method(env) )
+        cls.add_method( self.gen_copy_method(env) )
+        cls.add_method( self.dump_expr_method(env) )
+        cls.add_method( self.gen_check_method(env) )
 
         ################################################################################
         # comments
@@ -1009,7 +1067,7 @@ class StaticMarkingType(coretypes.MarkingType):
         capi.append( self._gen_C_copy(env) )
         capi.append( self._gen_C_compare(env) )
         capi.append( self._gen_C_dump(env) )
-        #capi.append( self._gen_C_marked(env) )
+        capi.append( self._gen_C_check(env) )
         return [to_ast(cls), capi]
 
 
@@ -1044,7 +1102,7 @@ class StaticMarkingType(coretypes.MarkingType):
 
 
         if self._pack:
-            nodes.append( self._pack.gen_copy(env, src_marking_name = src_marking_name, dst_marking_name = dst_marking_name) )
+            nodes.append( self._pack.copy_expr(env, src_marking_name = src_marking_name, dst_marking_name = dst_marking_name) )
 
         for place_type in copy_places:
             if place_type.is_helper or place_type.is_packed:
@@ -1054,7 +1112,7 @@ class StaticMarkingType(coretypes.MarkingType):
                                                 place_name = place_type.info.name,
                                                 marking_name = dst_marking_name)
                 nodes.append(cyast.Assign(targets=[place_expr],
-                                          value=place_type.gen_copy(env, marking_name = src_marking_name))
+                                          value=place_type.copy_expr(env, marking_name = src_marking_name))
                              )
 
 
@@ -1066,12 +1124,12 @@ class StaticMarkingType(coretypes.MarkingType):
                                                 place_name = place_type.info.name,
                                                 marking_name = dst_marking_name)
                 nodes.append(cyast.Assign(targets=[place_expr],
-                                          value=place_type.gen_light_copy(env, marking_name = src_marking_name))
+                                          value=place_type.light_copy_expr(env, marking_name = src_marking_name))
                              )
 
         return to_ast(nodes)
 
-    def gen_copy_marking_function_call(self, env, marking_name):
+    def copy_marking_expr(self, env, marking_name):
         return cyast.Call(func=cyast.Attribute(name=marking_name,
                                                attr='copy')
                           )
@@ -1085,47 +1143,44 @@ class StaticMarkingType(coretypes.MarkingType):
             return cyast.Attribute(value=cyast.Name(marking_name),
                                    attr=self.id_provider.get(place_type))
 
-    def gen_get_place_size(self, env, marking_name, place_name):
-        place_type = self.get_place_type_by_name(place_name)
+    # def gen_get_place_size(self, env, marking_name, place_name):
+    #     place_type = self.get_place_type_by_name(place_name)
 
-        assert (not place_type.is_packed)
-        return place_type.gen_get_size_function_call(env = env, marking_name = marking_name)
+    #     assert (not place_type.is_packed)
+    #     return place_type.get_size_expr(env = env, marking_name = marking_name)
 
-    def gen_get_token(self, env, marking_name, place_name, index):
-        place_type = self.get_place_type_by_name(place_name)
+    # def gen_get_token(self, env, marking_name, place_name, index):
+    #     place_type = self.get_place_type_by_name(place_name)
 
-        assert (not place_type.is_packed)
-        return place_type.gen_get_token_function_call(env = env,
-                                                      marking_name = marking_name,
-                                                      index = index)
+    #     assert (not place_type.is_packed)
+    #     return place_type.get_token_expr(env = env,
+    #                                      marking_name = marking_name,
+    #                                      index = index)
 
     def gen_get_pack(self, env, marking_name, pack):
         return E(marking_name).attr(self.id_provider.get(pack))
 
-    def gen_remove_token_function_call(self, env, token, marking_name, place_name):
-        place_type = self.get_place_type_by_name(place_name)
-        return place_type.gen_remove_token_function_call(env = env,
-                                                         compiled_token = token,
-                                                         marking_name = marking_name)
+    # def remove_token_stmt(self, env, token, marking_name, place_name):
+    #     place_type = self.get_place_type_by_name(place_name)
+    #     return place_type.remove_token_stmt(env = env,
+    #                                                      compiled_token = token,
+    #                                                      marking_name = marking_name)
 
-    def gen_remove_by_index_function_call(self, env, token, marking_name, place_name, index):
-        place_type = self.get_place_type_by_name(place_name)
-        return place_type.gen_remove_by_index_function_call(env = env,
-                                                            index = index,
-                                                            marking_name = marking_name)
+    # def remove_by_index_stmt(self, env, token, marking_name, place_name, index):
+    #     place_type = self.get_place_type_by_name(place_name)
+    #     return place_type.remove_by_index_stmt(env = env,
+    #                                                         index = index,
+    #                                                         marking_name = marking_name)
 
-    def gen_add_token_function_call(self, env, token, marking_name, place_name):
-        place_type = self.get_place_type_by_name(place_name)
-        return place_type.gen_add_token_function_call(env = env,
-                                                      compiled_token = token,
-                                                      marking_name = marking_name)
+    # def add_token_stmt(self, env, token, marking_name, place_name):
+    #     place_type = self.get_place_type_by_name(place_name)
+    #     return place_type.add_token_stmt(env = env,
+    #                                                   compiled_token = token,
+    #                                                   marking_name = marking_name)
 
-    def gen_iterable_place(self, env, marking_name, place_name):
-        return self.get_place_type_by_name(place_name).gen_iterable(env, marking_name)
-
-    def gen_build_token(self, env, place_name, value):
-        place_type = self.get_place_type_by_name(place_name)
-        return place_type.gen_build_token(env, value)
+    # def token_expr(self, env, place_name, value):
+    #     place_type = self.get_place_type_by_name(place_name)
+    #     return place_type.token_expr(env, value)
 
     ################################################################################
     # Flow elimination
@@ -1169,10 +1224,10 @@ class MarkingSetType(coretypes.MarkingSetType):
     def gen_api(self, env):
         pass
 
-    def gen_new_marking_set(self, env):
+    def new_marking_set_expr(self, env):
         return cyast.Call(func=cyast.Name("set"))
 
-    def gen_add_marking_function_call(self, env, markingset_name, marking_name):
+    def add_marking_stmt(self, env, markingset_name, marking_name):
         return cyast.Call(func=cyast.Attribute(value=cyast.Name(markingset_name),
                                                attr=self.add_attribute_name),
                           args=[E(marking_name)])
@@ -1198,7 +1253,7 @@ class OneSafePlaceType(onesafe.OneSafePlaceType, CythonPlaceType):
         self.info = place_info
         self.marking_type = marking_type
 
-    def gen_new_place(self, env):
+    def new_place_expr(self, env):
         type = self.info.type
         if type.is_BlackToken or type.is_Int:
             return E(0)
@@ -1211,20 +1266,20 @@ class OneSafePlaceType(onesafe.OneSafePlaceType, CythonPlaceType):
         else:
             assert(False and "TO DO")
 
-    def gen_delete(self, env, marking_name):
+    def delete_stmt(self, env, marking_name):
         return []
 
-    def gen_hash(self, env, marking_name):
+    def hash_expr(self, env, marking_name):
         place_expr = self.place_expr(env, marking_name)
         return cyast.Call(func=cyast.Name("hash"),
                           args=[place_expr])
 
-    def gen_eq(self, env, left, right):
+    def eq_expr(self, env, left, right):
         return cyast.Compare(left=left,
                              ops=[cyast.Eq()],
                              comparators=[right])
 
-    def gen_compare(self, env, left_marking_name, right_marking_name):
+    def compare_expr(self, env, left_marking_name, right_marking_name):
         left_helper_expr  = self.existence_helper_place_type.place_expr(env, left_marking_name)
         right_helper_expr = self.existence_helper_place_type.place_expr(env, right_marking_name)
         left  = self.place_expr(env, left_marking_name)
@@ -1261,31 +1316,31 @@ class OneSafePlaceType(onesafe.OneSafePlaceType, CythonPlaceType):
                            orelse=helper_compare_expr)
 
 
-    def gen_not_empty(self, env, marking_name):
+    def not_empty_expr(self, env, marking_name):
         return self.existence_helper_place_type.gen_get_place(env, marking_name = marking_name)
 
     @should_not_be_called
-    def gen_iterable(self, env, marking_type, marking_name): pass
+    def iterable_expr(self, env, marking_type, marking_name): pass
 
-    def gen_remove_token_function_call(self, env, compiled_token, marking_name):
-        return self.existence_helper_place_type.gen_remove_token_function_call(env, None, marking_name )
+    def remove_token_stmt(self, env, compiled_token, marking_name):
+        return self.existence_helper_place_type.remove_token_stmt(env, None, marking_name )
 
-    def gen_add_token_function_call(self, env, compiled_token, marking_name):
+    def add_token_stmt(self, env, compiled_token, marking_name):
         place_expr = self.place_expr(env, marking_name) #self.existence_helper_place_type.place_expr(env, marking_name)
         return [ cyast.Assign(targets=[place_expr],
                               value=compiled_token),
-                 self.existence_helper_place_type.gen_add_token_function_call(env, None, marking_name) ]
+                 self.existence_helper_place_type.add_token_stmt(env, None, marking_name) ]
 
-    def gen_build_token(self, env, value):
-        return E(repr(value))
+    def token_expr(self, env, token):
+        return E(repr(token))
 
-    def gen_light_copy(self, env, marking_name):
+    def light_copy_expr(self, env, marking_name):
         return self.place_expr(env, marking_name)
 
-    def gen_copy(self, env, marking_name):
+    def copy_expr(self, env, marking_name):
         return self.place_expr(env, marking_name)
 
-    def gen_dump(self, env, marking_name):
+    def dump_expr(self, env, marking_name):
         helper_expr = self.existence_helper_place_type.place_expr(env, marking_name)
         place_expr = self.place_expr(env, marking_name)
         return ast.IfExp(test=helper_expr,
@@ -1311,61 +1366,61 @@ class BTPlaceType(onesafe.BTPlaceType, CythonPlaceType):
         self.info = place_info
         self.marking_type = marking_type
 
-    def gen_delete(self, env, marking_name):
+    def delete_stmt(self, env, marking_name):
         return []
 
-    def gen_hash(self, env, marking_name):
+    def hash_expr(self, env, marking_name):
         return self.place_expr(env, marking_name)
 
-    def gen_eq(self, env, left, right):
+    def eq_expr(self, env, left, right):
         return cyast.Compare(left=left,
                              ops=[cyast.Eq()],
                              comparators=[right])
 
-    def gen_compare(self, env, left_marking_name, right_marking_name):
+    def compare_expr(self, env, left_marking_name, right_marking_name):
         left  = self.place_expr(env, left_marking_name)
         right = self.place_expr(env, right_marking_name)
         return cyast.BinOp(left=left,
                            op=cyast.Sub(),
                            right=right)
 
-    def gen_new_place(self, env):
+    def new_place_expr(self, env):
         return cyast.Num(0)
 
-    def gen_not_empty(self, env, marking_name):
+    def not_empty_expr(self, env, marking_name):
         return self.place_expr(env, marking_name)
 
-    def gen_dump(self, env, marking_name):
+    def dump_expr(self, env, marking_name):
         place_expr = self.place_expr(env, marking_name)
         return ast.Call(func=E("' '.join"),
                         args=[ast.BinOp(left=ast.List([ast.Str('dot')]),
                                         op=ast.Mult(),
                                         right=place_expr)])
 
-    def gen_iterable(self, env, marking_name):
+    def iterable_expr(self, env, marking_name):
         place_expr = self.place_expr(env, marking_name)
         return cyast.Call(func=cyast.Name('range'),
                           args=[ cyast.Num(0), place_expr ])
 
-    def gen_remove_token_function_call( self, env, compiled_token, marking_name):
+    def remove_token_stmt( self, env, compiled_token, marking_name):
         place_expr = self.place_expr(env, marking_name)
         return cyast.AugAssign(target=place_expr,
                                op=cyast.Sub(),
                                value=cyast.Num(1))
 
-    def gen_add_token_function_call(self, env, compiled_token, marking_name):
+    def add_token_stmt(self, env, compiled_token, marking_name):
         place_expr = self.place_expr(env, marking_name)
         return cyast.AugAssign(target=place_expr,
                                op=cyast.Add(),
                                value=cyast.Num(1))
 
-    def gen_copy(self, env, marking_name):
+    def copy_expr(self, env, marking_name):
         return self.place_expr(env, marking_name)
 
-    def gen_light_copy(self, env, marking_name):
+    def light_copy_expr(self, env, marking_name):
         return self.place_expr(env, marking_name)
 
-    def gen_build_token(self, env, value):
+    def token_expr(self, env, token):
         return E("dot")
 
 ################################################################################
@@ -1380,24 +1435,24 @@ class BTOneSafePlaceType(onesafe.BTOneSafePlaceType, CythonPlaceType):
         self.info = place_info
         self.marking_type = marking_type
 
-    def gen_new_place(self, env):
+    def new_place_expr(self, env):
         return E("0")
 
     @should_not_be_called
-    def gen_iterable(self, env, marking_type, marking_name): pass
+    def iterable_expr(self, env, marking_type, marking_name): pass
 
-    def gen_remove_token_function_call( self, env, compiled_token, marking_name):
+    def remove_token_stmt( self, env, compiled_token, marking_name):
         place_expr = self.place_expr(env, marking_name)
         return E(place_expr).assign("0")
 
-    def gen_add_token_function_call(self, env, compiled_token, marking_name):
+    def add_token_stmt(self, env, compiled_token, marking_name):
         place_expr = self.place_expr(env, marking_name)
         return Builder.LValut(place_expr).assign("1")
 
-    def gen_copy(self, env, marking_name):
+    def copy_expr(self, env, marking_name):
         return self.place_expr(env, marking_name)
 
-    def gen_build_token(self, env, value):
+    def token_expr(self, env, token):
         return E("dot")
 
 ################################################################################
@@ -1469,14 +1524,14 @@ class BT1SPack(object):
         pack_expr = self.pack_expr(env, marking_name)
         return E(pack_expr).or_assign(E(mask))
 
-    def gen_copy(self, env, marking_name):
+    def copy_expr(self, env, marking_name):
         return marking_type.gen_get_pack(env = env,
                                          marking_name = marking_name,
                                          pack = self)
 
 #@not_revelant
 @packed_place
-class PackedBT1SPlaceTypeHelper(coretypes.PlaceType, CythonPlaceType):
+class PackedBT1SPlaceType(coretypes.PlaceType, CythonPlaceType):
     """ BlackToken place types that have been packed.
     """
 
@@ -1496,32 +1551,32 @@ class PackedBT1SPlaceTypeHelper(coretypes.PlaceType, CythonPlaceType):
                                      token_type = TypeInfo.UnsignedInt)
 
     @should_not_be_called
-    def gen_new_place(self, env): pass
+    def new_place_expr(self, env): pass
 
     @should_not_be_called
-    def gen_iterable(self, env, marking_type, marking_name): pass
+    def iterable_expr(self, env, marking_type, marking_name): pass
 
     def gen_get_place(self, env, marking_name):
         return self.place_expr(env, marking_name)
 
-    def gen_remove_token_function_call( self, env, compiled_token, marking_name):
+    def remove_token_stmt( self, env, compiled_token, marking_name):
         return self.pack.gen_remove_bit(env, marking_name, self)
 
-    def gen_add_token_function_call(self, env, compiled_token, marking_name):
+    def add_token_stmt(self, env, compiled_token, marking_name):
         return self.pack.gen_set_bit(env, marking_name, self)
 
-    def gen_copy(self, env, marking_name):
-        return self.pack.gen_copy(env, marking_name)
+    def copy_expr(self, env, marking_name):
+        return self.pack.copy_expr(env, marking_name)
 
-    def gen_build_token(self, env, value):
+    def token_expr(self, env, token):
         return E(1)
 
-    def gen_dump(self, env, marking_name):
+    def dump_expr(self, env, marking_name):
         return cyast.IfExp(test=self.gen_get_place(env, marking_name),
                            body=cyast.Str('dot'),
                            orelse=cyast.Str(''))
 
-    def gen_not_empty(self, env, marking_name):
+    def not_empty_expr(self, env, marking_name):
         return self.gen_get_place(env, marking_name)
 
 ################################################################################
@@ -1553,25 +1608,25 @@ class FlowPlaceType(coretypes.PlaceType, CythonPlaceType):
         return int(math.ceil(math.log(self._counter, 2)))
 
     @should_not_be_called
-    def gen_new_place(self, env): pass
+    def new_place_expr(self, env): pass
 
     @should_not_be_called
-    def gen_delete(self, env, marking_name): pass
+    def delete_stmt(self, env, marking_name): pass
 
     @should_not_be_called
-    def gen_iterable(self, env, marking_name): pass
+    def iterable_expr(self, env, marking_name): pass
 
     @should_not_be_called
-    def gen_remove_token_function_call(self, *args, **kwargs): pass
+    def remove_token_stmt(self, *args, **kwargs): pass
 
     @should_not_be_called
-    def gen_add_token_function_call(self, *args, **kwargs): pass
+    def add_token_stmt(self, *args, **kwargs): pass
 
     @should_not_be_called
-    def gen_copy(self, env, marking_name): pass
+    def copy_expr(self, env, marking_name): pass
 
     @should_not_be_called
-    def gen_light_copy(self, env, marking_name): pass
+    def light_copy_expr(self, env, marking_name): pass
 
     def add_helper(self, place_info):
         """ Adds a flow control place.
@@ -1615,7 +1670,7 @@ class FlowPlaceType(coretypes.PlaceType, CythonPlaceType):
                                        marking_name = marking_name,
                                        place_type = self)
 
-    def gen_dump(self, env, marking_name, place_info):
+    def dump_expr(self, env, marking_name, place_info):
         for (place_name, next_flow) in self._places.iteritems():
             if place_name == place_info.name:
                 mask = int(self.pack.field_compatible_mask(self.info, next_flow))
@@ -1640,25 +1695,25 @@ class FlowPlaceTypeHelper(coretypes.PlaceType, CythonPlaceType):
                                      token_type = TypeInfo.UnsignedInt)
 
     @should_not_be_called
-    def gen_new_place(self, env): pass
+    def new_place_expr (self, env): pass
 
     @should_not_be_called
-    def gen_delete(self, env, marking_name): pass
+    def delete_stmt(self, env, marking_name): pass
 
     @should_not_be_called
-    def gen_iterable(self, env, marking_name): pass
+    def iterable_expr(self, env, marking_name): pass
 
     @should_not_be_called
-    def gen_remove_token_function_call(self, *args, **kwargs): pass
+    def remove_token_stmt(self, *args, **kwargs): pass
 
     @should_not_be_called
-    def gen_add_token_function_call(self, *args, **kwargs): pass
+    def add_token_stmt(self, *args, **kwargs): pass
 
     @should_not_be_called
-    def gen_copy(self, env, marking_name): pass
+    def copy_expr(self, env, marking_name): pass
 
     @should_not_be_called
-    def gen_light_copy(self, env, marking_name): pass
+    def light_copy_expr(self, env, marking_name): pass
 
     def gen_check_flow(self, env, marking_name, place_info, current_flow):
         return self.flow_place_type.gen_check_flow(env, marking_name, place_info, current_flow)
@@ -1679,8 +1734,8 @@ class FlowPlaceTypeHelper(coretypes.PlaceType, CythonPlaceType):
                                                   marking_name=marking_name,
                                                   place_type=self)
 
-    def gen_dump(self, env, marking_name):
-        return self.flow_place_type.gen_dump(env, marking_name, self.info)
+    def dump_expr(self, env, marking_name):
+        return self.flow_place_type.dump_expr(env, marking_name, self.info)
 
 ################################################################################
 
@@ -1796,7 +1851,7 @@ class PackedPlaceTypes(object):
                                   .format(mask=mask, vmask=vmask, anw=(self._bitfield.native_width + 2), place=place_type.info.name))
         return [ e, comment ]
 
-    def gen_copy(self, env, src_marking_name, dst_marking_name):
+    def copy_expr(self, env, src_marking_name, dst_marking_name):
         l = []
         for index in range(0, self.native_field_count()):
             right = cyast.Subscript(value=cyast.Attribute(value=cyast.Name(src_marking_name),
@@ -1807,11 +1862,6 @@ class PackedPlaceTypes(object):
                                    slice=cyast.Index(cyast.Num(index)))
             l.append( cyast.Assign(targets=[left],
                                    value=right) )
-
-            # right = E(src_marking_name).attr(self.name).subscript(index=str(index))
-            # e = E(dst_marking_name).attr(self.name).subscript(index=str(index)).assign(right)
-            # l.append( e )
-
         return l
 
 

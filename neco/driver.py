@@ -6,7 +6,7 @@ elif (2, 7, 0) < sys.version_info < (3,0,0) :
     import argparse as parse
     VERSION=(2,7)
 else:
-    raise "bad python version"
+    raise  "unsupported python version"
 
 import imp, cProfile, pstats
 from time import time
@@ -135,6 +135,8 @@ class Driver(object):
                               help='compute state space')
             parser.add_option('--dump-makrings', '-d', dest='dump_markings', type=str, default=None,
                               help='dump markings')
+            parser.add_option('--atoms', '-a', dest='atoms', type=str, default=None,
+                              help='module containing atoms')
 
             (options, args) = parser.parse_args()
 
@@ -153,6 +155,7 @@ class Driver(object):
             self.module_name = options.module
             self.net_var_name = options.netvar
             self.do_explore = options.explore
+            self.atoms = options.atoms
 
         elif VERSION == (2,7):
             parser = parse.ArgumentParser(name,
@@ -180,6 +183,8 @@ class Driver(object):
                                 help='add additional search paths')
             parser.add_argument('--explore', '-e', dest='explore', action='store_true', default=False,
                                 help='compute state space')
+            parser.add_argument('--atom', '-a', dest='atoms', action='append', default=[],
+                                help='add an atom name')
 
             args = parser.parse_args()
 
@@ -198,6 +203,7 @@ class Driver(object):
             self.module_name = args.module
             self.net_var_name = args.netvar
             self.do_explore = args.explore
+            self.atoms = args.atoms
 
         try:
             fp, pathname, description = imp.find_module(self.module_name)
@@ -245,7 +251,8 @@ class Driver(object):
                 pass
 
         start = time()
-        self.compiled_net = neco_compile(self.petri_net)
+        self.compiled_net = neco_compile(net = self.petri_net,
+                                         atoms = self.atoms)
         end = time()
 
         if not self.compiled_net:

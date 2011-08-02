@@ -73,10 +73,10 @@ def search_file(filename, paths):
     return None
 
 class Compiler(core.Compiler):
-    """ Python compiler. """
+    """ Cython compiler. """
 
-    def __init__(self, net, factory_manager = FactoryManager()):
-        super(Compiler, self).__init__(net, factory_manager)
+    def __init__(self, net, factory_manager = FactoryManager(), *args, **kwargs):
+        super(Compiler, self).__init__(net, factory_manager, *args, **kwargs)
         self.additional_search_paths = config.get('additional_search_paths')
         self.additional_search_paths.append(".")
 
@@ -96,42 +96,9 @@ class Compiler(core.Compiler):
         env.add_pyx_declaration("from time import time")
         #env.add_pyx_declaration("from dolev_yao import *")
 
-        builder = Builder()
-        builder.begin_FunctionDef( name = "state_space",
-                                   returns = E("set"),
-                                   body = [ E("""
-try:
-    visited = set()
-    visit = set([init()])
-    succ = set()
-    count = 0
-    start = time()
-    while True:
-        count += 1
-        # if count > 20:
-        #     count = 0
-        #     print len(visited)
-
-        m = visit.pop()
-        visited.add(m)
-
-        succ = succs(m)
-
-        visit.update(succ.difference(visited))
-except KeyError:
-    return visited
-
-"""), E("return visited") ],
-                                     decl = [ Builder.CVar( "visited", type = "set" ),
-                                              Builder.CVar( "visit", type = "set" ),
-                                              Builder.CVar( "succ", type = "set" ),
-                                              Builder.CVar( "count", type = "int" ),
-                                              Builder.CVar( "start", type = "int" ) ] )
-
-        builder.end_FunctionDef()
-        compiled_nodes = to_ast(builder)
-        # compiled_nodes = []
+        compiled_nodes = []
         # gen types
+        self.marking_type.atoms = self.atoms
         compiled_nodes.append(self.marking_type.gen_api(env))
         compiler = netir.CompilerVisitor(env)
 

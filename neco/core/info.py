@@ -990,6 +990,57 @@ class NetInfo(object):
         assert False, 'place not found'
 
 
+class AtomInfo(object):
+    """ Atomic proposition related informations.
+    """
+
+    __next_id__ = 0
+
+    @classmethod
+    def _new_id(cls):
+        """ Produce new atom id.
+
+        @return: a fresh atom id.
+        @rtype: C{int}
+        """
+        new_id = cls.__next_id__
+        cls.__next_id__ += 1
+        return new_id
+
+    def __init__(self, name, place_names, id=None):
+        """ Create a new atom inforamtion carying object.
+
+        @param name: name of the atom
+        @param place_names: places used to compute the truth value of the atom.
+        @type name: C{str}
+        """
+        self._name = name
+        self._place_names = place_names
+        self._id = self.__class__._new_id() if not id else id
+
+    @property
+    def id(self):
+        return self._id
+
+    @property
+    def name(self):
+        return self._name
+
+    @property
+    def place_names(self):
+        return self._place_names
+
+    def __str__(self):
+        return '<atom: {name}({palces}) {id}>'.format(name=self.name,
+                                                      places=", ".join(self.place_names),
+                                                      id=self.id)
+
+    def __repr__(self):
+        return 'AtomInfo({name!r}, {place_names!r}, {id})'.format(name=self.name,
+                                                                 place_names=self.place_names,
+                                                                 id=self.id)
+
+
 class ProcessInfo(object):
     """ Class gathering information about ABCD processes.
     """

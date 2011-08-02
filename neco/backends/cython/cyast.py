@@ -2,6 +2,15 @@ import neco.core.netir as coreir
 import cyast_gen
 from cyast_gen import *
 
+class CurrentBlockError(Exception):
+    def __init__(self, expected, got):
+        self.exp = expected
+        self.got = got
+
+    def __str__(self):
+        return "expected {exp!r} / got {got!r}".format(exp=self.exp,
+                                                       got=self.got)
+
 def Call(func, args=[], keywords=[], starargs=None, kwargs=None):
     return ast.Call(func, args, keywords, starargs, kwargs)
 
@@ -260,7 +269,9 @@ class Builder(coreir.BuilderBase):
         self.begin_base_block(self.FunctionDef(**kwargs))
 
     def begin_FunctionCDef(self, **kwargs):
-        self.begin_FunctionDef(lang = cyast_gen.CDef(public=True, api=True), **kwargs)
+        api = False if not kwargs.has_key('api') else kwargs['api']
+        public = False if not kwargs.has_key('public') else kwargs['public']
+        self.begin_FunctionDef(lang = cyast_gen.CDef(public=public, api=api), **kwargs)
 
     def begin_FunctionCPDef(self, **kwargs):
         self.begin_FunctionDef(lang = cyast_gen.CpDef(public=True, api=True), **kwargs)
@@ -302,7 +313,8 @@ class Builder(coreir.BuilderBase):
         self.end_block()
 
     def end_FunctionDef(self):
-        assert( isinstance(self._current, cyast_gen.FunctionDef) )
+        if not isinstance(self._current, cyast_gen.FunctionDef):
+            raise CurrentBlockError(expected=cyast_gen.FunctionDef, got=self._current)
         self._current.body = to_ast( flatten_lists(self._current.body) )
         if( self._current.body == []):
             self._current.body.append( cyast_gen.Pass() )
