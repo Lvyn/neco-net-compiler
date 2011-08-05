@@ -5,7 +5,7 @@ from neco.utils import Factory
 import neco.config as config
 import neco.core as core
 import neco.core.nettypes as coretypes
-import netir, nettypes, astutils
+import netir, nettypes
 from neco.unparse import Unparser
 from utils import Env
 from neco.utils import flatten_ast

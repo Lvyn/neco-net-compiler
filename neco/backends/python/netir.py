@@ -5,9 +5,8 @@ import StringIO
 import neco.config as config
 import neco.core.netir as coreir
 from neco.core.info import *
-from astutils import E, A, stmt
 from nettypes import type2str
-
+from pyast import *
 import pyast as ast
 
 ################################################################################

@@ -823,7 +823,7 @@ class StaticMarkingType(coretypes.MarkingType):
 
     def _gen_C_check(self, env):
         builder = Builder()
-        builder.begin_FunctionCDef(name="neco_marking_check",
+        builder.begin_FunctionCDef(name="neco_check",
                                    args=(A("self", type=self.type_name)
                                          .param("atom", type=type2str(TypeInfo.Int))),
                                    returns=E(type2str(TypeInfo.Int)),
@@ -953,7 +953,9 @@ class StaticMarkingType(coretypes.MarkingType):
         for place_name in atom.place_names:
             place_type = self.get_place_type_by_name(place_name)
             if place_type.checking_need_helper:
-                raise RuntimeError("TODO")
+                builder.emit(cyast.Assign(targets=[cyast.Name(place_name)],
+                                          value=place_type.check_helper_expr(env, 'self'))
+                             )
             else:
                 builder.emit(cyast.Assign(targets=[cyast.Name(place_name)],
                                           value=self.gen_get_place(env,
@@ -988,10 +990,57 @@ class StaticMarkingType(coretypes.MarkingType):
             builder.end_If()
 
         # should not be rachable in produced code, so we inform about an invalid ID
-        builder.emit(E('raise RuntimeError("invalid atom ID")'))
+        builder.emit(stmt(E('sys.stderr.write("net: invalid atom ID\\n")')))
+        builder.emit_Return(cyast.Num('0'))
 
         builder.end_FunctionDef()
         return to_ast(builder)
+
+
+    def _gen_C_get_prop_name(self, env):
+        """ Produce a method that returns atomic properties names by ids.
+
+        The method has the following signature:
+        C{cdef char* get_prop_name(Marking self, int atom)}
+
+        @param env: compiling environment.
+        """
+        checked_id = 'atom'
+        builder = Builder()
+        builder.begin_FunctionCDef(name='neco_get_prop_name',
+                                   args=(A(checked_id, type='int')),
+                                   returns = cyast.Name('char*'),
+                                   public=True, api=True)
+
+        for atom in self.atoms[0:1]:
+            self.gen_get_prop_name_case(env, builder, atom, checked_id, True)
+        for atom in self.atoms[1:]:
+            self.gen_get_prop_name_case(env, builder, atom, checked_id)
+        for atom in self.atoms:
+            builder.end_If()
+
+        # should not be rachable in produced code, so we inform about an invalid ID
+        builder.emit(E('return \'\''))
+
+        builder.end_FunctionDef()
+        return to_ast(builder)
+
+    def gen_get_prop_name_case(self, env, builder, atom, checked_id, first=False):
+        """ Produce a if/elif case in get_prop_name method.
+        """
+        if first:
+            builder.begin_If(test=cyast.Compare(left=cyast.Name(checked_id),
+                                                ops=[cyast.Eq()],
+                                                comparators=[cyast.Num(atom.id)]))
+        else:
+            builder.begin_Elif(test=cyast.Compare(left=cyast.Name(checked_id),
+                                                  ops=[cyast.Eq()],
+                                                  comparators=[cyast.Num(atom.id)]))
+        builder.emit(cyast.Comment("atom: {name}".format(name=atom.name)))
+
+        builder.emit_Return(E(repr(atom.name)))
+        return
+
 
     def gen_api(self, env):
         cls = Builder.PublicClassCDef(name = "Marking",
@@ -1068,6 +1117,7 @@ class StaticMarkingType(coretypes.MarkingType):
         capi.append( self._gen_C_compare(env) )
         capi.append( self._gen_C_dump(env) )
         capi.append( self._gen_C_check(env) )
+        capi.append( self._gen_C_get_prop_name(env) )
         return [to_ast(cls), capi]
 
 
@@ -1578,6 +1628,12 @@ class PackedBT1SPlaceType(coretypes.PlaceType, CythonPlaceType):
 
     def not_empty_expr(self, env, marking_name):
         return self.gen_get_place(env, marking_name)
+
+    def check_helper_expr(self, env, marking_name):
+        return cyast.Call(func=E("BtPlaceTypeHelper"),
+                          args=[IfExp(test=self.gen_get_place(env, marking_name),
+                                      body=cyast.Num(1),
+                                      orelse=cyast.Num(0))])
 
 ################################################################################
 #

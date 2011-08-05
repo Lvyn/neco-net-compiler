@@ -4,7 +4,7 @@ from neco.utils import Factory, should_not_be_called, todo
 import neco.utils as utils
 import neco.core.nettypes as coretypes
 from neco.opt import onesafe
-from astutils import Builder, E, A, stmt
+from pyast import Builder, E, A, stmt
 from neco.core.info import *
 
 import pyast as ast

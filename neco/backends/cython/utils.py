@@ -1,6 +1,6 @@
 """ Python plugin utilities. """
 
-import ast, cyast, astutils
+import ast, cyast
 import neco.core.netir as coreir
 import inspect, types
 

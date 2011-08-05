@@ -11,7 +11,7 @@ from distutils.extension import Extension
 from neco.utils import Factory, flatten_ast
 import neco.core as core
 import neco.core.nettypes as coretypes
-import netir, nettypes, astutils
+import netir, nettypes
 from utils import Env
 import neco.config as config
 from nettypes import register_cython_type, is_cython_type

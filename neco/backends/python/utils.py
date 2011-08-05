@@ -1,10 +1,9 @@
 """ Python plugin utilities. """
 
 import ast
-import astutils
 import neco.core.netir as coreir
 import inspect, types
-from astutils import E
+from pyast import E
 
 ################################################################################
 

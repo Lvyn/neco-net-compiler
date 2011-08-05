@@ -1,4 +1,7 @@
+from snakes.nets import dot
+from time import time
 import operator
+cimport ctypes_ext
 
 ################################################################################
 # Multisets
@@ -304,4 +307,162 @@ def state_space():
         return visited
     return visited
 
+
+# LTL debuging functions :)
+import sys
+
+do_print = False
+def f1(p1, p2):
+    if do_print: sys.stderr.write('call f1\n')
+    for t in p1:
+        if t == dot:
+            if do_print: sys.stderr.write('f1 True\n')
+            return True
+    if do_print: sys.stderr.write('f1 False\n')
+    return False
+
+def f2(p1, p2):
+    if do_print: sys.stderr.write('call f2\n')
+    for t in p2:
+        if t == dot:
+            if do_print: sys.stderr.write('f2 True\n')
+            return True
+    if do_print: sys.stderr.write('f2 False\n')
+    return False
+
+# ... ... ... ... ... ...
+
+### Place helpers
+
+### int place types
+
+cdef class IntPlaceTypeHelperIterator(object):
+    cdef int m_index
+    cdef int m_max
+    cdef ctypes_ext.int_place_type *m_place
+
+    def __cinit__(IntPlaceTypeHelperIterator self):
+        self.m_index = -1
+
+    def __iter__(IntPlaceTypeHelperIterator self):
+        return self
+
+    def next(IntPlaceTypeHelperIterator self):
+        self.m_index += 1
+        if (self.m_index >= self.m_size):
+            raise StopIteration
+        return ctypes_ext.int_place_type_get(self.m_place, self.m_index)
+
+cdef class IntPlaceTypeHelper(object):
+    cdef ctypes_ext.int_place_type* m_place
+
+    def __init__(IntPlaceTypeHelper self):
+        pass
+
+    def __iter__(IntPlaceTypeHelper self):
+        cdef IntPlaceTypeHelper iterator = IntPlaceTypeHelperIterator(self)
+        iterator.m_place = self.m_place
+        iterator.m_max = ctypes_ext.int_place_type_size(self.m_place)
+        return
+
+    def __contains__(IntPlaceTypeHelper self, int value):
+        cdef int current
+        cdef int i = 0
+        cdef int size = ctypes_ext.int_place_type_size(self.m_place)
+        for 0 <= i < size:
+            current = ctypes_ext.int_place_type_get(self.m_place, i)
+            if current == value:
+                return 1
+        return 0
+
+    def __len__(IntPlaceTypeHelper self):
+        return ctypes_ext.int_place_type_size(self.m_place)
+
+    def is_empty(IntPlaceTypeHelper self):
+        return ctypes_ext.int_place_type_size(self.m_place) == 0
+
+###
+
+cdef class BtPlaceTypeHelperIterator(object):
+    cdef int m_index
+    cdef int m_count
+
+    def __init__(BtPlaceTypeHelperIterator self, int c):
+        self.m_index = -1
+        self.m_count = c
+
+    def __iter__(BtPlaceTypeHelperIterator self):
+        return self
+
+    def __next__(BtPlaceTypeHelperIterator self):
+        self.m_index += 1
+        if self.m_index >= self.m_count:
+            raise StopIteration
+        return dot
+
+cdef class BtPlaceTypeHelper(object):
+    cdef int m_count
+
+    def __cinit__(BtPlaceTypeHelper self, int c):
+        self.m_count = c
+
+    def __iter__(BtPlaceTypeHelper self):
+        return BtPlaceTypeHelperIterator(self.m_count)
+
+    def __contains__(BtPlaceTypeHelper self, dot):
+        if self.m_count > 0:
+            return True
+        return False
+
+    def __len__(BtPlaceTypeHelper self):
+        return self.m_count
+
+    cdef is_empty(BtPlaceTypeHelper self):
+        return self.m_count > 0
+
+###
+
+cdef class OneSafePlaceTypeHelperIterator(object):
+    cdef int m_index
+    cdef int m_full
+    cdef object m_object
+
+    def __cinit__(OneSafePlaceTypeHelperIterator self, int full, object obj):
+        self.m_index = 0
+        self.m_full = full
+        self.m_object = obj
+
+    def __iter__(OneSafePlaceTypeHelperIterator self):
+        return self
+
+    def next(OneSafePlaceTypeHelperIterator self):
+        if self.m_index < self.m_full:
+            raise StopIteration
+        self.m_index += 1
+        return self.m_object
+
+cdef class OneSafePlaceTypeHelper(object):
+    cdef int m_full
+    cdef object m_object
+
+    def __cinit__(OneSafePlaceTypeHelper self, int full, object obj):
+        self.m_full = full
+        self.m_object = obj
+
+    def __iter__(OneSafePlaceTypeHelper self):
+        cdef OneSafePlaceTypeHelperIterator it = OneSafePlaceTypeHelperIterator(self.m_full, self.m_object)
+        return it
+
+    def __contains__(OneSafePlaceTypeHelper self, value):
+        if self.m_full > 0 and value == self.m_object:
+            return 1
+        return 0
+
+    def __len__(OneSafePlaceTypeHelper self):
+        if self.m_full:
+            return 1
+        return 0
+
+    def is_empty(OneSafePlaceTypeHelper self):
+        return self.m_full == 0
 
