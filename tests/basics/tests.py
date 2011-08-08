@@ -141,13 +141,13 @@ def run_test(module_name, lang='python', opt=False, pfe=False):
 
     args = ['python', "../../neco",
             '-m', module_name,
-            '-dm', got,
+            '-k', got,
             '-l', lang,
             '-I../common']
     if opt:
-        args.append('--opt')
+        args.append('--optimise')
     if pfe:
-        args.append('--pfe')
+        args.append('--flow-elimination')
 
     p = subprocess.Popen(args, stdout=subprocess.PIPE)
     p.wait()
