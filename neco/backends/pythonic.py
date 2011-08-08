@@ -1,3 +1,5 @@
+""" Helpers for Python based languages. """
+
 import neco.core.netir as coreir
 import ast
 from neco.utils import flatten_lists
@@ -54,6 +56,11 @@ def check_arg(d, arg, value):
         d[arg] = value
 
 def check_attrs(node, **kwargs):
+    """ Helper function that checks if attributes exist, if not they are
+    filled with provided values.
+
+    This function calls C{check_attr} for each keyword argument.
+    """
     for (arg, value) in kwargs.iteritems():
         check_attr(node, arg, value)
     return node
@@ -77,3 +84,8 @@ def check_attr_decorator(**decorator_kwargs):
         function._decotrated_with_check_attr_decorator = True
         return fun
     return wrap
+
+################################################################################
+# EOF
+################################################################################
+

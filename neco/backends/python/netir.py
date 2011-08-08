@@ -1,4 +1,4 @@
-""" Python ast compiler. """
+""" Python AST compiler. """
 
 import cPickle as cPickle
 import StringIO

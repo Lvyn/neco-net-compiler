@@ -1,11 +1,13 @@
+""" Utility module. """
+
 import inspect
 import nettypes
-from .. import utils
+import neco.utils as utils
 
 ################################################################################
 
 class FactoryManager(object):
-    """ factory manager class
+    """ factory manager class.
     """
 
     @classmethod
@@ -19,7 +21,7 @@ class FactoryManager(object):
         return cls.__instance__
 
     def __init__(self):
-        """ initialise the manager
+        """ initialise the manager.
         """
 
         placetype_products = []

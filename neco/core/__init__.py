@@ -3,7 +3,7 @@
 import itertools
 from snakes.nets import *
 import neco.config as config
-from ..utils  import flatten_lists
+from neco.utils  import flatten_lists
 
 import netir, nettypes
 from info import *

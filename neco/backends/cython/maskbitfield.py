@@ -1,3 +1,5 @@
+""" Module handling bitfields as simple masks.
+"""
 
 class Mask(object):
     """ Class representing bit masks.

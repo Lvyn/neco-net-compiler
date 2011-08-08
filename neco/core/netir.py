@@ -7,7 +7,17 @@ import inspect, types
 from ast import NodeVisitor, NodeTransformer
 import netir_gen
 from netir_gen import *
-from neco.debug import *
+
+class CurrentBlockError(Exception):
+    """ Exception used in helpers, raised when a operation
+    is requested on bad kind of block. """
+    def __init__(self, expected, got):
+        self.exp = expected
+        self.got = got
+
+    def __str__(self):
+        return "expected {exp!r} / got {got!r}".format(exp=self.exp,
+                                                       got=self.got)
 
 class CompilerVisitor(object):
     """ Base class implementing the visitor pattern for compiling an ast. """

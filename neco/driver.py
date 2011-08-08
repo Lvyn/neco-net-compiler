@@ -25,7 +25,7 @@ from abc import ABCMeta, abstractmethod
 from time import time
 
 import backends
-import opt.onesafe as onesafe
+import core.onesafe as onesafe
 import inspect
 import config
 

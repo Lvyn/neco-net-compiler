@@ -6,7 +6,7 @@ from neco.utils import Factory, should_not_be_called, todo
 import neco.core.nettypes as coretypes
 from neco.core.nettypes import provides_by_index_access, provides_by_index_deletion
 from neco.core.info import *
-from neco.opt import onesafe
+from neco.core import onesafe
 import cyast
 from cyast import *
 from maskbitfield import MaskBitfield

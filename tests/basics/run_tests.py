@@ -150,7 +150,9 @@ def run_test(module_name, lang='python', opt=False, pfe=False):
         args.append('--flow-elimination')
 
     p = subprocess.Popen(args, stdout=subprocess.PIPE)
-    p.wait()
+    r = p.wait()
+    if r != 0:
+        return False
     e_reader = SpecReader(expected)
     g_reader = SpecReader(got)
     e_reader.read()

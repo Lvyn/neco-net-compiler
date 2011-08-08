@@ -5,7 +5,6 @@ import types
 from abc import abstractmethod, ABCMeta
 import snakes.nets as nets
 from neco import utils, config
-from glue import FactoryManager
 from info import TypeInfo
 
 ################################################################################

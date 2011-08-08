@@ -3,7 +3,7 @@
 from neco.utils import Factory, should_not_be_called, todo
 import neco.utils as utils
 import neco.core.nettypes as coretypes
-from neco.opt import onesafe
+from neco.core import onesafe
 from pyast import Builder, E, A, stmt
 from neco.core.info import *
 
@@ -38,6 +38,8 @@ TypeInfo.register_type("Multiset")
 ################################################################################
 
 class PythonPlaceType(object):
+    """ Base class for python backend place types. """
+
     def place_expr(self, env, marking_name):
         return self.marking_type.gen_get_place(env,
                                                marking_name = marking_name,
@@ -48,6 +50,8 @@ class PythonPlaceType(object):
         return False
 
 ################################################################################
+
+# multiple inheritance is used to allow type matching.
 
 class ObjectPlaceType(coretypes.ObjectPlaceType, PythonPlaceType):
     """ Python implementation of the fallback place type. """
@@ -125,7 +129,7 @@ class ObjectPlaceType(coretypes.ObjectPlaceType, PythonPlaceType):
 ################################################################################
 
 class StaticMarkingType(coretypes.MarkingType):
-    """ Python static marking type implementation, i.e., places as class attributes. . """
+    """ Python marking type implementation, places as class attributes. """
 
     def __init__(self):
         coretypes.MarkingType.__init__(self, "Marking")
@@ -133,7 +137,7 @@ class StaticMarkingType(coretypes.MarkingType):
         self._process_place_types = {}
 
     def gen_types(self, select_type):
-        """
+        """ Build place types using C{select_type} predicate.
         """
         for place_info in self.flow_control_places:
             try:
@@ -154,7 +158,7 @@ class StaticMarkingType(coretypes.MarkingType):
                                                 marking_type = self )
 
             if self.place_types.has_key(place_name):
-                raise "place exists"
+                raise RuntimeError("{name} place exists".format(name=place_name))
             else:
                 self.place_types[place_name] = place_type
 
@@ -165,7 +169,7 @@ class StaticMarkingType(coretypes.MarkingType):
                                                 marking_type = self )
 
             if self.place_types.has_key(place_name):
-                raise "place exists"
+                raise RuntimeError("{name} place exists".format(name=place_name))
             else:
                 self.place_types[place_name] = place_type
 
@@ -302,27 +306,6 @@ class StaticMarkingType(coretypes.MarkingType):
     def gen_get_place(self, env, marking_name, place_name, mutable):
         return ast.Attribute(value=ast.Name(id=marking_name),
                              attr=self.id_provider.get(place_name))
-
-    # def remove_token_stmt(self, env, token, marking_name, place_name, *args):
-    #     place_type = self.get_place_type_by_name(place_name)
-    #     return place_type.gen_remove_token_function_call(env = env,
-    #                                                      compiled_token = token,
-    #                                                      marking_name = marking_name,
-    #                                                      *args)
-
-    # def add_token_stmt(self, env, token, marking_name, place_name, *args):
-    #     place_type = self.get_place_type_by_name(place_name)
-    #     return place_type.gen_add_token_function_call(env = env,
-    #                                                   compiled_token = token,
-    #                                                   marking_name = marking_name,
-    #                                                   *args)
-
-    # def gen_iterable_place(self, env, marking_name, place_name):
-    #     return self.get_place_type_by_name(place_name).gen_iterable(env, marking_name)
-
-    # def gen_build_token(self, env, place_name, value):
-    #     place_type = self.get_place_type_by_name(place_name)
-    #     return place_type.gen_build_token(env, value)
 
     ################################################################################
     # Flow elimination

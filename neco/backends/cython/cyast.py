@@ -1,15 +1,19 @@
+""" Cython AST and helper functions.
+
+This module provides all contents from C{cyast_gen}, which is automatically generated
+from C{cyast.asdl}.
+
+"""
+
 import neco.core.netir as coreir
 import cyast_gen
 from cyast_gen import *
+from neco.core.netir import CurrentBlockError
 
-class CurrentBlockError(Exception):
-    def __init__(self, expected, got):
-        self.exp = expected
-        self.got = got
 
-    def __str__(self):
-        return "expected {exp!r} / got {got!r}".format(exp=self.exp,
-                                                       got=self.got)
+################################################################################
+# Node wrappers.
+################################################################################
 
 def Call(func, args=[], keywords=[], starargs=None, kwargs=None):
     return ast.Call(func, args, keywords, starargs, kwargs)
@@ -42,7 +46,6 @@ def Subscript(value, slice, ctx=ast.Load()):
     return ast.Subscript(value=value, slice=slice)
 
 ################################################################################
-#from neco.utils import flatten_lists
 from neco.backends.pythonic import *
 
 class _to_ast_transformer(ast.NodeTransformer):
@@ -73,10 +76,6 @@ def args_to_ast( d, keys ):
             d[key] = to_ast(d[key])
     return d
 
-
-
-
-
 def node_from_args( ast_class ):
     """ Helper function that returns a function buildin an ast node.
 
@@ -91,10 +90,6 @@ def node_from_args( ast_class ):
         kwargs = args_to_ast(kwargs, ast_class._fields)
         return ast_class(*args, **kwargs)
     return fun
-
-
-
-
 
 def stmt(node):
     """ Transform a builder or a builder helper into a cython statement (ast).

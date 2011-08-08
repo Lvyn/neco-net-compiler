@@ -1,9 +1,14 @@
+""" Python AST and helper functions.
+
+This module provides all contents from C{ast} module.
+
+"""
+
 import ast
 from ast import *
 
 import neco.core.netir as coreir
 from neco.backends.pythonic import *
-
 
 def Name(id):
     return ast.Name(id=id)
