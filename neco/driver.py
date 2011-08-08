@@ -1,5 +1,16 @@
+""" Facade and CLI for neco.
+
+This module provides a CLI for neco that supports
+python 2.6 and python 2.7. This module also provides a
+facade function for neco C{neco_compile} that will create
+a python module based on its arguments and configuration
+provided to C{config} module.
+
+The loading of the module will raise a runtime error
+if loaded with wrong python version.
+"""
+
 import subprocess, re, sys
-from abc import ABCMeta, abstractmethod
 if (2,6,0) <= sys.version_info < (2, 7, 0):
     import optparse as parse
     VERSION=(2,6)
@@ -7,11 +18,11 @@ elif (2, 7, 0) < sys.version_info < (3,0,0) :
     import argparse as parse
     VERSION=(2,7)
 else:
-    raise  "unsupported python version"
+    raise  RuntimeError("unsupported python version")
 
-import imp, cProfile, pstats
+import imp, cProfile, pstats, os, gc
+from abc import ABCMeta, abstractmethod
 from time import time
-import os, gc
 
 import backends
 import opt.onesafe as onesafe
@@ -29,13 +40,13 @@ logo = """
 
 
 class UnknownBackend(Exception):
-    """ Exception raised on a unknown backend """
+    """ Exception raised when an unknown backend is requested. """
 
     def __init__(self, backend):
-        """
+        """ Initializer.
 
-        @param backend:
-        @type backend: C{}
+        @param backend: backend name
+        @type backend: C{str}
         """
         self.backend = backend
 
@@ -43,10 +54,11 @@ class UnknownBackend(Exception):
         return str(self.backend)
 
 def get_backends():
-    """ Get all supported backends from backends
+    """ Get all supported backends from backends package.
 
-    Each backend package contains a function BACKEND returning its name. This name
-    is used for select the backent we want.
+    Each backend in backends package contains a function BACKEND
+    returning its name. This name is used for select the backend
+    we want.
 
     @return: backends
     @rtype: C{dict(str -> module)}
@@ -58,9 +70,10 @@ def get_backends():
     return bends
 
 def neco_compile(net, *arg, **kwargs):
-    """ Compile a petrinet into a Python module.
+    """ Compile C{net} Petri net into a Python module.
 
-    The produced module can be used for model state space exploration.
+    The compiler and compilation options are these from C{config} module.
+    The produced module is loaded and can be used for state space exploration.
     """
     backends = get_backends()
     backend = config.get('backend')
@@ -86,19 +99,28 @@ def neco_compile(net, *arg, **kwargs):
     compiler.optimise_netir()
     return compiler.compile()
 
-def fatal_error(msg):
+def fatal_error(msg, ret=-1):
+    """ Helper function for handling fatal errors.
+
+    this function will put C{msg} in C{sys.stderr} and exit the program
+    with C{ret} return value.
+    """
     print >> sys.stderr, 'Error: {msg}'.format(msg=msg)
-    exit(-1)
+    exit(ret)
 
 class CLIArgumentParser(object):
+    """ Base class for CLI argument parsers.
 
+    This class contains abstract methods to retrieve configuration values, and
+    class variables to provide a uniform CLI with different parsers. Used
+    conventions on class variables:
+        - lo: long option name
+        - so: short option name
+        - d: default value
+        - h: help message
+        - m: metavariable
+    """
     __metaclass__ = ABCMeta
-
-    # lo: long option
-    # so: short option
-    # d: default
-    # h: help
-    # m: metaver
 
     lo_module,  so_module,  d_module,  h_module  = '--module',           '-m', 'spec',   'module containing the Petri net'
     lo_netvar,  so_netvar,  d_netvar,  h_netvar  = '--net-variable',     '-n', 'net',    'variable with the Petri net object'
@@ -122,30 +144,43 @@ class CLIArgumentParser(object):
 
     @abstractmethod
     def module(self):  pass
+
     @abstractmethod
     def dump(self):    pass
+
     @abstractmethod
     def backend(self): pass
+
     @abstractmethod
     def profile(self): pass
+
     @abstractmethod
     def explore(self): pass
+
     @abstractmethod
     def atoms(self):   pass
+
     @abstractmethod
     def dump_markings(self): pass
+
     @abstractmethod
     def net_var_name(self):  pass
+
     @abstractmethod
     def process_flow_elimination(self): pass
+
     @abstractmethod
     def additional_search_paths(self):  pass
+
     @abstractmethod
     def optimise(self): pass
+
     @abstractmethod
     def atoms(self):    pass
 
 class CLIArgumentParserPy2_6(CLIArgumentParser):
+    """ Python2.6 CLI argument parser. """
+
     def __init__(self, name):
         CLIArgumentParser.__init__(self)
         parser = parse.OptionParser(name)
@@ -178,6 +213,8 @@ class CLIArgumentParserPy2_6(CLIArgumentParser):
     def additional_search_paths(self):  return self.args.spaths
 
 class CLIArgumentParserPy2_7(CLIArgumentParser):
+    """ Python2.7 CLI argument parser. """
+
     def __init__(self, name):
         CLIArgumentParser.__init__(self)
         parser = parse.ArgumentParser(name,
@@ -212,13 +249,15 @@ class CLIArgumentParserPy2_7(CLIArgumentParser):
 
 
 class Driver(object):
-    """ Class managing the CLI.
+    """ CLI entry point.
     """
 
     _instance_ = None # unique instance
 
     def __init__(self, name = "Driver"):
-        """ Initializer
+        """ Initializer.
+
+        Runs the CLI argument parser and runs desired operation based on arguments.
         """
 
         #print logo
@@ -292,6 +331,7 @@ class Driver(object):
                     dfile.close()
 
     def compile(self):
+        """ Compile the model. """
         files = ["net.so", "net.pyx", "net.c", "net.py", "net.pyc", "net.pyo"]
         for f in files:
             try:   os.remove(f)
@@ -309,6 +349,7 @@ class Driver(object):
         return end - start
 
     def explore(self):
+        """ Explore state space. """
         net = self.compiled_net
         if self.lang == "cython":
             start = time()
@@ -340,3 +381,8 @@ class Driver(object):
                 print "exploration time: ", end - start
                 print "len visited = %d" % (len(visited))
             return (end - start, visited)
+
+################################################################################
+# EOF
+################################################################################
+
