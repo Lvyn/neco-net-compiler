@@ -195,7 +195,7 @@ class CLIArgumentParserPy2_6(CLIArgumentParser):
         parser.add_option(self.lo_include, self.so_include, default=self.d_include, help=self.h_include, dest='spaths',  metavar=self.m_include, action='append')
         parser.add_option(self.lo_explore, self.so_explore, default=self.d_explore, help=self.h_explore, dest='explore', action='store_true')
         parser.add_option(self.lo_dump_mk, self.so_dump_mk, default=self.d_dump_mk, help=self.h_dump_mk, dest='dump_mk', metavar=self.m_dump_mk, type=str)
-        parser.add_option(self.lo_atoms,   self.so_atoms,   default=self.d_atoms,   help=self.h_atoms,   dest='atoms',   metavar=self.m_atoms, type=str)
+        parser.add_option(self.lo_atoms,   self.so_atoms,   default=self.d_atoms,   help=self.h_atoms,   dest='atoms',   metavar=self.m_atoms, action='append')
         (_, args) = parser.parse_args()
         self.args = args
 
@@ -231,7 +231,7 @@ class CLIArgumentParserPy2_7(CLIArgumentParser):
         parser.add_argument(self.lo_include, self.so_include, default=self.d_include, help=self.h_include, dest='spaths',  metavar=self.m_include, action='append')
         parser.add_argument(self.lo_explore, self.so_explore, default=self.d_explore, help=self.h_explore, dest='explore', action='store_true')
         parser.add_argument(self.lo_dump_mk, self.so_dump_mk, default=self.d_dump_mk, help=self.h_dump_mk, dest='dump_mk', metavar=self.m_dump_mk, type=str)
-        parser.add_argument(self.lo_atoms,   self.so_atoms,   default=self.d_atoms,   help=self.h_atoms,   dest='atoms',   metavar=self.m_atoms,   type=str)
+        parser.add_argument(self.lo_atoms,   self.so_atoms,   default=self.d_atoms,   help=self.h_atoms,   dest='atoms',   metavar=self.m_atoms,   action='append')
         self.args = parser.parse_args()
 
     def module(self):  return self.args.module
