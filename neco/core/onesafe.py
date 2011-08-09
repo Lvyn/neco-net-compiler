@@ -1,12 +1,14 @@
 """
 One Safe optimisation
 
-This optimisations consists in two main issues:
-  1. use a generic type for data storage, this type is a singleton type
-  instead of a multiset.
+This optimisations answers to two main issues:
+  1. Provide base classes to represent optimized types. Backends can implement
+  these types using efficient encodings.
 
-  2. replace token enumerators with one safe token enumerators: emptyness
-  test and data access instead of multiset enumeration.
+  2. Provide base classes for token enumerators, these classes will enumerate
+  optimized types in a efficient way (both are closely related).
+
+  These should be more efficient than using a multiset and iterating over it.
 """
 
 import neco.core
@@ -20,15 +22,10 @@ from neco.core import nettypes, netir, info, FactoryManager
 ################################################################################
 
 class OneSafePlaceType(nettypes.PlaceType):
-    """ One safe place Type
+    """ Base class for one safe place types.
     """
 
     def __init__(self, place_info, marking_type, type, token_type):
-        """ initialise the place
-
-        @param name: place name
-        @type name: C{str}
-        """
         nettypes.PlaceType.__init__(self,
                                     place_info = place_info,
                                     marking_type = marking_type,
@@ -38,7 +35,7 @@ class OneSafePlaceType(nettypes.PlaceType):
 ################################################################################
 
 class BTPlaceType(nettypes.PlaceType):
-    """ Black token place type
+    """ Base class for black token place types.
     """
 
     def __init__(self, place_info, marking_type, type, token_type):
@@ -51,7 +48,7 @@ class BTPlaceType(nettypes.PlaceType):
 ################################################################################
 
 class BTOneSafePlaceType(nettypes.PlaceType):
-    """ One safe black token place type
+    """ Base class for one safe black token place types.
     """
 
     def __init__(self, place_info, marking_type, type, token_type):
@@ -66,6 +63,7 @@ class BTOneSafePlaceType(nettypes.PlaceType):
 ################################################################################
 
 class OneSafeTokenEnumeration(netir.TokenEnumeration):
+    """ Base class for NetIR nodes that enumerate tokens in OneSafePlaceType. """
 
     def __init__(self, node):
         self.token_is_used = node.token_is_used
@@ -77,6 +75,7 @@ class OneSafeTokenEnumeration(netir.TokenEnumeration):
 ################################################################################
 
 class BTTokenEnumeration(netir.TokenEnumeration):
+    """ Base class for NetIR nodes that enumerate tokens in BTPlaceType. """
 
     def __init__(self, node):
         self.token_is_used = node.token_is_used
@@ -88,6 +87,7 @@ class BTTokenEnumeration(netir.TokenEnumeration):
 ################################################################################
 
 class BTOneSafeTokenEnumeration(netir.TokenEnumeration):
+    """ Base class for NetIR nodes that enumerate tokens in BTOneSafeTokenEnumeration. """
 
     def __init__(self, node):
         self.token_is_used = node.token_is_used
@@ -101,7 +101,7 @@ class BTOneSafeTokenEnumeration(netir.TokenEnumeration):
 ################################################################################
 
 class OptimisationPass(object):
-    """ One safe optimisation transformer
+    """ One safe optimisation transformer.
     """
 
     def _update_select_type(self, select_type):
@@ -124,7 +124,6 @@ class OptimisationPass(object):
 
     def transform_ast(self, net_info, node):
         class NodeTransformer(ast.NodeTransformer):
-
             def visit_list(self, node):
                 return [ self.visit(child) for child in node ]
 
@@ -150,3 +149,8 @@ class OptimisationPass(object):
                     node.body = self.visit(node.body)
                     return node
         return NodeTransformer().visit(node)
+
+################################################################################
+# EOF
+################################################################################
+

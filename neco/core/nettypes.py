@@ -127,8 +127,6 @@ class MarkingType(object):
         a one bounded place will be added to C{self.one_safe_places}, other
         places will be addeed to C{self.places}.
 
-        @param place_name: place name
-        @type place_name: C{str}
         """
         if self.use_control_flow_elimination and place_info.flow_control:
             self._flow_control_places.add( place_info )

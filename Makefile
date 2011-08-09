@@ -19,23 +19,6 @@ tests:
 	cd $(TESTS_COMMON_DIR); $(MAKE)
 	cd $(TESTS_BASICS_DIR); $(PYTHON) gen_makefile.py
 
-asdl:
-	$(PYTHON) -m snakes.lang.asdl --output=asdl/cyast_gen.py asdl/cython.asdl
-	$(PYTHON) -m snakes.lang.asdl --output=asdl/netir_gen.py asdl/netir.asdl
-	ln -f asdl/cyast_gen.py neco/backends/cython/
-	ln -f asdl/netir_gen.py neco/core/
-
-clean: cleandoc
-	rm -f neco/core/netir_gen.py asdl/netir_gen.py
-	rm -f neco/backends/cython/cyast_gen.py asdl/cyast_gen.py
-	find -name *.pyc -exec rm {} \;
-	find -name *~ -exec rm {} \;
-	find -name \#*# -exec rm {} \;
-	for i in $(CLEAN_SUBDIRS); do \
-	echo "cleaning in $$i..."; \
-	(cd $$i; $(MAKE) clean); done;
-	cd $(TESTS_BASICS_DIR); rm Makefile
-
 clean_results:
 	for i in $(CLEAN_SUBDIRS); do \
 	echo "cleaning in $$i..."; \

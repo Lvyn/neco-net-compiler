@@ -194,7 +194,7 @@ class Mask(object):
 
         @param num: bit to be read.
         @type num: C{int}
-        @retrun: read bit value.
+        @return: read bit value.
         @rtype: C{int}
         """
         if not (0 <= num < self._width):
@@ -382,9 +382,9 @@ class MaskBitfield(object):
     def __init__(self, native_width=8):
         """ New MaskBitfield.
 
-        @param width: bit size of the underlying native type (ex. 8 for
+        @param native_width: bit size of the underlying native type (ex. 8 for
         a char if the bit field is represented with chars.)
-        @type width: C{int}
+        @type native_width: C{int}
         """
         self._bits = 0
         self._fields_list = []

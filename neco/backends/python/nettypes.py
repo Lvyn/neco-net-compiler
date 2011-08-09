@@ -14,8 +14,8 @@ import pyast as ast
 def type2str(type):
     """ Type to string translation.
 
-    @param t: type to translate
-    @type t: C{TypeInfo}
+    @param type: type to translate
+    @type type: C{TypeInfo}
     """
     if type.is_UserType:
         if type.is_BlackToken:
@@ -528,9 +528,6 @@ class FlowPlaceType(coretypes.PlaceType, PythonPlaceType):
     @property
     def token_type(self):
         """ Get python type of the stored token
-
-        @returns: type
-        @rtype: C{TypeInfo}
         """
         return TypeInfo.Int
 
@@ -574,9 +571,6 @@ class FlowPlaceType(coretypes.PlaceType, PythonPlaceType):
 
     def gen_check_flow(self, env, marking_name, place_name, current_flow):
         """ Get an ast representing the flow check.
-
-        @param place_info: place requesting flow control.
-        @type place_info: C{PlaceInfo}
         """
         return ast.Compare(left=current_flow,
                            ops=[ast.Eq()],
@@ -584,9 +578,6 @@ class FlowPlaceType(coretypes.PlaceType, PythonPlaceType):
 
     def gen_update_flow(self, env, marking_name, place_info):
         """ Get an ast representing the flow update.
-
-        @param place_info: place requesting flow control.
-        @type place_info: C{PlaceInfo}
         """
         place_expr = self.place_expr(env, marking_name)
         return ast.Assign(targets=[place_expr],
@@ -610,7 +601,7 @@ class FlowPlaceType(coretypes.PlaceType, PythonPlaceType):
                                     )
                       )
         return l
-        #return ast.Call(ast.Name("str"), args=[self.place_expr(env, marking_name)])
+
 
 ################################################################################
 # factories

@@ -96,7 +96,8 @@ class VariableHelper(object):
     def all_used(self, name):
         """ Check if all instances of a variable were used.
 
-        @returns C{True} if all variables were used, C{False} otherwise.
+        @param name: variable name to check.
+        @returns: C{True} if all variables were used, C{False} otherwise.
         @rtype: C{bool}
         """
         return len(self._used[name]) == len(self._shared[name])
@@ -149,16 +150,14 @@ class ProcessSuccGenerator(object):
     def __init__(self, env, net_info, process_info,
                  function_name, marking_type):
         """
-        @param net_info: Petri net informations.
-        @type net_info: C{info.NetInfo}
-        @param builder: netir builder.
-        @type builder: C{netir.Builder}
-        @param process_info: process informations.
-        @type process_info: C{info.ProcessInfo}
-        @param function_name: process successor function name
-        @type function_name: C{str}
-        @param marking_type: marking type
-        @type marking_type: C{nettypes.MarkingType}
+        Function that handles the production of processor specific successor
+        functions.
+
+        @param env: compiling environment.
+        @param net_info: Petri net info structure.
+        @param process_info: ProcessInfo of the process.
+        @param function_name: name of produced function.
+        @param marking_type: used marking type
         """
         self._env = env
         self._net_info = net_info
@@ -573,10 +572,7 @@ class SuccTGenerator(object):
     def __call__(self):
         """ Build an instance of SuccT from a TransitionInfo object.
 
-        @param trans: transition info.
-        @type trans: C{TransitionInfo}
         @return: successor function abstract representation.
-        @rtype: C{SuccFunctionAR}
         """
         trans = self.transition
         names = self.names

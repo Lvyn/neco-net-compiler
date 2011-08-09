@@ -503,10 +503,10 @@ class TupleInfo(TokenInfo):
 ################################################################################
 
 def build_tuple(info):
-    """
+    """ Helper function to build tuples.
 
-    @param tuple_info:
-    @type tuple_info: C{}
+    @param info: info structure
+    @type info: C{netir._AST}
     """
     if info.is_tuple():
         return netir.Tuple( components = [ build_tuple(component) for component in info.components ])

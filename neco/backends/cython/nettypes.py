@@ -50,8 +50,8 @@ def is_cython_type(typeinfo):
 def type2str(type):
     """ translates a type info to a string
 
-    @param t: type info to translate
-    @type t: C{TypeInfo}
+    @param type: type info to translate
+    @type type: C{TypeInfo}
     """
     if type.is_UserType:
         if is_cython_type(type):

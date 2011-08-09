@@ -104,9 +104,8 @@ def E(expr):
 
     Extracts an ast from an expression or a statement.
 
-    @param arg: object to extract from.
+    @param expr: expression to extract from.
     @return: ast
-    @rtype: C{cyast_gen._AST}
     """
     return _extract_expr(expr)
 

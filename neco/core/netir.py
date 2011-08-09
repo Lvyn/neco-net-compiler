@@ -47,8 +47,8 @@ class CompilerVisitor(object):
 def begin_block(self, node):
     """ Begin a new block.
 
-    @param: ast block node
-    @type: C{Node}
+    @param node: ast block node
+    @type node: C{Node}
     """
     self._current_scope.append(node)
     self._parents.append( (self._current, self._current_scope) )
@@ -168,9 +168,6 @@ class BuilderBase(object):
 
     def ast(self):
         """ Retrive the built ast.
-
-        @return nodes
-        @rtype C{list<Node>}
         """
         assert (self._current == None)
         return self._nodes

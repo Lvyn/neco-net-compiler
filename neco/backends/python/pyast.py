@@ -93,10 +93,6 @@ def E(str_expr):
     """ Extraction helper.
 
     Extracts an ast from an expression or a statement.
-
-    @param arg: object to extract from.
-    @return: builder helper.
-    @rtype: C{Builder.helper}
     """
     return _extract_expr(str_expr)
 

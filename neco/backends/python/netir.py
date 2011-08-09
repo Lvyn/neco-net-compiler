@@ -150,21 +150,6 @@ class CompilerVisitor(coreir.CompilerVisitor):
                        body = [ self.compile(node.body) ])
 
     def compile_MultiTokenEnumeration(self, node):
-        """
-
-        produce:
-
-        ...
-        i = 0 # init offset
-        for x in s1:
-          i += 1
-          j = 0
-          for y in s2:
-            j += 1
-            if i != j: # check offsets
-              ...
-
-        """
         base, current = None, None
         place_type = self.env.marking_type.get_place_type_by_name(node.place_name)
 

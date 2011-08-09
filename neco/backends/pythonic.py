@@ -39,7 +39,7 @@ def check_attr(obj, attr, value):
     """ Helper function that checks if an attribute exists, if not
     fills it with provided value.
 
-    @parap attr: attribute to be checked
+    @param attr: attribute to be checked
     @param value: default value to be used.
     """
     try:    getattr(obj, attr)
@@ -70,7 +70,7 @@ def check_attr_decorator(**decorator_kwargs):
 
     \see C{_check_attr}.
 
-    @param kwargs: keyword arguments used as a dict (name : default value).
+    @param decorator_kwargs: keyword arguments used as a dict (name : default value).
     """
     def wrap(function):
         if getattr(function, '_decotrated_with_check_attr_decorator', False):
