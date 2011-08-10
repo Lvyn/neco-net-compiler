@@ -148,6 +148,60 @@ cdef class MultiSet:
         return h
         #return reduce(operator.xor, ( [hash(i) for i in self._data.items()] ), 252756382)
 
+    cdef int compare(MultiSet self, MultiSet other):
+        cdef list self_keys = self._data.keys()
+        cdef list other_keys = other._data.keys()
+        cdef int l1
+        cdef int l2
+        cdef int i = 0
+        # ensure we are working on sorted domain
+        self_keys.sort()
+        other_keys.sort()
+        l1 = len(self_keys)
+        if self_keys == other_keys: # may be equal
+            for 0 <= i < l1:
+                key = self_keys[i]
+                v1 = self._data[key]
+                v2 = other._data[key]
+                if v1 < v2:
+                    return -1
+                elif v1 > v2:
+                    return 1
+                continue
+            return 0
+        else: # definitely not equal
+            l2 = len(other_keys)
+            if l1 < l2: # smaller domain is smaller
+                return -1
+            elif l1 > l2: # bigger domain is bigger
+                return 1
+            else: # equal domain but different keys !
+                #other_keys.sort() # ensure the domain is sorted
+                assert (l1 == l2)
+                for 0 <= i < l1:
+                    left = self_keys[i]
+                    right = other_keys[i]
+                    if left.__class__ < right.__class__:
+                        return -1
+                    elif left.__class__ > right.__class__:
+                        return 1
+                    else:
+                        if left < right:
+                            return -1
+                        elif left > right:
+                            return 1
+                # something get wrong here
+                print "WRONG"
+
+                for 0 <= i < l1:
+                    left = self_keys[i]
+                    right = other_keys[i]
+                    print "left  : ", left
+                    print "right : ", right
+                    print "cl< : ", left.__class__ < right.__class__, " cl> : ", left.__class__ > right.__class__, " < : ", left < right, " > : ", left > right, " == ", left == right
+
+                assert(False)
+
     def __richcmp__(MultiSet self, MultiSet other, int op):
         if op == 2: # ==
             if len(self) != len(other):
