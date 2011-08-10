@@ -22,7 +22,7 @@ all: run
 run: clean
 	@$(INITIALIZE) ;\
         $(PYTHON) mkphilo.py -t pnml -c $(COUNT) > "model.pnml" ;\
-	$(PYTHON) $(TESTRUNNER) -l $(LANG) $(_OPTS) -I$(COMMON)
+	$(PYTHON) $(TESTRUNNER) -l $(LANG) -e $(_OPTS) -I$(COMMON)
 
 bench: clean
 	@ $(INITIALIZE) ;\

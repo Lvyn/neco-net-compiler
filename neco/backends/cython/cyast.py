@@ -351,6 +351,10 @@ class Builder(coreir.BuilderBase):
         return cls.class_def_helper(name, bases, cyast_gen.CDef(public = True), **kwargs)
 
     @classmethod
+    def ClassCDef(cls, name, bases = [], **kwargs):
+        return cls.class_def_helper(name, bases, cyast_gen.CDef(public = False), **kwargs)
+
+    @classmethod
     def Compare(self, left, ops, comparators):
         return E( cyast_gen.Compare(left = to_ast(left), ops = ops, comparators = to_ast(comparators)) )
 
@@ -433,7 +437,10 @@ class Unparser(_Unparser) :
             self.fill("class ")
             tree.decl = []
         elif isinstance(tree.lang, cyast_gen.CDef) :
-            self.fill("cdef public class ")
+            if tree.lang.public:
+                self.fill("cdef public class ")
+            else:
+                self.fill("cdef class ")
         else :
             assert False
         self.write(tree.name)

@@ -630,12 +630,13 @@ class SuccTGenerator(object):
                 value = output.value
                 var_name = self.variable_helper.fresh( True, base = 'e' )
                 check = True
-                try:
-                    v = eval(repr(value.raw))
-                    if output.place_info.type.contains(v):
-                        check = False
-                except:
-                    pass
+
+                v = eval(repr(value.raw))
+                print " V : ", v
+                if v == dot and output.place_info.type.is_BlackToken:
+                    print "test true"
+                    check = False
+                    print "test false"
 
                 # check its type
                 if check:
@@ -847,7 +848,7 @@ class Compiler(object):
         self.global_names = WordSet([])
         self._successor_functions = []
         # TODO hardcoded for testing
-        self.atoms = [ info.AtomInfo(atom, ['s1', 's2']) for atom in atoms ]
+        self.atoms = [] # [ info.AtomInfo(atom, ['s1', 's2']) for atom in atoms ]
         print "atoms : ", self.atoms
 
     @property

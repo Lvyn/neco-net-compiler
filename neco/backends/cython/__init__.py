@@ -126,6 +126,7 @@ class Compiler(core.Compiler):
         assert(ctypes_ext != None) # TO DO error processing
 
         if config.get('profile'):
+            print "PROFILE"
             f.write("# cython: profile=True\n")
 
         f.write(env.pyx_declarations)
@@ -162,7 +163,7 @@ class Compiler(core.Compiler):
               cmdclass={'build_ext': build_ext},
               ext_modules=[Extension("net", ["net.pyx"],
                                      include_dirs = self.additional_search_paths,
-                                     extra_compile_args=['-ggdb'],
+                                     extra_compile_args=[], # '-ggdb'],
                                      extra_link_args=['-lctypes'],
                                      library_dirs = self.additional_search_paths)], # TO DO use params
               script_args=["build_ext", "--inplace"])
