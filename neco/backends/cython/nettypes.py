@@ -1103,7 +1103,7 @@ class StaticMarkingType(coretypes.MarkingType):
             cls.add_decl( cyast.CVar(name, type=type2str(self._pack.type)) )
 
         for place_type in self.place_types.itervalues():
-            if not place_type.is_packed:
+            if not place_type.is_packed and not place_type.is_helper:
                 cls.add_decl(cyast.CVar(name=self.id_provider.get(place_type),
                                         type=type2str(place_type.type)))
 

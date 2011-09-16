@@ -8,8 +8,9 @@ def class_name_lower(cls):
     return str.lower(cls.__class__.__name__)
 
 class MultiSet:
+    cdef dict _tvc
 
-    def __init__(self, initial_data = {}):
+    def __cinit__(MultiSet self, dict initial_data = {}):
         """ builds a brand new MultiSet from some initial data
 
         @param initial_data: list of elements (eventually with repetitions
@@ -18,7 +19,10 @@ class MultiSet:
         self._tvc = {}
         self.update_from_dict(initial_data)
 
-    def update_from_dict(self, data):
+    cdef update_from_dict(MultiSet self, dict data):
+        cdef object elt
+        cdef object t
+        cdef dict values
 
         for elt in data:
             t = elt.__class__
@@ -33,12 +37,18 @@ class MultiSet:
             except IndexError:
                 values[elt] = 0
 
-    def copy(self):
+    cdef copy(MultiSet self):
         """ copy the MultiSet
 
         @return: a copy of the MultiSet
         @rtype: C{MultiSet}
         """
+        cdef MultiSet result
+        cdef object ctype
+        cdef dict cvalues
+        cdef object value
+        cdef int count
+
         result = MultiSet()
         for ctype, cvalues in self._tvc.iteritems():
             values = dict()
@@ -49,16 +59,21 @@ class MultiSet:
 
         return result
 
-    def __add__(self, other):
+    def __add__(MultiSet self, MultiSet other):
+        cdef MultiSet new
+        new = self.copy()
         new.update(other)
         return new
 
-    def add(self, elt):
+    cdef add(MultiSet self, object elt):
         """ adds an element to the MultiSet
 
         @param elt: element to be added
         @type elt: C{object}
         """
+        cdef object cls
+        cdef dict values
+
         cls = elt.__class__
         try:
             values = self._tvc[cls]
@@ -71,21 +86,24 @@ class MultiSet:
         except KeyError:
             values[elt] = 1
 
-    def add_items(self, items):
+    cdef add_items(MultiSet self, object items):
         """ adds a list of items to the MultiSet
 
         @param items: items to be added
         @type items: C{iterable}
         """
+        cdef object item
         for item in items:
             self.add(item)
 
-    def remove(self, elt):
+    cdef remove(MultiSet self, object elt):
         """ removes an element from the MultiSet
 
         @param elt: element to be removed
         @type elt: C{object}
         """
+        cdef object cls
+        cdef dict values
         cls = elt.__class__
         try:
             values = self._tvc[cls]
@@ -99,18 +117,20 @@ class MultiSet:
             raise ValueError, "not enough occurrences"
 
 
-    def __iter__(self):
+    def __iter__(MultiSet self):
         """ iterator over the values (with repetitions)
         """
-
-        #cdef list l = []
+        cdef list l = []
+        cdef dict values
+        cdef object value
+        cdef int count
         for values in self._tvc.values():
             for value, count  in values.iteritems():
                 for i in range(0, count):
                     l.append(value)
         return l.__iter__()
 
-    def __str__(self):
+    def __str__(MultiSet self):
         """ return a human readable string representation
 
         @return: human readable string representation of the MultiSet
@@ -118,7 +138,7 @@ class MultiSet:
         """
         return "{%s}" % ", ".join([str(x) for x in self])
 
-    def __repr__(self):
+    def __repr__(MultiSet self):
         """ return a string representation that is suitable for C{eval}
 
         @return: precise string representation of the MultiSet
@@ -126,28 +146,31 @@ class MultiSet:
         """
         return "MultiSet([%s])" % ", ".join([repr(x) for x in self])
 
-    def __len__(self):
+    def __len__(MultiSet self):
         """ number of elements, including repetitions
         @rtype: C{int}
         """
+        cdef int l
+        cdef object v
         l = 0
         for v in self:
             l += 1
         return l
 
-    def size(self):
+    cdef size(MultiSet self):
         """ number of elements, excluding repetitions
 
         @rtype: C{int}
         """
         return len(self.domain())
 
-    def hash(self):
-        #cdef long x = 0x345678L
-        #cdef long y
+    cdef int hash(MultiSet self):
+        # update this function
+        cdef long x = 0x345678L
+        cdef long y
         dom = self.domain()
-        #cdef int l = len(dom)
-        #cdef long mult = 1000003L
+        cdef int l = len(dom)
+        cdef long mult = 1000003L
 
         for i in dom:
             l -= 1
@@ -164,7 +187,7 @@ class MultiSet:
         #     h ^= hash(i)
         # return h
 
-    def __hash__ (self) :
+    def __hash__(Multiset self) :
         """
         """
         return self.hash()
@@ -191,7 +214,7 @@ class MultiSet:
         # return h
         # #return reduce(operator.xor, ( [hash(i) for i in self._data.items()] ), 252756382)
 
-    def __richcmp__(self, other, op):
+    def __richcmp__(Multiset self, Multiset other, int op):
         print "richcmp !!!"
         if op == 2: # ==
             assert False
@@ -214,10 +237,15 @@ class MultiSet:
         else:
             assert False
 
-    def compare(self, other):
-        self_types  = self._tvc.keys()
-        other_types = other._tvc.keys()
-
+    cdef int compare(Multiset self, Multiset other):
+        cdef list self_types  = self._tvc.keys()
+        cdef list other_types = other._tvc.keys()
+        cdef list self_values_keys
+        cdef list other_values_keys
+        cdef dict self_values
+        cdef dict other_values
+        cdef object type_name
+        cdef object val
         try:
             if self_types < other_types:
                 return -1
@@ -251,12 +279,13 @@ class MultiSet:
             print e
             print
 
-    def update(self, other):
+    cdef update(Multiset self, Multiset other):
         for elt in other:
             self.add(elt)
 
-    def domain(self):
-        keys = []
+    cdef list domain(Multiset self):
+        cdef list keys = []
+        cdef dict values
         for values in self._tvc:
             keys.extend(values.keys)
         return keys

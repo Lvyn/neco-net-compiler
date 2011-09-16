@@ -133,7 +133,7 @@ class CLIArgumentParser(object):
     lo_include, so_include, d_include, h_include = '--include',          '-I',  [],      'add additional search path'
     lo_explore, so_explore, d_explore, h_explore = '--explore',          '-e',  False,   'compute state space'
     lo_atoms,   so_atoms,   d_atoms,   h_atoms   = '--atom',             '-a',  None,    'register an atomic proposition'
-    lo_dump_mk, so_dump_mk, d_dump_mk, h_dump_mk = '--dump-makrings',    '-k',  None,    'dump markings to file'
+    lo_dump_mk, so_dump_mk, d_dump_mk, h_dump_mk = '--dump-markings',    '-k',  None,    'dump markings to file'
 
     m_module, m_netvar, m_backend, m_include, m_atoms, m_dump_mk = 'MODULE', 'VARIABLE', 'LANGUAGE', 'PATH', 'ATOM', 'FILE'
 
@@ -370,12 +370,15 @@ class Driver(object):
             try:
                 while True:
                     m = visit.pop()
+                    count+=1
                     visited.add(m)
                     succ = net.succs(m)
                     succs2 = succ.difference(visited)
                     visit.update(succs2)
                     succ.clear()
                     succs2.clear()
+                    if (count % 100 == 0):
+                        print "%d (%ds)" % (count, (time() - start))
             except KeyError:
                 end = time()
                 print "exploration time: ", end - start

@@ -632,11 +632,8 @@ class SuccTGenerator(object):
                 check = True
 
                 v = eval(repr(value.raw))
-                print " V : ", v
                 if v == dot and output.place_info.type.is_BlackToken:
-                    print "test true"
                     check = False
-                    print "test false"
 
                 # check its type
                 if check:
