@@ -28,7 +28,8 @@ import backends
 import core.onesafe as onesafe
 import inspect
 import config
-
+import random
+from snakes.pnml import loads
 logo = """
   *      *
   **____** ___   ____  ____
@@ -128,14 +129,15 @@ class CLIArgumentParser(object):
     lo_opt,     so_opt,     d_opt,     h_opt     = '--optimise',         '-o',  False,   'enable optimisations'
     lo_pfe,     so_pfe,     d_pfe,     h_pfe     = '--flow-elimination', '-f',  False,   'enable process flow elimination'
     lo_debug,   so_debug,   d_debug,   h_debug   = '--debug',            '-g',  False,   'print debug messages'
-    lo_dump,    so_dump,    d_dump,    h_dump    = '--dump',             '-d',  False,   'print produced file'
     lo_profile, so_profile, d_profile, h_profile = '--profile',          '-p',  False,   'enable profiling support'
     lo_include, so_include, d_include, h_include = '--include',          '-I',  [],      'add additional search path'
     lo_explore, so_explore, d_explore, h_explore = '--explore',          '-e',  False,   'compute state space'
     lo_atoms,   so_atoms,   d_atoms,   h_atoms   = '--atom',             '-a',  None,    'register an atomic proposition'
     lo_dump_mk, so_dump_mk, d_dump_mk, h_dump_mk = '--dump-markings',    '-k',  None,    'dump markings to file'
+    lo_abcd,                d_abcd,    h_abcd    = '--abcd',                    None,    'specify an abcd input file'
+    lo_pnml,                d_pnml,    h_pnml    = '--pnml',                    None,    'specify a pnml input / output file'
 
-    m_module, m_netvar, m_backend, m_include, m_atoms, m_dump_mk = 'MODULE', 'VARIABLE', 'LANGUAGE', 'PATH', 'ATOM', 'FILE'
+    m_module, m_netvar, m_backend, m_include, m_atoms, m_dump_mk, m_abcd, m_pnml = 'MODULE', 'VARIABLE', 'LANGUAGE', 'PATH', 'ATOM', 'FILE', 'FILE', 'FILE'
 
     c_backend =  ['cython', 'python'] # backend choices
 
@@ -144,9 +146,6 @@ class CLIArgumentParser(object):
 
     @abstractmethod
     def module(self):  pass
-
-    @abstractmethod
-    def dump(self):    pass
 
     @abstractmethod
     def backend(self): pass
@@ -178,6 +177,12 @@ class CLIArgumentParser(object):
     @abstractmethod
     def atoms(self):    pass
 
+    @abstractmethod
+    def abcd(self): pass
+
+    @abstractmethod
+    def pnml(self): pass
+
 class CLIArgumentParserPy2_6(CLIArgumentParser):
     """ Python2.6 CLI argument parser. """
 
@@ -190,18 +195,18 @@ class CLIArgumentParserPy2_6(CLIArgumentParser):
         parser.add_option(self.lo_opt,     self.so_opt,     default=self.d_opt,     help=self.h_opt,     dest='opt',     action='store_true')
         parser.add_option(self.lo_pfe,     self.so_pfe,     default=self.d_pfe,     help=self.h_pfe,     dest='pfe',     action='store_true')
         parser.add_option(self.lo_debug,   self.so_debug,   default=self.d_debug,   help=self.h_debug,   dest='debug',   action='store_true')
-        parser.add_option(self.lo_dump,    self.so_dump,    default=self.d_dump,    help=self.h_dump,    dest='dump',    action='store_true')
         parser.add_option(self.lo_profile, self.so_profile, default=self.d_profile, help=self.h_profile, dest='profile', action='store_true')
         parser.add_option(self.lo_include, self.so_include, default=self.d_include, help=self.h_include, dest='spaths',  metavar=self.m_include, action='append')
         parser.add_option(self.lo_explore, self.so_explore, default=self.d_explore, help=self.h_explore, dest='explore', action='store_true')
         parser.add_option(self.lo_dump_mk, self.so_dump_mk, default=self.d_dump_mk, help=self.h_dump_mk, dest='dump_mk', metavar=self.m_dump_mk, type=str)
         parser.add_option(self.lo_atoms,   self.so_atoms,   default=self.d_atoms,   help=self.h_atoms,   dest='atoms',   metavar=self.m_atoms, action='append')
+        parser.add_option(self.lo_abcd,    default=self.d_abcd,    help=self.h_abcd,    dest='abcd',    metavar=self.m_abcd, type=str)
+        parser.add_option(self.lo_pnml,    default=self.d_pnml,    help=self.h_pnml,    dest='pnml',    metavar=self.m_pnml, type=str)
         (_, args) = parser.parse_args()
         self.args = args
 
     def module(self):  return self.args.module
     def debug(self):   return self.args.debug
-    def dump(self):    return self.args.dump
     def backend(self): return self.args.backend
     def profile(self): return self.args.profile
     def explore(self): return self.args.explore
@@ -211,6 +216,8 @@ class CLIArgumentParserPy2_6(CLIArgumentParser):
     def net_var_name(self):  return self.args.netvar
     def process_flow_elimination(self): return self.args.pfe
     def additional_search_paths(self):  return self.args.spaths
+    def abcd(self): return self.args.abcd
+    def pnml(self): return self.args.pnml
 
 class CLIArgumentParserPy2_7(CLIArgumentParser):
     """ Python2.7 CLI argument parser. """
@@ -226,17 +233,17 @@ class CLIArgumentParserPy2_7(CLIArgumentParser):
         parser.add_argument(self.lo_opt,     self.so_opt,     default=self.d_opt,     help=self.h_opt,     dest='opt',     action='store_true')
         parser.add_argument(self.lo_pfe,     self.so_pfe,     default=self.d_pfe,     help=self.h_pfe,     dest='pfe',     action='store_true')
         parser.add_argument(self.lo_debug,   self.so_debug,   default=self.d_debug,   help=self.h_debug,   dest='debug',   action='store_true')
-        parser.add_argument(self.lo_dump,    self.so_dump,    default=self.d_dump,    help=self.h_dump,    dest='dump',    action='store_true')
         parser.add_argument(self.lo_profile, self.so_profile, default=self.d_profile, help=self.h_profile, dest='profile', action='store_true')
         parser.add_argument(self.lo_include, self.so_include, default=self.d_include, help=self.h_include, dest='spaths',  metavar=self.m_include, action='append')
         parser.add_argument(self.lo_explore, self.so_explore, default=self.d_explore, help=self.h_explore, dest='explore', action='store_true')
         parser.add_argument(self.lo_dump_mk, self.so_dump_mk, default=self.d_dump_mk, help=self.h_dump_mk, dest='dump_mk', metavar=self.m_dump_mk, type=str)
         parser.add_argument(self.lo_atoms,   self.so_atoms,   default=self.d_atoms,   help=self.h_atoms,   dest='atoms',   metavar=self.m_atoms,   action='append')
+        parser.add_argument(self.lo_abcd,    default=self.d_abcd,    help=self.h_abcd,    dest='abcd',    metavar=self.m_abcd, type=str)
+        parser.add_argument(self.lo_pnml,    default=self.d_pnml,    help=self.h_pnml,    dest='pnml',    metavar=self.m_pnml, type=str)
         self.args = parser.parse_args()
 
     def module(self):  return self.args.module
     def debug(self):   return self.args.debug
-    def dump(self):    return self.args.dump
     def backend(self): return self.args.backend
     def profile(self): return self.args.profile
     def explore(self): return self.args.explore
@@ -246,7 +253,8 @@ class CLIArgumentParserPy2_7(CLIArgumentParser):
     def net_var_name(self):  return self.args.netvar
     def process_flow_elimination(self): return self.args.pfe
     def additional_search_paths(self):  return self.args.spaths
-
+    def abcd(self): return self.args.abcd
+    def pnml(self): return self.args.pnml
 
 class Driver(object):
     """ CLI entry point.
@@ -273,7 +281,6 @@ class Driver(object):
             raise RuntimeError("unreachable")
 
         config.set(debug    = cli_argument_parser.debug(),
-                   dump     = cli_argument_parser.dump(),
                    optimise = cli_argument_parser.optimise(),
                    backend  = cli_argument_parser.backend(),
                    profile  = cli_argument_parser.profile(),
@@ -288,21 +295,51 @@ class Driver(object):
         self.module_name   = cli_argument_parser.module()
         self.net_var_name  = cli_argument_parser.net_var_name()
         self.dump_markings = cli_argument_parser.dump_markings()
+        self.abcd          = cli_argument_parser.abcd()
+        self.pnml          = cli_argument_parser.pnml()
 
-        try:
-            fp, pathname, description = imp.find_module(self.module_name)
-        except ImportError as e:
-            fatal_error(str(e))
 
-        self.module = imp.load_module(self.module_name, fp, pathname, description)
-        fp.close()
+        # retrieve the Petri net from abcd file (produces a pnml file)
+        if self.abcd:
+            random.seed(time())
+            out_pnml = self.pnml if self.pnml != None else "/tmp/model{}.pnml".format(random.random())
+            if self.pnml and os.path.exists(out_pnml):
+                print >> sys.stderr, "ERROR: {} file already exists".format(out_pnml)
+                exit(-1)
 
-        # retrieve the Petri net form module
-        try:
-            self.petri_net = getattr(self.module, self.net_var_name)
-        except AttributeError:
-            fatal_error('No variable named {varname} in module {module}'.format(varname=self.net_var_name,
-                                                                                module=self.module_name))
+            from snakes.utils.abcd.main import main
+            if self.pnml:
+                print "generating {} file from {}".format(out_pnml, self.abcd)
+            else:
+                print "generating pnml file from {}".format(self.abcd)
+            main(['--pnml={}'.format(out_pnml), self.abcd])
+            print "loading pnml file"
+            self.petri_net = loads(out_pnml)
+            if not self.pnml:
+                print "deleting pnml file"
+                os.remove(out_pnml)
+
+        # retrieve the Petri net from pnml file
+        elif self.pnml:
+            print "loading pnml file"
+            self.petri_net = loads(self.pnml)
+
+        # retrieve the Petri net from module
+        else:
+            try:
+                fp, pathname, description = imp.find_module(self.module_name)
+            except ImportError as e:
+                fatal_error(str(e))
+
+            self.module = imp.load_module(self.module_name, fp, pathname, description)
+            fp.close()
+
+            try:
+                self.petri_net = getattr(self.module, self.net_var_name)
+            except AttributeError:
+                fatal_error('No variable named {varname} in module {module}'.format(varname=self.net_var_name,
+                                                                                    module=self.module_name))
+
         if self.profile:
             # profile compilation
             import cProfile
