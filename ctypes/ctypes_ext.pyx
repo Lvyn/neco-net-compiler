@@ -9,6 +9,13 @@ cpdef dump(object obj):
     else:
         return str(obj)
 
+cpdef __neco_compare__(object left, object right):
+    if left < right:
+        return -1
+    elif left > right:
+        return 1
+    return 0
+
 cdef class MultiSet:
     cdef dict _data
 
@@ -32,7 +39,11 @@ cdef class MultiSet:
 
     def __add__(MultiSet self, MultiSet other):
         cdef MultiSet new = self.copy()
-        new._data.update(other._data)
+        for (e, m) in other._data.iteritems():
+            try:
+                new._data[e] += m
+            except IndexError:
+                new._data[e] = m
         return new
 
     cdef void add(MultiSet self, object elt):
@@ -70,7 +81,10 @@ cdef class MultiSet:
     def __iter__(MultiSet self):
         """ iterator over the values (with repetitions)
         """
-        return self._data.__iter__()
+        for e, m in self._data.iteritems():
+            for i in range(0, m):
+                yield e
+        #return self._data.__iter__()
 
     def __str__(MultiSet self):
         """ return a human readable string representation
@@ -116,12 +130,6 @@ cdef class MultiSet:
         x += 97531L
         return x
 
-        # 252756382 = hash("snakes.hashables.hlist")
-        cdef int h = 252756382
-        for i in self._data.items():
-            h ^= hash(i)
-        return h
-
     def __hash__ (MultiSet self) :
         """
         """
@@ -139,14 +147,6 @@ cdef class MultiSet:
             #mult += 82520L + l + l
         x += 97531L
         return x
-
-
-        # 252756382 = hash("snakes.hashables.hlist")
-        cdef int h = 252756382
-        for i in self._data.items():
-            h ^= hash(i)
-        return h
-        #return reduce(operator.xor, ( [hash(i) for i in self._data.items()] ), 252756382)
 
     cdef int compare(MultiSet self, MultiSet other):
         cdef list self_keys = self._data.keys()
@@ -191,14 +191,14 @@ cdef class MultiSet:
                         elif left > right:
                             return 1
                 # something get wrong here
-                print "WRONG"
+                print >> sys.stderr "WRONG"
 
                 for 0 <= i < l1:
                     left = self_keys[i]
                     right = other_keys[i]
-                    print "left  : ", left
-                    print "right : ", right
-                    print "cl< : ", left.__class__ < right.__class__, " cl> : ", left.__class__ > right.__class__, " < : ", left < right, " > : ", left > right, " == ", left == right
+                    print >> sys.stderr  "left  : ", left
+                    print >> sys.stderr  "right : ", right
+                    print >> sys.stderr  "cl< : ", left.__class__ < right.__class__, " cl> : ", left.__class__ > right.__class__, " < : ", left < right, " > : ", left > right, " == ", left == right
 
                 assert(False)
 
@@ -272,27 +272,3 @@ cdef class MultiSet:
             s += dump(e) + ' '
         return s
 
-
-################################################################################
-
-cpdef set state_space():
-    cdef set visited
-    cdef set visit
-    cdef set succ
-    cdef int count
-    cdef int start
-    try:
-        visited = set()
-        visit = set([init()])
-        succ = set()
-        count = 0
-        start = time()
-        while True:
-            count += 1
-            m = visit.pop()
-            visited.add(m)
-            succ = succs(m)
-            visit.update(succ.difference(visited))
-    except KeyError:
-        return visited
-    return visited

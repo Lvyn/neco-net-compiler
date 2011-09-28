@@ -620,22 +620,24 @@ class StaticMarkingType(coretypes.MarkingType):
         try:
             test = tests.pop()
             # l - r == 0 ?:
-            builder.begin_If(cyast.Compare(left=test,
-                                           ops=[cyast.Eq()],
+            builder.emit(cyast.Assign(targets=[cyast.Name("tmp")],
+                                      value=test))
+            builder.begin_If(cyast.Compare(left=cyast.Name("tmp"),
+                                           ops=[cyast.Lt()],
                                            comparators=[cyast.Num(0)])
                              )
-            self._gen_C_compare_aux(builder, tests)
+            builder.emit_Return(cyast.Num(-1))
             # l - r < 0 ?:
-            builder.begin_Elif(cyast.Compare(left=test,
-                                             ops=[cyast.Lt()],
+            builder.begin_Elif(cyast.Compare(left=cyast.Name("tmp"),
+                                             ops=[cyast.Gt()],
                                              comparators=[cyast.Num(0)])
                                )
-            builder.emit_Return(cyast.Num(-1))
-            builder.end_If()
-            # else l - r > 0:
-            builder.begin_Else()
             builder.emit_Return(cyast.Num(1))
             builder.end_If()
+            builder.end_If()
+
+            self._gen_C_compare_aux(builder, tests)
+
         except IndexError:
             builder.emit_Return(cyast.Num(0))
 
@@ -648,7 +650,8 @@ class StaticMarkingType(coretypes.MarkingType):
                                     args = (A("self", type = self.type_name)
                                             .param(right_marking_name, type = self.type_name)),
                                     returns = E("int"),
-                                    public=True, api=True)
+                                    public=True, api=True,
+                                    decl = [ Builder.CVar( name = 'tmp', type = 'int') ] )
 
         # TODO: Order places
 
@@ -1341,7 +1344,7 @@ class OneSafePlaceType(onesafe.OneSafePlaceType, CythonPlaceType):
                                            op=Sub(),
                                            right=right)
         elif type.is_UserType or type.is_AnyType:
-            token_compare_expr=cyast.Call(cyast.Name('_compare'),
+            token_compare_expr=cyast.Call(func=cyast.Name("__neco_compare__"),
                                           args=[left, right])
         else:
             raise NotImplemented

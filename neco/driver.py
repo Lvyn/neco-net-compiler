@@ -86,7 +86,7 @@ def neco_compile(net, *arg, **kwargs):
     print "################################################################################"
     print "Compiling with " + backend + " backend."
     print "################################################################################"
-    print "Optimise: {optimise!s:5} \tDump: {dump!s:5}".format(optimise = config.get('optimise'), dump = config.get('dump'))
+    print "Optimise: {optimise!s:5}".format(optimise = config.get('optimise'))
     print "Debug:    {debug!s:5} \tPfe:  {pfe!s:5}".format(debug = config.get('debug'), pfe = config.get('process_flow_elimination'))
     print "Additional search paths:  %s" % config.get('additional_search_paths')
     print "################################################################################"
@@ -136,8 +136,9 @@ class CLIArgumentParser(object):
     lo_dump_mk, so_dump_mk, d_dump_mk, h_dump_mk = '--dump-markings',    '-k',  None,    'dump markings to file'
     lo_abcd,                d_abcd,    h_abcd    = '--abcd',                    None,    'specify an abcd input file'
     lo_pnml,                d_pnml,    h_pnml    = '--pnml',                    None,    'specify a pnml input / output file'
+    lo_import,  so_import,  d_import,  h_import  = '--import',           '-i',  [],      'specify additionnal file to import'
 
-    m_module, m_netvar, m_backend, m_include, m_atoms, m_dump_mk, m_abcd, m_pnml = 'MODULE', 'VARIABLE', 'LANGUAGE', 'PATH', 'ATOM', 'FILE', 'FILE', 'FILE'
+    m_module, m_netvar, m_backend, m_include, m_atoms, m_dump_mk, m_abcd, m_pnml, m_import = 'MODULE', 'VARIABLE', 'LANGUAGE', 'PATH', 'ATOM', 'FILE', 'FILE', 'FILE', 'FILE'
 
     c_backend =  ['cython', 'python'] # backend choices
 
@@ -240,6 +241,7 @@ class CLIArgumentParserPy2_7(CLIArgumentParser):
         parser.add_argument(self.lo_atoms,   self.so_atoms,   default=self.d_atoms,   help=self.h_atoms,   dest='atoms',   metavar=self.m_atoms,   action='append')
         parser.add_argument(self.lo_abcd,    default=self.d_abcd,    help=self.h_abcd,    dest='abcd',    metavar=self.m_abcd, type=str)
         parser.add_argument(self.lo_pnml,    default=self.d_pnml,    help=self.h_pnml,    dest='pnml',    metavar=self.m_pnml, type=str)
+        parser.add_argument(self.lo_import,  self.so_import,  default=self.d_import,  help=self.h_import,  dest='imports', metavar=self.m_import, action='append')
         self.args = parser.parse_args()
 
     def module(self):  return self.args.module
@@ -255,6 +257,7 @@ class CLIArgumentParserPy2_7(CLIArgumentParser):
     def additional_search_paths(self):  return self.args.spaths
     def abcd(self): return self.args.abcd
     def pnml(self): return self.args.pnml
+    def imports(self): return self.args.imports
 
 class Driver(object):
     """ CLI entry point.
@@ -284,6 +287,7 @@ class Driver(object):
                    optimise = cli_argument_parser.optimise(),
                    backend  = cli_argument_parser.backend(),
                    profile  = cli_argument_parser.profile(),
+                   imports  = cli_argument_parser.imports(),
                    process_flow_elimination = cli_argument_parser.process_flow_elimination(),
                    additional_search_paths  = cli_argument_parser.additional_search_paths(),
                    trace_calls = False)

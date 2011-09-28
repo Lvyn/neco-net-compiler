@@ -281,7 +281,8 @@ class CompilerVisitor(coreir.CompilerVisitor):
                                            .param(node.marking_name, type = "Marking")),
                                    body = stmts,
                                    lang = cyast.CDef( public = False ),
-                                   returns = E("void"))
+                                   returns = E("void"),
+                                   decl = [ Builder.CVar( name = node.flow_variable_name, type = type2str(node.flow_variable_type)) ])
 
     def compile_Succs(self, node):
         body = []
@@ -312,8 +313,8 @@ class CompilerVisitor(coreir.CompilerVisitor):
         f2 = Builder.FunctionCDef(name="neco_succs",
                                   args=A("m", type="Marking"),
                                   body=body,
-                                  returns=cyast.Name("ctypes_ext.neco_list*"),
-                                  decl=[cyast.CVar(name="l", type="ctypes_ext.neco_list*"),
+                                  returns=cyast.Name("ctypes_ext.neco_list_t*"),
+                                  decl=[cyast.CVar(name="l", type="ctypes_ext.neco_list_t*"),
                                         cyast.CVar(name="e", type="Marking")]
                                   )
 

@@ -49,6 +49,10 @@ class Compiler(core.Compiler):
         env.add_declaration("from snakes.nets import *")
         env.add_declaration("import cPickle")
         env.add_declaration("import StringIO")
+
+        for mod in config.get('imports'):
+            env.add_declaration('from {} import *'.format(mod))
+
         #env.add_declaration("from dolev_yao import *")
 
         compiled_nodes = []
@@ -65,8 +69,6 @@ class Compiler(core.Compiler):
         #module_ast = flatten_ast(ast.Module(body = compiled_nodes))
         module_ast = ast.Module(body = compiled_nodes)
         module_ast = ast.fix_missing_locations(module_ast)
-        if config.get('dump'):
-            AstPrettyPrinter(file = sys.stdout).visit(module_ast)
 
         f = open("net.py", "w")
         Unparser(module_ast, f)

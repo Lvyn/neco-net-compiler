@@ -96,6 +96,9 @@ class Compiler(core.Compiler):
         env.add_pyx_declaration("from time import time")
         #env.add_pyx_declaration("from dolev_yao import *")
 
+        for mod in config.get('imports'):
+            env.add_pyx_declaration("from {} import *".format(mod))
+
         compiled_nodes = []
         # gen types
         self.marking_type.atoms = self.atoms
@@ -137,11 +140,35 @@ class Compiler(core.Compiler):
         Unparser(module_ast, f)
 
         f.write(env.ending_pyx_declarations)
+
+        f.write("""
+
+################################################################################
+
+cpdef set state_space():
+    cdef set visited
+    cdef set visit
+    cdef set succ
+    cdef int count
+    cdef int start
+    try:
+        visited = set()
+        visit = set([init()])
+        succ = set()
+        count = 0
+        start = time()
+        while True:
+            count += 1
+            m = visit.pop()
+            visited.add(m)
+            succ = succs(m)
+            visit.update(succ.difference(visited))
+    except KeyError:
+        return visited
+    return visited
+""")
+
         f.close()
-
-
-        if config.get('dump'):
-            Unparser(module_ast, sys.stdout)
 
         path = search_file("ctypes_ext.pxd", self.additional_search_paths)
         shutil.copyfile(path, "ctypes_ext.pxd")

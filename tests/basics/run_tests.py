@@ -134,6 +134,8 @@ class SpecReader(FileReader):
 
 import subprocess
 
+failed_list = []
+
 def run_test(module_name, lang='python', opt=False, pfe=False):
     print "Running test %s..." % module_name
     expected = module_name + '.out'
@@ -258,6 +260,7 @@ if __name__ == '__main__':
                     succeeded += 1
                 else:
                     failed += 1
+                    failed_list.append(test)
             print
         if args.opts or args.all:
             print "*** {lang} with optimisations ***".format(lang=lang)
@@ -266,6 +269,7 @@ if __name__ == '__main__':
                     succeeded += 1
                 else:
                     failed += 1
+                    failed_list.append(test)
             print
         if args.pfe or args.all:
             print "*** {lang} with optimisations and flow control compression ***".format(lang=lang)
@@ -274,8 +278,13 @@ if __name__ == '__main__':
                     succeeded += 1
                 else:
                     failed += 1
+                    failed_list.append(test)
             print
     print "{tests} tests ran".format(tests=str(succeeded + failed))
     print "{succeeded} succeeded".format(succeeded=str(succeeded))
     print "{failed} failed".format(failed=str(failed))
 
+    if failed:
+        print "failed tests: "
+        for test in failed_list:
+            print test

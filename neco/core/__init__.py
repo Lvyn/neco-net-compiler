@@ -164,7 +164,8 @@ class ProcessSuccGenerator(object):
         self._process_info = process_info
         self._function_name = function_name
         self._marking_type = marking_type
-
+        self._flow_variable_name = "flow"
+        self._flow_variable_type = TypeInfo.Int
 
         self._builder = netir.Builder()
 
@@ -193,12 +194,15 @@ class ProcessSuccGenerator(object):
         builder.begin_function_SuccP( function_name   = function_name,
                                       marking_name    = arg_marking,
                                       markingset_name = marking_set,
-                                      process_info    = process_info )
+                                      process_info    = process_info,
+                                      flow_variable_name = self._flow_variable_name,
+                                      flow_variable_type = self._flow_variable_type )
 
         # enumerate places with not empty post
         ne_post = [ place for place in process_info.flow_places if place.post ]
 
-        current_flow = builder.Name('flow')
+        current_flow = builder.Name(self._flow_variable_name)
+
         read=builder.ReadFlow(marking_name=arg_marking,
                               process_name=process_info.name)
         builder.emit_Assign(variable=current_flow, expr=read)
