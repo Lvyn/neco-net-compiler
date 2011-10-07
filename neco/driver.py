@@ -419,7 +419,8 @@ class Driver(object):
                     succ.clear()
                     succs2.clear()
                     if (count % 100 == 0):
-                        print "%d (%ds)" % (count, (time() - start))
+                        sys.stdout.write("\r{} ({:.3f}s)".format(count, (time() - start)))
+                        sys.stdout.flush()
             except KeyError:
                 end = time()
                 print "exploration time: ", end - start

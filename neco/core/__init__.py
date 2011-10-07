@@ -1,6 +1,7 @@
 """ Main compiler interface. """
 
 import itertools
+from collections import defaultdict
 from snakes.nets import *
 import neco.config as config
 from neco.utils  import flatten_lists
@@ -573,6 +574,105 @@ class SuccTGenerator(object):
                 trans.add_intermediary_variable( VariableInfo( name = inner.local_name,
                                                                type = type ) )
 
+    def gen_computed_production(self, output, computed_productions):
+        """ Compute an expression on an output arc and store the
+        result in a dict.
+
+        This allows an expression to be computed as soon as
+        possible. It means that when all tokens involved in the
+        expression are available, we will compute the expression and
+        store the result.
+
+        @param output output to be used
+        @param computed_productions output -> productions list
+        @type computed_productions defaultdict(list)
+
+        """
+        trans = self.transition
+        names = self.names
+        builder = self.builder
+
+        if self._ignore_flow and output.place_info.flow_control:
+            return
+
+        elif output.is_Expression:
+            # new temporary variable
+            var_name = self.variable_helper.fresh( True, base = 'e' )
+            trans.add_intermediary_variable( VariableInfo( name = var_name,
+                                                           type = output.place_info.type ) )
+
+            # evaluate and assign the result to the variable
+            builder.emit_Assign( variable = VariableInfo(var_name),
+                                 expr = netir.PyExpr(output.expr) )
+            check = True
+            try:
+                print ">>>> BEGIN TO DO %s <<<< %s" % (__FILE__, output.expr.raw)
+                value = eval(output.expr.raw)
+                if output.place_info.type.contains(value):
+                    check = False
+                print ">>>> END TO DO %s <<<< " % __FILE__
+            except:
+                pass
+
+            # check its type
+            if check:
+                computed_productions[output].append(netir.Name( var_name ))
+            else:
+                computed_productions[output].append(netir.Name( var_name ))
+
+        elif output.is_Value:
+            value = output.value
+            var_name = self.variable_helper.fresh( True, base = 'e' )
+            check = True
+
+            v = eval(repr(value.raw))
+            if v == dot and output.place_info.type.is_BlackToken:
+                check = False
+
+            # check its type
+            if check:
+                builder.emit_Assign( variable = VariableInfo(var_name),
+                                     expr = netir.PyExpr( ExpressionInfo( repr(output.value.raw) ) ) )
+
+                r = netir.Name( var_name )
+            else:
+                r = netir.PyExpr( ExpressionInfo( repr(output.value.raw) ) )
+
+            computed_productions[output].append(r)
+
+        elif output.is_Variable:
+            variable = output.variable
+            output_impl_type = self.marking_type.get_place_type_by_name( output.place_info.name ).token_type
+            if not (output_impl_type.is_AnyType or (variable.type == output_impl_type)):
+                builder.begin_CheckType( variable = variable,
+                                         type = output_impl_type )
+
+            computed_productions[output].append(netir.Name( variable.name ))
+
+        elif output.is_Flush:
+            # no type check, object places
+            pass
+
+        elif output.is_Tuple:
+            # no type check, WARNING: may be unsound !
+            pass
+
+        elif output.is_MultiArc:
+            # temporary list for holding productions
+            tmp = defaultdict(list)
+
+            for subarc in output.sub_arcs:
+                # produce code for the computation and variable assignation
+                self.gen_computed_production(subarc, tmp)
+
+            # retrieve productions
+            for value in tmp.itervalues():
+                computed_productions[output].append(value)
+
+        else:
+            raise NotImplementedError, output.arc_annotation.__class__
+
+
     def __call__(self):
         """ Build an instance of SuccT from a TransitionInfo object.
 
@@ -599,76 +699,10 @@ class SuccTGenerator(object):
         if config.get('trace_calls'):
             builder.emit_Print("  guard valid in " + self.function_name)
 
-        # eval productions and check their types
-        computed_productions = {}
+        computed_productions = defaultdict(list)
         for output in trans.outputs:
-            if self._ignore_flow and output.place_info.flow_control:
-                continue
+            self.gen_computed_production(output, computed_productions)
 
-            elif output.is_Expression:
-                # new temporary variable
-                var_name = self.variable_helper.fresh( True, base = 'e' )
-                trans.add_intermediary_variable( VariableInfo( name = var_name,
-                                                               type = output.place_info.type ) )
-
-                # evaluate and assign the result to the variable
-                builder.emit_Assign( variable = VariableInfo(var_name),
-                                     expr = netir.PyExpr(output.expr) )
-                check = True
-                try:
-                    print ">>>> BEGIN TO DO %s <<<< %s" % (__FILE__, output.expr.raw)
-                    value = eval(output.expr.raw)
-                    if output.place_info.type.contains(value):
-                        check = False
-                    print ">>>> END TO DO %s <<<< " % __FILE__
-                except:
-                    pass
-
-                # check its type
-                if check:
-                    computed_productions[output] = netir.Name( var_name )
-                else:
-                    computed_productions[output] = netir.Name( var_name )
-
-            elif output.is_Value:
-                value = output.value
-                var_name = self.variable_helper.fresh( True, base = 'e' )
-                check = True
-
-                v = eval(repr(value.raw))
-                if v == dot and output.place_info.type.is_BlackToken:
-                    check = False
-
-                # check its type
-                if check:
-                    builder.emit_Assign( variable = VariableInfo(var_name),
-                                         expr = netir.PyExpr( ExpressionInfo( repr(output.value.raw) ) ) )
-
-                    r = netir.Name( var_name )
-                else:
-                    r = netir.PyExpr( ExpressionInfo( repr(output.value.raw) ) )
-
-                computed_productions[output] = r
-            elif output.is_Variable:
-                variable = output.variable
-                output_impl_type = self.marking_type.get_place_type_by_name( output.place_info.name ).token_type
-                if not (output_impl_type.is_AnyType or (variable.type == output_impl_type)):
-                    builder.begin_CheckType( variable = variable,
-                                             type = output_impl_type )
-                computed_productions[output] = netir.Name( variable.name )
-
-            elif output.is_Flush:
-                # no type check, object places
-                pass
-
-            elif output.is_Tuple:
-                # no type check, WARNING: may be unsound !
-                pass
-
-            else:
-                raise NotImplementedError, output.arc_annotation.__class__
-
-        # copy
         new_marking = names.fresh(True, base = "n")
 
         builder.emit_MarkingCopy( dst_name = new_marking,
@@ -795,6 +829,12 @@ class SuccTGenerator(object):
                     builder.emit_TupleOut( marking_name = new_marking,
                                            place_name = output.place_name,
                                            tuple_info = output.tuple )
+            elif output.is_MultiArc:
+                for production in computed_productions[output]:
+                    builder.emit_AddToken( marking_name = new_marking,
+                                           place_name = output.place_name,
+                                           token_expr = production )
+
             else:
                 raise NotImplementedError, output.arc_annotation.__class__
 
