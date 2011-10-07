@@ -1,5 +1,4 @@
 check - markings
-count - 8
 begin marking
 s1 - (1, (3, 10)) (1, (1, 1)) (1, (1, 10)) (2, (1, 2)) (1, (2, 10))
 s2 - 

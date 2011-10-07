@@ -1,5 +1,4 @@
 check - markings
-count - 16
 begin marking
 gate(0).e - 
 gate(0).i#1 - dot

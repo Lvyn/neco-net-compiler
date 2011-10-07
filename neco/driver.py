@@ -355,21 +355,21 @@ class Driver(object):
             self.compile()
             if self.do_explore or self.dump_markings:
                 t, visited = self.explore()
-                if self.dump_markings:
-                    # select output stream
-                    try:
-                        std_map = { 'stdout' : sys.stdout, 'stderr' : sys.stderr }
-                        dfile = std_map[self.dump_markings]
-                    except KeyError:
-                        dfile = open(self.dump_markings, 'w')
+                # if self.dump_markings:
+                #     # select output stream
+                #     try:
+                #         std_map = { 'stdout' : sys.stdout, 'stderr' : sys.stderr }
+                #         dfile = std_map[self.dump_markings]
+                #     except KeyError:
+                #         dfile = open(self.dump_markings, 'w')
 
-                    # write data
-                    dfile.write("check - markings\n")
-                    dfile.write("count - %d\n" % len(visited))
-                    for s in visited:
-                        dfile.write(s.__dump__())
-                    # close stream
-                    dfile.close()
+                #     # write data
+                #     dfile.write("check - markings\n")
+                #     dfile.write("count - %d\n" % len(visited))
+                #     for s in visited:
+                #         dfile.write(s.__dump__())
+                #     # close stream
+                #     dfile.close()
 
     def compile(self):
         """ Compile the model. """
@@ -391,6 +391,16 @@ class Driver(object):
 
     def explore(self):
         """ Explore state space. """
+
+        if self.dump_markings:
+            # select output stream
+            try:
+                std_map = { 'stdout' : sys.stdout, 'stderr' : sys.stderr }
+                dfile = std_map[self.dump_markings]
+            except KeyError:
+                dfile = open(self.dump_markings, 'w')
+            dfile.write("check - markings\n")
+
         net = self.compiled_net
         if self.lang == "cython":
             start = time()
@@ -408,10 +418,14 @@ class Driver(object):
             succs2 = set()
             count = 0
             start = time()
+            to_print = []
             try:
                 while True:
                     m = visit.pop()
+                    to_print.append(m)
                     count+=1
+                    # close stream
+
                     visited.add(m)
                     succ = net.succs(m)
                     succs2 = succ.difference(visited)
@@ -421,10 +435,22 @@ class Driver(object):
                     if (count % 100 == 0):
                         sys.stdout.write("\r{} ({:.3f}s)".format(count, (time() - start)))
                         sys.stdout.flush()
+
+                        if self.dump_markings:
+                            for s in to_print:
+                                dfile.write(s.__dump__())
+                                to_print = []
             except KeyError:
                 end = time()
                 print "exploration time: ", end - start
                 print "len visited = %d" % (len(visited))
+
+            if self.dump_markings:
+                for s in to_print:
+                    dfile.write(s.__dump__())
+                    to_print = []
+                dfile.close()
+
             return (end - start, visited)
 
 ################################################################################

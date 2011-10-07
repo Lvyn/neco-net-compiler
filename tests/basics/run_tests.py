@@ -76,7 +76,11 @@ class FileReader(object):
 
     def readline(self):
         s = self.file.readline()
+        if s == '':
+            raise EOFError
         self.line += 1
+        if s == '\n':
+            return self.readline()
         return s
 
 class SpecReader(FileReader):
@@ -103,19 +107,18 @@ class SpecReader(FileReader):
         return check
 
     def readmarkings(self):
-        s = self.readline()
-        m = re.match(r"count\s*-\s*(?P<count>[0-9]+)", s)
-        if not m:
-            raise FormatError("syntax error at line %s" % self.line)
-        count = int(m.group('count'))
-        for i in range(1, count+1):
-            self.readmarking()
+        while True:
+            try:
+                self.readmarking()
+            except EOFError:
+                break
 
     def readmarking(self):
         marking = Marking()
         s = self.readline()
         m = re.match(r"begin marking", s)
         if not m:
+            print s
             raise FormatError("%s: syntax error at line %s" % (self.filename, self.line))
         s = self.readline()
         while not re.match(r"end marking", s):
