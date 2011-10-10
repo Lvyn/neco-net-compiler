@@ -15,6 +15,10 @@ all: asdl tests
 ctypes:
 	cd $(CTYPES_DIR); $(MAKE)
 
+asdl:
+	$(PYTHON) -m snakes.lang.asdl --output=neco/core/netir_gen.py asdl/netir.asdl
+	$(PYTHON) -m snakes.lang.asdl --output=neco/backends/cython/cyast_gen.py asdl/cython.asdl
+
 tests:
 	cd $(TESTS_COMMON_DIR); $(MAKE)
 	cd $(TESTS_BASICS_DIR); $(PYTHON) gen_makefile.py
