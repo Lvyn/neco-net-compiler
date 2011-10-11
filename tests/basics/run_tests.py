@@ -142,7 +142,7 @@ failed_list = []
 def run_test(module_name, lang='python', opt=False, pfe=False):
     print "Running test %s..." % module_name
     expected = module_name + '.out'
-    got = module_name + '.res'
+    got = module_name + '_res'
 
     args = ['python', "../../neco",
             '-m', module_name,
