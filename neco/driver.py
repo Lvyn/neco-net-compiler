@@ -20,7 +20,7 @@ elif (2, 7, 0) < sys.version_info < (3,0,0) :
 else:
     raise  RuntimeError("unsupported python version")
 
-import imp, cProfile, pstats, os, gc
+import imp, cProfile, pstats, os, gc, bz2, gzip
 from abc import ABCMeta, abstractmethod
 from time import time
 
@@ -398,8 +398,6 @@ class Driver(object):
                 std_map = { 'stdout' : sys.stdout, 'stderr' : sys.stderr }
                 dfile = std_map[self.dump_markings]
             except KeyError:
-                import os
-                import bz2, gzip
                 basename, extension = os.path.splitext(self.dump_markings)
                 if extension == '.bz':
                     print "bz2 compression enabled"
