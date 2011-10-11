@@ -399,14 +399,19 @@ class Driver(object):
                 dfile = std_map[self.dump_markings]
             except KeyError:
                 basename, extension = os.path.splitext(self.dump_markings)
-                if extension == '.bz':
-                    print "bz2 compression enabled"
+                if extension == '.bz2':
+                    print "marking dump - bz2 compression enabled"
                     dfile = bz2.BZ2File(self.dump_markings, 'w', 2048, compresslevel=6)
                 elif extension == '.gz':
-                    print "gzip compression enabled"
+                    print "marking dump - gzip compression enabled"
                     dfile = gzip.GzipFile(self.dump_markings, 'w', compresslevel=6)
-                else:
+                elif extension == '':
+                    print "marking dump - raw text dump enabled"
                     dfile = open(self.dump_markings, 'w')
+                else:
+                    print >> sys.stderr, "marking dump - unsupported extension: {}".format(extension)
+                    print >> sys.stderr, "marking dump - supported extensions: .bz2 .gz"
+                    exit(-1)
             dfile.write("check - markings\n")
 
         net = self.compiled_net
