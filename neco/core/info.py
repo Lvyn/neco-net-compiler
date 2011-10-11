@@ -847,7 +847,17 @@ class PlaceInfo(object):
     instance = {}
 
     def __init__(self, place, one_safe=False, bound=None, process_name=None, flow_control=False):
+
         self._1safe = place.one_safe if hasattr(place, 'one_safe') else one_safe
+        if not self._1safe:
+            try: capacity = place.label('capacity')
+            except KeyError as e: capacity = None
+
+            if capacity:
+                (low, high) = capacity
+                if high == 1:
+                    self._1safe = True
+
         self.snk_place = place
         self.instance[self.name] = self
         self._type = TypeInfo.from_snakes_checker(place.checker())

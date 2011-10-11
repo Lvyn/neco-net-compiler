@@ -1,3 +1,4 @@
+#!/usr/bin/python
 import sys
 
 num = int(sys.argv[1])

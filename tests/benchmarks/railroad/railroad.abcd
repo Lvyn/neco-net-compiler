@@ -6,12 +6,15 @@ const MOVING = 1
 const CLOSED = 0
 
 ## green lights on tracks
-buffer green_all : BlackToken = dot  # 1-safe
+@capacity(max=1) # 1-safe
+buffer green_all : BlackToken = dot
 buffer green_one : int = tuple(range(MAX))  # color-safe
 
 ## commands to the gate
-buffer down : BlackToken = ()  # 1-safe
-buffer up : BlackToken = ()  # 1-safe
+@capacity(max=1) # 1-safe
+buffer down : BlackToken = ()
+@capacity(max=1) # 1-safe
+buffer up : BlackToken = ()
 
 ## commands to the controller
 buffer enter : BlackToken = ()  # unsafe
@@ -21,7 +24,8 @@ buffer leave : int = ()  # color-safe
 buffer done : int = ()  # color-safe
 
 net gate () :
-    buffer state : int = OPEN  # 1-safe
+    @capacity(max=1) # 1-safe
+    buffer state : int = OPEN
     ([down-(dot), state-(OPEN), state+(MOVING)] ;
      [state-(MOVING), state+(CLOSED), done+(CLOSED)] ;
      [up-(dot), state-(CLOSED), state+(MOVING)] ;
@@ -29,14 +33,16 @@ net gate () :
     * [False]
 
 net track (this) :
-    buffer crossing : BlackToken = ()  # 1-safe
+    @capacity(max=1) # 1-safe
+    buffer crossing : BlackToken = ()
     ([enter+(dot), green_all-(dot), green_one-(this)] ;
      [green_all?(dot), crossing+(dot)] ;
      [crossing-(dot), leave+(this)])
     * [False]
 
 net controller () :
-    buffer count : int = 0  # 1-safe
+    @capacity(max=1) # 1-safe
+    buffer count : int = 0
     (([enter-(dot), count-(c), count+(c+1), down+(dot) if c == 0]
       ; [done-(CLOSED), green_all+(dot)])
      + [enter-(dot), count-(c), count+(c+1), green_all+(dot) if c > 0]
@@ -45,6 +51,7 @@ net controller () :
      + [leave-(t), green_one+(t), count-(c), count+(c-1) if c > 1])
     * [False]
 
+# processes
 gate() | controller()
 | track(0)
 | track(1)

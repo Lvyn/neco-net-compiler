@@ -1,3 +1,4 @@
+#!/usr/bin/python
 import sys, argparse
 from snakes.nets import *
 

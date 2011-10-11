@@ -3,7 +3,6 @@ sys.path.append('../../../')
 
 from snakes.pnml import loads
 from snakes.nets import *
-from testrunner import TestRunner
 
 net = loads('model.pnml')
 
@@ -18,6 +17,3 @@ for name, place in net._place.iteritems():
         #place.is_one_safe = False
         place.is_OneSafe = True
         place._check = tBlackToken
-
-if __name__ == '__main__':
-    TestRunner()

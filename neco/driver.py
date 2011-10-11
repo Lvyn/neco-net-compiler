@@ -20,7 +20,7 @@ elif (2, 7, 0) < sys.version_info < (3,0,0) :
 else:
     raise  RuntimeError("unsupported python version")
 
-import imp, cProfile, pstats, os, gc, bz2, gzip
+import imp, cProfile, pstats, os, gc, bz2, gzip, glob
 from abc import ABCMeta, abstractmethod
 from time import time
 
@@ -38,6 +38,17 @@ logo = """
  /_/ /_/ \\___/ \\___/ \\____/
 
 """
+
+g_produced_files = ["net.so",
+                    "net.pyx",
+                    "net_api.h",
+                    "net.h",
+                    "net.c",
+                    "net.py",
+                    "net.pyc",
+                    "net.pyo",
+                    "ctypes.h",
+                    "ctypes_ext.pxd"]
 
 
 class UnknownBackend(Exception):
@@ -81,7 +92,7 @@ def neco_compile(net, *arg, **kwargs):
     try:
         compiler = backends[backend].Compiler(net, *arg, **kwargs)
     except KeyError as e:
-        raise UnknownBackend(backend)
+        raise UnknownBackend(e)
 
     print "################################################################################"
     print "Compiling with " + backend + " backend."
@@ -137,6 +148,7 @@ class CLIArgumentParser(object):
     lo_abcd,                d_abcd,    h_abcd    = '--abcd',                    None,    'specify an abcd input file'
     lo_pnml,                d_pnml,    h_pnml    = '--pnml',                    None,    'specify a pnml input / output file'
     lo_import,  so_import,  d_import,  h_import  = '--import',           '-i',  [],      'specify additionnal file to import'
+    lo_clean,   so_clean,   d_clean,   h_clean   = '--clean',            '-c',  [],      'clean all produced files'
 
     m_module, m_netvar, m_backend, m_include, m_atoms, m_dump_mk, m_abcd, m_pnml, m_import = 'MODULE', 'VARIABLE', 'LANGUAGE', 'PATH', 'ATOM', 'FILE', 'FILE', 'FILE', 'FILE'
 
@@ -242,6 +254,7 @@ class CLIArgumentParserPy2_7(CLIArgumentParser):
         parser.add_argument(self.lo_abcd,    default=self.d_abcd,    help=self.h_abcd,    dest='abcd',    metavar=self.m_abcd, type=str)
         parser.add_argument(self.lo_pnml,    default=self.d_pnml,    help=self.h_pnml,    dest='pnml',    metavar=self.m_pnml, type=str)
         parser.add_argument(self.lo_import,  self.so_import,  default=self.d_import,  help=self.h_import,  dest='imports', metavar=self.m_import, action='append')
+        parser.add_argument(self.lo_clean,   self.so_clean,   default=self.d_clean,   help=self.h_clean,   dest='clean',   action='store_true')
         self.args = parser.parse_args()
 
     def module(self):  return self.args.module
@@ -258,6 +271,7 @@ class CLIArgumentParserPy2_7(CLIArgumentParser):
     def abcd(self): return self.args.abcd
     def pnml(self): return self.args.pnml
     def imports(self): return self.args.imports
+    def clean(self): return self.args.clean
 
 class Driver(object):
     """ CLI entry point.
@@ -301,6 +315,7 @@ class Driver(object):
         self.dump_markings = cli_argument_parser.dump_markings()
         self.abcd          = cli_argument_parser.abcd()
         self.pnml          = cli_argument_parser.pnml()
+        self.do_clean      = cli_argument_parser.clean()
 
 
         # retrieve the Petri net from abcd file (produces a pnml file)
@@ -351,6 +366,7 @@ class Driver(object):
             # profile exploration
             if self.do_explore:
                 cProfile.run('driver.Driver._instance_.explore()', 'explore.prof')
+
         else:
             self.compile()
             if self.do_explore or self.dump_markings:
@@ -371,10 +387,17 @@ class Driver(object):
                 #     # close stream
                 #     dfile.close()
 
+        if self.do_clean:
+            print "cleaning files..."
+            files = g_produced_files
+            files.extend(glob.glob('*.pyc'))
+            for f in files:
+                try:   os.remove(f)
+                except OSError: pass # ignore error
+
     def compile(self):
         """ Compile the model. """
-        files = ["net.so", "net.pyx", "net.c", "net.py", "net.pyc", "net.pyo"]
-        for f in files:
+        for f in g_produced_files:
             try:   os.remove(f)
             except OSError: pass # ignore errors
 
