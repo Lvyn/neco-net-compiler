@@ -850,7 +850,8 @@ class PlaceInfo(object):
 
         self._1safe = place.one_safe if hasattr(place, 'one_safe') else one_safe
         if not self._1safe:
-            try: capacity = place.label('capacity')
+            try:
+                capacity = place.label('capacity') if hasattr(place, 'label') else None
             except KeyError as e: capacity = None
 
             if capacity:
