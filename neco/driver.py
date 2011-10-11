@@ -133,7 +133,7 @@ class CLIArgumentParser(object):
     lo_include, so_include, d_include, h_include = '--include',          '-I',  [],      'add additional search path'
     lo_explore, so_explore, d_explore, h_explore = '--explore',          '-e',  False,   'compute state space'
     lo_atoms,   so_atoms,   d_atoms,   h_atoms   = '--atom',             '-a',  None,    'register an atomic proposition'
-    lo_dump_mk, so_dump_mk, d_dump_mk, h_dump_mk = '--dump-markings',    '-k',  None,    'dump markings to file'
+    lo_dump_mk, so_dump_mk, d_dump_mk, h_dump_mk = '--dump-markings',    '-k',  None,    'dump markings to file (if the file has a .bz extension it will be compressed)'
     lo_abcd,                d_abcd,    h_abcd    = '--abcd',                    None,    'specify an abcd input file'
     lo_pnml,                d_pnml,    h_pnml    = '--pnml',                    None,    'specify a pnml input / output file'
     lo_import,  so_import,  d_import,  h_import  = '--import',           '-i',  [],      'specify additionnal file to import'
@@ -398,7 +398,17 @@ class Driver(object):
                 std_map = { 'stdout' : sys.stdout, 'stderr' : sys.stderr }
                 dfile = std_map[self.dump_markings]
             except KeyError:
-                dfile = open(self.dump_markings, 'w')
+                import os
+                import bz2, gzip
+                basename, extension = os.path.splitext(self.dump_markings)
+                if extension == '.bz':
+                    print "bz2 compression enabled"
+                    dfile = bz2.BZ2File(self.dump_markings, 'w', 2048, compresslevel=6)
+                elif extension == '.gz':
+                    print "gzip compression enabled"
+                    dfile = gzip.GzipFile(self.dump_markings, 'w', compresslevel=6)
+                else:
+                    dfile = open(self.dump_markings, 'w')
             dfile.write("check - markings\n")
 
         net = self.compiled_net
