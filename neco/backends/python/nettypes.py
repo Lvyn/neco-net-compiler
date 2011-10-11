@@ -291,7 +291,16 @@ class StaticMarkingType(coretypes.MarkingType):
 
     def gen_api(self, env):
         cls = ast.ClassDef('Marking', bases=[ast.Name(id='object')])
-        cls.body = [self.gen_init_method(env),
+
+        elts = []
+        for name, place_type in self.place_types.iteritems():
+            elts.append( ast.Str(self.id_provider.get(name)) )
+
+        slots = ast.Assign(targets = [ast.Name('__slots__')],
+                           value = ast.Tuple(elts))
+
+        cls.body = [slots,
+                    self.gen_init_method(env),
                     self.gen_repr_method(env),
                     self.gen_eq_method(env),
                     self.gen_hash_method(env),
