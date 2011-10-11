@@ -294,3 +294,4 @@ if __name__ == '__main__':
         print "failed tests: "
         for test in failed_list:
             print test
+

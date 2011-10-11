@@ -430,7 +430,9 @@ class Driver(object):
             inter = set()
             succs2 = set()
             count = 0
+            last_count = 0
             start = time()
+            last_time = start
             to_print = []
             try:
                 while True:
@@ -446,8 +448,14 @@ class Driver(object):
                     succ.clear()
                     succs2.clear()
                     if (count % 100 == 0):
-                        sys.stdout.write("\r{} ({:.3f}s)".format(count, (time() - start)))
+                        new_time = time()
+                        elapsed_time = new_time - start
+                        sys.stdout.write("\r{}st {:5.3f}s (global {:5.0f}st/s, since last log {:5.0f}st/s)".format(count,
+                                                                                                                   elapsed_time,
+                                                                                                                   count / elapsed_time,
+                                                                                                                   100/(new_time-last_time)))
                         sys.stdout.flush()
+                        last_time = new_time
 
                         if self.dump_markings:
                             for s in to_print:
@@ -455,6 +463,7 @@ class Driver(object):
                                 to_print = []
             except KeyError:
                 end = time()
+                print
                 print "exploration time: ", end - start
                 print "len visited = %d" % (len(visited))
 
