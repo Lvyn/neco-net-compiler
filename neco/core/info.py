@@ -718,7 +718,7 @@ class TransitionInfo(object):
 
         self.outputs = outputs
 
-        self._vars = set()
+        self._vars = set(trans.vars())
 
         for input in self.inputs:
             self._vars.update(input.variables)

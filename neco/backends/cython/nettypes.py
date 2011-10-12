@@ -928,7 +928,6 @@ class StaticMarkingType(coretypes.MarkingType):
                                  )
         builder.emit(E('s += "\\nend marking\\n"'))
         builder.emit_Return(E('s'))
-        print i, place_name
 
         builder.end_FunctionDef()
         return to_ast(builder)
