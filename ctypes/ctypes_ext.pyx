@@ -1,3 +1,5 @@
+cimport ctypes_ext # this line will be replaced in profiler mode !
+
 import operator, sys
 
 ################################################################################
@@ -191,7 +193,7 @@ cdef class MultiSet:
                         elif left > right:
                             return 1
                 # something get wrong here
-                print >> sys.stderr "WRONG"
+                print >> sys.stderr, "WRONG"
 
                 for 0 <= i < l1:
                     left = self_keys[i]
