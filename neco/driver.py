@@ -435,7 +435,6 @@ class Driver(object):
                     print >> sys.stderr, "marking dump - unsupported extension: {}".format(extension)
                     print >> sys.stderr, "marking dump - supported extensions: .bz2 .gz"
                     exit(-1)
-            dfile.write("check - markings\n")
 
         net = self.compiled_net
         if self.lang == "cython":
@@ -444,6 +443,11 @@ class Driver(object):
             end = time()
             print "exploration time: ", end - start
             print "len visited = %d" % (len(ss))
+            if self.dump_markings:
+                dfile.write("check - markings\n")
+                for s in ss:
+                    dfile.write(s.__dump__())
+                    to_print = []
             return (end - start, ss)
         else:
             visited = set()
@@ -457,6 +461,8 @@ class Driver(object):
             start = time()
             last_time = start
             to_print = []
+            if self.dump_markings:
+                dfile.write("check - markings\n")
             try:
                 while True:
                     m = visit.pop()

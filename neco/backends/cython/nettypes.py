@@ -1395,10 +1395,10 @@ class OneSafePlaceType(onesafe.OneSafePlaceType, CythonPlaceType):
     def dump_expr(self, env, marking_name):
         helper_expr = self.existence_helper_place_type.place_expr(env, marking_name)
         place_expr = self.place_expr(env, marking_name)
-        return ast.IfExp(test=helper_expr,
-                         body=cyast.Call(func=cyast.Name('dump'),
-                                       args=[place_expr]),
-                         orelse=cyast.Str(''))
+        return cyast.IfExp(test=helper_expr,
+                           body=cyast.Call(func=cyast.Name('dump'),
+                                           args=[place_expr]),
+                           orelse=cyast.Str(''))
 
 
 ################################################################################
@@ -1444,10 +1444,10 @@ class BTPlaceType(onesafe.BTPlaceType, CythonPlaceType):
 
     def dump_expr(self, env, marking_name):
         place_expr = self.place_expr(env, marking_name)
-        return ast.Call(func=E("' '.join"),
-                        args=[ast.BinOp(left=ast.List([ast.Str('dot')]),
-                                        op=ast.Mult(),
-                                        right=place_expr)])
+        return cyast.Call(func=E("' '.join"),
+                          args=[cyast.BinOp(left=cyast.List([cyast.Str('dot')]),
+                                            op=cyast.Mult(),
+                                            right=place_expr)])
 
     def iterable_expr(self, env, marking_name):
         place_expr = self.place_expr(env, marking_name)

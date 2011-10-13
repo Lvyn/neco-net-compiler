@@ -45,6 +45,9 @@ def Index(value):
 def Subscript(value, slice, ctx=ast.Load()):
     return ast.Subscript(value=value, slice=slice)
 
+def List(elts, ctx=ast.Store()):
+    return ast.List(elts=elts, ctx=ctx)
+
 ################################################################################
 from neco.backends.pythonic import *
 

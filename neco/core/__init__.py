@@ -4,7 +4,7 @@ import itertools
 from collections import defaultdict
 from snakes.nets import *
 import neco.config as config
-from neco.utils  import flatten_lists
+from neco.utils import flatten_lists, SharedVariableHelper, VariableProvider
 
 import netir, nettypes
 from info import *
@@ -60,87 +60,6 @@ class CompilingEnvironment(object):
         @type function_name: C{str}
         """
         self._process_succ_function_names.add(function_name)
-
-################################################################################
-
-class VariableHelper(object):
-    """ Utility class that helps handling shared variables.
-    """
-
-    def __init__(self, shared, wordset):
-        """ Build a new helper from a set of shared variables
-        and a word set.
-
-        @param shared: shared variables.
-        @type shared: C{multidict}
-        @param wordset: word set representing existing symbols.
-        @type wordset: C{WordSet}
-        """
-        assert( isinstance(shared, multidict) )
-        self._shared = shared
-        self._used = multidict()
-        self._wordset = wordset
-
-    def set_used(self, name, local_name, input):
-        """ Mark a variable as used, providing the variable name
-        its local name and the input using the variable.
-
-        @param name: variable name.
-        @type name: C{str}
-        @param local_name: local variable name.
-        @type local_name: C{str}
-        @param input: input using the variable.
-        @type input: C{ArcInfo}
-        """
-        self._used.add(name, (local_name, input))
-
-    def all_used(self, name):
-        """ Check if all instances of a variable were used.
-
-        @param name: variable name to check.
-        @returns: C{True} if all variables were used, C{False} otherwise.
-        @rtype: C{bool}
-        """
-        return len(self._used[name]) == len(self._shared[name])
-
-    def get_local_names(self, name):
-        """ Get all local names of a variable.
-
-        @return: all local names of a variable.
-        @rtype: C{multidict}
-        """
-        return self._used[name]
-
-    def is_shared(self, name):
-        """ Check if a variable is shared.
-
-        @return: True if the variable is shared, C{False} otherwise.
-        @rtype: C{bool}
-        """
-        return self._shared.has_key(name)
-
-    def get_new_name(self, variable_name):
-        """ Get a name for a variable.
-
-        @param variable_name: name of the variable needing a new name.
-        @type variable_name: C{str}
-        @return: a new name if the variable is shared, variable name otherwise.
-        @rtype: C{str}
-        """
-        if self.is_shared(variable_name):
-            return self._wordset.fresh( "_shared_%s_" % variable_name)
-        else:
-            return variable_name
-
-    def fresh(self, *args, **kwargs):
-        """ Get a fresh name.
-
-        TODO: use WordSet params
-
-        @return: a fresh name.
-        @rtype: C{str}
-        """
-        return self._wordset.fresh(*args, **kwargs)
 
 ################################################################################
 
@@ -256,22 +175,22 @@ class SuccTGenerator(object):
         self._ignore_flow = ignore_flow
         self.env = env
         self.consume = []
-        self.names = WordSet( transition.variables )
+
+        helper = SharedVariableHelper( transition.shared_input_variables(),
+                                       transition.variables )
+        self.variable_helper = helper
 
         if config.get('optimise'):
             self.transition.order_inputs()
 
         # create
-        self.arg_marking = self.names.fresh(True, base = 'a')
-        self.marking_set = self.names.fresh(True, base = 'ms')
+        self.arg_marking = helper.new_variable()
+        self.marking_set = helper.new_variable()
 
         self.builder.begin_function_SuccT( function_name   = self.function_name,
                                            marking_name    = self.arg_marking,
                                            markingset_name = self.marking_set,
-                                           transition_info = self.transition)
-
-        self.variable_helper = VariableHelper( transition.shared_input_variables(),
-                                               self.names )
+                                           transition_info = self.transition )
 
         env.register_succ_function(transition, function_name)
 
@@ -353,7 +272,7 @@ class SuccTGenerator(object):
             # use index access if available
             place_type = self.marking_type.get_place_type_by_name(input.place_info.name)
             if place_type.provides_by_index_access and input.place_info not in multi_places:
-                index = variable_helper.fresh(True, base = "i")
+                index = variable_helper.new_variable()
                 trans.add_intermediary_variable( VariableInfo( name = index, type = TypeInfo.Int) ) # to do type specific keys
             else:
                 index = None
@@ -365,10 +284,10 @@ class SuccTGenerator(object):
                 variable = input.variable
                 # generate a new name, if the variable is not shared the local
                 # name will be the same
-                local_name = variable_helper.get_new_name(variable.name)
+                local_name = variable_helper.new_variable_name(variable.name)
 
                 # notify that the variable is used
-                variable_helper.set_used( name = variable.name,
+                variable_helper.mark_as_used( name = variable.name,
                                           local_name = local_name,
                                           input = input )
 
@@ -389,8 +308,8 @@ class SuccTGenerator(object):
                 inner = input.inner
 
                 if inner.is_Variable:
-                    local_name = variable_helper.get_new_name(inner.name)
-                    variable_helper.set_used( name = inner.name,
+                    local_name = variable_helper.new_variable_name(inner.name)
+                    variable_helper.mark_as_used( name = inner.name,
                                               local_name = local_name,
                                               input = input )
 
@@ -408,7 +327,7 @@ class SuccTGenerator(object):
                     place_info = self.net_info.place_by_name(input.place_name)
                     place_type = self.marking_type.get_place_type_by_name(place_info.name)
 
-                    token_name = variable_helper.fresh(True, base = "t")
+                    token_name = variable_helper.new_variable()
                     trans.add_intermediary_variable( VariableInfo( name = token_name, type = place_type.token_type) )
 
 
@@ -455,7 +374,7 @@ class SuccTGenerator(object):
                 place_info = self.net_info.place_by_name(input.place_name)
                 place_type = self.marking_type.get_place_type_by_name(place_info.name)
 
-                token_name = variable_helper.fresh(True, base = "t")
+                token_name = variable_helper.new_variable()
                 trans.add_intermediary_variable( VariableInfo( name = token_name, type = place_type.token_type) )
 
                 # get a token
@@ -513,13 +432,13 @@ class SuccTGenerator(object):
                         variable = sub_arc.variable
                         local_name = variable_helper.get_new_name(variable.name)
                         names[sub_arc.variable] = local_name
-                        variable_helper.set_used( name = variable.name,
+                        variable_helper.mark_as_used( name = variable.name,
                                                   local_name = local_name,
                                                   input = input )
                     else:
                         raise NotImplementedError
 
-                offsets = [ variable_helper.fresh(True, base = "i") for _ in names ]
+                offsets = [ variable_helper.new_variable() for _ in names ]
                 builder.begin_MultiTokenEnumeration( token_names = names.values(),
                                                      offset_names = offsets,
                                                      marking_name = self.arg_marking,
@@ -548,9 +467,9 @@ class SuccTGenerator(object):
         builder.begin_Match( tuple_info = tuple )
 
         for (name, local_name) in tuple.base_names():
-            variable_helper.set_used( name = name,
-                                      local_name = local_name,
-                                      input = input )
+            variable_helper.mark_as_used( name = name,
+                                          local_name = local_name,
+                                          input = input )
 
             self.gen_unify_shared(name = name,
                                   local_name = local_name,
@@ -589,7 +508,7 @@ class SuccTGenerator(object):
 
         """
         trans = self.transition
-        names = self.names
+        helper = self.variable_helper
         builder = self.builder
 
         if self._ignore_flow and output.place_info.flow_control:
@@ -597,7 +516,7 @@ class SuccTGenerator(object):
 
         elif output.is_Expression:
             # new temporary variable
-            var_name = self.variable_helper.fresh( True, base = 'e' )
+            var_name = self.variable_helper.new_variable()
             trans.add_intermediary_variable( VariableInfo( name = var_name,
                                                            type = output.place_info.type ) )
 
@@ -622,7 +541,7 @@ class SuccTGenerator(object):
 
         elif output.is_Value:
             value = output.value
-            var_name = self.variable_helper.fresh( True, base = 'e' )
+            var_name = self.variable_helper.new_variable()
             check = True
 
             v = eval(repr(value.raw))
@@ -679,7 +598,7 @@ class SuccTGenerator(object):
         @return: successor function abstract representation.
         """
         trans = self.transition
-        names = self.names
+        helper = self.variable_helper
         builder = self.builder
 
         if config.get('trace_calls'):
@@ -703,7 +622,7 @@ class SuccTGenerator(object):
         for output in trans.outputs:
             self.gen_computed_production(output, computed_productions)
 
-        new_marking = names.fresh(True, base = "n")
+        new_marking = helper.new_variable()
 
         builder.emit_MarkingCopy( dst_name = new_marking,
                                   src_name = self.arg_marking,

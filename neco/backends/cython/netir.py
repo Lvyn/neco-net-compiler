@@ -7,6 +7,7 @@ from neco.core.info import *
 import cyast
 from cyast import * # Builder, E, A, to_ast, stmt
 from nettypes import is_cython_type, type2str
+from utils import CVarSet
 ################################################################################
 
 class CompilerVisitor(coreir.CompilerVisitor):
@@ -241,7 +242,7 @@ class CompilerVisitor(coreir.CompilerVisitor):
 
         stmts = [ self.compile( node.body ) ]
 
-        decl = []
+        decl = CVarSet()
         inputs = node.transition_info.inputs
         for input in inputs:
             if input.is_Variable:
@@ -251,16 +252,16 @@ class CompilerVisitor(coreir.CompilerVisitor):
                 type = self.env.marking_type.get_place_type_by_name(place_info.name).token_type
 
                 if (not type.is_UserType) or (is_cython_type(type)):
-                    decl.append(cyast.CVar(name=variable.name, type=type2str(type)))
+                    decl.add(cyast.CVar(name=variable.name, type=type2str(type)))
             elif input.is_Test:
                 inner = input.inner
                 if inner.is_Variable:
                     if (not inner.type.is_UserType) or (is_cython_type(inner.type)):
-                        decl.append(cyast.CVar(name=inner.name, type=type2str(inner.type)))
+                        decl.add(cyast.CVar(name=inner.name, type=type2str(inner.type)))
         inter_vars = node.transition_info.intermediary_variables
         for var in inter_vars:
             if (not var.type.is_UserType) or is_cython_type( var.type ):
-                decl.append(cyast.CVar(name=var.name,
+                decl.add(cyast.CVar(name=var.name,
                                        type=type2str(var.type))
                             )
 

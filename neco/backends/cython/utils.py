@@ -86,6 +86,40 @@ class Env(object):
     def successor_functions(self):
         return self._successor_functions
 
+################################################################################
+
+class CVarSet(object):
+
+    def __init__(self, iterable = []):
+        """ Initialize the set.
+
+        @param iterable: iterable object containing initial elements.
+        """
+        s = set()
+        names = set()
+        for i in iterable:
+            s.add(i)
+            names.add(i.name)
+
+        self._set = s
+        self._names = names
+
+    def add(self, elt):
+        """ Add an element into the set.
+
+        @param elt: CVar to add
+        """
+        name = elt.name
+        names = self._names
+        if not (name in names):
+            names.add(name)
+            self._set.add(elt)
+
+    def __iter__(self):
+        return self._set.__iter__()
+
+    def __contains__(self, elt):
+        return not (elt.name in self._names)
 
 ################################################################################
 # EOF

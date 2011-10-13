@@ -437,6 +437,132 @@ class NameProvider(object):
 
 
 ################################################################################
+# VariableProvider
+################################################################################
+
+class VariableProvider(object):
+    """ Simple class that produces new variable names.
+
+    >>> v = VariableProvider()
+    >>> v.new_variable()
+    '_v0'
+    >>> v.new_variable()
+    '_v1'
+    >>> v.new_variable()
+    '_v2'
+    >>> ws = set(['_v1', 'a', 'b'])
+    >>> v = VariableProvider(ws)
+    >>> v.new_variable()
+    '_v0'
+    >>> v.new_variable()
+    '_v2'
+    >>> sorted(ws)
+    ['_v0', '_v1', '_v2', 'a', 'b']
+
+    """
+    __slots__ = ('_wordset', '_next')
+
+    def __init__(self, wordset = set()):
+        """ Initialise provider.
+
+        The provider will produce new names and ensures that they do
+        not appear in \C{wordset}. The wordset will be updated when
+        new variables appear.
+
+        @param wordset: names to ignore.
+        @type wordset: C{wordset}
+        """
+        self._wordset = wordset
+        self._next = 0
+
+    def new_variable(self):
+        """ Produce a new variable.
+
+        @return new variable name
+        @rtype C{str}
+        """
+        next = self._next
+        while True:
+            name = '_v{}'.format(next)
+            next += 1
+            if not name in self._wordset:
+                break
+        self._next = next
+        self._wordset.add(name)
+        return name
+
+################################################################################
+
+class SharedVariableHelper(VariableProvider):
+    """ Utility class that helps handling shared variables.
+    """
+
+    def __init__(self, shared, wordset):
+        """ Build a new helper from a set of shared variables
+        and a word set.
+
+        @param shared: shared variables.
+        @type shared: C{multidict}
+        @param wordset: word set representing existing symbols.
+        @type wordset: C{WordSet}
+        """
+        VariableProvider.__init__(self, wordset)
+        assert( isinstance(shared, multidict) )
+        self._shared = shared
+        self._used = multidict()
+
+    def mark_as_used(self, name, local_name, input):
+        """ Mark a variable as used, providing the variable name
+        its local name and the input using the variable.
+
+        @param name: variable name.
+        @type name: C{str}
+        @param local_name: local variable name.
+        @type local_name: C{str}
+        @param input: input using the variable.
+        @type input: C{ArcInfo}
+        """
+        self._used.add(name, (local_name, input))
+
+    def all_used(self, name):
+        """ Check if all instances of a variable are used.
+
+        @param name: variable name to check.
+        @returns: C{True} if all variables were used, C{False} otherwise.
+        @rtype: C{bool}
+        """
+        return len(self._used[name]) == len(self._shared[name])
+
+    def get_local_names(self, name):
+        """ Get all local names of a variable.
+
+        @return: all local names of a variable.
+        @rtype: C{multidict}
+        """
+        return self._used[name]
+
+    def is_shared(self, name):
+        """ Check if a variable is shared.
+
+        @return: True if the variable is shared, C{False} otherwise.
+        @rtype: C{bool}
+        """
+        return self._shared.has_key(name)
+
+    def new_variable_name(self, variable_name):
+        """ Get a name for a variable.
+
+        @param variable_name: name of the variable needing a new name.
+        @type variable_name: C{str}
+        @return: a new name if the variable is shared, variable name otherwise.
+        @rtype: C{str}
+        """
+        if self.is_shared(variable_name):
+            return self.new_variable()
+        else:
+            return variable_name
+
+################################################################################
 # bidict
 ################################################################################
 

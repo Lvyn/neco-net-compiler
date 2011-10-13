@@ -194,7 +194,9 @@ common_cases = set(['basic_1',
                     'basic_one_safe_2',
                     'basic_multiarc_out_1',
                     'basic_multiarc_out_2',
-                    'basic_multiarc_out_3'])
+                    'basic_multiarc_out_3',
+                    'basic_test_1',
+                    'basic_test_2'])
 
 flow_control_cases = set([ 'basic_flow_1',
                            'basic_flow_2',

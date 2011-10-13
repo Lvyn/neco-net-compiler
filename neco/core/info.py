@@ -393,7 +393,7 @@ class ValueInfo(TokenInfo):
         return "Value<%s>(%s)" % (str(self.type), str(self._raw))
 
     def gen_names(self, variable_helper):
-        self.name = variable_helper.fresh(True, base = "tuple_value_")
+        self.name = variable_helper.new_variable()
         self.local_name = self.name
 
     def base_names(self):
@@ -420,7 +420,7 @@ class VariableInfo(TokenInfo):
         return self._name
 
     def gen_names(self, variable_helper):
-        self.local_name = variable_helper.get_new_name( self.name )
+        self.local_name = variable_helper.new_variable_name( self.name )
 
     def base_names(self):
         return (self.name, self.local_name)
@@ -470,7 +470,7 @@ class TupleInfo(TokenInfo):
         return "TupleInfo(%s)" % (", ".join([ str(c) for c in self.components]))
 
     def gen_names(self, variable_helper):
-        self.name = variable_helper.fresh(True, base = '__tuple_')
+        self.name = variable_helper.new_variable()
         for component in self:
             component.gen_names(variable_helper)
 
