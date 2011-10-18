@@ -195,6 +195,11 @@ common_cases = set(['basic_1',
                     'basic_multiarc_out_1',
                     'basic_multiarc_out_2',
                     'basic_multiarc_out_3',
+                    'basic_multiarc_in_1',
+                    'basic_multiarc_in_2',
+                    'basic_multiarc_in_3',
+                    'basic_multiarc_in_4',
+                    'basic_multiarc_in_5',
                     'basic_test_1',
                     'basic_test_2'])
 

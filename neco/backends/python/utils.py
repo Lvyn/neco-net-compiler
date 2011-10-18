@@ -15,6 +15,17 @@ class Env(object):
         self._marking_set_type = marking_set_type
         self._imports = set([])
         self._declarations = set([])
+        self._variable_provider = []
+
+    @property
+    def variable_provider(self):
+        return self._variable_provider[-1]
+
+    def push_variable_provider(self, provider):
+        self._variable_provider.append(provider)
+
+    def pop_variable_provider(self):
+        self._variable_provider.pop()
 
     @property
     def marking_type(self):

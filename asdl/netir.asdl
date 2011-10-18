@@ -8,24 +8,28 @@ module netir version "$Revision: 1 $"
     FunctionDef =
 	Init(identifier function_name,
 	     identifier marking_name,
-	     Stmt* body)
+	     Stmt* body,
+	     VariableProvider variable_provider)
 
 	| SuccT(identifier function_name,
 		identifier markingset_name,
 		identifier marking_name,
 		Stmt* body,
-		TransitionInfo transition_info)
+		TransitionInfo transition_info,
+		VariableProvider variable_provider)
 
 	| SuccP(identifier function_name,
 		identifier markingset_name,
 		identifier marking_name,
 		Stmt* body,
-		ProcessInfo process_info)
+		ProcessInfo process_info,
+		VariableProvider variable_provider)
 
 	| Succs(identifier function_name,
 		identifier marking_argument_name,
 		identifier markingset_variable_name,
-		Stmt* body)
+		Stmt* body,
+		VariableProvider variable_provider)
     Block =
 	TokenEnumeration(identifier token_name,
 			 identifier marking_name,

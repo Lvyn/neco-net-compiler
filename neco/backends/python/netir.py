@@ -149,47 +149,64 @@ class CompilerVisitor(coreir.CompilerVisitor):
                                                        marking_name = node.marking_name),
                        body = [ self.compile(node.body) ])
 
+    def compile_MultiTokenEnumerationAux(self, node, variables, place_type):
+        try:
+            variable = variables.pop()
+        except IndexError:
+            return [], [], None
+
+        index = self.env.variable_provider.new_variable()
+        # initialize index
+        init = ast.Assign(targets = [ast.Name(index)], value = ast.Num(0))
+        incr = ast.AugAssign( target = ast.Name(index), op = ast.Add(), value = ast.Num(1) )
+
+        enumeration = ast.For( target = ast.Name(variable),
+                               iter = place_type.iterable_expr(env=self.env, marking_name=node.marking_name),
+                               body = [])
+        indexes, node, inner = self.compile_MultiTokenEnumerationAux(node, variables, place_type)
+        if not inner:
+            inner = enumeration
+
+        enumeration.body = [ node, incr ]
+
+        indexes.append(index)
+        node = [ init, enumeration ]
+        return indexes, node, inner
+
+    def gen_different(self, indexes, inner):
+        try:
+            index = indexes.pop()
+        except IndexError:
+            return inner
+
+        first = None
+        current = None
+        for index2 in indexes:
+            node = ast.If( test = ast.Compare( left = ast.Name(index),
+                                               ops = [ ast.NotEq() ],
+                                               comparators = [ ast.Name(index2) ]),
+                           body = [],
+                           orelse = [])
+            if not first:
+                first = node
+            if current:
+                current.body.append( node )
+            current = node
+        if current:
+            current.body.extend( self.gen_different( indexes, inner ) )
+        if not first:
+            return inner
+
+        return first
+
     def compile_MultiTokenEnumeration(self, node):
-        base, current = None, None
         place_type = self.env.marking_type.get_place_type_by_name(node.place_name)
 
-        for name, offset in zip(node.token_names, node.offset_names):
-            # gen: i = 0
-            pred = E(offset).assign(E('0'))
-            # gen: for x in s1
-            child = ast.For( target = E(name),
-                                 iter = self.env.marking_type.iterable_expr( env = self.env,
-                                                                             marking_name = node.marking_name,
-                                                                             place_name = node.place_name) )
-            # gen: i += 1
-            child.body.append( E(offset).add_assign(E('1')) )
-            # initial block
-            if not base:
-                base = [pred, child]
+        indexes, base, inner = self.compile_MultiTokenEnumerationAux(node, node.token_names, place_type)
+        tmp = inner.body
 
-            # update current
-            if current:
-                current.body.extend( [ pred, child ] )
-            current = child
-
-        # check offsets
-        def gen_different(offs, most_inner):
-            if len(offs) == 1:
-                return most_inner
-            offset = offs.pop()
-            current = None
-            base = None
-            for offset2 in offs:
-                n = ast.If( test = E(offset).NotEq(E(offset2)) )
-                if not base:
-                    base = n
-                if current:
-                    current.body.extend( n )
-                current = n
-            current.body.extend( gen_different(offs, most_inner) )
-            return base
-
-        current.body.extend( [ gen_different( node.offset_names, most_inner = [ self.compile(node.body) ] ) ] )
+        inner.body = [ self.gen_different( indexes, [ self.compile( node.body ) ] ) ]
+        inner.body.extend(tmp)
         return base
 
     def compile_GuardCheck(self, node):
@@ -262,11 +279,14 @@ class CompilerVisitor(coreir.CompilerVisitor):
                                      value = node.value)
 
     def compile_SuccT(self, node):
+        self.env.push_variable_provider(node.variable_provider)
         stmts = [ self.compile( node.body ),
                   E('return ' + node.markingset_name) ]
-        return ast.FunctionDef(name = node.function_name,
-                               args = ast.arguments(args=[ast.Name(id=node.markingset_name), ast.Name(id=node.marking_name)]),
-                               body = stmts)
+        result = ast.FunctionDef(name = node.function_name,
+                                 args = ast.arguments(args=[ast.Name(id=node.markingset_name), ast.Name(id=node.marking_name)]),
+                                 body = stmts)
+        self.env.pop_variable_provider()
+        return result
 
     def compile_SuccP(self, node):
         stmts = [ self.compile( node.body ),

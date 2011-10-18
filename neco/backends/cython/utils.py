@@ -29,6 +29,28 @@ class Env(object):
 
         self._successor_functions = []
 
+        self._cvar_decl = []
+        self._variable_providers = []
+
+    def declare_cvar(self, name, type):
+        self._cvar_decl[-1].add(cyast.CVar(name, type))
+
+    def push_cvar_env(self):
+        self._cvar_decl.append(set())
+
+    def pop_cvar_env(self):
+        return self._cvar_decl.pop()
+
+    def push_variable_provider(self, variable_provider):
+        self._variable_providers.append(variable_provider)
+
+    def pop_variable_provider(self):
+        return self._variable_providers.pop()
+
+    @property
+    def variable_provider(self):
+        return self._variable_providers[-1]
+
     ################################################################################
 
     def new_variable(self, base=""):

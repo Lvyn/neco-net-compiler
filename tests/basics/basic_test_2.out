@@ -1,0 +1,11 @@
+check - markings
+begin marking
+s1 - 2
+s2 -
+testplace - 1 2
+end marking
+begin marking
+s1 -
+s2 - 2
+testplace - 1 2
+end marking

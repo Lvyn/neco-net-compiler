@@ -84,16 +84,15 @@ class ProcessSuccGenerator(object):
         self._process_info = process_info
         self._function_name = function_name
         self._marking_type = marking_type
-        self._flow_variable_name = "flow"
+        variable_provider = VariableProvider(set([function_name]))
+        self._variable_provider = variable_provider
+        self._flow_variable_name = variable_provider.new_variable()
         self._flow_variable_type = TypeInfo.Int
 
         self._builder = netir.Builder()
 
-        ws = WordSet( [ function_name ] )
-        self._names = ws
-
-        self._arg_marking = ws.fresh(True, base = 'a')
-        self._marking_set = ws.fresh(True, base = 'ms')
+        self._arg_marking = variable_provider.new_variable()
+        self._marking_set = variable_provider.new_variable()
 
         env.register_process_succ_function(function_name)
 
@@ -116,7 +115,8 @@ class ProcessSuccGenerator(object):
                                       markingset_name = marking_set,
                                       process_info    = process_info,
                                       flow_variable_name = self._flow_variable_name,
-                                      flow_variable_type = self._flow_variable_type )
+                                      flow_variable_type = self._flow_variable_type,
+                                      variable_provider = self._variable_provider)
 
         # enumerate places with not empty post
         ne_post = [ place for place in process_info.flow_places if place.post ]
@@ -147,6 +147,7 @@ class ProcessSuccGenerator(object):
         builder.end_all_blocks()
         builder.end_function()
         return builder.ast()
+
 ################################################################################
 
 class SuccTGenerator(object):
@@ -187,10 +188,11 @@ class SuccTGenerator(object):
         self.arg_marking = helper.new_variable()
         self.marking_set = helper.new_variable()
 
-        self.builder.begin_function_SuccT( function_name   = self.function_name,
-                                           marking_name    = self.arg_marking,
-                                           markingset_name = self.marking_set,
-                                           transition_info = self.transition )
+        self.builder.begin_function_SuccT( function_name     = self.function_name,
+                                           marking_name      = self.arg_marking,
+                                           markingset_name   = self.marking_set,
+                                           transition_info   = self.transition,
+                                           variable_provider = helper)
 
         env.register_succ_function(transition, function_name)
 
@@ -426,17 +428,25 @@ class SuccTGenerator(object):
 
             elif input.is_MultiArc:
                 names = {} # variable -> local_name
+                values = {} # variable -> value
                 # sub_arcs as variables
                 for sub_arc in input.sub_arcs:
                     if sub_arc.is_Variable:
                         variable = sub_arc.variable
-                        local_name = variable_helper.get_new_name(variable.name)
+                        local_name = variable_helper.new_variable_name(variable.name)
                         names[sub_arc.variable] = local_name
                         variable_helper.mark_as_used( name = variable.name,
-                                                  local_name = local_name,
-                                                  input = input )
+                                                      local_name = local_name,
+                                                      input = input )
+                    elif sub_arc.is_Value:
+                        variable = variable_helper.new_variable()
+                        names[variable] = variable
+
+                        if sub_arc.value.raw != dot and not place_type.token_type.is_BlackToken:
+                            values[variable] = sub_arc.value
+
                     else:
-                        raise NotImplementedError
+                        raise NotImplementedError, sub_arc
 
                 offsets = [ variable_helper.new_variable() for _ in names ]
                 builder.begin_MultiTokenEnumeration( token_names = names.values(),
@@ -444,9 +454,13 @@ class SuccTGenerator(object):
                                                      marking_name = self.arg_marking,
                                                      place_name = input.place_name )
 
-                consume.append( (input, None) ) # no index access allowed
-                #raise NotImplementedError
+                for variable, value in values.iteritems():
+                    builder.begin_If( netir.Compare( left  = netir.Name( name = variable ),
+                                                     ops = [ netir.EQ() ],
+                                                     comparators = [ netir.Value( value = value,
+                                                                                  place_name = input.place_name ) ] ) )
 
+                consume.append( (input, None) ) # no index access allowed
             else:
                 raise NotImplementedError, input.arc_annotation.__class__
 
@@ -659,13 +673,13 @@ class SuccTGenerator(object):
                 builder.emit_RemToken( marking_name = new_marking,
                                        place_name = input.place_name,
                                        token_expr = netir.Value( value = input.value,
-                                                                 place_name = input.place_name),
+                                                                 place_name = input.place_name ),
                                        use_index = index )
 
             elif input.is_Tuple:
                 builder.emit_RemTuple( marking_name = new_marking,
                                        place_name = input.place_name,
-                                       tuple_expr = netir.Name(input.tuple.name))
+                                       tuple_expr = netir.Name(input.tuple.name) )
 
             elif input.is_MultiArc:
                 names = {}
@@ -676,6 +690,13 @@ class SuccTGenerator(object):
                                                place_name = input.place_name,
                                                token_expr = netir.Name(variable.name),
                                                use_index = None )
+                    elif sub_arc.is_Value:
+                        builder.emit_RemToken( marking_name = new_marking,
+                                               place_name = input.place_name,
+                                               token_expr = netir.Value( value = sub_arc.value,
+                                                                         place_name = input.place_name ),
+                                               use_index = None )
+
                     else:
                         raise NotImplementedError, sub_arc.arc_annotation
             else:
@@ -938,14 +959,15 @@ class Compiler(object):
         """ Produce main successor function abstract representation node. """
 
         self.succs_function = 'succs'
-        names = WordSet([self.succs_function])
-        marking_arg = names.fresh(True, base = 'a')
-        markingset = names.fresh(True, base = 'ms')
+        variable_provider = VariableProvider(set([self.succs_function]))
+        marking_arg = variable_provider.new_variable()
+        markingset = variable_provider.new_variable()
 
         builder = netir.Builder()
         builder.begin_function_Succs( function_name = "succs",
-                                           marking_argument_name = marking_arg,
-                                           markingset_variable_name = markingset )
+                                      marking_argument_name = marking_arg,
+                                      markingset_variable_name = markingset,
+                                      variable_provider = variable_provider)
 
         markingset_node  = netir.Name(markingset)
         marking_arg_node = netir.Name(marking_arg)
@@ -969,12 +991,13 @@ class Compiler(object):
         """ Produce initial marking function abstract representation node. """
 
         marking_name = 'marking'
-        names = WordSet(['init', marking_name])
+        variable_provider = VariableProvider(set(['init', marking_name]))
 
         builder = netir.Builder()
 
         builder.begin_function_Init(function_name = 'init',
-                                    marking_name = marking_name)
+                                    marking_name = marking_name,
+                                    variable_provider = variable_provider)
 
         for place_info in self.net_info.places:
             if len(place_info.tokens) > 0:

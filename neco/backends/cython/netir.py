@@ -105,9 +105,6 @@ class CompilerVisitor(coreir.CompilerVisitor):
                                              marking_name=node.marking_name )
                 ]
 
-
-    # For(expr target, expr iter, stmt* body, stmt* orelse)
-
     def compile_FlushOut(self, node):
         destination_place = self.env.marking_type.get_place_type_by_name(node.place_name)
         multiset = self.compile(node.token_expr)
@@ -175,6 +172,69 @@ class CompilerVisitor(coreir.CompilerVisitor):
                                                                  marking_name = node.marking_name),
                                 body = [ self.compile(node.body) ])
 
+
+    def compile_MultiTokenEnumerationAux(self, node, variables, place_type):
+        try:
+            variable = variables.pop()
+        except IndexError:
+            return [], [], None
+
+        index = self.env.variable_provider.new_variable()
+        self.env.declare_cvar(index, type2str(TypeInfo.Int))
+        # initialize index
+        init = cyast.Assign(targets = [cyast.Name(index)], value = cyast.Num(0))
+        incr = cyast.AugAssign( target = cyast.Name(index), op = cyast.Add(), value = cyast.Num(1) )
+
+        enumeration = cyast.For( target = cyast.Name(variable),
+                                 iter = place_type.iterable_expr(env=self.env, marking_name=node.marking_name),
+                                 body = [])
+        indexes, node, inner = self.compile_MultiTokenEnumerationAux(node, variables, place_type)
+        if not inner:
+            inner = enumeration
+
+        enumeration.body = [ node, incr ]
+
+        indexes.append(index)
+        node = [ init, enumeration ]
+        return indexes, node, inner
+
+
+    def gen_different(self, indexes, inner):
+        try:
+            index = indexes.pop()
+        except IndexError:
+            return inner
+
+        first = None
+        current = None
+        for index2 in indexes:
+            node = cyast.If( test = cyast.Compare( left = cyast.Name(index),
+                                                   ops = [ cyast.NotEq() ],
+                                                   comparators = [ cyast.Name(index2) ]),
+                           body = [],
+                           orelse = [])
+            if not first:
+                first = node
+            if current:
+                current.body.append( node )
+            current = node
+        if current:
+            current.body.extend( self.gen_different( indexes, inner ) )
+        if not first:
+            return inner
+
+        return first
+
+    def compile_MultiTokenEnumeration(self, node):
+        place_type = self.env.marking_type.get_place_type_by_name(node.place_name)
+
+        indexes, base, inner = self.compile_MultiTokenEnumerationAux(node, node.token_names, place_type)
+        tmp = inner.body
+
+        inner.body = [ self.gen_different( indexes, [ self.compile( node.body ) ] ) ]
+        inner.body.extend(tmp)
+        return base
+
     def compile_GuardCheck(self, node):
         return Builder.If( test = self.compile(node.condition),
                            body = self.compile(node.body),
@@ -238,6 +298,9 @@ class CompilerVisitor(coreir.CompilerVisitor):
                                      token=node.value)
 
     def compile_SuccT(self, node):
+        self.env.push_cvar_env()
+        self.env.push_variable_provider(node.variable_provider)
+
         self.var_helper = node.transition_info.variable_helper
 
         stmts = [ self.compile( node.body ) ]
@@ -262,16 +325,21 @@ class CompilerVisitor(coreir.CompilerVisitor):
         for var in inter_vars:
             if (not var.type.is_UserType) or is_cython_type( var.type ):
                 decl.add(cyast.CVar(name=var.name,
-                                       type=type2str(var.type))
-                            )
+                                    type=type2str(var.type))
+                         )
 
-        return to_ast( Builder.FunctionDef(name = node.function_name,
-                                           args = (A(node.markingset_name, type = "set")
+        additionnal_decls = self.env.pop_cvar_env()
+        for var in additionnal_decls:
+            decl.add(var)
+
+        result = to_ast( Builder.FunctionDef(name = node.function_name,
+                                             args = (A(node.markingset_name, type = "set")
                                                    .param(node.marking_name, type = "Marking")),
-                                           body = stmts,
-                                           lang = cyast.CDef( public = False ),
-                                           returns = cyast.Name("void"),
-                                           decl = decl) )
+                                             body = stmts,
+                                             lang = cyast.CDef( public = False ),
+                                             returns = cyast.Name("void"),
+                                             decl = decl) )
+        return result
 
 
     def compile_SuccP(self, node):

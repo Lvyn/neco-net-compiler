@@ -94,7 +94,6 @@ class Compiler(core.Compiler):
         env.add_pyx_declaration("import cPickle")
         env.add_pyx_declaration("import StringIO")
         env.add_pyx_declaration("from time import time")
-        #env.add_pyx_declaration("from dolev_yao import *")
 
         for mod in config.get('imports'):
             env.add_pyx_declaration("from {} import *".format(mod))
@@ -150,7 +149,6 @@ cpdef set state_space():
     cdef set visit
     cdef set succ
     cdef int count
-    cdef int start
     try:
         visited = set()
         visit = set([init()])
@@ -192,7 +190,7 @@ cpdef set state_space():
                                      include_dirs = self.additional_search_paths,
                                      extra_compile_args=[], # '-ggdb'],
                                      extra_link_args=['-lctypes'],
-                                     library_dirs = self.additional_search_paths)], # TO DO use params
+                                     library_dirs = self.additional_search_paths)],
               script_args=["build_ext", "--inplace"])
 
         if config.get('debug'):

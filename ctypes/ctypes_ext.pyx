@@ -121,7 +121,7 @@ cdef class MultiSet:
         cdef long x = 0x345678L
         cdef long y
         cdef int l = len(self._data)
-        cdef long mult = 1000003L
+        #cdef long mult = 1000003L
 
         for i in self._data:
             l -= 1
@@ -138,7 +138,7 @@ cdef class MultiSet:
         cdef int x = 0x345678L
         cdef int y
         cdef int l = len(self._data)
-        cdef int mult = 1000003L
+        #cdef int mult = 1000003L
 
         for i in self._data:
             l -= 1
