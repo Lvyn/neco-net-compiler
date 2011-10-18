@@ -39,7 +39,6 @@ module netir version "$Revision: 1 $"
 			 Stmt* body)
 
 	| MultiTokenEnumeration(identifier* token_names,
-				identifier* offset_names,
 				identifier marking_name,
 				identifier place_name,
 				Stmt* body)

@@ -448,9 +448,7 @@ class SuccTGenerator(object):
                     else:
                         raise NotImplementedError, sub_arc
 
-                offsets = [ variable_helper.new_variable() for _ in names ]
                 builder.begin_MultiTokenEnumeration( token_names = names.values(),
-                                                     offset_names = offsets,
                                                      marking_name = self.arg_marking,
                                                      place_name = input.place_name )
 
