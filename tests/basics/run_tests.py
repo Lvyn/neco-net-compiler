@@ -201,7 +201,9 @@ common_cases = set(['basic_1',
                     'basic_multiarc_in_4',
                     'basic_multiarc_in_5',
                     'basic_test_1',
-                    'basic_test_2'])
+                    'basic_test_2',
+                    'basic_multiarc_in_match_1',
+                    'basic_multiarc_in_match_2'])
 
 flow_control_cases = set([ 'basic_flow_1',
                            'basic_flow_2',

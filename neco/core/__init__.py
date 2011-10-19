@@ -178,7 +178,7 @@ class SuccTGenerator(object):
         self.consume = []
 
         helper = SharedVariableHelper( transition.shared_input_variables(),
-                                       transition.variables )
+                                       WordSet( transition.variables().keys() ) )
         self.variable_helper = helper
 
         if config.get('optimise'):
@@ -196,8 +196,8 @@ class SuccTGenerator(object):
 
         env.register_succ_function(transition, function_name)
 
-    def gen_unify_shared(self, name, local_name, var_type):
-        """ Produces the unification process for shared variables.
+    def try_unify_shared_variable(self, name):
+        """ Produces the unification process for shared variables if all occurences have been used.
 
         In the context where different names represent a unique variable,
         this function compares these names and use a witness for the final
@@ -205,29 +205,24 @@ class SuccTGenerator(object):
 
         @param name: initial variable name (from the model)
         @type name: C{str}
-        @param local_name: real variable name (in the produced code)
-        @type local_name: C{str}
         """
-        # check if all instances are used
-        if self.variable_helper.is_shared( name = name ):
-            if self.variable_helper.all_used( name = name ):
+        if self.variable_helper.is_shared(name):
+            if self.variable_helper.all_used(name):
+                if not self.variable_helper.unified(name):
+                    local_names = self.variable_helper.get_local_names(name)
+                    first_local = local_names.pop(-1)
 
-                # get all local names for the unification process
-                locals = self.variable_helper.get_local_names(name)
-                locals.pop(-1)
+                    # compare values
+                    self.builder.begin_If( netir.Compare(left=netir.Name(first_local),
+                                                         ops = [netir.EQ() for i in local_names],
+                                                         comparators = [netir.Name(loc_name) for loc_name in local_names] ) )
 
-                # compare all values
-                self.builder.begin_If( netir.Compare( left = netir.Name( name = local_name,
-                                                                         place_name = var_type ),
-                                                      ops =  [ netir.EQ() for i in locals ],
-                                                      comparators = [ netir.Name( name = local_name,
-                                                                                  place_name = var_type )
-                                                                      for (local_name, origin) in locals ] ) )
-
-                # build a variable with the initial name from a witness
-                self.builder.emit_Assign( variable = VariableInfo(name = name),
-                                          expr = netir.Name( name = local_name,
-                                                             place_name = var_type ) )
+                    # build a witness with the initial variable name
+                    self.builder.emit_Assign( variable = VariableInfo(name),
+                                              expr = netir.Name(first_local) )
+                    self.variable_helper.set_unified(name)
+                    return True
+        return False
 
     def modified_places(self):
         """ Return places that are modified during transition firing, ie.,
@@ -290,8 +285,7 @@ class SuccTGenerator(object):
 
                 # notify that the variable is used
                 variable_helper.mark_as_used( name = variable.name,
-                                          local_name = local_name,
-                                          input = input )
+                                              local_name = local_name )
 
                 builder.begin_TokenEnumeration( token_name = local_name,
                                                 marking_name = self.arg_marking,
@@ -301,9 +295,7 @@ class SuccTGenerator(object):
 
                 consume.append( (input, index) )
 
-                self.gen_unify_shared( name = variable.name,
-                                       local_name = local_name,
-                                       var_type = input.place_name )
+                self.try_unify_shared_variable(variable.name)
 
             # test
             elif input.is_Test:
@@ -312,8 +304,7 @@ class SuccTGenerator(object):
                 if inner.is_Variable:
                     local_name = variable_helper.new_variable_name(inner.name)
                     variable_helper.mark_as_used( name = inner.name,
-                                              local_name = local_name,
-                                              input = input )
+                                                  local_name = local_name )
 
                     builder.begin_TokenEnumeration( token_name = local_name,
                                                     marking_name = self.arg_marking,
@@ -321,13 +312,11 @@ class SuccTGenerator(object):
                                                     token_is_used = True,
                                                     use_index = index )
 
-                    self.gen_unify_shared( name = inner.name,
-                                           local_name = local_name,
-                                           var_type = input.place_name)
+                    self.try_unify_shared_variable(inner.name)
 
                 elif inner.is_Value:
-                    place_info = self.net_info.place_by_name(input.place_name)
-                    place_type = self.marking_type.get_place_type_by_name(place_info.name)
+                    place_info = self.net_info.place_by_name( input.place_name )
+                    place_type = self.marking_type.get_place_type_by_name( place_info.name )
 
                     token_name = variable_helper.new_variable()
                     trans.add_intermediary_variable( VariableInfo( name = token_name, type = place_type.token_type) )
@@ -434,13 +423,16 @@ class SuccTGenerator(object):
                     if sub_arc.is_Variable:
                         variable = sub_arc.variable
                         local_name = variable_helper.new_variable_name(variable.name)
-                        names[sub_arc.variable] = local_name
                         variable_helper.mark_as_used( name = variable.name,
-                                                      local_name = local_name,
-                                                      input = input )
+                                                      local_name = local_name)
+
+                        names[sub_arc.variable] = local_name
+
                     elif sub_arc.is_Value:
-                        variable = variable_helper.new_variable()
-                        names[variable] = variable
+                        variable = VariableInfo( name = variable_helper.new_variable(),
+                                                 type = place_type.token_type )
+
+                        names[variable] = variable.name
 
                         if sub_arc.value.raw != dot and not place_type.token_type.is_BlackToken:
                             values[variable] = sub_arc.value
@@ -453,10 +445,13 @@ class SuccTGenerator(object):
                                                      place_name = input.place_name )
 
                 for variable, value in values.iteritems():
-                    builder.begin_If( netir.Compare( left  = netir.Name( name = variable ),
+                    builder.begin_If( netir.Compare( left  = netir.Name( name = variable.name ),
                                                      ops = [ netir.EQ() ],
                                                      comparators = [ netir.Value( value = value,
                                                                                   place_name = input.place_name ) ] ) )
+
+                for variable in names:
+                    self.try_unify_shared_variable(variable.name)
 
                 consume.append( (input, None) ) # no index access allowed
             else:
@@ -480,12 +475,9 @@ class SuccTGenerator(object):
 
         for (name, local_name) in tuple.base_names():
             variable_helper.mark_as_used( name = name,
-                                          local_name = local_name,
-                                          input = input )
+                                          local_name = local_name)
 
-            self.gen_unify_shared(name = name,
-                                  local_name = local_name,
-                                  var_type = input.place_name ) # TO DO change!
+            self.try_unify_shared_variable(name)
 
         for (inner, type) in izip_longest(tuple.split(), tuple.type.split(), fillvalue=TypeInfo.AnyType):
             if inner.is_Tuple:

@@ -3,6 +3,7 @@
 import inspect
 import types
 from snakes.nets import *
+from collections import defaultdict
 import snakes.typing as typ
 import snakes.plugins.status as status
 from abc import *
@@ -312,9 +313,10 @@ class TokenInfo(object):
     def base_names(self):
         pass
 
-    @property
-    def vars(self):
-        return []
+
+    @abstractmethod
+    def variables(self):
+        pass
 
     @property
     def is_Variable(self):
@@ -399,6 +401,8 @@ class ValueInfo(TokenInfo):
     def base_names(self):
         return (self.name, self.local_name)
 
+    def variables(self):
+        return defaultdict(lambda : 0)
 
 class VariableInfo(TokenInfo):
     """ variables """
@@ -410,10 +414,8 @@ class VariableInfo(TokenInfo):
         self._name = name
         self._localname = name
 
-
-    @property
-    def vars(self):
-        return [ self.name ]
+    def variables(self):
+        return defaultdict(lambda : 0, { self.name : 1 })
 
     @property
     def name(self):
@@ -436,6 +438,9 @@ class ExpressionInfo(TokenInfo):
     def __init__(self, s):
         TokenInfo.__init__(self, s, kind = TokenKind.Expression)
 
+    def variables(self):
+        return defaultdict(lambda : 0) # To do
+
     def gen_names(self, variable_helper):
         self.name = variable_helper.fresh(True, base = "tuple_expr_")
         self.local_name = self.name
@@ -456,12 +461,14 @@ class TupleInfo(TokenInfo):
         TokenInfo.__init__(self, components, *args, kind = TokenKind.Tuple, **kwargs)
         self.components = components
 
-    @property
-    def vars(self):
-        l = []
+        vardict = defaultdict(lambda : 0)
         for c in self.components:
-            l.extend( c.vars )
-        return l
+            for name, occurences in c.variables():
+                vardict[name] += occurences
+        self._vars = vardict
+
+    def variables(self):
+        return self._vars
 
     def __repr__(self):
         return "TupleInfo(components=%s)" % repr( [ c for c in self.components ] )
@@ -529,7 +536,7 @@ class ArcInfo(object):
         self._is_input = is_input
         self.place_info = place_info
         self.arc_annotation = arc_annotation
-        self._vars = []
+        self._vars = defaultdict(lambda : 0)
 
         class matcher(TypeMatch):
             # variables
@@ -538,19 +545,19 @@ class ArcInfo(object):
                 if arc_annotation.name == "dot":
                     self.value = ValueInfo( dot, type = TypeInfo.BlackToken )
                     self.kind = ArcKind.Value
-                    self._vars = self.value.vars
+                    # no variables
                 else:
                     self.variable = VariableInfo( name = arc_annotation.name )
                     if self.is_input:
                         self.variable.update_type( self.place_info.type )
                     self.kind = ArcKind.Variable
-                    self._vars = self.variable.vars
+                    self._vars[arc_annotation.name] += 1
 
             # values
-            def match_Value(_, arc_axnnotation):
+            def match_Value(_, arc_annotation):
                 self.value = ValueInfo( arc_annotation.value )
                 self.kind = ArcKind.Value
-                self._vars = self.value.vars
+                self._vars = {}
 
             # tests
             def match_Test(_, arc_annotation):
@@ -559,20 +566,20 @@ class ArcInfo(object):
                 self.inner = TokenInfo.from_snakes( self.annotation )
                 if self.is_input and self.inner.is_Variable:
                     self.inner.update_type(self.place_info.type)
-                self._vars = self.inner.vars
+                self._vars = self.inner.variables()
 
             # flush
             def match_Flush(_, arc_annotation):
                 self.annotation = arc_annotation._annotation
                 self.kind = ArcKind.Flush
                 self.inner = TokenInfo.from_snakes(self.annotation)
-                self._vars = self.inner.vars
+                self._vars = self.inner.variables()
 
             # expression
             def match_Expression(_, arc_annotation):
                 self.kind = ArcKind.Expression
                 self.expr = TokenInfo.from_snakes( arc_annotation )
-                self._vars = self.expr.vars
+                self._vars = self.expr.variables() # may be bad if input
 
             # tuple
             def match_Tuple(_, arc_annotation):
@@ -580,14 +587,18 @@ class ArcInfo(object):
                 self.tuple = TokenInfo.from_snakes( arc_annotation )
                 if self.is_input:
                     self.tuple.update_type( self.place_info.type )
-                self._vars = self.tuple.vars
+                self._vars = self.tuple.variables()
 
+            # multiarc
             def match_MultiArc(_, arc_annotation):
                 self.kind = ArcKind.MultiArc
                 self.sub_arcs = [ ArcInfo( place_info, annotation, is_input )
                                   for annotation in arc_annotation._components ]
+
+                vardict = self._vars
                 for arc in self.sub_arcs:
-                    self._vars.extend( arc._vars )
+                    for name, occurences in arc.variables().iteritems():
+                        vardict[name] += occurences
 
             def default(_, arc_annotation):
                 raise NotImplementedError, arc_annotation.__class__
@@ -624,7 +635,6 @@ class ArcInfo(object):
             if other:
                 self.variable.update_type(other.type)
 
-    @property
     def variables(self):
         return self._vars
 
@@ -718,10 +728,15 @@ class TransitionInfo(object):
 
         self.outputs = outputs
 
-        self._vars = set(trans.vars())
+        vardict = defaultdict(lambda : 0)
+        for var in trans.vars():
+            vardict[var] = 1
 
         for input in self.inputs:
-            self._vars.update(input.variables)
+            for name, occurences in input.variables().iteritems():
+                vardict[name] += occurences
+
+        self._vars = vardict
 
         input_vars = []
         for input in self.inputs:
@@ -734,7 +749,6 @@ class TransitionInfo(object):
     def process_name(self):
         return self._process_name
 
-    @property
     def variables(self):
         return self._vars
 
@@ -793,19 +807,28 @@ class TransitionInfo(object):
         self.inputs.sort(key = transform )
 
     def shared_input_variables(self):
-        vars = multidict()
-        shared_vars = multidict()
+        variables = self.input_variables()
+        return { name : occurences
+                 for name, occurences in variables.iteritems()
+                 if occurences > 1 }
 
+    def input_variables(self):
+        variables = defaultdict(lambda : 0)
         for input in self.inputs:
-            input_vars = input.variables
-            for var in input_vars:
-                vars.add(var, input)
+            for var, occurences in input.variables().iteritems():
+                variables[var] += occurences
+        return variables
 
-        for (var, inputs) in vars.iteritems():
-            if len(inputs) > 1:
-                shared_vars.add_many(var, inputs)
+        # for input in self.inputs:
+        #     input_vars = input.variables
+        #     for var in input_vars:
+        #         vars.add(var, input)
 
-        return shared_vars
+        # for (var, inputs) in vars.iteritems():
+        #     if len(inputs) > 1:
+        #         shared_vars.add_many(var, inputs)
+
+        # return shared_vars
 
     def input_variable_by_name(self, name):
         for input in self.inputs:

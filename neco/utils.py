@@ -4,6 +4,7 @@ import types, sys, re, ast
 from functools import wraps
 from abc import abstractmethod, ABCMeta
 from snakes.nets import WordSet
+from collections import defaultdict
 
 def flatten_lists( l ):
     """ Make a list of lists flat.
@@ -501,28 +502,30 @@ class SharedVariableHelper(VariableProvider):
         """ Build a new helper from a set of shared variables
         and a word set.
 
-        @param shared: shared variables.
-        @type shared: C{multidict}
+        @param shared: shared variables with occurences.
+        @type shared: C{dict}
         @param wordset: word set representing existing symbols.
         @type wordset: C{WordSet}
         """
         VariableProvider.__init__(self, wordset)
-        assert( isinstance(shared, multidict) )
         self._shared = shared
-        self._used = multidict()
+        self._used = defaultdict(lambda : 0)
+        self._local_names = defaultdict(list)
+        self._unified = defaultdict(lambda : False)
 
-    def mark_as_used(self, name, local_name, input):
-        """ Mark a variable as used, providing the variable name
-        its local name and the input using the variable.
+    def mark_as_used(self, name, local_name):
+        """ Mark a variable as used.
+
+        The local name is important since it will be used when performing
+        an unification step.
 
         @param name: variable name.
         @type name: C{str}
-        @param local_name: local variable name.
-        @type local_name: C{str}
-        @param input: input using the variable.
-        @type input: C{ArcInfo}
+        @param local_name: local name used for the variable.
+        @type name: C{str}
         """
-        self._used.add(name, (local_name, input))
+        self._used[name] += 1
+        self._local_names[name].append(local_name)
 
     def all_used(self, name):
         """ Check if all instances of a variable are used.
@@ -531,15 +534,15 @@ class SharedVariableHelper(VariableProvider):
         @returns: C{True} if all variables were used, C{False} otherwise.
         @rtype: C{bool}
         """
-        return len(self._used[name]) == len(self._shared[name])
+        return self._used[name] == self._shared[name]
 
     def get_local_names(self, name):
         """ Get all local names of a variable.
 
         @return: all local names of a variable.
-        @rtype: C{multidict}
+        @rtype: C{list}
         """
-        return self._used[name]
+        return self._local_names[name]
 
     def is_shared(self, name):
         """ Check if a variable is shared.
@@ -547,7 +550,7 @@ class SharedVariableHelper(VariableProvider):
         @return: True if the variable is shared, C{False} otherwise.
         @rtype: C{bool}
         """
-        return self._shared.has_key(name)
+        return name in self._shared
 
     def new_variable_name(self, variable_name):
         """ Get a name for a variable.
@@ -561,6 +564,12 @@ class SharedVariableHelper(VariableProvider):
             return self.new_variable()
         else:
             return variable_name
+
+    def unified(self, name):
+        return self._unified[name]
+
+    def set_unified(self, name):
+        self._unified[name] = True
 
 ################################################################################
 # bidict
