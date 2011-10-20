@@ -137,6 +137,10 @@ class CVarSet(object):
             names.add(name)
             self._set.add(elt)
 
+    def extend(self, iterable):
+        for elt in iterable:
+            self.add(elt)
+
     def __iter__(self):
         return self._set.__iter__()
 

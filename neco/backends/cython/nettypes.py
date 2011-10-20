@@ -512,7 +512,6 @@ class StaticMarkingType(coretypes.MarkingType):
         place_type = placetype_factory.new(select_type(place_info),
                                            place_info,
                                            marking_type = self)
-
         if self.place_types.has_key(place_name):
             raise "place exists"
         else:

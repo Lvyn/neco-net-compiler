@@ -297,6 +297,26 @@ class CompilerVisitor(coreir.CompilerVisitor):
         return place_type.token_expr(env=self.env,
                                      token=node.value)
 
+    def try_gen_type_decl(self, input):
+        if input.is_Variable:
+            variable = input.variable
+            place_info = input.place_info
+            type = self.env.marking_type.get_place_type_by_name(place_info.name).token_type
+            if (not type.is_UserType) or (is_cython_type(type)):
+                return CVarSet( [ cyast.CVar(name=variable.name, type=type2str(type)) ] )
+
+        elif input.is_Test:
+            inner = input.inner
+            return CVarSet( [ self.try_gen_type_decl(input.inner) ] )
+
+        elif input.is_MultiArc:
+            varset = CVarSet()
+            for arc in input.sub_arcs:
+                varset.extend( self.try_gen_type_decl(arc) )
+            return varset
+
+        return VarSet()
+
     def compile_SuccT(self, node):
         self.env.push_cvar_env()
         self.env.push_variable_provider(node.variable_provider)
@@ -308,19 +328,8 @@ class CompilerVisitor(coreir.CompilerVisitor):
         decl = CVarSet()
         inputs = node.transition_info.inputs
         for input in inputs:
-            if input.is_Variable:
-                variable = input.variable
-                place_info = input.place_info
+            decl.extend(self.try_gen_type_decl(input))
 
-                type = self.env.marking_type.get_place_type_by_name(place_info.name).token_type
-
-                if (not type.is_UserType) or (is_cython_type(type)):
-                    decl.add(cyast.CVar(name=variable.name, type=type2str(type)))
-            elif input.is_Test:
-                inner = input.inner
-                if inner.is_Variable:
-                    if (not inner.type.is_UserType) or (is_cython_type(inner.type)):
-                        decl.add(cyast.CVar(name=inner.name, type=type2str(inner.type)))
         inter_vars = node.transition_info.intermediary_variables
         for var in inter_vars:
             if (not var.type.is_UserType) or is_cython_type( var.type ):
