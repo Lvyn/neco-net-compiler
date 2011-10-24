@@ -175,7 +175,6 @@ class SuccTGenerator(object):
         self.marking_type = marking_type
         self._ignore_flow = ignore_flow
         self.env = env
-        self.consume = []
 
         helper = SharedVariableHelper( transition.shared_input_variables(),
                                        WordSet( transition.variables().keys() ) )
@@ -251,10 +250,13 @@ class SuccTGenerator(object):
         trans = self.transition
         variable_helper = self.variable_helper
         trans.variable_helper = variable_helper
-        consume = self.consume
+        #consume = self.consume
 
         # places that provides multiple tokens, _cannot_ be used with by index acces
         multi_places = trans.input_multi_places
+        for place in multi_places:
+            place_type = self.marking_type.get_place_type_by_name(place.name)
+            place_type.disable_by_index_deletion()
 
         if config.get('optimise'):
             trans.order_inputs()
@@ -282,19 +284,17 @@ class SuccTGenerator(object):
                 # generate a new name, if the variable is not shared the local
                 # name will be the same
                 local_name = variable_helper.new_variable_name(variable.name)
-
                 # notify that the variable is used
                 variable_helper.mark_as_used( name = variable.name,
                                               local_name = local_name )
 
-                builder.begin_TokenEnumeration( token_name = local_name,
+                builder.begin_TokenEnumeration( arc = input,
+                                                token_name = local_name,
                                                 marking_name = self.arg_marking,
-                                                place_name = input.place_name,
-                                                token_is_used = True,
-                                                use_index = index )
+                                                place_name = input.place_name )
 
-                consume.append( (input, index) )
-
+                input.data.register('local_name', local_name)
+                input.data.register('index', index)
                 self.try_unify_shared_variable(variable.name)
 
             # test
@@ -306,53 +306,53 @@ class SuccTGenerator(object):
                     variable_helper.mark_as_used( name = inner.name,
                                                   local_name = local_name )
 
-                    builder.begin_TokenEnumeration( token_name = local_name,
+                    builder.begin_TokenEnumeration( arc = input,
+                                                    token_name = local_name,
                                                     marking_name = self.arg_marking,
-                                                    place_name = input.place_name,
-                                                    token_is_used = True,
-                                                    use_index = index )
+                                                    place_name = input.place_name )
 
                     self.try_unify_shared_variable(inner.name)
+                    input.data.register('local_name', local_name)
+                    input.data.register('index', index)
 
                 elif inner.is_Value:
                     place_info = self.net_info.place_by_name( input.place_name )
                     place_type = self.marking_type.get_place_type_by_name( place_info.name )
 
-                    token_name = variable_helper.new_variable()
-                    trans.add_intermediary_variable( VariableInfo( name = token_name, type = place_type.token_type) )
+                    local_name = variable_helper.new_variable()
+                    trans.add_intermediary_variable( VariableInfo( name = local_name, type = place_type.token_type) )
 
 
                     # get a token
-                    builder.begin_TokenEnumeration( token_name = token_name,
+                    builder.begin_TokenEnumeration( arc = input,
+                                                    token_name = local_name,
                                                     marking_name = self.arg_marking,
-                                                    place_name = input.place_name,
-                                                    token_is_used = False,
-                                                    use_index = index )
-                    # consume.append(input)
+                                                    place_name = input.place_name )
+
                     if not place_info.type.is_BlackToken:
                         # check token value
-                        builder.begin_If( netir.Compare( left  = netir.Name( name = token_name ),
+                        builder.begin_If( netir.Compare( left  = netir.Name( name = local_name ),
                                                          ops = [ netir.EQ() ],
                                                          comparators = [ netir.Value( value = input.value,
                                                                                       place_name = input.place_name ) ] ) )
-
+                    input.data.register('local_name', local_name)
+                    input.data.register('input', input)
 
                 elif inner.is_Tuple:
                     # produce names for tuple components
-                    inner.gen_names( self.variable_helper )
-
+                    #inner.gen_names( self.variable_helper )
+                    self._gen_names( inner )
                     # by index acces not used
 
                     # get a tuple
-                    builder.begin_TokenEnumeration( token_name = inner.name,
+                    builder.begin_TokenEnumeration( arc = input,
+                                                    token_name = inner.data['local_name'],
                                                     marking_name = self.arg_marking,
-                                                    place_name = input.place_name,
-                                                    token_is_used = False,
-                                                    use_index = None )
+                                                    place_name = input.place_name )
 
                     if not (inner.type.is_TupleType and len(inner.type) == len(inner)):
                         # check its type
-                        builder.begin_CheckTuple( tuple_name = inner.name,
+                        builder.begin_CheckTuple( tuple_name = inner.data['local_name'],
                                                   tuple_info = inner )
 
                     self._gen_tuple_decomposition(input, inner)
@@ -365,23 +365,24 @@ class SuccTGenerator(object):
                 place_info = self.net_info.place_by_name(input.place_name)
                 place_type = self.marking_type.get_place_type_by_name(place_info.name)
 
-                token_name = variable_helper.new_variable()
-                trans.add_intermediary_variable( VariableInfo( name = token_name, type = place_type.token_type) )
+                local_name = variable_helper.new_variable()
+                trans.add_intermediary_variable( VariableInfo( name = local_name, type = place_type.token_type) )
 
                 # get a token
-                builder.begin_TokenEnumeration( token_name = token_name,
+                builder.begin_TokenEnumeration( arc = input,
+                                                token_name = local_name,
                                                 marking_name = self.arg_marking,
-                                                place_name = input.place_name,
-                                                token_is_used = False,
-                                                use_index = index )
-                consume.append( (input, index) )
+                                                place_name = input.place_name )
+
+                input.data.register('index', index)
 
                 if not place_info.type.is_BlackToken:
                     # check token value
-                    builder.begin_If( netir.Compare( left  = netir.Name( name = token_name ),
+                    builder.begin_If( netir.Compare( left  = netir.Name( name = local_name ),
                                                      ops = [ netir.EQ() ],
                                                      comparators = [ netir.Value( value = input.value,
                                                                                   place_name = input.place_name ) ] ) )
+                input.data.register('local_name', local_name)
 
             # flush
             elif input.is_Flush:
@@ -390,33 +391,32 @@ class SuccTGenerator(object):
                     if variable_helper.is_shared(inner.name):
                         raise NotImplementedError
 
-                    consume.append( (input, index) )
+                    input.data.register('local_name', inner.name)
                 else:
                     raise NotImplementedError, "flush %s" % repr(inner)
 
             # tuple
             elif input.is_Tuple:
                 # produce names for tuple components
-                input.tuple.gen_names( self.variable_helper )
+                self._gen_names( input.tuple )
 
                 # get a tuple
-                builder.begin_TokenEnumeration( token_name = input.tuple.name,
+                builder.begin_TokenEnumeration( arc = input,
+                                                token_name = input.tuple.data['local_name'],
                                                 marking_name = self.arg_marking,
-                                                place_name = input.place_name,
-                                                token_is_used = False,
-                                                index = None ) # no index access
+                                                place_name = input.place_name ) # no index access
 
                 if not (input.tuple.type.is_TupleType and len(input.tuple.type) == len(input.tuple)):
                     # check its type
-                    builder.begin_CheckTuple( tuple_name = input.tuple.name,
+                    builder.begin_CheckTuple( tuple_name = input.tuple.data['local_name'],
                                               tuple_info = input.tuple )
 
 
                 self._gen_tuple_decomposition(input, input.tuple)
-                consume.append( (input, index) )
+                input.data.register('index', index)
 
             elif input.is_MultiArc:
-                names = {} # variable -> local_name
+                names = set()
                 values = {} # variable -> value
                 # sub_arcs as variables
                 for sub_arc in input.sub_arcs:
@@ -426,13 +426,16 @@ class SuccTGenerator(object):
                         variable_helper.mark_as_used( name = variable.name,
                                                       local_name = local_name)
 
-                        names[sub_arc.variable] = local_name
+                        names.add(variable.name)
+                        sub_arc.data.register('local_name', local_name)
+                        sub_arc.data.register('index', variable_helper.new_variable())
 
                     elif sub_arc.is_Value:
                         variable = VariableInfo( name = variable_helper.new_variable(),
                                                  type = place_type.token_type )
-
-                        names[variable] = variable.name
+                        names.add(variable.name)
+                        sub_arc.data.register('local_name', variable.name)
+                        sub_arc.data.register('index', variable_helper.new_variable())
 
                         if sub_arc.value.raw != dot and not place_type.token_type.is_BlackToken:
                             values[variable] = sub_arc.value
@@ -440,7 +443,8 @@ class SuccTGenerator(object):
                     else:
                         raise NotImplementedError, sub_arc
 
-                builder.begin_MultiTokenEnumeration( token_names = names.values(),
+
+                builder.begin_MultiTokenEnumeration( multiarc = input,
                                                      marking_name = self.arg_marking,
                                                      place_name = input.place_name )
 
@@ -451,11 +455,30 @@ class SuccTGenerator(object):
                                                                                   place_name = input.place_name ) ] ) )
 
                 for variable in names:
-                    self.try_unify_shared_variable(variable.name)
+                    self.try_unify_shared_variable(variable)
 
-                consume.append( (input, None) ) # no index access allowed
             else:
                 raise NotImplementedError, input.arc_annotation.__class__
+
+    def _gen_names(self, token_info):
+        """
+        """
+        if token_info.is_Tuple:
+            token_info.data.register('local_name',
+                                     self.variable_helper.new_variable())
+            for component in token_info:
+                self._gen_names(component)
+
+        elif token_info.is_Variable:
+            token_info.data.register('local_name',
+                                     self.variable_helper.new_variable_name(token_info.name))
+
+        elif token_info.is_Value:
+            token_info.data.register('local_name',
+                                     self.variable_helper.new_variable())
+
+        else:
+            raise NotImplementedError, token_info
 
     def _gen_tuple_decomposition(self, input, tuple):
         """ Produce the decomposition of a tuple (pattern matching).
@@ -473,7 +496,26 @@ class SuccTGenerator(object):
         # match pattern
         builder.begin_Match( tuple_info = tuple )
 
-        for (name, local_name) in tuple.base_names():
+        def base_names(token_info):
+            if token_info.is_Tuple:
+                local_name = token_info.data['local_name']
+                names = set( [ (local_name, local_name) ] )
+                for component in token_info:
+                    names.union( base_names(component) )
+                return names
+
+            elif token_info.is_Variable:
+                return set([ (token_info.name, token_info.data['local_name']) ])
+
+            elif token_info.is_Value:
+                local_name = token_info.data['local_name']
+                return set([ (local_name, local_name) ])
+
+            else:
+                raise NotImplementedError, token_info
+
+
+        for (name, local_name) in base_names(tuple): #tuple.base_names():
             variable_helper.mark_as_used( name = name,
                                           local_name = local_name)
 
@@ -485,16 +527,16 @@ class SuccTGenerator(object):
                     inner.update_type(type)
 
                 # notify new variable introduction
-                trans.add_intermediary_variable( VariableInfo( name = tuple.name, type = tuple.type) )
+                trans.add_intermediary_variable( VariableInfo( name = tuple.data['local_name'], type = tuple.type) )
 
                 if not (inner.type.is_TupleType and len(inner.type) == len(inner)):
                     # check its type
-                    builder.begin_CheckTuple( tuple_name = inner.name,
+                    builder.begin_CheckTuple( tuple_name = inner.data['local_name'],
                                               tuple_info = inner )
 
                 self._gen_tuple_decomposition(input, inner)
             else:
-                trans.add_intermediary_variable( VariableInfo( name = inner.local_name,
+                trans.add_intermediary_variable( VariableInfo( name = inner.data['local_name'],
                                                                type = type ) )
 
     def gen_computed_production(self, output, computed_productions):
@@ -639,134 +681,135 @@ class SuccTGenerator(object):
 
 
         # consume
-        for (input, index) in self.consume:
-            builder.emit_Comment(message = "Consume {input} - place: {place}".format(input=input, place=input.place_name))
-            if input.is_Variable:
-                variable = input.variable
+        for arc in trans.inputs:
+            builder.emit_Comment(message = "Consume {arc} - place: {place}".format(arc=arc, place=arc.place_name))
+
+            if self._ignore_flow and arc.place_info.flow_control:
+                continue
+            elif arc.is_Variable:
                 builder.emit_RemToken( marking_name = new_marking,
-                                       place_name = input.place_name,
-                                       token_expr = netir.Name(variable.name),
-                                       use_index = index )
-            elif input.is_Test:
+                                       place_name = arc.place_name,
+                                       token_expr = netir.Name(arc.data['local_name']),
+                                       use_index = arc.data['index'] )
+            elif arc.is_Test:
                 pass # do not consume !
 
-            elif input.is_Flush:
-                inner = input.inner
+            elif arc.is_Flush:
+                inner = arc.inner
                 if inner.is_Variable:
-                    builder.emit_FlushIn( token_name = inner.name,
+                    builder.emit_FlushIn( token_name = arc.data['local_name'],
                                           marking_name = new_marking,
-                                          place_name = input.place_name )
+                                          place_name = arc.place_name )
                 else:
                     raise NotImplementedError, "inner : %s" % repr(inner)
 
-            elif input.is_Value:
+            elif arc.is_Value:
                 builder.emit_RemToken( marking_name = new_marking,
-                                       place_name = input.place_name,
-                                       token_expr = netir.Value( value = input.value,
-                                                                 place_name = input.place_name ),
-                                       use_index = index )
+                                       place_name = arc.place_name,
+                                       token_expr = netir.Value( value = arc.value,
+                                                                 place_name = arc.place_name ),
+                                       use_index = arc.data['index'] )
 
-            elif input.is_Tuple:
+            elif arc.is_Tuple:
                 builder.emit_RemTuple( marking_name = new_marking,
-                                       place_name = input.place_name,
-                                       tuple_expr = netir.Name(input.tuple.name) )
+                                       place_name = arc.place_name,
+                                       tuple_expr = netir.Name(arc.tuple.data['local_name']) )
 
-            elif input.is_MultiArc:
+            elif arc.is_MultiArc:
                 names = {}
-                for sub_arc in input.sub_arcs:
+                for sub_arc in arc.sub_arcs:
                     if sub_arc.is_Variable:
-                        variable = sub_arc.variable
                         builder.emit_RemToken( marking_name = new_marking,
-                                               place_name = input.place_name,
-                                               token_expr = netir.Name(variable.name),
-                                               use_index = None )
+                                               place_name = arc.place_name,
+                                               token_expr = netir.Name(sub_arc.data['local_name']),
+                                               use_index = sub_arc.data['index'] )
                     elif sub_arc.is_Value:
                         builder.emit_RemToken( marking_name = new_marking,
-                                               place_name = input.place_name,
+                                               place_name = arc.place_name,
                                                token_expr = netir.Value( value = sub_arc.value,
-                                                                         place_name = input.place_name ),
-                                               use_index = None )
+                                                                         place_name = arc.place_name ),
+                                               use_index = sub_arc.data['index'] )
 
                     else:
                         raise NotImplementedError, sub_arc.arc_annotation
             else:
-                raise NotImplementedError, input.arc_annotation
+                raise NotImplementedError, arc.arc_annotation
 
         # produce
-        for output in trans.outputs:
-            builder.emit_Comment(message="Produce {output} - place: {place}".format(output=output, place=output.place_name))
-            if self._ignore_flow and output.place_info.flow_control:
+        for output_arc in trans.outputs:
+            builder.emit_Comment(message="Produce {output_arc} - place: {place}".format(output_arc=output_arc, place=output_arc.place_name))
+            if self._ignore_flow and output_arc.place_info.flow_control:
                 new_flow = [ place for place in trans.post if place.flow_control ]
                 assert(len(new_flow) == 1)
                 builder.emit_UpdateFlow( marking_name = new_marking,
                                          place_info = new_flow[0] )
 
 
-            elif output.is_Expression:
-                if computed_productions.has_key(output):
-                    token_expr = computed_productions[output]
+            elif output_arc.is_Expression:
+                if computed_productions.has_key(output_arc):
+                    token_expr = computed_productions[output_arc]
 
                 builder.emit_AddToken( marking_name = new_marking,
-                                       place_name = output.place_name,
+                                       place_name = output_arc.place_name,
                                        token_expr = token_expr )
 
-            elif output.is_Value:
-                if computed_productions.has_key(output):
-                    token_expr = computed_productions[output]
+            elif output_arc.is_Value:
+                if computed_productions.has_key(output_arc):
+                    token_expr = computed_productions[output_arc]
                 else:
                     #
                     # TO DO TRY REPR
                     #
-                    value = output.value
+                    value = output_arc.value
                     token_expr = netir.PyExpr( ExpressionInfo( repr(value.raw) ))
 
                 builder.emit_AddToken( marking_name = new_marking,
-                                       place_name = output.place_name,
+                                       place_name = output_arc.place_name,
                                        token_expr = token_expr )
 
-            elif output.is_Variable:
-                if computed_productions.has_key(output):
-                    token_expr = computed_productions[output]
+            elif output_arc.is_Variable:
+                if computed_productions.has_key(output_arc):
+                    token_expr = computed_productions[output_arc]
                 else:
-                    value = output.value
-                    token_expr = netir.Name( output.name )
+                    value = output_arc.value
+                    token_expr = netir.Name( output_arc.name )
 
                 builder.emit_AddToken( marking_name = new_marking,
-                                       place_name = output.place_name,
+                                       place_name = output_arc.place_name,
                                        token_expr = token_expr )
 
-            elif output.is_Flush:
-                inner = output.inner
+            elif output_arc.is_Flush:
+                inner = output_arc.inner
                 if inner.is_Variable:
                     produced_token = inner.name
                     builder.emit_FlushOut( marking_name = new_marking,
-                                           place_name = output.place_name,
+                                           place_name = output_arc.place_name,
                                            token_expr = netir.Name(produced_token) )
 
                 elif inner.is_Expression:
                     builder.emit_FlushOut( marking_name = new_marking,
-                                           place_name = output.place_name,
+                                           place_name = output_arc.place_name,
                                            token_expr = netir.PyExpr(inner) )
                 else:
                     raise NotImplementedError, "Flush.inner : %s" % inner
 
-            elif output.is_Tuple:
-                # to do: if input then use var
+            elif output_arc.is_Tuple:
+                # to do: if arc then use var
                 if (False):
                     pass
                 # general case:
                 else:
                     builder.emit_TupleOut( marking_name = new_marking,
-                                           place_name = output.place_name,
-                                           tuple_info = output.tuple )
-            elif output.is_MultiArc:
-                for production in computed_productions[output]:
+                                           place_name = output_arc.place_name,
+                                           tuple_info = output_arc.tuple )
+            elif output_arc.is_MultiArc:
+                for production in computed_productions[output_arc]:
                     builder.emit_AddToken( marking_name = new_marking,
-                                           place_name = output.place_name,
+                                           place_name = output_arc.place_name,
                                            token_expr = production )
 
             else:
-                raise NotImplementedError, output.arc_annotation.__class__
+                raise NotImplementedError, output_arc.arc_annotation.__class__
 
         # add marking to set
         builder.emit_AddMarking( markingset_name = self.marking_set,
@@ -870,7 +913,7 @@ class Compiler(object):
             self.marking_type.append( place_info )
 
         fm = FactoryManager.instance()
-        self.marking_type.gen_types(fm.select_type)
+        self.marking_type.gen_types()
         if self.dump_enabled:
             print self.marking_type
 

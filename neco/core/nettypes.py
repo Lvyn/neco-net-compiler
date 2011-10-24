@@ -34,6 +34,9 @@ class PlaceType(object):
         self._type = type
         self._token_type = token_type
 
+        self._by_index_access   = self.__class__._by_index_access_
+        self._by_index_deletion = self.__class__._by_index_deletion_
+
     @property
     def type(self):
         return self._type
@@ -48,11 +51,18 @@ class PlaceType(object):
 
     @property
     def provides_by_index_access(self):
-        return self.__class__._by_index_access_
+        return self._by_index_access
 
     @property
     def provides_by_index_deletion(self):
-        return self.__class__._by_index_deletion_
+        return self._by_index_deletion
+
+    def disable_by_index_access(self):
+        self._by_index_access = False
+
+    def disable_by_index_deletion(self):
+        self._by_index_deletion = False
+
 
 ################################################################################
 
@@ -137,7 +147,7 @@ class MarkingType(object):
 
 
     @abstractmethod
-    def gen_types(self, select_type):
+    def gen_types(self):
         """ Create place types from place info datas.
         """
         pass

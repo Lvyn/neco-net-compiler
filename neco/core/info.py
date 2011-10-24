@@ -7,7 +7,7 @@ from collections import defaultdict
 import snakes.typing as typ
 import snakes.plugins.status as status
 from abc import *
-from neco.utils import multidict, TypeMatch, Enum
+from neco.utils import multidict, TypeMatch, Enum, RegDict
 import neco.config as config
 
 TypeKind = Enum('AnyType', 'TupleType', 'UserType')
@@ -288,6 +288,8 @@ class TokenInfo(object):
         """
         """
         self._raw = raw_token
+        self._data = RegDict()
+
         if kind is not None:
             assert kind in TokenKind
             self._kind = kind
@@ -298,6 +300,11 @@ class TokenInfo(object):
         else:
             self._type = TypeInfo.from_raw(raw_token)
 
+    @property
+    def data(self):
+        """ Get the data dict. """
+        return self._data
+
     def __repr__(self):
         return "TokenInfo(raw_token=%s, kind=%s, type=%s)" % (repr(self._raw), repr(self._kind), repr(self._type))
 
@@ -305,9 +312,9 @@ class TokenInfo(object):
         assert(isinstance(type, TypeInfo))
         self._type = type
 
-    @abstractmethod
-    def gen_names(self, variable_helper):
-        pass
+    # @abstractmethod
+    # def gen_names(self, variable_helper):
+    #     pass
 
     @abstractmethod
     def base_names(self):
@@ -394,9 +401,9 @@ class ValueInfo(TokenInfo):
     def __str__(self):
         return "Value<%s>(%s)" % (str(self.type), str(self._raw))
 
-    def gen_names(self, variable_helper):
-        self.name = variable_helper.new_variable()
-        self.local_name = self.name
+    # def gen_names(self, variable_helper):
+    #     self.name = variable_helper.new_variable()
+    #     self.local_name = self.name
 
     def base_names(self):
         return (self.name, self.local_name)
@@ -421,8 +428,8 @@ class VariableInfo(TokenInfo):
     def name(self):
         return self._name
 
-    def gen_names(self, variable_helper):
-        self.local_name = variable_helper.new_variable_name( self.name )
+    # def gen_names(self, variable_helper):
+    #     self.local_name = variable_helper.new_variable_name( self.name )
 
     def base_names(self):
         return (self.name, self.local_name)
@@ -441,9 +448,9 @@ class ExpressionInfo(TokenInfo):
     def variables(self):
         return defaultdict(lambda : 0) # To do
 
-    def gen_names(self, variable_helper):
-        self.name = variable_helper.fresh(True, base = "tuple_expr_")
-        self.local_name = self.name
+    # def gen_names(self, variable_helper):
+    #     self.name = variable_helper.fresh(True, base = "tuple_expr_")
+    #     self.local_name = self.name
 
     def base_names(self):
         return (self.name, self.local_name)
@@ -476,24 +483,24 @@ class TupleInfo(TokenInfo):
     def __str__(self):
         return "TupleInfo(%s)" % (", ".join([ str(c) for c in self.components]))
 
-    def gen_names(self, variable_helper):
-        self.name = variable_helper.new_variable()
-        for component in self:
-            component.gen_names(variable_helper)
+    # def gen_names(self, variable_helper):
+    #     self.name = variable_helper.new_variable()
+    #     for component in self:
+    #         component.gen_names(variable_helper)
 
-    def base(self):
-        base = []
-        for component in self.components:
-            if component.is_Variable:
-                name, local_name = component.base_names()
-                base.append(local_name)
-            elif component.is_Value:
-                base.append(component.name)
-            elif component.is_Expression:
-                raise NotImplementedError, "tuple::expression"
-            elif component.is_Tuple:
-                base.append(component.name)
-        return base
+    # def base(self):
+    #     base = []
+    #     for component in self.components:
+    #         if component.is_Variable:
+    #             name, local_name = component.base_names()
+    #             base.append(local_name)
+    #         elif component.is_Value:
+    #             base.append(component.name)
+    #         elif component.is_Expression:
+    #             raise NotImplementedError, "tuple::expression"
+    #         elif component.is_Tuple:
+    #             base.append(component.name)
+    #     return base
 
     def split(self):
         return self.components
@@ -537,6 +544,7 @@ class ArcInfo(object):
         self.place_info = place_info
         self.arc_annotation = arc_annotation
         self._vars = defaultdict(lambda : 0)
+        self._data = RegDict()
 
         class matcher(TypeMatch):
             # variables
@@ -603,6 +611,13 @@ class ArcInfo(object):
             def default(_, arc_annotation):
                 raise NotImplementedError, arc_annotation.__class__
         matcher().match(arc_annotation)
+
+
+    @property
+    def data(self):
+        """ Get the data dict. """
+        return self._data
+
 
     @property
     def variables_info(self):
@@ -754,15 +769,10 @@ class TransitionInfo(object):
 
     @property
     def input_multi_places(self):
-        tmp = set()
-        multi = set()
         for input in self.inputs:
             info = input.place_info
-            if info in tmp:
-                multi.add(info)
-            else:
-                tmp.add(info)
-        return multi
+            if input.is_MultiArc:
+                yield info
 
     def variable_informations(self):
         """
@@ -818,17 +828,6 @@ class TransitionInfo(object):
             for var, occurences in input.variables().iteritems():
                 variables[var] += occurences
         return variables
-
-        # for input in self.inputs:
-        #     input_vars = input.variables
-        #     for var in input_vars:
-        #         vars.add(var, input)
-
-        # for (var, inputs) in vars.iteritems():
-        #     if len(inputs) > 1:
-        #         shared_vars.add_many(var, inputs)
-
-        # return shared_vars
 
     def input_variable_by_name(self, name):
         for input in self.inputs:
@@ -915,6 +914,10 @@ class PlaceInfo(object):
         self._pre = set()
         self._post = set()
 
+    def update_type(self, type):
+        assert(isinstance(type, TypeInfo))
+        self._type = type
+
     @property
     def process_name(self):
         return self._process_name
@@ -999,6 +1002,14 @@ class NetInfo(object):
         self.transitions = []
         for t in net.transition():
             self.transitions.append( TransitionInfo(t) )
+
+        for trans in self.transitions:
+            for input in trans.inputs:
+                if input.is_Flush:
+                    input.place_info.update_type(TypeInfo.AnyType)
+            for output in trans.outputs:
+                if output.is_Flush:
+                    output.place_info.update_type(TypeInfo.AnyType)
 
         process_names = set()
         for p in net.node():

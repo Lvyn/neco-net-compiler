@@ -59,16 +59,17 @@ class CompilerVisitor(coreir.CompilerVisitor):
     def compile_Match(self, node):
         tuple_info = node.tuple_info
         seq = []
-        seq.append( ast.Assign(targets=[ast.Tuple(elts=[ ast.Name(id=n) for n in tuple_info.base() ])],
-                               value=ast.Name(id=tuple_info.name)) )
+
+        component_names = [ token_info.data['local_name'] for token_info in tuple_info ]
+        seq.append( ast.Assign(targets = [ ast.Tuple([ E(name) for name in component_names ])],
+                                 value = ast.Name(tuple_info.data['local_name'])) )
         cur = None
         for component in tuple_info.components:
             if component.is_Value:
-                n = ast.If(test=ast.Compare(left=ast.Name(id=component.name),
-                                            ops=[ast.Eq()],
-                                            comparators=[E(repr(component.raw))]
-                                            )
-                           )
+                n = Builder.If( test = Builder.Compare( left = E(component.data['local_name']),
+                                                        ops = [ ast.Eq() ],
+                                                        comparators = [ E(repr(component.raw)) ] ), # TO DO unify value & pickle
+                                orelse = [] )
                 if cur == None:
                     cur = n
                     seq.append(n)
@@ -82,6 +83,32 @@ class CompilerVisitor(coreir.CompilerVisitor):
             seq.append(self.compile( node.body ))
 
         return seq
+
+        # tuple_info = node.tuple_info
+        # seq = []
+        # seq.append( ast.Assign(targets=[ast.Tuple(elts=[ ast.Name(id=n) for n in tuple_info.base() ])],
+        #                        value=ast.Name(id=tuple_info.name)) )
+        # cur = None
+        # for component in tuple_info.components:
+        #     if component.is_Value:
+        #         n = ast.If(test=ast.Compare(left=ast.Name(id=component.name),
+        #                                     ops=[ast.Eq()],
+        #                                     comparators=[E(repr(component.raw))]
+        #                                     )
+        #                    )
+        #         if cur == None:
+        #             cur = n
+        #             seq.append(n)
+        #         else:
+        #             cur.body = [n]
+        #             cur = n
+
+        # if cur != None:
+        #     cur.body = [ self.compile( node.body ) ]
+        # else:
+        #     seq.append(self.compile( node.body ))
+
+        # return seq
 
     def compile_Assign(self, node):
         return ast.Assign(targets=[ast.Name(id=node.variable.name)],
@@ -149,65 +176,92 @@ class CompilerVisitor(coreir.CompilerVisitor):
                                                        marking_name = node.marking_name),
                        body = [ self.compile(node.body) ])
 
-    def compile_MultiTokenEnumerationAux(self, node, variables, place_type):
-        try:
-            variable = variables.pop()
-        except IndexError:
-            return [], [], None
 
-        index = self.env.variable_provider.new_variable()
-        # initialize index
-        init = ast.Assign(targets = [ast.Name(index)], value = ast.Num(0))
-        incr = ast.AugAssign( target = ast.Name(index), op = ast.Add(), value = ast.Num(1) )
+    def gen_different(self, indices):
 
-        enumeration = ast.For( target = ast.Name(variable),
-                               iter = place_type.iterable_expr(env=self.env, marking_name=node.marking_name),
-                               body = [])
-        indexes, node, inner = self.compile_MultiTokenEnumerationAux(node, variables, place_type)
-        if not inner:
-            inner = enumeration
-
-        enumeration.body = [ node, incr ]
-
-        indexes.append(index)
-        node = [ init, enumeration ]
-        return indexes, node, inner
-
-    def gen_different(self, indexes, inner):
-        try:
-            index = indexes.pop()
-        except IndexError:
-            return inner
-
-        first = None
+        base = None
         current = None
-        for index2 in indexes:
-            node = ast.If( test = ast.Compare( left = ast.Name(index),
-                                               ops = [ ast.NotEq() ],
-                                               comparators = [ ast.Name(index2) ]),
-                           body = [],
-                           orelse = [])
-            if not first:
-                first = node
-            if current:
-                current.body.append( node )
-            current = node
-        if current:
-            current.body.extend( self.gen_different( indexes, inner ) )
-        if not first:
-            return inner
 
-        return first
+        first_index = indices.pop()
+        for index in indices:
+            check = ast.If( test = ast.Compare( left = ast.Name(first_index),
+                                                  ops = [ ast.NotEq() ],
+                                                  comparators = [ ast.Name(index) ]),
+                              body = [],
+                              orelse = [])
+            if not base:
+                base = check
+                current = check
+            else:
+                current.body.append( check )
+                current = check
+
+        inner = current
+        if len(indices) > 1:
+            inner_base, inner = self.gen_different( indices )
+            current.body.append( first )
+
+        return base, inner
 
     def compile_MultiTokenEnumeration(self, node):
         place_type = self.env.marking_type.get_place_type_by_name(node.place_name)
 
-        indexes, base, inner = self.compile_MultiTokenEnumerationAux(node, node.token_names, place_type)
-        tmp = inner.body
+        base = None
+        current = None
+        if place_type.provides_by_index_access:
+            for sub_arc in node.multiarc.sub_arcs:
+                variable = sub_arc.data['local_name']
+                index = sub_arc.data['index']
 
-        inner.body = [ self.gen_different( indexes, [ self.compile( node.body ) ] ) ]
-        inner.body.extend(tmp)
+                assign = ast.Assign(targets=[ast.Name(variable)],
+                                      value=place_type.get_token_expr(self.env,
+                                                                      node.marking_name,
+                                                                      ast.Name(index)))
+                enumeration = ast.For( target = ast.Name(index),
+                                         iter = ast.Call(func=ast.Name('range'),
+                                                         args=[ast.Num(0), place_type.get_size_expr(self.env,
+                                                                                                    node.marking_name)]),
+                                       body = [ assign ] )
+                if base == None:
+                    current = enumeration
+                    base = enumeration
+                else:
+                    current.body.append(enumeration)
+                    current = enumeration
+
+
+        else: # no index access
+            for sub_arc in node.multiarc.sub_arcs:
+                variable = sub_arc.data['local_name']
+                index = sub_arc.data['index']
+                init = ast.Assign( targets =  [ast.Name(index)],
+                                   value = ast.Num(0) )
+
+                enumeration = ast.For( target = ast.Name(variable),
+                                       iter = place_type.iterable_expr( env = self.env,
+                                                                        marking_name = node.marking_name),
+                                       body = [ ast.AugAssign( target = ast.Name(index),
+                                                               op = ast.Add(),
+                                                               value = ast.Num(1) ) ] )
+                if base == None:
+                    current = [ init, enumeration ]
+                    base = [ init, enumeration ]
+                else:
+                    current[1].body.append([init, enumeration])
+                    current = [init, enumeration]
+
+        indices = [ sub_arc.data['index'] for sub_arc in node.multiarc.sub_arcs ]
+        inner_base, inner = self.gen_different(indices)
+        if isinstance(current, list):
+            current[1].body.append(inner_base)
+        else:
+            current.body.append(inner_base)
+        current = inner
+
+        current.body.extend([ self.compile( node.body ) ])
+
         return base
+
 
     def compile_GuardCheck(self, node):
         return ast.If( test = self.compile(node.condition),
@@ -345,13 +399,7 @@ class CompilerVisitor(coreir.CompilerVisitor):
         return [ ifnode ]
 
     def compile_BTOneSafeTokenEnumeration(self, node):
-        getnode = ast.Assign(targets=[ast.Name(id=node.token_name)],
-                             value=ast.Name(id='dot'))
-        if node.token_is_used:
-            body = [ getnode, self.compile( node.body ) ]
-        else:
-            body = [ self.compile( node.body ) ]
-
+        body = [ self.compile( node.body ) ]
         place_expr = self.env.marking_type.gen_get_place( env = self.env,
                                                           marking_name = node.marking_name,
                                                           place_name = node.place_name,

@@ -572,6 +572,45 @@ class SharedVariableHelper(VariableProvider):
         self._unified[name] = True
 
 ################################################################################
+# Decorator
+################################################################################
+
+class RegDict(dict):
+    """ A simple dict wrapper
+
+    New items need to be registred, any modification on an unregistred item will
+    raise a C{KeyError}.
+
+    """
+    def __init__(self):
+        self._attributes = {}
+
+    def __getitem__(self, key):
+        """ Get a field.
+
+        raise C{KeyError} if C{key} is not used.
+        """
+        return self._attributes[key]
+
+    def __setitem__(self, key, item):
+        """ Modify a field.
+
+        raise C{KeyError} if C{key} is not used.
+        """
+        if not key in self._attributes:
+            raise KeyError
+        self._attributes[key] = item
+
+    def register(self, key, value):
+        """ Register a new field.
+
+        raise C{KeyError} if C{key} is already used.
+        """
+        if key in self._attributes:
+            raise KeyError
+        self._attributes[key] = value
+
+################################################################################
 # bidict
 ################################################################################
 

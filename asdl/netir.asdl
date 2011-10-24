@@ -31,14 +31,13 @@ module netir version "$Revision: 1 $"
 		Stmt* body,
 		VariableProvider variable_provider)
     Block =
-	TokenEnumeration(identifier token_name,
+	TokenEnumeration(ArcInfo arc,
+			 identifier token_name,
 			 identifier marking_name,
 			 identifier place_name,
-			 bool token_is_used,
-			 str? use_index,
 			 Stmt* body)
 
-	| MultiTokenEnumeration(identifier* token_names,
+	| MultiTokenEnumeration(ArcInfo multiarc,
 				identifier marking_name,
 				identifier place_name,
 				Stmt* body)

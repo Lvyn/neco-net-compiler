@@ -21,18 +21,17 @@ char* int_place_type_cstr(int_place_type_t* pt)
     int i, size;
 
     buf[0] = '\0';
-    strcat(buf, "[");
 
     size = int_place_type_size(pt);
     for (i = size-1; i >= 0; i--) {
 	sprintf(tmp, "%d", pt->data[i]);
 	if (i > 0)
-	    strcat(tmp, ", ");
+	    strcat(tmp, " ");
 	strcat(buf, tmp);
     }
-    strcat(buf, "]");
-    ret = malloc(sizeof(strlen(buf)+1));
-    return ret;
+    //ret = malloc(sizeof(strlen(buf)+1));
+    //strcpy(ret, buf);
+    return buf;
 }
 
 int int_place_type_eq(int_place_type_t* pt1, int_place_type_t* pt2) {

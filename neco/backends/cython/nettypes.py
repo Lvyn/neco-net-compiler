@@ -80,7 +80,7 @@ register_cython_type(TypeInfo.Bool, 'bool')
 register_cython_type(TypeInfo.Char, 'char')
 register_cython_type(TypeInfo.Int, 'int')
 register_cython_type(TypeInfo.Short, 'short')
-register_cython_type(TypeInfo.IntPlace, from_neco_lib('int_place_type*'))
+register_cython_type(TypeInfo.IntPlace, from_neco_lib('int_place_type_t*'))
 register_cython_type(TypeInfo.MultiSet, 'MultiSet')
 register_cython_type(TypeInfo.UnsignedChar, 'unsigned char')
 register_cython_type(TypeInfo.UnsignedInt, 'unsigned int')
@@ -347,7 +347,7 @@ class IntPlaceType(coretypes.PlaceType, CythonPlaceType):
 
     def remove_token_stmt(self, env, compiled_token, marking_name):
         place_expr = self.place_expr(env, marking_name)
-        return stmt(cyast.Call(func=E(from_neco_lib("int_place_type_rem_by_index")),
+        return stmt(cyast.Call(func=E(from_neco_lib("int_place_type_rem_by_value")),
                                args=[ place_expr, compiled_token ])
                     )
 
@@ -419,6 +419,26 @@ class IntPlaceType(coretypes.PlaceType, CythonPlaceType):
 
 ################################################################################
 
+
+def place_type_from_info(place_info, marking):
+    type = place_info.type
+    if type.is_Int:
+        return IntPlaceType(place_info, marking_type=marking)
+    elif type.is_Bool:
+        print >> sys.stderr, "TODO add BoolPlaceType to ctypes, fallback ObjectPlaceType for place {}".format(place_info.name)
+        return ObjectPlaceType(place_info, marking_type=marking)
+    elif type.is_String:
+        print >> sys.stderr, "TODO add StringPlaceType to ctypes, fallback: ObjectPlaceType for place {}".format(place_info.name)
+        return ObjectPlaceType(place_info, marking_type=marking)
+    elif type.is_BlackToken:
+        return BTPlaceType(place_info, marking_type=marking)
+    elif type.is_UserType:
+        print >> sys.stderr, "TODO allow users to provide their own multiset structures, fallback: ObjectPlaceType for place {}".format(place_info.name)
+        return ObjectPlaceType(place_info, marking_type=marking)
+    else:
+        return ObjectPlaceType(place_info, marking_type=marking)
+
+
 class StaticMarkingType(coretypes.MarkingType):
     """ Python static marking type implementation, i.e., places as class attributes. . """
 
@@ -426,8 +446,9 @@ class StaticMarkingType(coretypes.MarkingType):
         coretypes.MarkingType.__init__(self, "Marking")
 
         # id provider for class attributes
-        self.id_provider = utils.NameProvider()
+        self.id_provider = utils.NameProvider() # used to produce attribute names
         self._process_place_types = {}
+
         if config.get('optimise'):
             self.packing_enabled = True
         else:
@@ -439,7 +460,7 @@ class StaticMarkingType(coretypes.MarkingType):
 
         # pack 1SBT places ?
         if self.packing_enabled:
-            name = self.id_provider.new(base = "packed")
+            name = self.id_provider.new(base = "_packed")
             pack = PackedPlaceTypes(name, self)
             self.id_provider.set(pack, name)
             pack = pack
@@ -507,31 +528,45 @@ class StaticMarkingType(coretypes.MarkingType):
         self.place_types[place_info.name] = flow_place_type.get_helper(place_info)
 
 
-    def __gen_place_type(self, place_info, select_type):
-        place_name = place_info.name
-        place_type = placetype_factory.new(select_type(place_info),
-                                           place_info,
-                                           marking_type = self)
-        if self.place_types.has_key(place_name):
-            raise "place exists"
-        else:
-            self.place_types[place_name] = place_type
+        # place_name = place_info.name
+        # place_type = placetype_factory.new(select_type(place_info),
+        #                                    place_info,
+        #                                    marking_type = self)
+        # if self.place_types.has_key(place_name):
+        #     raise "place exists"
+        # else:
+        #     self.place_types[place_name] = place_type
 
-    def gen_types(self, select_type):
-        for place_info in self.flow_control_places:
-            if self.packing_enabled:
+    def gen_types(self):
+        if self.packing_enabled:
+            for place_info in self.flow_control_places:
                 self.__gen_flow_control_place_type(place_info)
-            else:
-                self.__gen_place_type(place_info, select_type)
-
-        for place_info in self.one_safe_places:
-            if self.packing_enabled and place_info.one_safe:
+            for place_info in self.one_safe_places:
                 self.__gen_one_safe_place_type(place_info)
-            else:
-                self.__gen_place_type(place_info, select_type)
+
+        else:
+            for place_info in self.flow_control_places:
+                self.place_types[place_info.name] = place_type_from_info(place_info, self)
+            for place_info in self.one_safe_places:
+                self.place_types[place_info.name] = place_type_from_info(place_info, self)
 
         for place_info in self.places:
-            self.__gen_place_type(place_info, select_type)
+            self.place_types[place_info.name] = place_type_from_info(place_info, self)
+        
+        # for place_info in self.flow_control_places:
+        #     if self.packing_enabled:
+        #         self.__gen_flow_control_place_type(place_info)
+        #     else:
+        #         self.__gen_place_type(place_info, select_type)
+
+        # for place_info in self.one_safe_places:
+        #     if self.packing_enabled and place_info.one_safe:
+        #         self.__gen_one_safe_place_type(place_info)
+        #     else:
+        #         self.__gen_place_type(place_info, select_type)
+
+        # for place_info in self.places:
+        #     self.__gen_place_type(place_info, select_type)
 
     def __str__(self):
         """ Dump the marking structure. """
@@ -749,6 +784,9 @@ class StaticMarkingType(coretypes.MarkingType):
         mult = 0xBADBEEF
         i = 0
 
+        maximum = 2**32-1
+        offset = 2**31-1
+
         if self._pack:
             for index in range(0, self._pack.native_field_count()):
                 native_field = self._pack.get_native_field('self', index)
@@ -757,7 +795,7 @@ class StaticMarkingType(coretypes.MarkingType):
                                                                                 op=cyast.BitXor(),
                                                                                 right=native_field),
                                                              op = cyast.Mult(),
-                                                             right = cyast.Num(mult) ) ) )
+                                                             right = cyast.Num((mult % maximum) - offset) ) ) )
                 #E('h').assign(E('h').xor(native_field).mult(E(mult))) )
                 mult += (82520L + i + i)
                 i += 1
@@ -769,7 +807,7 @@ class StaticMarkingType(coretypes.MarkingType):
                 if place_type.type.is_Int or place_type.type.is_Short or place_type.type.is_Char:
                     native_place = self.id_provider.get(place_type)
                     builder.emit(E('h = (h ^ self.{place_name}) * {mult}'.format(place_name=native_place,
-                                                                                 mult=mult))
+                                                                                 mult=(mult % maximum) - offset))
                                  )
                                  #builder.emit( E('h').assign(E('h').xor(E('self').attr(native_place)).mult(E(mult))) )
                 else:
@@ -779,7 +817,7 @@ class StaticMarkingType(coretypes.MarkingType):
                                                                                  op=cyast.BitXor(),
                                                                                  right=place_hash),
                                                                 op=cyast.Mult(),
-                                                                right=cyast.Num(mult))
+                                                                right=cyast.Num((mult % maximum) - offset))
                                               )
                                  )
                 mult += (82521L * i + i)

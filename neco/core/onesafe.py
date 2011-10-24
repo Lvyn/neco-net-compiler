@@ -66,7 +66,7 @@ class OneSafeTokenEnumeration(netir.TokenEnumeration):
     """ Base class for NetIR nodes that enumerate tokens in OneSafePlaceType. """
 
     def __init__(self, node):
-        self.token_is_used = node.token_is_used
+        self.arc = node.arc
         self.token_name = node.token_name
         self.place_name = node.place_name
         self.marking_name = node.marking_name
@@ -90,7 +90,7 @@ class BTOneSafeTokenEnumeration(netir.TokenEnumeration):
     """ Base class for NetIR nodes that enumerate tokens in BTOneSafeTokenEnumeration. """
 
     def __init__(self, node):
-        self.token_is_used = node.token_is_used
+        self.arc = node.arc
         self.token_name = node.token_name
         self.place_name = node.place_name
         self.marking_name = node.marking_name

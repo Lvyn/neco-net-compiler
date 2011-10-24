@@ -1,6 +1,6 @@
 cimport ctypes_ext # this line will be replaced in profiler mode !
 
-import operator, sys
+import operator, sys #, traceback
 
 ################################################################################
 # Multisets
@@ -75,6 +75,7 @@ cdef class MultiSet:
         @type elt: C{object}
         """
         if self._data.get(elt, 0) <= 0:
+            # traceback.print_tb( sys.exc_info() )
             raise ValueError, "not enough occurrences"
         self._data[elt] -= 1
         if self._data[elt] == 0:

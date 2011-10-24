@@ -56,12 +56,14 @@ class CompilerVisitor(coreir.CompilerVisitor):
     def compile_Match(self, node):
         tuple_info = node.tuple_info
         seq = []
-        seq.append(cyast.Assign(targets=[cyast.Tuple([ E(name) for name in tuple_info.base() ])],
-                                value=cyast.Name(tuple_info.name)))
+
+        component_names = [ token_info.data['local_name'] for token_info in tuple_info ]
+        seq.append( cyast.Assign(targets = [ cyast.Tuple([ E(name) for name in component_names ])],
+                                 value = cyast.Name(tuple_info.data['local_name'])) )
         cur = None
         for component in tuple_info.components:
             if component.is_Value:
-                n = Builder.If( test = Builder.Compare( left = E(component.name),
+                n = Builder.If( test = Builder.Compare( left = E(component.data['local_name']),
                                                         ops = [ cyast.Eq() ],
                                                         comparators = [ E(repr(component.raw)) ] ), # TO DO unify value & pickle
                                 orelse = [] )
@@ -143,12 +145,13 @@ class CompilerVisitor(coreir.CompilerVisitor):
                                          marking_name = node.marking_name)
 
     def compile_TokenEnumeration(self, node):
-        index = node.use_index
+        arc = node.arc
         marking_type = self.env.marking_type
         place_type = marking_type.get_place_type_by_name(node.place_name)
-        if index:
-            size_var = self.var_helper.fresh( True, base = 'tmp' )
-            place_size = place_type.place_size_expr(env = self.env,
+        if place_type.provides_by_index_access:
+            index = arc.data['index']
+            size_var = self.env.variable_provider.new_variable()
+            place_size = place_type.get_size_expr(env = self.env,
                                                     marking_name = node.marking_name)
 
             get_token = place_type.get_token_expr( env = self.env,
@@ -173,66 +176,133 @@ class CompilerVisitor(coreir.CompilerVisitor):
                                 body = [ self.compile(node.body) ])
 
 
-    def compile_MultiTokenEnumerationAux(self, node, variables, place_type):
-        try:
-            variable = variables.pop()
-        except IndexError:
-            return [], [], None
+    # def compile_MultiTokenEnumerationAux(self, node, place_type):
+    #     try:
+    #         print indexes
+    #         variable = variables[rec]
+    #         if indexes:
+    #             index = indexes[variable]
+    #             self.env.declare_cvar(index, type2str(TypeInfo.Int)) # should be moved ?
+    #         else:
+    #             index = None
+    #         rec += 1
+    #     except IndexError:
+    #         return [], None
 
-        index = self.env.variable_provider.new_variable()
-        self.env.declare_cvar(index, type2str(TypeInfo.Int))
-        # initialize index
-        init = cyast.Assign(targets = [cyast.Name(index)], value = cyast.Num(0))
-        incr = cyast.AugAssign( target = cyast.Name(index), op = cyast.Add(), value = cyast.Num(1) )
+    #     print ">> ", index
+    #     if place_type.provides_by_index_access:
+    #         enumeration = cyast.For( target = cyast.Name(index),
+    #                                  iter = cyast.Call(func=cyast.Name("range"),
+    #                                                    args=[cyast.Num(0), place_type.get_size_expr(self.env, node.marking_name)] ),
+    #                                  body = [ cyast.Assign(targets=[ cyast.Name(variable) ],
+    #                                                        value=place_type.get_token_expr(self.env,
+    #                                                                                        node.marking_name,
+    #                                                                                        cyast.Name(index) ) ) ]
+    #                                  )
+    #         incr = []
+    #     else:
+    #         enumeration = cyast.For( target = cyast.Name(variable),
+    #                                  iter = place_type.iterable_expr(env=self.env, marking_name=node.marking_name),
+    #                                  body = [])
+    #         incr = cyast.AugAssign( target = cyast.Name(index), op = cyast.Add(), value = cyast.Num(1) )
 
-        enumeration = cyast.For( target = cyast.Name(variable),
-                                 iter = place_type.iterable_expr(env=self.env, marking_name=node.marking_name),
-                                 body = [])
-        indexes, node, inner = self.compile_MultiTokenEnumerationAux(node, variables, place_type)
-        if not inner:
-            inner = enumeration
+    #     node, inner = self.compile_MultiTokenEnumerationAux(node, variables, indexes, place_type, rec)
+    #     if not inner:
+    #         inner = enumeration
 
-        enumeration.body = [ node, incr ]
+    #     enumeration.body.append(node)
+    #     enumeration.body.append(incr)
 
-        indexes.append(index)
-        node = [ init, enumeration ]
-        return indexes, node, inner
+    #     node = [ enumeration ]
+    #     return node, inner
 
 
-    def gen_different(self, indexes, inner):
-        try:
-            index = indexes.pop()
-        except IndexError:
-            return inner
+    def gen_different(self, indices):
 
-        first = None
+        base = None
         current = None
-        for index2 in indexes:
-            node = cyast.If( test = cyast.Compare( left = cyast.Name(index),
-                                                   ops = [ cyast.NotEq() ],
-                                                   comparators = [ cyast.Name(index2) ]),
-                           body = [],
-                           orelse = [])
-            if not first:
-                first = node
-            if current:
-                current.body.append( node )
-            current = node
-        if current:
-            current.body.extend( self.gen_different( indexes, inner ) )
-        if not first:
-            return inner
 
-        return first
+        first_index = indices.pop()
+        for index in indices:
+            check = cyast.If( test = cyast.Compare( left = cyast.Name(first_index),
+                                                    ops = [ cyast.NotEq() ],
+                                                    comparators = [ cyast.Name(index) ]),
+                              body = [],
+                              orelse = [])
+            if not base:
+                base = check
+                current = check
+            else:
+                current.body.append( check )
+                current = check
+
+        inner = current
+        if len(indices) > 1:
+            inner_base, inner = self.gen_different( indices )
+            current.body.append( first )
+
+        return base, inner
 
     def compile_MultiTokenEnumeration(self, node):
         place_type = self.env.marking_type.get_place_type_by_name(node.place_name)
 
-        indexes, base, inner = self.compile_MultiTokenEnumerationAux(node, node.token_names, place_type)
-        tmp = inner.body
+        base = None
+        current = None
+        if place_type.provides_by_index_access:
+            for sub_arc in node.multiarc.sub_arcs:
+                variable = sub_arc.data['local_name']
+                index = sub_arc.data['index']
 
-        inner.body = [ self.gen_different( indexes, [ self.compile( node.body ) ] ) ]
-        inner.body.extend(tmp)
+                # ensure that the variable is declared
+                self.env.declare_cvar(index, type2str(TypeInfo.Int))
+
+                assign = cyast.Assign(targets=[cyast.Name(variable)],
+                                      value=place_type.get_token_expr(self.env,
+                                                                      node.marking_name,
+                                                                      cyast.Name(index)))
+                enumeration = cyast.For( target = cyast.Name(index),
+                                         iter = cyast.Call(func=cyast.Name('range'),
+                                                           args=[cyast.Num(0), place_type.get_size_expr(self.env,
+                                                                                                        node.marking_name)]),
+                                         body = [ assign ] )
+                if base == None:
+                    current = enumeration
+                    base = enumeration
+                else:
+                    current.body.append(enumeration)
+                    current = enumeration
+
+
+        else: # no index access
+            for sub_arc in node.multiarc.sub_arcs:
+                variable = sub_arc.data['local_name']
+                index = sub_arc.data['index']
+                init = cyast.Assign( targets =  [cyast.Name(index)],
+                                     value = cyast.Num(0) )
+
+                enumeration = cyast.For( target = cyast.Name(variable),
+                                         iter = place_type.iterable_expr( env = self.env,
+                                                                          marking_name = node.marking_name),
+                                         body = [ cyast.AugAssign( target = cyast.Name(index),
+                                                                   op = cyast.Add(),
+                                                                   value = cyast.Num(1) ) ] )
+                if base == None:
+                    current = [ init, enumeration ]
+                    base = [ init, enumeration ]
+                else:
+                    current[1].body.append([init, enumeration])
+                    current = [init, enumeration]
+
+        indices = [ sub_arc.data['index'] for sub_arc in node.multiarc.sub_arcs ]
+        inner_base, inner = self.gen_different(indices)
+        if isinstance(current, list):
+            current[1].body.append(inner_base)
+        else:
+            current.body.append(inner_base)
+        current = inner
+
+        current.body.extend([ self.compile( node.body ) ])
+
         return base
 
     def compile_GuardCheck(self, node):
@@ -276,9 +346,8 @@ class CompilerVisitor(coreir.CompilerVisitor):
         index = node.use_index
         marking_type = self.env.marking_type
         place_type = marking_type.get_place_type_by_name(node.place_name)
-        if index:
+        if place_type.provides_by_index_deletion:
             return place_type.remove_by_index_stmt(env = self.env,
-                                                   token = self.compile(node.token_expr),
                                                    marking_name = node.marking_name,
                                                    index = index)
         else:
@@ -306,8 +375,10 @@ class CompilerVisitor(coreir.CompilerVisitor):
                 return CVarSet( [ cyast.CVar(name=variable.name, type=type2str(type)) ] )
 
         elif input.is_Test:
-            inner = input.inner
-            return CVarSet( [ self.try_gen_type_decl(input.inner) ] )
+            print >> sys.stderr, "TO DO urgent"
+            return CVarSet()
+            # inner = input.inner
+            # return CVarSet( [ self.try_gen_type_decl(input.inner) ] )
 
         elif input.is_MultiArc:
             varset = CVarSet()
@@ -315,7 +386,7 @@ class CompilerVisitor(coreir.CompilerVisitor):
                 varset.extend( self.try_gen_type_decl(arc) )
             return varset
 
-        return VarSet()
+        return CVarSet()
 
     def compile_SuccT(self, node):
         self.env.push_cvar_env()

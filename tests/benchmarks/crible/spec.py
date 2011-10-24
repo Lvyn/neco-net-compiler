@@ -1,6 +1,6 @@
 from snakes.nets import *
 
-MAX = 24
+MAX = 28
 
 net = PetriNet("Sieves of Erathostenes")
 net.add_place(Place("numbers", range(2, MAX+1), tInteger))

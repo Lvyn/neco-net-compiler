@@ -136,9 +136,10 @@ class StaticMarkingType(coretypes.MarkingType):
         self.id_provider = utils.NameProvider()
         self._process_place_types = {}
 
-    def gen_types(self, select_type):
+    def gen_types(self):
         """ Build place types using C{select_type} predicate.
         """
+        opt = config.get('optimise')
         for place_info in self.flow_control_places:
             try:
                 self._process_place_types[place_info.process_name].add_place(place_info)
@@ -153,9 +154,20 @@ class StaticMarkingType(coretypes.MarkingType):
 
         for place_info in self.one_safe_places:
             place_name = place_info.name
-            place_type = placetype_factory.new( select_type(place_info),
-                                                place_info,
-                                                marking_type = self )
+
+            if opt:
+                if place_info.one_safe:
+                    if place_info.type.is_BlackToken:
+                        place_type = BTOneSafePlaceType(place_info, marking_type = self)
+                    else:
+                        place_type = OneSafePlaceType(place_info, marking_type = self)
+
+                elif place_info.type.is_BlackToken:
+                    place_type = BTPlaceType(place_info, marking_type = self)
+                else:
+                    place_type = ObjectPlaceType(place_info, marking_type = self)
+            else:
+                place_type = ObjectPlaceType(place_info, marking_type = self)
 
             if self.place_types.has_key(place_name):
                 raise RuntimeError("{name} place exists".format(name=place_name))
@@ -164,9 +176,7 @@ class StaticMarkingType(coretypes.MarkingType):
 
         for place_info in self.places:
             place_name = place_info.name
-            place_type = placetype_factory.new( select_type(place_info),
-                                                place_info,
-                                                marking_type = self )
+            place_type = ObjectPlaceType(place_info, marking_type = self)
 
             if self.place_types.has_key(place_name):
                 raise RuntimeError("{name} place exists".format(name=place_name))
