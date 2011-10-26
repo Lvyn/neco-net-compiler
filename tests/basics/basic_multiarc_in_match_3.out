@@ -1,0 +1,21 @@
+check - markings
+begin marking
+s1 - 3 3 2 2 1 1
+s2 - 
+s3 - 3 1
+end marking
+begin marking
+s1 - 3 3 2 2
+s2 - 1
+s3 - 3 1
+end marking
+begin marking
+s1 - 2 2
+s2 - 3 1
+s3 - 3 1
+end marking
+begin marking
+s1 - 2 2 1 1
+s2 - 3
+s3 - 3 1
+end marking
