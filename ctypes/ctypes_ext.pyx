@@ -1,6 +1,6 @@
 cimport ctypes_ext # this line will be replaced in profiler mode !
 
-import operator, sys #, traceback
+import operator, sys, traceback
 
 ################################################################################
 # Multisets
@@ -8,6 +8,16 @@ import operator, sys #, traceback
 cpdef dump(object obj):
     if hasattr(obj, '__dump__'):
         return obj.__dump__()
+
+    elif isinstance(obj, tuple):
+        s = '('
+        for i,component in enumerate(obj):
+            if i > 1:
+                s += ','
+            s += dump(component)
+        s += ')'
+        return s
+
     else:
         return str(obj)
 
@@ -75,7 +85,6 @@ cdef class MultiSet:
         @type elt: C{object}
         """
         if self._data.get(elt, 0) <= 0:
-            # traceback.print_tb( sys.exc_info() )
             raise ValueError, "not enough occurrences"
         self._data[elt] -= 1
         if self._data[elt] == 0:

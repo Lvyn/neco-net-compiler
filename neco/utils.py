@@ -378,11 +378,16 @@ class NameProvider(object):
     def __init__(self):
         """ initlalise the provider
         """
-        self.wordset = WordSet()
+        self.id = 0;
+        self.wordset = set()
         self.assoc = {}
 
     def _next(self, obj, base):
-        return self._escape(self.wordset.fresh(True, base = base))
+        self.id+=1
+        if base != "":
+            return self._escape("_n{}_{}".format(self.id, base))
+        else:
+            return self._escape("_n{}".format(self.id))
 
     def _escape(self, str):
         res = ""

@@ -67,9 +67,9 @@ class OneSafeTokenEnumeration(netir.TokenEnumeration):
 
     def __init__(self, node):
         self.arc = node.arc
-        self.token_name = node.token_name
+        self.token_var = node.token_var
         self.place_name = node.place_name
-        self.marking_name = node.marking_name
+        self.marking = node.marking
         self.body = node.body
 
 ################################################################################
@@ -79,9 +79,9 @@ class BTTokenEnumeration(netir.TokenEnumeration):
 
     def __init__(self, node):
         self.token_is_used = node.token_is_used
-        self.token_name = node.token_name
+        self.token_var = node.token_var
         self.place_name = node.place_name
-        self.marking_name = node.marking_name
+        self.marking = node.marking
         self.body = node.body
 
 ################################################################################
@@ -91,9 +91,9 @@ class BTOneSafeTokenEnumeration(netir.TokenEnumeration):
 
     def __init__(self, node):
         self.arc = node.arc
-        self.token_name = node.token_name
+        self.token_var = node.token_var
         self.place_name = node.place_name
-        self.marking_name = node.marking_name
+        self.marking = node.marking
         self.body = node.body
 
 ################################################################################

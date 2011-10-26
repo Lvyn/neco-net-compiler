@@ -862,6 +862,24 @@ class TransitionInfo(object):
         """ place post set. """
         return self._post
 
+    def modified_places(self):
+        """ Return places that are modified during transition firing, ie.,
+        pre(t) and post(t) that are not test arcs.
+
+        @return: modified places.
+        @rtype: C{set}
+        """
+        mod = set([])
+        for input in self.inputs:
+            if not input.is_Test:
+                mod.add(input.place_info)
+
+        for output in self.outputs:
+            if not output.is_Test:
+                mod.add(output.place_info)
+
+        return mod
+
 
 ################################################################################
 

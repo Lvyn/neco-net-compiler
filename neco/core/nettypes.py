@@ -84,13 +84,16 @@ class MarkingType(object):
     """
     __metaclass__ = ABCMeta
 
-    def __init__(self, type_name):
+    def __init__(self, type, container_type):
         """ Create a new marking type providing a type name.
 
         @param type_name: marking structure type name.
         @type type_name: C{str}
         """
-        self.type_name = type_name
+
+        self._type = type
+        self._contaner_type = container_type
+
         self.place_types = dict()
 
         self._places = set()
@@ -105,7 +108,11 @@ class MarkingType(object):
 
     @property
     def type(self):
-        return TypeInfo.register_type(self.type_name)
+        return self._type
+
+    @property
+    def container_type(self):
+        return self._contaner_type
 
     @property
     def places(self):

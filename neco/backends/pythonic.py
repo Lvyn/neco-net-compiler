@@ -30,7 +30,6 @@ def extract_python_expr(ast_base, expr):
     if isinstance(expr, ast.expr) or isinstance(expr, ast_base):
         return expr
 
-    print expr
     assert isinstance(expr, str)
     mod = compile(expr, "<string>", "exec", ast.PyCF_ONLY_AST)
     return _extractor().visit(mod)

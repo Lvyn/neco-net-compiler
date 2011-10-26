@@ -7,42 +7,42 @@ module netir version "$Revision: 1 $"
 
     FunctionDef =
 	Init(identifier function_name,
-	     identifier marking_name,
+	     VariableInfo marking,
 	     Stmt* body,
 	     VariableProvider variable_provider)
 
 	| SuccT(identifier function_name,
-		identifier markingset_name,
-		identifier marking_name,
+		VariableInfo arg_marking_set,
+		VariableInfo arg_marking,
 		Stmt* body,
 		TransitionInfo transition_info,
 		VariableProvider variable_provider)
 
 	| SuccP(identifier function_name,
-		identifier markingset_name,
-		identifier marking_name,
+		VariableInfo arg_marking_set,
+		VariableInfo arg_marking,
 		Stmt* body,
 		ProcessInfo process_info,
 		VariableProvider variable_provider)
 
 	| Succs(identifier function_name,
-		identifier marking_argument_name,
-		identifier markingset_variable_name,
+		VariableInfo arg_marking,
+		VariableInfo arg_marking_set,
 		Stmt* body,
 		VariableProvider variable_provider)
     Block =
 	TokenEnumeration(ArcInfo arc,
-			 identifier token_name,
-			 identifier marking_name,
+			 VariableInfo token_var,
+			 VariableInfo marking,
 			 identifier place_name,
 			 Stmt* body)
 
 	| MultiTokenEnumeration(ArcInfo multiarc,
-				identifier marking_name,
+				VariableInfo marking,
 				identifier place_name,
 				Stmt* body)
 
-	| NotEmpty(identifier marking_name,
+	| NotEmpty(VariableInfo marking,
 		   identifier place_name,
 		   Stmt* body)
 
@@ -56,7 +56,7 @@ module netir version "$Revision: 1 $"
 	| Match(TupleInfo tuple_info,
 		Stmt* body)
 
-	| CheckTuple(identifier tuple_name,
+	| CheckTuple(VariableInfo tuple_var,
 		     TupleInfo tuple_info,
 		     Stmt* body)
 
@@ -64,40 +64,40 @@ module netir version "$Revision: 1 $"
 		    TypeInfo type,
 		    Stmt* body)
     Stmt =
-   	 AddToken(identifier marking_name,
+   	 AddToken(VariableInfo marking,
 		  identifier place_name,
 		  Expr token_expr)
 
-	| RemToken(identifier marking_name,
+	| RemToken(VariableInfo marking,
 		   identifier place_name,
 		   Expr token_expr,
 		   str? use_index)
 
-	| MarkingCopy(identifier dst_name,
-		      identifier src_name,
+	| MarkingCopy(VariableInfo dst,
+		      VariableInfo src,
 		      PlaceInfo* mod)
 
-	| AddMarking(identifier markingset_name,
-		     identifier marking_name)
+	| AddMarking(VariableInfo marking_set,
+		     VariableInfo marking)
 
 
 	| FlushIn(identifier token_name,
-		  identifier marking_name,
+		  VariableInfo marking,
 		  identifier place_name)
 
-	| FlushOut(identifier marking_name,
+	| FlushOut(VariableInfo marking,
 		   identifier place_name,
 		   Expr token_expr)
 
-	| RemToken(identifier marking_name,
+	| RemToken(VariableInfo marking,
 		   identifier place_name,
 		   Expr token_expr)
 
-	| RemTuple(identifier marking_name,
+	| RemTuple(VariableInfo marking,
 		   identifier place_name,
 		   Expr tuple_expr)
 
-	| TupleOut(identifier marking_name,
+	| TupleOut(VariableInfo marking,
 		   identifier place_name,
 		   TupleInfo  tuple_info)
 
@@ -109,14 +109,15 @@ module netir version "$Revision: 1 $"
 
 	| Print(str message)
 
-	| UpdateFlow(identifier marking_name,
+	| UpdateFlow(VariableInfo marking,
 		     PlaceInfo place_info)
 
 	| Comment(str message)
+
     Expr =
 	PyExpr(string expr)
 
-	| ReadFlow(identifier marking_name,
+	| ReadFlow(VariableInfo marking,
 		   identifier process_name)
 
 	| FunctionCall(identifier function_name,
@@ -137,7 +138,7 @@ module netir version "$Revision: 1 $"
 
 	| Pickle( object obj )
 
-	| FlowCheck(identifier marking_name,
+	| FlowCheck(VariableInfo marking,
 		    Expr? current_flow,
 		    PlaceInfo place_info)
     PComponent =

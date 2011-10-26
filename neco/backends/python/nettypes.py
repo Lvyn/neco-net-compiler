@@ -132,7 +132,9 @@ class StaticMarkingType(coretypes.MarkingType):
     """ Python marking type implementation, places as class attributes. """
 
     def __init__(self):
-        coretypes.MarkingType.__init__(self, "Marking")
+        coretypes.MarkingType.__init__(self,
+                                       TypeInfo.register_type('Marking'),
+                                       TypeInfo.register_type('set'))
         self.id_provider = utils.NameProvider()
         self._process_place_types = {}
 
@@ -362,10 +364,10 @@ class MarkingSetType(coretypes.MarkingSetType):
     def new_marking_set_expr(self, env):
         return ast.Call(func=ast.Name(id='set'))
 
-    def add_marking_stmt(self, env, markingset_name, marking_name):
-        return stmt(ast.Call(func=ast.Attribute(value=ast.Name(id=markingset_name),
+    def add_marking_stmt(self, env, markingset, marking):
+        return stmt(ast.Call(func=ast.Attribute(value=ast.Name(id=markingset.name),
                                                 attr='add'),
-                             args=[E(marking_name)]
+                             args=[E(marking.name)]
                              )
                     )
 

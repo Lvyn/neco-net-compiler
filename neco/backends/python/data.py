@@ -6,6 +6,16 @@ import operator
 def dump(e):
     if hasattr(e, '__dump__'):
         return e.__dump__()
+
+    elif isinstance(e, tuple):
+        s = '('
+        for i,component in enumerate(e):
+            if i > 0:
+                s += ','
+            s += dump(component)
+        s += ')'
+        return s
+
     else:
         return str(e)
 
@@ -312,7 +322,7 @@ class multiset(hdict):
     def __dump__(self):
         l = []
         for token in self:
-            l.append(repr(token))
+            l.append(dump(token))
         return " ".join(l)
 
 if __name__ == "__main__":

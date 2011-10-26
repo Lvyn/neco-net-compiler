@@ -16,8 +16,7 @@ class CurrentBlockError(Exception):
         self.got = got
 
     def __str__(self):
-        return "expected {exp!r} / got {got!r}".format(exp=self.exp,
-                                                       got=self.got)
+        return "expected {exp!r} / got {got!r}".format(exp=self.exp, got=self.got)
 
 class CompilerVisitor(object):
     """ Base class implementing the visitor pattern for compiling an ast. """

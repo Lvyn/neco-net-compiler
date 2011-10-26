@@ -163,6 +163,9 @@ cpdef set state_space():
             visit.update(succ.difference(visited))
     except KeyError:
         return visited
+    except ValueError as e:
+        print e
+        return visited
     return visited
 """)
 

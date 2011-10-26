@@ -443,7 +443,9 @@ class StaticMarkingType(coretypes.MarkingType):
     """ Python static marking type implementation, i.e., places as class attributes. . """
 
     def __init__(self):
-        coretypes.MarkingType.__init__(self, "Marking")
+        coretypes.MarkingType.__init__(self,
+                                       TypeInfo.register_type("Marking"),
+                                       TypeInfo.register_type("MarkingSet"))
 
         # id provider for class attributes
         self.id_provider = utils.NameProvider() # used to produce attribute names
@@ -581,7 +583,7 @@ class StaticMarkingType(coretypes.MarkingType):
         return "".join(l)
 
     def new_marking_expr(self, env):
-        return cyast.Call(func=cyast.Name(self.type_name),
+        return cyast.Call(func=cyast.Name(type2str(self.type)),
                           args=[cyast.Name('alloc')],
                           keywords=[cyast.Name('True')])
 
@@ -681,11 +683,11 @@ class StaticMarkingType(coretypes.MarkingType):
         left_marking_name  = "self"
         right_marking_name = "other"
         builder.begin_FunctionCDef( name = "neco_marking_compare",
-                                    args = (A("self", type = self.type_name)
-                                            .param(right_marking_name, type = self.type_name)),
+                                    args = (A("self", type = type2str(self.type))
+                                            .param(right_marking_name, type = type2str(self.type))),
                                     returns = E("int"),
                                     public=True, api=True,
-                                    decl = [ Builder.CVar( name = 'tmp', type = 'int') ] )
+                                    decl = [ Builder.CVar( name = 'tmp', type = type2str(TypeInfo.Int)) ] )
 
         # TODO: Order places
 
@@ -761,9 +763,9 @@ class StaticMarkingType(coretypes.MarkingType):
         right_marking_name = 'other'
         op_name = 'op'
         builder.begin_FunctionDef( name = '__richcmp__',
-                                   args = (A('self', type = self.type_name)
-                                           .param(right_marking_name, type = self.type_name)
-                                           .param(op_name, type = 'int')) )
+                                   args = (A('self', type = type2str(self.type))
+                                           .param(right_marking_name, type = type2str(self.type))
+                                           .param(op_name, type = type2str(TypeInfo.Int))) )
         builder.emit_Return(cyast.Compare(left=cyast.Call(func=cyast.Name('neco_marking_compare'),
                                                           args=[cyast.Name(left_marking_name),
                                                                 cyast.Name(right_marking_name)]
@@ -864,7 +866,7 @@ class StaticMarkingType(coretypes.MarkingType):
     def _gen_C_check(self, env):
         builder = Builder()
         builder.begin_FunctionCDef(name="neco_check",
-                                   args=(A("self", type=self.type_name)
+                                   args=(A("self", type=type2str(self.type))
                                          .param("atom", type=type2str(TypeInfo.Int))),
                                    returns=E(type2str(TypeInfo.Int)),
                                    public=True, api=True)
@@ -1017,7 +1019,7 @@ class StaticMarkingType(coretypes.MarkingType):
         checked_id = 'atom'
         builder = Builder()
         builder.begin_FunctionCDef(name='check',
-                                   args=(A('self', type=self.type_name)
+                                   args=(A('self', type = type2str(self.type))
                                          .param(checked_id, type='int')),
                                    returns = cyast.Name('int'))
 
