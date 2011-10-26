@@ -510,11 +510,12 @@ class SuccTGenerator(object):
                 raise NotImplementedError, token_info
 
 
-        for (name, local_name) in base_names(tuple): #tuple.base_names():
-            variable_helper.mark_as_used( name = name,
-                                          local_name = local_name)
+        # for (name, local_name) in base_names(tuple): #tuple.base_names():
+        #     variable_helper.mark_as_used( name = name,
+        #                                   local_name = local_name)
 
-            self.try_unify_shared_variable(name)
+        #     print " try unify", name, " ", local_name
+        #     self.try_unify_shared_variable(name)
 
         for (inner, type) in izip_longest(tuple.split(), tuple.type.split(), fillvalue=TypeInfo.AnyType):
             if inner.is_Tuple:
@@ -530,9 +531,12 @@ class SuccTGenerator(object):
                                               tuple_info = inner )
 
                 self._gen_tuple_decomposition(input, inner)
-            else:
-                trans.add_intermediary_variable( VariableInfo( name = inner.data['local_name'],
-                                                               type = type ) )
+
+            elif inner.is_Variable:
+                variable_helper.mark_as_used( name = inner.name,
+                                              local_name = inner.data['local_name'] )
+                #print "try unify ", inner.name
+                self.try_unify_shared_variable(inner.name)
 
     def gen_computed_production(self, output, computed_productions):
         """ Compute an expression on an output arc and store the

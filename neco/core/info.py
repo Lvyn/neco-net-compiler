@@ -468,14 +468,12 @@ class TupleInfo(TokenInfo):
         TokenInfo.__init__(self, components, *args, kind = TokenKind.Tuple, **kwargs)
         self.components = components
 
+    def variables(self):
         vardict = defaultdict(lambda : 0)
         for c in self.components:
-            for name, occurences in c.variables():
+            for name, occurences in c.variables().iteritems():
                 vardict[name] += occurences
-        self._vars = vardict
-
-    def variables(self):
-        return self._vars
+        return vardict
 
     def __repr__(self):
         return "TupleInfo(components=%s)" % repr( [ c for c in self.components ] )
@@ -818,9 +816,10 @@ class TransitionInfo(object):
 
     def shared_input_variables(self):
         variables = self.input_variables()
-        return { name : occurences
-                 for name, occurences in variables.iteritems()
-                 if occurences > 1 }
+        shared = { name : occurences
+                   for name, occurences in variables.iteritems()
+                   if occurences > 1 }
+        return shared
 
     def input_variables(self):
         variables = defaultdict(lambda : 0)

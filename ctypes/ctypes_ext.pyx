@@ -12,7 +12,7 @@ cpdef dump(object obj):
     elif isinstance(obj, tuple):
         s = '('
         for i,component in enumerate(obj):
-            if i > 1:
+            if i > 0:
                 s += ','
             s += dump(component)
         s += ')'
