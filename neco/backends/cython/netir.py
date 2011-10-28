@@ -6,14 +6,30 @@ import neco.core.netir as coreir
 from neco.core.info import *
 import cyast
 from cyast import * # Builder, E, A, to_ast, stmt
-from nettypes import is_cython_type, type2str
-from utils import CVarSet
+from nettypes import is_cython_type, type2str, CVarSet, Env
+
 ################################################################################
 
 class CompilerVisitor(coreir.CompilerVisitor):
     """ Cython ast compiler visitor class. """
 
     backend = "cython"
+
+    def try_declare_cvar(self, variable_name, new_type):
+        """
+
+        @param variable_name:
+        @type variable_name: C{}
+        @param new_type:
+        @type new_type: C{}
+        """
+        cvars = self.env.cvars
+        try:
+            old_type = cvars.type(variable_name)
+            if old_type < new_type:
+                cvars.update_type(variable_name, new_type)
+        except IndexError:
+            self.env.cvars.declare(variable_name, new_type)
 
     def __init__(self, env):
         self.env = env
@@ -63,6 +79,7 @@ class CompilerVisitor(coreir.CompilerVisitor):
         cur = None
         for component in tuple_info.components:
             if component.is_Value:
+                self.try_declare_cvar(component.data['local_name'], component.type)
                 n = Builder.If( test = Builder.Compare( left = E(component.data['local_name']),
                                                         ops = [ cyast.Eq() ],
                                                         comparators = [ E(repr(component.raw)) ] ), # TO DO unify value & pickle
@@ -73,6 +90,8 @@ class CompilerVisitor(coreir.CompilerVisitor):
                 else:
                     cur.body = [n]
                     cur = n
+            elif component.is_Variable:
+                self.try_declare_cvar(component.data['local_name'], component.type)
 
         if cur != None:
             cur.body = [ self.compile( node.body ) ]
@@ -83,6 +102,8 @@ class CompilerVisitor(coreir.CompilerVisitor):
 
 
     def compile_Assign(self, node):
+        self.try_declare_cvar(node.variable.name, node.variable.type)
+
         return cyast.Assign(targets=[cyast.Name(node.variable.name)],
                             value=self.compile(node.expr))
 
@@ -151,12 +172,19 @@ class CompilerVisitor(coreir.CompilerVisitor):
         if place_type.provides_by_index_access:
             index = arc.data['index']
             size_var = self.env.variable_provider.new_variable()
+
+            self.try_declare_cvar(index, TypeInfo.Int)
+            self.try_declare_cvar(node.token_var.name, node.token_var.type)
+            self.try_declare_cvar(size_var, TypeInfo.Int)
+
             place_size = place_type.get_size_expr(env = self.env,
                                                   marking_name = node.marking.name)
 
             get_token = place_type.get_token_expr( env = self.env,
                                                    marking_name = node.marking.name,
                                                    index = index )
+
+
             return [ cyast.Assign(targets=[cyast.Name(size_var)],
                                   value=place_size),
                      Builder.CFor(start=cyast.Num(0),
@@ -169,6 +197,8 @@ class CompilerVisitor(coreir.CompilerVisitor):
                                          self.compile(node.body) ],
                                   orelse = [] ) ]
         else:
+            self.try_declare_cvar(node.token_var.name, node.token_var.type)
+
             place_type = marking_type.get_place_type_by_name(node.place_name)
             return Builder.For( target = cyast.Name(node.token_var.name),
                                 iter = place_type.iterable_expr( env = self.env,
@@ -212,8 +242,8 @@ class CompilerVisitor(coreir.CompilerVisitor):
                 variable = sub_arc.data['local_name']
                 index = sub_arc.data['index']
 
-                # ensure that the variable is declared
-                self.env.declare_cvar(index, type2str(TypeInfo.Int))
+                self.try_declare_cvar(index, TypeInfo.Int)
+                self.try_declare_cvar(variable, place_type.token_type)
 
                 assign = cyast.Assign(targets=[cyast.Name(variable)],
                                       value=place_type.get_token_expr(self.env,
@@ -238,6 +268,9 @@ class CompilerVisitor(coreir.CompilerVisitor):
                 index = sub_arc.data['index']
                 init = cyast.Assign( targets =  [cyast.Name(index)],
                                      value = cyast.Num(0) )
+
+                self.try_declare_cvar(index, TypeInfo.Int)
+                self.try_declare_cvar(variable, place_type.token_type)
 
                 enumeration = cyast.For( target = cyast.Name(variable),
                                          iter = place_type.iterable_expr( env = self.env,
@@ -285,6 +318,7 @@ class CompilerVisitor(coreir.CompilerVisitor):
                     )
 
     def compile_MarkingCopy(self, node):
+        self.try_declare_cvar(node.dst.name, node.dst.type)
         return self.env.marking_type.gen_copy( env = self.env,
                                                src_marking_name = node.src.name,
                                                dst_marking_name = node.dst.name,
@@ -348,6 +382,7 @@ class CompilerVisitor(coreir.CompilerVisitor):
         return CVarSet()
 
     def compile_SuccT(self, node):
+        print "SUCCT !"
         self.env.push_cvar_env()
         self.env.push_variable_provider(node.variable_provider)
 
@@ -365,9 +400,10 @@ class CompilerVisitor(coreir.CompilerVisitor):
             if (not var.type.is_UserType) or is_cython_type( var.type ):
                 decl.add(cyast.CVar(name=var.name,
                                     type=type2str(var.type))
-                         )
+        )
 
         additionnal_decls = self.env.pop_cvar_env()
+        print "additionnal_decls :", additionnal_decls
         for var in additionnal_decls:
             decl.add(var)
 

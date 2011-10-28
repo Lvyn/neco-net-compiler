@@ -284,3 +284,41 @@ cdef class MultiSet:
             s += dump(e) + ' '
         return s
 
+
+
+
+################################################################################
+
+cpdef state_space():
+    cdef set visited
+    cdef set visit
+    cdef set succ
+    cdef int count
+    cdef int last_count = 0
+    start = time()
+    last_time = start
+    try:
+        visited = set()
+        visit = set([init()])
+        succ = set()
+        count = 0
+        start = time()
+        while True:
+            count += 1
+            m = visit.pop()
+            visited.add(m)
+            succ = succs(m)
+            visit.update(succ.difference(visited))
+            if (count % 250 == 0):
+                new_time = time()
+                elapsed_time = new_time - start
+                sys.stdout.write("\r{}st {:5.3f}s (global {:5.0f}st/s, since last log {:5.0f}st/s)".format(count,
+                                                                                                           elapsed_time,
+                                                                                                           count / elapsed_time,
+                                                                                                           100 / (new_time-last_time)))
+                sys.stdout.flush()
+                last_time = new_time
+    except KeyError:
+        print
+        return visited
+    return visited

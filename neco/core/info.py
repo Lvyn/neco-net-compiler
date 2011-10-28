@@ -248,6 +248,14 @@ class TypeInfo(object):
         else:
             return False
 
+    def __le__(self, other):
+        if self._kind == other._kind:
+            return True
+        elif self.is_AnyType:
+            return True
+        else:
+            return False
+
     @property
     def is_AnyType(self):
         return self._kind == TypeKind.AnyType
@@ -467,6 +475,10 @@ class TupleInfo(TokenInfo):
     def __init__(self, components = [], *args, **kwargs):
         TokenInfo.__init__(self, components, *args, kind = TokenKind.Tuple, **kwargs)
         self.components = components
+        print "TUPLE"
+        print self.components
+        print "END_TUPLE"
+        print
 
     def variables(self):
         vardict = defaultdict(lambda : 0)

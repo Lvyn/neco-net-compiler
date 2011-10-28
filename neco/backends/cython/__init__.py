@@ -12,9 +12,8 @@ from neco.utils import Factory, flatten_ast
 import neco.core as core
 import neco.core.nettypes as coretypes
 import netir, nettypes
-from utils import Env
 import neco.config as config
-from nettypes import register_cython_type, is_cython_type
+from nettypes import register_cython_type, is_cython_type, Env
 from cyast import Builder, E, Unparser, to_ast
 
 _backend_ = "cython"
@@ -139,37 +138,6 @@ class Compiler(core.Compiler):
         Unparser(module_ast, f)
 
         f.write(env.ending_pyx_declarations)
-
-        f.write("""
-
-################################################################################
-
-cpdef set state_space():
-    cdef set visited
-    cdef set visit
-    cdef set succ
-    cdef int count
-    try:
-        visited = set()
-        visit = set([init()])
-        succ = set()
-        count = 0
-        start = time()
-        while True:
-            count += 1
-            m = visit.pop()
-            visited.add(m)
-            succ = succs(m)
-            visit.update(succ.difference(visited))
-    except KeyError:
-        return visited
-    except ValueError as e:
-        print e
-        return visited
-    return visited
-""")
-
-        f.close()
 
         path = search_file("ctypes_ext.pxd", self.additional_search_paths)
         shutil.copyfile(path, "ctypes_ext.pxd")

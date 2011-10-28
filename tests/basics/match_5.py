@@ -1,9 +1,9 @@
 from snakes.nets import *
 
 net = PetriNet('Net')
-s1 = Place('s1', [ (1, (2, (3, 4, 5))) ])
+s1 = Place('s1', [ (1, (2, (3, 4, 5))) ], CrossProduct(tInteger, CrossProduct(tInteger, CrossProduct(tInteger, tInteger, tInteger))) )
 s1.is_OneSafe = False
-s2 = Place('s2', [])
+s2 = Place('s2', [], CrossProduct(tInteger, CrossProduct(tInteger, CrossProduct(tInteger, tInteger))))
 s2.is_OneSafe = False
 
 net.add_place(s1)

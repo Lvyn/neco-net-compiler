@@ -332,7 +332,7 @@ class SuccTGenerator(object):
 
                     place_info = self.net_info.place_by_name( input.place_name )
                     place_type = self.marking_type.get_place_type_by_name( place_info.name )
-                    token_var = VariableInfo( inner.data['local_name'], type = place_type.type )
+                    token_var = VariableInfo( inner.data['local_name'], type = place_type.token_type )
 
                     # get a tuple
                     builder.begin_TokenEnumeration( arc = input,
@@ -393,7 +393,7 @@ class SuccTGenerator(object):
 
                 place_info = self.net_info.place_by_name( input.place_name )
                 place_type = self.marking_type.get_place_type_by_name( place_info.name )
-                token_var = VariableInfo( input.tuple.data['local_name'], type=place_type.type)
+                token_var = VariableInfo( input.tuple.data['local_name'], type=place_type.token_type)
 
                 # get a tuple
                 builder.begin_TokenEnumeration( arc = input,
@@ -486,7 +486,7 @@ class SuccTGenerator(object):
         builder = self.builder
         trans = self.transition
         variable_helper = self.variable_helper
-
+        print "<><>", tuple
         # type already checked
         # match pattern
         builder.begin_Match( tuple_info = tuple )
@@ -518,13 +518,13 @@ class SuccTGenerator(object):
         #     self.try_unify_shared_variable(name)
 
         for (inner, type) in izip_longest(tuple.split(), tuple.type.split(), fillvalue=TypeInfo.AnyType):
-            if inner.is_Tuple:
-                if not type.is_AnyType:
-                    inner.update_type(type)
+            if not type.is_AnyType:
+                inner.update_type(type)
 
+            if inner.is_Tuple:
                 # notify new variable introduction
                 tuple_var = VariableInfo( name = inner.data['local_name'], type = inner.type)
-
+                print tuple_var
                 if not (inner.type.is_TupleType and len(inner.type) == len(inner)):
                     # check its type
                     builder.begin_CheckTuple( tuple_var = tuple_var,
