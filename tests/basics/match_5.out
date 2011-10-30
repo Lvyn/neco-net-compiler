@@ -1,9 +1,9 @@
 check - markings
 begin marking
-s1 - 
-s2 - (2, (2, (2, 5)))
+s1 - []
+s2 - [(2, (2, (2, 5)))]
 end marking
 begin marking
-s1 - (1, (2, (3, 4, 5)))
-s2 - 
+s1 - [(1, (2, (3, 4, 5)))]
+s2 - []
 end marking

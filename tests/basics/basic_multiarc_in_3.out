@@ -1,9 +1,9 @@
 check - markings
 begin marking
-s1 - dot dot dot
-s2 - 
+s1 - [dot, dot, dot]
+s2 - []
 end marking
 begin marking
-s1 - dot
-s2 - dot
+s1 - [dot]
+s2 - [dot]
 end marking

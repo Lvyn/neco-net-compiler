@@ -21,6 +21,7 @@ module netir version "$Revision: 1 $"
 	| SuccP(identifier function_name,
 		VariableInfo arg_marking_set,
 		VariableInfo arg_marking,
+		VariableInfo flow_variable,
 		Stmt* body,
 		ProcessInfo process_info,
 		VariableProvider variable_provider)
@@ -81,7 +82,7 @@ module netir version "$Revision: 1 $"
 		     VariableInfo marking)
 
 
-	| FlushIn(identifier token_name,
+	| FlushIn(VariableInfo token_var,
 		  VariableInfo marking,
 		  identifier place_name)
 

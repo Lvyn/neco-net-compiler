@@ -78,7 +78,6 @@ class BTTokenEnumeration(netir.TokenEnumeration):
     """ Base class for NetIR nodes that enumerate tokens in BTPlaceType. """
 
     def __init__(self, node):
-        self.token_is_used = node.token_is_used
         self.token_var = node.token_var
         self.place_name = node.place_name
         self.marking = node.marking

@@ -248,13 +248,16 @@ class TypeInfo(object):
         else:
             return False
 
-    def __le__(self, other):
+    def __lt__(self, other):
         if self._kind == other._kind:
             return True
         elif self.is_AnyType:
             return True
         else:
             return False
+
+    def __gt__(self, other):
+        return other.__lt__(self)
 
     @property
     def is_AnyType(self):
@@ -475,10 +478,6 @@ class TupleInfo(TokenInfo):
     def __init__(self, components = [], *args, **kwargs):
         TokenInfo.__init__(self, components, *args, kind = TokenKind.Tuple, **kwargs)
         self.components = components
-        print "TUPLE"
-        print self.components
-        print "END_TUPLE"
-        print
 
     def variables(self):
         vardict = defaultdict(lambda : 0)
@@ -1179,7 +1178,173 @@ class ProcessInfo(object):
                      "\nend process %s" % self.name ])
         return s
 
+################################################################################
+# VariableProvider
+################################################################################
 
+class VariableProvider(object):
+    """ Simple class that produces new variable names.
+
+    >>> v = VariableProvider()
+    >>> v.new_variable()
+    '_v0'
+    >>> v.new_variable()
+    '_v1'
+    >>> v.new_variable()
+    '_v2'
+    >>> ws = set(['_v1', 'a', 'b'])
+    >>> v = VariableProvider(ws)
+    >>> v.new_variable()
+    '_v0'
+    >>> v.new_variable()
+    '_v2'
+    >>> sorted(ws)
+    ['_v0', '_v1', '_v2', 'a', 'b']
+
+    """
+    __slots__ = ('_wordset', '_next', '_variables')
+
+    def __init__(self, wordset = None):
+        """ Initialise provider.
+
+        The provider will produce new names and ensures that they do
+        not appear in \C{wordset}. The wordset will be updated when
+        new variables appear.
+
+        @param wordset: names to ignore.
+        @type wordset: C{wordset}
+        """
+        self._wordset = wordset if wordset else set()
+        self._next = 0
+
+    def new_variable(self, type = None, name = None):
+        var_name = self._new_name(name=name)
+        var_type = type if type else TypeInfo.AnyType
+        return VariableInfo(var_name, var_type)
+
+    def _new_name(self, name = None):
+        """ Produce a new variable name.
+
+        @return new variable name
+        @rtype C{str}
+        """
+        if name:
+            if not name in self._wordset:
+                self._wordset.add(name)
+                return name
+            else:
+                next = self._next
+                while True:
+                    final_name = '{}_v{}'.format(name, next)
+                    next += 1
+                    if not final_name in self._wordset:
+                        break
+                self._next = next
+                self._wordset.add(final_name)
+                print >> sys.stderr, "(W) cannot introduce a variable called {}, using {} instead.".format(name, final_name)
+                return final_name
+
+        next = self._next
+        while True:
+            name = '_v{}'.format(next)
+            next += 1
+            if not name in self._wordset:
+                break
+        self._next = next
+        self._wordset.add(name)
+        return name
+
+################################################################################
+
+class SharedVariableHelper(VariableProvider):
+    """ Utility class that helps handling shared variables.
+    """
+
+    __slots__ = ('_shared', '_used', '_local_variables', '_unified', '_variables')
+
+    def __init__(self, shared, wordset):
+        """ Build a new helper from a set of shared variables
+        and a word set.
+
+        @param shared: shared variables with occurences.
+        @type shared: C{dict} : VariableInfo -> int
+        @param wordset: word set representing existing symbols.
+        @type wordset: C{WordSet}
+        """
+        VariableProvider.__init__(self, wordset)
+        self._shared = shared
+        self._used = defaultdict(lambda : 0)
+        self._local_variables = defaultdict(list)
+        self._unified = defaultdict(lambda : False)
+
+        self._variables = defaultdict(set)
+
+    def mark_as_used(self, variable, local_variable):
+        """ Mark a variable as used.
+
+        The local variable is important since it will be used when performing
+        an unification step.
+
+        @param variable: variable.
+        @type name: C{str}
+        @param local_variable: local variable used for the variable.
+        @type name: C{str}
+        """
+        self._used[variable.name] += 1
+        self._local_variables[variable.name].append(local_variable)
+
+    def all_used(self, variable):
+        """ Check if all instances of a variable are used.
+
+        @param variable: variable to check.
+        @returns: C{True} if all variables were used, C{False} otherwise.
+        @rtype: C{bool}
+        """
+        return self._used[variable.name] == self._shared[variable.name]
+
+    def get_local_names(self, variable):
+        """ Get all local names of a variable.
+
+        @return: all local names of a variable.
+        @rtype: C{list}
+        """
+        return [ var.name for var in self.get_local_variables(variable) ]
+
+    def get_local_variables(self, variable):
+        return self._local_variables[variable.name]
+
+
+    def is_shared(self, variable):
+        """ Check if a variable is shared.
+
+        @return: True if the variable is shared, C{False} otherwise.
+        @rtype: C{bool}
+        """
+        return variable.name in self._shared
+
+
+    def new_variable_occurence(self, variable):
+        if self.is_shared(variable):
+            new_var = self.new_variable()
+            self._variables[variable.name].add(variable)
+            self._variables[variable.name].add(new_var)
+            return new_var
+        else:
+            self._variables[variable.name] = [ variable ]
+            return variable
+
+    def new_variable(self, type = None):
+        new_var = VariableProvider.new_variable(self, type)
+        self._variables[new_var.name] = [ new_var ]
+        return new_var
+
+    def unified(self, variable):
+        return self._unified[variable.name]
+
+    def set_unified(self, variable):
+        self._unified[variable.name] = True
+
+################################################################################
 
 if __name__ == '__main__':
     import doctest

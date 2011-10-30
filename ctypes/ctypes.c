@@ -12,26 +12,27 @@ int  g_tab_size = 0;
 
 #define MAX(a, b) (a) > (b) ? (a) : (b)
 
+static char g_buf[1024];
+
 char* int_place_type_cstr(int_place_type_t* pt)
 {
     // TO DO accept bigger strings
     char tmp[20];
-    char buf[1024];
-    char *ret = NULL;
     int i, size;
 
-    buf[0] = '\0';
-
+    g_buf[0] = '\0';
+    strcpy(g_buf, "[");
     size = int_place_type_size(pt);
     for (i = size-1; i >= 0; i--) {
 	sprintf(tmp, "%d", pt->data[i]);
 	if (i > 0)
-	    strcat(tmp, " ");
-	strcat(buf, tmp);
+	    strcat(tmp, ", ");
+	strcat(g_buf, tmp);
     }
-    //ret = malloc(sizeof(strlen(buf)+1));
-    //strcpy(ret, buf);
-    return buf;
+    strcat(g_buf, "]");
+    //ret = malloc(sizeof(strlen(g_buf)+1));
+    //strcpy(ret, g_buf);
+    return g_buf;
 }
 
 int int_place_type_eq(int_place_type_t* pt1, int_place_type_t* pt2) {

@@ -8,18 +8,8 @@ import operator, sys, traceback
 cpdef dump(object obj):
     if hasattr(obj, '__dump__'):
         return obj.__dump__()
-
-    elif isinstance(obj, tuple):
-        s = '('
-        for i,component in enumerate(obj):
-            if i > 0:
-                s += ','
-            s += dump(component)
-        s += ')'
-        return s
-
     else:
-        return str(obj)
+        return repr(obj)
 
 cpdef __neco_compare__(object left, object right):
     if left < right:
@@ -273,19 +263,12 @@ cdef class MultiSet:
 
 
     cpdef __dump__(MultiSet self):
-        cdef list l = []
-        cdef int i
-        cdef str s
+        cdef list elts = []
+
         for elt, count in self._data.iteritems():
-            for 0 <= i < count:
-                l.append(elt)
-        s = ''
-        for e in l:
-            s += dump(e) + ' '
-        return s
+            elts.extend( [dump(elt)] * count )
 
-
-
+        return '[' + ', '.join(elts) + ']'
 
 ################################################################################
 
@@ -294,7 +277,7 @@ cpdef state_space():
     cdef set visit
     cdef set succ
     cdef int count
-    cdef int last_count = 0
+    #cdef int last_count = 0
     start = time()
     last_time = start
     try:

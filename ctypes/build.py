@@ -32,18 +32,19 @@ if __name__ == '__main__':
         ext_pyx.close()
         extd_pyx.close()
 
-        # build extension
-        setup(name="ctypes_extd",
-              cmdclass={'build_ext': build_ext},
-              ext_modules=[Extension("ctypes_extd", ["ctypes_extd.pyx"],
-                                     extra_link_args=["-lctypesd", "-L."])],
-              script_args=["build_ext", "--inplace"])
+        # # build extension
+        # setup(name="ctypes_extd",
+        #       cmdclass={'build_ext': build_ext},
+        #       ext_modules=[Extension("ctypes_extd", ["ctypes_extd.pyx"],
+        #                              extra_link_args=["-lctypesd", "-L."])],
+        #       script_args=["build_ext", "--inplace"])
 
     else: # profiler disabled
         # build extension
-        setup(name="ctypes_ext",
-              cmdclass={'build_ext': build_ext},
-              ext_modules=[Extension("ctypes_ext", ["ctypes_ext.pyx"],
-                                     extra_link_args=["-lctypes", "-L."])],
-              script_args=["build_ext", "--inplace"])
+        # setup(name="ctypes_ext",
+        #       cmdclass={'build_ext': build_ext},
+        #       ext_modules=[Extension("ctypes_ext", ["ctypes_ext.pyx"],
+        #                              extra_link_args=["-lctypes", "-L."])],
+        #       script_args=["build_ext", "--inplace"])
+        pass
 

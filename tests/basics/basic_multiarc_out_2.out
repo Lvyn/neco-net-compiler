@@ -1,9 +1,9 @@
 check - markings
 begin marking
-s1 - 42
-s2 -
+s1 - [42]
+s2 - []
 end marking
 begin marking
-s1 -
-s2 - 21 84
+s1 - []
+s2 - [21, 84]
 end marking

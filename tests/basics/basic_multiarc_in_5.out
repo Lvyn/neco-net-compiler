@@ -1,18 +1,18 @@
 check - markings
 begin marking
-s1 - 1 2 3
-s2 -
+s1 - [1, 2, 3]
+s2 - []
 end marking
 begin marking
-s1 - 1
-s2 - 5
+s1 - [1]
+s2 - [5]
 end marking
 begin marking
-s1 - 2
-s2 - 4
+s1 - [2]
+s2 - [4]
 end marking
 begin marking
-s1 - 3
-s2 - 3
+s1 - [3]
+s2 - [3]
 end marking
 

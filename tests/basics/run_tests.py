@@ -1,36 +1,30 @@
 #!/usr/bin/python
-import glob, re, os
-import argparse
+import glob, re, os, argparse
+from collections import defaultdict
+
+from snakes.nets import *
+
 
 class Marking(object):
     def __init__(self):
-        self.data = {}
+        self.places = defaultdict(list)
 
     def add_token(self, place, token):
-        try:
-            place = self.data[place]
-        except KeyError:
-            self.data[place] = {}
-            place = self.data[place]
-        try:
-            place[token] += 1
-        except KeyError:
-            place[token] = 1
+        data = self.places[place]
+        data.append(token)
+        self.places[place] = sorted(data)
 
     def create_place(self, place):
-        try:
-            self.data[place]
-        except KeyError:
-            self.data[place] = {}
+        self.data[place]
 
     def __repr__(self):
-        return str(self.data)
+        return str(self.places)
 
     def __str__(self):
-        return str(self.data)
+        return str(self.places)
 
     def __eq__(self, other):
-        return self.data == other.data
+        return self.places == other.places
 
 class MarkingSet(object):
     def __init__(self):
@@ -122,16 +116,20 @@ class SpecReader(FileReader):
             raise FormatError("%s: syntax error at line %s" % (self.filename, self.line))
         s = self.readline()
         while not re.match(r"end marking", s):
-            m = re.match(r'(?P<place>[a-z0-9().#\'`]+)\s*-\s*(?P<tokens>(\'?\w*\'?\s)*)', s)
+            m = re.match(r'(?P<place>[a-z0-9().#\'`]+)\s*-\s*(?P<tokens>(.*))', s)
             if not m:
                 raise FormatError("%s: syntax error at line %d" % (self.filename, self.line))
             place = m.group('place')
-            tokens = re.split(r'\W+', m.group('tokens'))
-            for token in tokens:
-                if token == '':
-                    marking.create_place(place)
-                    continue
-                marking.add_token(place, token)
+            try:
+                tokens = eval(m.group('tokens'))
+
+                for token in tokens:
+                    marking.add_token(place, token)
+            except SyntaxError:
+                raise FormatError("%s: syntax error at line %d" % (self.filename, self.line))
+            except TypeError:
+                raise FormatError("%s: syntax error at line %d" % (self.filename, self.line))
+
             s = self.readline()
         self.markings.add(marking)
 
@@ -158,10 +156,16 @@ def run_test(module_name, lang='python', opt=False, pfe=False):
     r = p.wait()
     if r != 0:
         return False
-    e_reader = SpecReader(expected)
-    g_reader = SpecReader(got)
-    e_reader.read()
-    g_reader.read()
+
+    try:
+        e_reader = SpecReader(expected)
+        e_reader.read()
+        g_reader = SpecReader(got)
+        g_reader.read()
+    except FormatError as e:
+        print >> sys.stderr, e
+        return False
+
     if not e_reader.markings == g_reader.markings:
         print "test %s failed..." % module_name
         print "expected: "

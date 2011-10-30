@@ -1,16 +1,16 @@
 check - markings
 begin marking
-s1 - dot
-s2 -
-s3 -
+s1 - [dot]
+s2 - []
+s3 - []
 end marking
 begin marking
-s1 -
-s2 - dot
-s3 -
+s1 - []
+s2 - [dot]
+s3 - []
 end marking
 begin marking
-s1 -
-s2 -
-s3 - dot
+s1 - []
+s2 - []
+s3 - [dot]
 end marking

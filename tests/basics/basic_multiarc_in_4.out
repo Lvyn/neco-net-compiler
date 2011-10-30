@@ -1,13 +1,13 @@
 check - markings
 begin marking
-s1 - dot dot dot dot
-s2 -
+s1 - [dot, dot, dot, dot]
+s2 - []
 end marking
 begin marking
-s1 - dot dot
-s2 - dot
+s1 - [dot, dot]
+s2 - [dot]
 end marking
 begin marking
-s1 -
-s2 - dot dot
+s1 - []
+s2 - [dot, dot]
 end marking
