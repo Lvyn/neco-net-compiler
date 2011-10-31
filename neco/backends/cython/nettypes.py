@@ -1193,7 +1193,7 @@ class StaticMarkingType(coretypes.MarkingType):
         builder.begin_FunctionDef(name='__dump__',
                                   args=A('self'))
 
-        builder.emit(E('s = ["begin marking"]'))
+        builder.emit(E('s = ["{"]'))
         for (i, (place_name, place_type)) in enumerate(items):
             if place_type.is_revelant:
 
@@ -1202,12 +1202,16 @@ class StaticMarkingType(coretypes.MarkingType):
                                                  args = [place_type.dump_expr(env, self_var)])))
                 else:
                     builder.emit(stmt(cyast.Call(func = E('s.append'),
-                                                 args = [ ast.BinOp(left=cyast.Str(s=place_name + " - "),
+                                                 args = [ ast.BinOp(left=cyast.Str(s=repr(place_name) + " : "),
                                                                     op=cyast.Add(),
-                                                                    right=place_type.dump_expr(env, self_var)) ]))
+                                                                    right=ast.BinOp(left=place_type.dump_expr(env, self_var),
+                                                                                    op=cyast.Add(),
+                                                                                    right=cyast.Str(s=',')
+                                                                                    ) ) ]
+                                                 )
+                                      )
                                  )
-        builder.emit(stmt(E('s.append("end marking")')))
-        builder.emit(stmt(E('s.append("")')))
+        builder.emit(stmt(E('s.append("}")')))
         builder.emit_Return(E('"\\n".join(s)'))
 
         builder.end_FunctionDef()
@@ -2043,11 +2047,11 @@ class FlowPlaceType(coretypes.PlaceType, CythonPlaceType):
             if place_name == place_info.name:
                 mask = int(self.pack.field_compatible_mask(self.info, next_flow))
                 check =  Builder.EqCompare(self.place_expr(env, marking_var), E(mask))
-                return cyast.BinOp(left=cyast.Str(place_name + ' - '),
+                return cyast.BinOp(left=cyast.Str(repr(place_name) + ' : '),
                                    op=cyast.Add(),
                                    right=cyast.IfExp(test=check,
-                                                     body=cyast.Str('[dot]'),
-                                                     orelse=cyast.Str('[]'))
+                                                     body=cyast.Str('[dot],'),
+                                                     orelse=cyast.Str('[],'))
                                    )
         assert(False)
 

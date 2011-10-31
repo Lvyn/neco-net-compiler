@@ -1,34 +1,32 @@
 #!/usr/bin/python
-import glob, re, os, argparse
+import glob, re, os, argparse, subprocess
 from collections import defaultdict
-
 from snakes.nets import *
 
-
 class Marking(object):
-    def __init__(self):
-        self.places = defaultdict(list)
+    def __init__(self, init = None):
+        self.data = init if init else {}
+        self.finalized = False
 
-    def add_token(self, place, token):
-        data = self.places[place]
-        data.append(token)
-        self.places[place] = sorted(data)
-
-    def create_place(self, place):
-        self.data[place]
+    def finalize(self):
+        assert( not self.finalized )
+        new_data = { p : sorted(ms) for p, ms in self.data }
+        self.data = new_data
+        self.finalized = True
 
     def __repr__(self):
-        return str(self.places)
+        return repr(self.data)
 
     def __str__(self):
-        return str(self.places)
+        return str(self.data)
 
     def __eq__(self, other):
-        return self.places == other.places
+        return self.data == other.data
+
 
 class MarkingSet(object):
-    def __init__(self):
-        self.data = set()
+    def __init__(self, init = None):
+        self.data = init if init else set()
 
     def add(self, marking):
         self.data.add(marking)
@@ -53,104 +51,22 @@ class MarkingSet(object):
     def __repr__(self):
         return repr(self.data)
 
-class FormatError(Exception):
-    def __init__(self, msg):
-        self.msg = msg
-
-    def __str__(self):
-        return self.msg
-
-
-class FileReader(object):
-
-    def __init__(self, filename):
-        self.filename = filename
-        self.line = 0
-        self.file = open(filename, 'r')
-
-    def readline(self):
-        s = self.file.readline()
-        if s == '':
-            raise EOFError
-        self.line += 1
-        if s == '\n':
-            return self.readline()
-        return s
-
-class SpecReader(FileReader):
-
-    def __init__(self, filename):
-        FileReader.__init__(self, filename)
-        self.markings = MarkingSet()
-
-    def read(self):
-        check = self.readcheck()
-        if check == 'markings':
-            self.readmarkings()
-        else:
-            raise FormatError("unknown checking specification (%s) at line %d" % (check, self.line))
-
-    def readcheck(self):
-        s = self.readline()
-        if self.line != 1:
-            raise FormatError("check should be the first line")
-        m = re.match(r"check\s*-\s*(?P<check>\w+)", s)
-        if not m:
-            raise FormatError("%s: syntax error at line %s" % (self.filename, self.line))
-        check = m.group('check')
-        return check
-
-    def readmarkings(self):
-        while True:
-            try:
-                self.readmarking()
-            except EOFError:
-                break
-
-    def readmarking(self):
-        marking = Marking()
-        s = self.readline()
-        m = re.match(r"begin marking", s)
-        if not m:
-            print s
-            raise FormatError("%s: syntax error at line %s" % (self.filename, self.line))
-        s = self.readline()
-        while not re.match(r"end marking", s):
-            m = re.match(r'(?P<place>[a-z0-9().#\'`]+)\s*-\s*(?P<tokens>(.*))', s)
-            if not m:
-                raise FormatError("%s: syntax error at line %d" % (self.filename, self.line))
-            place = m.group('place')
-            try:
-                tokens = eval(m.group('tokens'))
-
-                for token in tokens:
-                    marking.add_token(place, token)
-            except SyntaxError:
-                raise FormatError("%s: syntax error at line %d" % (self.filename, self.line))
-            except TypeError:
-                raise FormatError("%s: syntax error at line %d" % (self.filename, self.line))
-
-            s = self.readline()
-        self.markings.add(marking)
-
-import subprocess
-
 failed_list = []
 
 def run_test(module_name, lang='python', opt=False, pfe=False):
     print "Running test %s..." % module_name
-    expected = module_name + '.out'
-    got = module_name + '_res'
+    expect = module_name + '_out'
+    result = module_name + '_res'
 
     args = ['python', "../../neco",
             '-m', module_name,
-            '-k', got,
+            '-k', result,
             '-l', lang,
             '-I../common']
     if opt:
         args.append('--optimise')
     if pfe:
-        args.append('--flow-elimination')
+        args.append('--optimise-flow')
 
     p = subprocess.Popen(args, stdout=subprocess.PIPE)
     r = p.wait()
@@ -158,20 +74,32 @@ def run_test(module_name, lang='python', opt=False, pfe=False):
         return False
 
     try:
-        e_reader = SpecReader(expected)
-        e_reader.read()
-        g_reader = SpecReader(got)
-        g_reader.read()
-    except FormatError as e:
-        print >> sys.stderr, e
+        expect_file = open(expect, 'r')
+        result_file = open(result, 'r')
+    except IOError as e:
+        print >> sys.stderr, str(e)
         return False
 
-    if not e_reader.markings == g_reader.markings:
+    try:
+        expect_markings = MarkingSet(eval(expect_file.read()))
+    except SyntaxError as e:
+        print >> sys.stderr, "Syntax error in file {}, please check this file.".format(expect)
+        print >> sys.stderr, str(e)
+        return False
+
+    try:
+        result_markings = MarkingSet(eval(result_file.read()))
+    except SyntaxError as e:
+        print >> sys.stderr, "Syntax error in file {}, please check this file.".format(result)
+        print >> sys.stderr, str(e)
+        return False
+
+    if not expect_markings == result_markings:
         print "test %s failed..." % module_name
         print "expected: "
-        print e_reader.markings
+        print expect_markings
         print "got: "
-        print g_reader.markings
+        print result_markings
         return False
     return True
 
@@ -309,4 +237,3 @@ if __name__ == '__main__':
         print "failed tests: "
         for test in failed_list:
             print test
-

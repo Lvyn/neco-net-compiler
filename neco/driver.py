@@ -2,7 +2,7 @@
 
 This module provides a CLI for neco that supports
 python 2.6 and python 2.7. This module also provides a
-facade function for neco C{neco_compile} that will create
+facade function for neco C{compile_net} that will create
 a python module based on its arguments and configuration
 provided to C{config} module.
 
@@ -81,7 +81,7 @@ def get_backends():
             bends[module._backend_] = module
     return bends
 
-def neco_compile(net, *arg, **kwargs):
+def compile_net(net, *arg, **kwargs):
     """ Compile C{net} Petri net into a Python module.
 
     The compiler and compilation options are these from C{config} module.
@@ -134,12 +134,12 @@ class CLIArgumentParser(object):
     """
     __metaclass__ = ABCMeta
 
-    lo_module,  so_module,  d_module,  h_module  = '--module',           '-m', 'spec',   'module containing the Petri net'
-    lo_netvar,  so_netvar,  d_netvar,  h_netvar  = '--net-variable',     '-n', 'net',    'variable with the Petri net object'
+    lo_module,  so_module,  d_module,  h_module  = '--module',           '-m',  None,   'module containing the Petri net'
+    lo_netvar,  so_netvar,  d_netvar,  h_netvar  = '--net-variable',     '-n',  None,    'variable with the Petri net object'
     lo_backend, so_backend, d_backend, h_backend = '--language',         '-l', 'python', 'select backend'
     lo_opt,     so_opt,     d_opt,     h_opt     = '--optimise',         '-o',  False,   'enable optimisations'
-    lo_pfe,     so_pfe,     d_pfe,     h_pfe     = '--flow-elimination', '-f',  False,   'enable process flow elimination'
-    lo_debug,   so_debug,   d_debug,   h_debug   = '--debug',            '-g',  False,   'print debug messages'
+    lo_pfe,     so_pfe,     d_pfe,     h_pfe     = '--optimise-flow',    '-f',  False,   'enable process flow elimination'
+    lo_debug,   so_debug,   d_debug,   h_debug   = '--debug',            '-d',  False,   'print debug messages'
     lo_profile, so_profile, d_profile, h_profile = '--profile',          '-p',  False,   'enable profiling support'
     lo_include, so_include, d_include, h_include = '--include',          '-I',  [],      'add additional search path'
     lo_explore, so_explore, d_explore, h_explore = '--explore',          '-e',  False,   'compute state space'
@@ -149,8 +149,10 @@ class CLIArgumentParser(object):
     lo_pnml,                d_pnml,    h_pnml    = '--pnml',                    None,    'specify a pnml input / output file'
     lo_import,  so_import,  d_import,  h_import  = '--import',           '-i',  [],      'specify additionnal file to import'
     lo_clean,   so_clean,   d_clean,   h_clean   = '--clean',            '-c',  [],      'clean all produced files'
+    lo_graph,   so_graph,   d_graph,   h_graph   = '--graph',            '-g',  None,    'dump marking graph'
 
     m_module, m_netvar, m_backend, m_include, m_atoms, m_dump_mk, m_abcd, m_pnml, m_import = 'MODULE', 'VARIABLE', 'LANGUAGE', 'PATH', 'ATOM', 'FILE', 'FILE', 'FILE', 'FILE'
+    m_map_file, m_graph_file = 'MAP_FILE', 'GRAPH_FILE'
 
     c_backend =  ['cython', 'python'] # backend choices
 
@@ -255,6 +257,8 @@ class CLIArgumentParserPy2_7(CLIArgumentParser):
         parser.add_argument(self.lo_pnml,    default=self.d_pnml,    help=self.h_pnml,    dest='pnml',    metavar=self.m_pnml, type=str)
         parser.add_argument(self.lo_import,  self.so_import,  default=self.d_import,  help=self.h_import,  dest='imports', metavar=self.m_import, action='append')
         parser.add_argument(self.lo_clean,   self.so_clean,   default=self.d_clean,   help=self.h_clean,   dest='clean',   action='store_true')
+        parser.add_argument(self.lo_graph,   self.so_graph,   default=self.d_graph,   help=self.h_graph,   dest='graph',   nargs=2, metavar=(self.m_map_file,
+                                                                                                                                             self.m_graph_file))
         self.args = parser.parse_args()
 
     def module(self):  return self.args.module
@@ -272,6 +276,71 @@ class CLIArgumentParserPy2_7(CLIArgumentParser):
     def pnml(self): return self.args.pnml
     def imports(self): return self.args.imports
     def clean(self): return self.args.clean
+    def graph(self): return self.args.graph
+
+
+def produce_pnml_file(abcd_file, pnml_file = None):
+    random.seed(time())
+    out_pnml = pnml_file if pnml_file != None else "/tmp/model{}.pnml".format(random.random())
+    if os.path.exists(out_pnml):
+        print >> sys.stderr, "ERROR: {} file already exists".format(out_pnml)
+        exit(-1)
+
+    from snakes.utils.abcd.main import main
+    if pnml_file:
+        print "generating {} file from {}".format(out_pnml, abcd_file)
+    else:
+        print "generating pnml file from {}".format(abcd_file)
+
+    main(['--pnml={}'.format(out_pnml), abcd_file])
+    return out_pnml
+
+def load_pnml_file(pnml_file, remove = False):
+    print "loading pnml file"
+    net = loads(pnml_file)
+    if remove:
+        print "deleting pnml file"
+        os.remove(pnml_file)
+    return net
+
+def load_snakes_net(module_name, net_var_name):
+    try:
+        fp, pathname, description = imp.find_module(module_name)
+    except ImportError as e:
+        fatal_error(str(e))
+
+    module = imp.load_module(module_name, fp, pathname, description)
+    fp.close()
+
+    try:
+        # return the net from the module
+        return getattr(module, net_var_name)
+    except AttributeError:
+        fatal_error('No variable named {varname} in module {module}'.format(varname=net_var_name,
+                                                                            module=module_name))
+
+
+def try_open_file(file_name):
+    try:
+        std_map = { 'stdout' : sys.stdout, 'stderr' : sys.stderr }
+        out_file = std_map[file_name]
+    except KeyError:
+        basename, extension = os.path.splitext(file_name)
+        if extension == '.bz2':
+            print "bz2 compression enabled for file {}".format(file_name)
+            out_file = bz2.BZ2File(file_name, 'w', 2048, compresslevel=6)
+        elif extension == '.gz':
+            print "gzip compression enabled for file {}".format(file_name)
+            out_file = gzip.GzipFile(file_name, 'w', compresslevel=6)
+        elif extension == '':
+            print "raw text output for file {}".format(file_name)
+            out_file = open(file_name, 'w')
+        else:
+            print >> sys.stderr, "unsupported extension: {}".format(extension)
+            print >> sys.stderr, "supported extensions: .bz2 .gz"
+            exit(-1)
+    return out_file
+
 
 class Driver(object):
     """ CLI entry point.
@@ -312,80 +381,80 @@ class Driver(object):
         self.do_explore    = cli_argument_parser.explore()
         self.module_name   = cli_argument_parser.module()
         self.net_var_name  = cli_argument_parser.net_var_name()
+        if not self.net_var_name:
+            self.net_var_name = 'net'
         self.dump_markings = cli_argument_parser.dump_markings()
         self.abcd          = cli_argument_parser.abcd()
         self.pnml          = cli_argument_parser.pnml()
         self.do_clean      = cli_argument_parser.clean()
 
+        graph = cli_argument_parser.graph()
+        if graph:
+            self.map_file, self.graph_file = graph
+            self.graph = True
+        else:
+            self.graph = False
+
+        ################################################################################
+        # check options
+        ################################################################################
+        if self.module_name:
+            if self.abcd:
+                fatal_error("A snakes module cannot be used with an abcd file.")
+            elif self.pnml:
+                fatal_error("A snakes module cannot be used with a pnml file.")
+
+        if self.do_explore:
+            if self.graph:
+                fatal_error("explore option cannot be used with graph option.")
+            if self.dump_markings:
+                fatal_error("explore option cannot be used with dump markings option.")
+
+        if self.dump_markings:
+            if self.graph:
+                fatal_error("dump markings option cannot be used with graph option.")
+
+
 
         # retrieve the Petri net from abcd file (produces a pnml file)
+        remove_pnml = not self.pnml
         if self.abcd:
-            random.seed(time())
-            out_pnml = self.pnml if self.pnml != None else "/tmp/model{}.pnml".format(random.random())
-            if self.pnml and os.path.exists(out_pnml):
-                print >> sys.stderr, "ERROR: {} file already exists".format(out_pnml)
-                exit(-1)
-
-            from snakes.utils.abcd.main import main
-            if self.pnml:
-                print "generating {} file from {}".format(out_pnml, self.abcd)
-            else:
-                print "generating pnml file from {}".format(self.abcd)
-            main(['--pnml={}'.format(out_pnml), self.abcd])
-            print "loading pnml file"
-            self.petri_net = loads(out_pnml)
-            if not self.pnml:
-                print "deleting pnml file"
-                os.remove(out_pnml)
+            self.pnml = produce_pnml_file(self.abcd, self.pnml)
 
         # retrieve the Petri net from pnml file
-        elif self.pnml:
-            print "loading pnml file"
-            self.petri_net = loads(self.pnml)
+        if self.pnml:
+            self.petri_net = load_pnml_file(self.pnml, remove_pnml)
 
         # retrieve the Petri net from module
         else:
-            try:
-                fp, pathname, description = imp.find_module(self.module_name)
-            except ImportError as e:
-                fatal_error(str(e))
-
-            self.module = imp.load_module(self.module_name, fp, pathname, description)
-            fp.close()
-
-            try:
-                self.petri_net = getattr(self.module, self.net_var_name)
-            except AttributeError:
-                fatal_error('No variable named {varname} in module {module}'.format(varname=self.net_var_name,
-                                                                                    module=self.module_name))
+            self.petri_net = load_snakes_net(self.module_name, self.net_var_name)
 
         if self.profile:
-            # profile compilation
+            # produce compiler trace
             import cProfile
             cProfile.run('driver.Driver._instance_.compile()', 'compile.prof')
-            # profile exploration
             if self.do_explore:
+                # produce exploration trace
                 cProfile.run('driver.Driver._instance_.explore()', 'explore.prof')
 
-        else:
-            self.compile()
-            if self.do_explore or self.dump_markings:
-                t, visited = self.explore()
-                # if self.dump_markings:
-                #     # select output stream
-                #     try:
-                #         std_map = { 'stdout' : sys.stdout, 'stderr' : sys.stderr }
-                #         dfile = std_map[self.dump_markings]
-                #     except KeyError:
-                #         dfile = open(self.dump_markings, 'w')
+            elif self.dump_markings:
+                # produce exploration trace with marking dump
+                cProfile.run('driver.Driver._instance_.dump_markings()', 'explore_dump.prof')
 
-                #     # write data
-                #     dfile.write("check - markings\n")
-                #     dfile.write("count - %d\n" % len(visited))
-                #     for s in visited:
-                #         dfile.write(s.__dump__())
-                #     # close stream
-                #     dfile.close()
+            elif self.graph:
+                # produce exploration trace with reachability graph
+                cProfile.run('driver.Driver._instance_.explore_graph()', 'explore_graph.prof')
+
+        else: # without profiler
+            self.compile()
+            if self.do_explore:
+                self.explore()
+
+            elif self.dump_markings:
+                self.explore_dump()
+
+            elif self.graph:
+                self.explore_graph()
 
         if self.do_clean:
             print "cleaning files..."
@@ -402,8 +471,8 @@ class Driver(object):
             except OSError: pass # ignore errors
 
         start = time()
-        self.compiled_net = neco_compile(net = self.petri_net,
-                                         atoms = self.atoms)
+        self.compiled_net = compile_net(net = self.petri_net,
+                                        atoms = self.atoms)
         end = time()
 
         if not self.compiled_net:
@@ -412,29 +481,9 @@ class Driver(object):
         print "compilation time: ", end - start
         return end - start
 
+
     def explore(self):
         """ Explore state space. """
-
-        if self.dump_markings:
-            # select output stream
-            try:
-                std_map = { 'stdout' : sys.stdout, 'stderr' : sys.stderr }
-                dfile = std_map[self.dump_markings]
-            except KeyError:
-                basename, extension = os.path.splitext(self.dump_markings)
-                if extension == '.bz2':
-                    print "marking dump - bz2 compression enabled"
-                    dfile = bz2.BZ2File(self.dump_markings, 'w', 2048, compresslevel=6)
-                elif extension == '.gz':
-                    print "marking dump - gzip compression enabled"
-                    dfile = gzip.GzipFile(self.dump_markings, 'w', compresslevel=6)
-                elif extension == '':
-                    print "marking dump - raw text dump enabled"
-                    dfile = open(self.dump_markings, 'w')
-                else:
-                    print >> sys.stderr, "marking dump - unsupported extension: {}".format(extension)
-                    print >> sys.stderr, "marking dump - supported extensions: .bz2 .gz"
-                    exit(-1)
 
         net = self.compiled_net
         if self.lang == "cython":
@@ -443,11 +492,67 @@ class Driver(object):
             end = time()
             print "exploration time: ", end - start
             print "len visited = %d" % (len(ss))
-            if self.dump_markings:
-                dfile.write("check - markings\n")
-                for s in ss:
-                    dfile.write(s.__dump__())
-                    to_print = []
+
+        else:
+            visited = set()
+            visit = set([net.init()])
+            visit2  = set()
+            succ = set()
+            inter = set()
+            succs2 = set()
+            count = 0
+            last_count = 0
+            start = time()
+            last_time = start
+
+            try:
+                while True:
+                    m = visit.pop()
+                    count+=1
+
+                    visited.add(m)
+                    succ = net.succs(m)
+                    succs2 = succ.difference(visited)
+                    visit.update(succs2)
+                    succ.clear()
+                    succs2.clear()
+                    if (count % 100 == 0):
+                        new_time = time()
+                        elapsed_time = new_time - start
+                        sys.stdout.write("\r{}st {:5.3f}s (global {:5.0f}st/s, since last log {:5.0f}st/s)".format(count,
+                                                                                                                   elapsed_time,
+                                                                                                                   count / elapsed_time,
+                                                                                                                   100/(new_time-last_time)))
+                        sys.stdout.flush()
+                        last_time = new_time
+
+            except KeyError:
+                end = time()
+                print
+                print "exploration time: ", end - start
+                print "len visited = %d" % (len(visited))
+
+            return (end - start, visited)
+
+
+    def explore_dump(self):
+        """ Explore state space. """
+
+        dfile = try_open_file(self.dump_markings)
+
+        net = self.compiled_net
+        if self.lang == "cython":
+            start = time()
+            ss = net.state_space()
+            end = time()
+            print "exploration time: ", end - start
+            print "len visited = %d" % (len(ss))
+
+            dfile.write('[')
+            for s in ss:
+                dfile.write(s.__dump__())
+                dfile.write(', ')
+            dfile.write(']')
             return (end - start, ss)
         else:
             visited = set()
@@ -461,8 +566,82 @@ class Driver(object):
             start = time()
             last_time = start
             to_print = []
-            if self.dump_markings:
-                dfile.write("check - markings\n")
+
+            try:
+                while True:
+                    m = visit.pop()
+                    to_print.append(m)
+                    count+=1
+
+                    visited.add(m)
+                    succ = net.succs(m)
+                    succs2 = succ.difference(visited)
+                    visit.update(succs2)
+                    succ.clear()
+                    succs2.clear()
+                    if (count % 100 == 0):
+                        new_time = time()
+                        elapsed_time = new_time - start
+                        sys.stdout.write("\r{}st {:5.3f}s (global {:5.0f}st/s, since last log {:5.0f}st/s)".format(count,
+                                                                                                                   elapsed_time,
+                                                                                                                   count / elapsed_time,
+                                                                                                                   100/(new_time-last_time)))
+                        sys.stdout.flush()
+                        last_time = new_time
+
+                        for s in to_print:
+                            dfile.write(s.__dump__())
+                            to_print = []
+            except KeyError:
+                end = time()
+                print
+                print "exploration time: ", end - start
+                print "len visited = %d" % (len(visited))
+
+            for s in to_print:
+                dfile.write(s.__dump__())
+                to_print = []
+            dfile.close()
+            return (end - start, visited)
+
+    def explore_graph(self):
+        """ Explore state space. """
+
+        # select output stream
+        map_file   = try_open_file(self.map_file)
+        graph_file = try_open_file(self.graph_file)
+
+        net = self.compiled_net
+        if self.lang == "cython":
+            start = time()
+            graph, map = net.state_space_graph()
+            end = time()
+            print "exploration time: ", end - start
+            print "len visited = %d" % (len(map.keys()))
+
+            map_file.write('{\n')
+            for key, value in map.iteritems():
+                map_file.write("{} : {}, ".format(repr(value), key.__dump__()))
+            map_file.write('}\n')
+
+            graph_file.write('{\n')
+            for key, value in graph.iteritems():
+                graph_file.write("{} : {},\n".format(repr(key), repr(value)))
+            graph_file.write('}\n')
+
+            return (end - start, graph.keys())
+        else:
+            visited = set()
+            visit = set([net.init()])
+            visit2  = set()
+            succ = set()
+            inter = set()
+            succs2 = set()
+            count = 0
+            last_count = 0
+            start = time()
+            last_time = start
+            to_print = []
             try:
                 while True:
                     m = visit.pop()
