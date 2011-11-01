@@ -785,7 +785,7 @@ class StaticMarkingType(coretypes.MarkingType):
 
         for place_info in self.places:
             self.place_types[place_info.name] = place_type_from_info(place_info, self)
-        
+
         # for place_info in self.flow_control_places:
         #     if self.packing_enabled:
         #         self.__gen_flow_control_place_type(place_info)

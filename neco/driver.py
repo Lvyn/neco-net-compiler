@@ -622,15 +622,15 @@ class Driver(object):
             print "exploration time: ", end - start
             print "len visited = %d" % (len(map.keys()))
 
-            map_file.write('{\n')
+            #map_file.write('{\n')
             for key, value in map.iteritems():
-                map_file.write("{} : {}, ".format(repr(value), key.__dump__()))
-            map_file.write('}\n')
+                map_file.write("{} : {}\n".format(repr(value), key.__dump__()))
+            #map_file.write('}\n')
 
-            graph_file.write('{\n')
+            #graph_file.write('{\n')
             for key, value in graph.iteritems():
-                graph_file.write("{} : {},\n".format(repr(key), repr(value)))
-            graph_file.write('}\n')
+                graph_file.write("{} : {}\n".format(repr(key), repr(value)))
+            #graph_file.write('}\n')
 
             return (end - start, graph.keys())
         else:
@@ -694,15 +694,15 @@ class Driver(object):
                 print "exploration time: ", end - start
                 print "len visited = %d" % (len(visited))
 
-            map_file.write('{\n')
+            #map_file.write('{\n')
             for key, value in mrk_id_map.iteritems():
-                map_file.write("{} : {}, ".format(repr(value), key.__dump__()))
-            map_file.write('}\n')
+                map_file.write("{} : {}\n".format(repr(value), key.__dump__()))
+            #map_file.write('}\n')
 
-            graph_file.write('{\n')
+            #graph_file.write('{\n')
             for key, value in graph.iteritems():
-                graph_file.write("{} : {},\n".format(repr(key), repr(value)))
-            graph_file.write('}\n')
+                graph_file.write("{} : {}\n".format(repr(key), repr(value)))
+            #graph_file.write('}\n')
 
             return (end - start, visited)
 
