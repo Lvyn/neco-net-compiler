@@ -635,7 +635,7 @@ class Driver(object):
             return (end - start, graph.keys())
         else:
             visited = set()
-            visit = set([net.init()])
+            visit = set()
             visit2  = set()
             succ = set()
             inter = set()
@@ -644,20 +644,40 @@ class Driver(object):
             last_count = 0
             start = time()
             last_time = start
-            to_print = []
+
+            graph = {}
+            mrk_id_map = {}
+
+            next = 1
+            m = net.init()
+            visit.add(m)
+            mrk_id_map[m] = next
+            next += 1
+
             try:
                 while True:
-                    m = visit.pop()
-                    to_print.append(m)
                     count+=1
-                    # close stream
-
+                    m = visit.pop()
                     visited.add(m)
+
+                    current_node_id = mrk_id_map[m]
                     succ = net.succs(m)
-                    succs2 = succ.difference(visited)
-                    visit.update(succs2)
-                    succ.clear()
-                    succs2.clear()
+                    succ_list = []
+
+                    for s_mrk in succ:
+                        if mrk_id_map.has_key(s_mrk):
+                            node_id = mrk_id_map[s_mrk]
+                            succ_list.append(node_id)
+                        else:
+                            node_id = next
+                            next += 1
+                            succ_list.append(node_id)
+                            mrk_id_map[s_mrk] = node_id
+
+                    graph[current_node_id] = succ_list
+
+                    visit.update(succ.difference(visited))
+
                     if (count % 100 == 0):
                         new_time = time()
                         elapsed_time = new_time - start
@@ -668,21 +688,21 @@ class Driver(object):
                         sys.stdout.flush()
                         last_time = new_time
 
-                        if self.dump_markings:
-                            for s in to_print:
-                                dfile.write(s.__dump__())
-                                to_print = []
             except KeyError:
                 end = time()
                 print
                 print "exploration time: ", end - start
                 print "len visited = %d" % (len(visited))
 
-            if self.dump_markings:
-                for s in to_print:
-                    dfile.write(s.__dump__())
-                    to_print = []
-                dfile.close()
+            map_file.write('{\n')
+            for key, value in mrk_id_map.iteritems():
+                map_file.write("{} : {}, ".format(repr(value), key.__dump__()))
+            map_file.write('}\n')
+
+            graph_file.write('{\n')
+            for key, value in graph.iteritems():
+                graph_file.write("{} : {},\n".format(repr(key), repr(value)))
+            graph_file.write('}\n')
 
             return (end - start, visited)
 
