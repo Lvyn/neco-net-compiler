@@ -7,17 +7,8 @@ def dump(e):
     if hasattr(e, '__dump__'):
         return e.__dump__()
 
-    elif isinstance(e, tuple):
-        s = '('
-        for i,component in enumerate(e):
-            if i > 0:
-                s += ','
-            s += dump(component)
-        s += ')'
-        return s
-
     else:
-        return str(e)
+        return repr(e)
 
 class multiset(hdict):
     """
@@ -320,10 +311,12 @@ class multiset(hdict):
         return self.keys()
 
     def __dump__(self):
-        l = []
+        l = ['[']
         for token in self:
             l.append(dump(token))
-        return " ".join(l)
+            l.append(', ')
+        l.append(']')
+        return "".join(l)
 
 if __name__ == "__main__":
     import doctest

@@ -537,12 +537,13 @@ class SuccTGenerator(object):
         builder = self.builder
 
 
-        output_impl_type = self.marking_type.get_place_type_by_name( output.place_info.name ).token_type
 
         if self._ignore_flow and output.place_info.flow_control:
             return
 
-        elif output.is_Expression:
+        output_impl_type = self.marking_type.get_place_type_by_name( output.place_info.name ).token_type
+
+        if output.is_Expression:
             # new temporary variable
             variable = self.variable_helper.new_variable(output_impl_type)
 

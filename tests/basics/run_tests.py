@@ -4,15 +4,8 @@ from collections import defaultdict
 from snakes.nets import *
 
 class Marking(object):
-    def __init__(self, init = None):
-        self.data = init if init else {}
-        self.finalized = False
-
-    def finalize(self):
-        assert( not self.finalized )
-        new_data = { p : sorted(ms) for p, ms in self.data }
-        self.data = new_data
-        self.finalized = True
+    def __init__(self, init):
+        self.data = { p : sorted(ms) for p, ms in init.iteritems() }
 
     def __repr__(self):
         return repr(self.data)
@@ -25,8 +18,8 @@ class Marking(object):
 
 
 class MarkingSet(object):
-    def __init__(self, init = None):
-        self.data = init if init else set()
+    def __init__(self, init):
+        self.data = set( [ Marking(d) for d in init ] )
 
     def add(self, marking):
         self.data.add(marking)

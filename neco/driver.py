@@ -567,6 +567,7 @@ class Driver(object):
             last_time = start
             to_print = []
 
+            dfile.write('[')
             try:
                 while True:
                     m = visit.pop()
@@ -591,7 +592,8 @@ class Driver(object):
 
                         for s in to_print:
                             dfile.write(s.__dump__())
-                            to_print = []
+                            dfile.write(', ')
+                        to_print = []
             except KeyError:
                 end = time()
                 print
@@ -600,7 +602,8 @@ class Driver(object):
 
             for s in to_print:
                 dfile.write(s.__dump__())
-                to_print = []
+                dfile.write(', ')
+            dfile.write(']')
             dfile.close()
             return (end - start, visited)
 

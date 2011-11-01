@@ -40,9 +40,9 @@ TypeInfo.register_type("Multiset")
 class PythonPlaceType(object):
     """ Base class for python backend place types. """
 
-    def place_expr(self, env, marking_name):
+    def place_expr(self, env, marking_var):
         return self.marking_type.gen_get_place(env,
-                                               marking_name = marking_name,
+                                               marking_var = marking_var,
                                                place_name = self.info.name,
                                                mutable = False)
     @property
@@ -66,23 +66,23 @@ class ObjectPlaceType(coretypes.ObjectPlaceType, PythonPlaceType):
     def new_place_expr(self, env):
         return E("multiset([])")
 
-    def size_expr(self, env, marking_name):
-        place_expr = self.place_expr(env, marking_name)
+    def size_expr(self, env, marking_var):
+        place_expr = self.place_expr(env, marking_var)
         return E('len').call([E(place_expr)])
 
-    def iterable_expr(self, env, marking_name):
-        return self.place_expr(env, marking_name)
+    def iterable_expr(self, env, marking_var):
+        return self.place_expr(env, marking_var)
 
-    def remove_token_stmt(self, env, compiled_token, marking_name, *args):
-        place_expr = self.place_expr(env, marking_name)
+    def remove_token_stmt(self, env, compiled_token, marking_var, *args):
+        place_expr = self.place_expr(env, marking_var)
         return stmt( ast.Call(func=ast.Attribute(value=place_expr,
                                                  attr="remove"),
                               args=[compiled_token]
                               )
                      )
 
-    def add_token_stmt(self, env, compiled_token, marking_name, *args):
-        place_expr = self.place_expr(env, marking_name)
+    def add_token_stmt(self, env, compiled_token, marking_var, *args):
+        place_expr = self.place_expr(env, marking_var)
         return stmt( ast.Call(func=ast.Attribute(value=place_expr,
                                                  attr="add"),
                               args=[compiled_token]) )
@@ -90,39 +90,39 @@ class ObjectPlaceType(coretypes.ObjectPlaceType, PythonPlaceType):
     def token_expr(self, env, value):
         return E(repr(value))
 
-    def copy_expr(self, env, marking_name):
-        place_expr = self.place_expr(env, marking_name)
+    def copy_expr(self, env, marking_var):
+        place_expr = self.place_expr(env, marking_var)
         return ast.Call(func=ast.Attribute(value=place_expr,
                                            attr="copy"
                                            )
                         )
 
-    def clear_stmt(self, env, marking_name):
-        place_expr = self.place_expr(env, marking_name)
+    def clear_stmt(self, env, marking_var):
+        place_expr = self.place_expr(env, marking_var)
         return stmt( ast.Assign(targets=[place_expr],
                                 value=ast.Call(func=ast.Name(id="multiset")))
                      )
 
-    def not_empty_expr(self, env, marking_name):
-        return self.place_expr(env, marking_name)
+    def not_empty_expr(self, env, marking_var):
+        return self.place_expr(env, marking_var)
 
 
-    def add_multiset_stmt(self, env, multiset, marking_name):
-        place_expr = self.place_expr(env, marking_name)
+    def add_multiset_stmt(self, env, multiset, marking_var):
+        place_expr = self.place_expr(env, marking_var)
         return stmt( ast.Call(func=ast.Attribute(name=place_expr,
                                                  attr='update'),
                               args=[multiset])
                      )
 
-    def add_items_stmt(self, env, multiset, marking_name):
-        place_expr = self.place_expr(env, marking_name)
+    def add_items_stmt(self, env, multiset, marking_var):
+        place_expr = self.place_expr(env, marking_var)
         return stmt( ast.Call(func=ast.Attribute(value=place_expr,
                                                  attr='add_items'),
                               args=[multiset])
                      )
 
-    def dump_expr(self, env, marking_name):
-        place_expr = self.place_expr(env, marking_name)
+    def dump_expr(self, env, marking_var):
+        place_expr = self.place_expr(env, marking_var)
         return ast.Call(func=ast.Attribute(value=place_expr,
                                            attr='__dump__'))
 
@@ -202,21 +202,22 @@ class StaticMarkingType(coretypes.MarkingType):
         return function
 
     def gen_copy_method(self, env):
-        function = ast.FunctionDef(name='copy',
-                                   args=A('self').param('alloc', default='True').ast())
+        vp = VariableProvider()
+        self_var = vp.new_variable(self.type, name='self')
+        marking_var = vp.new_variable(self.type)
 
-        tmp = [ast.Assign(targets=[ast.Name(id='m')],
-                          value=ast.Call(func=ast.Name(id='Marking'),
-                                         args=[ast.Name(id='False')])
-                          )
-               ]
+        function = ast.FunctionDef(name='copy',
+                                   args=A(self_var.name).param('alloc', default='True').ast())
+
+        tmp = [ ast.Assign(targets=[ast.Name(id=marking_var.name)],
+                           value=E('Marking(False)')) ]
+
         for name, place_type in self.place_types.iteritems():
-            tmp.append( ast.Assign(targets=[ast.Attribute(value=ast.Name(id='m'),
+            tmp.append( ast.Assign(targets=[ast.Attribute(value=ast.Name(id = marking_var.name),
                                                           attr=self.id_provider.get(name))],
-                                   value=place_type.copy_expr(env, marking_name = 'self')
-                                   )
+                                   value=place_type.copy_expr(env, marking_var = self_var))
                         )
-        tmp.append(ast.Return(ast.Name(id='m')))
+        tmp.append(ast.Return(ast.Name(id=marking_var.name)))
         function.body = tmp
         return function
 
@@ -248,7 +249,7 @@ class StaticMarkingType(coretypes.MarkingType):
         builder.end_FunctionDef()
         return builder.ast()
 
-    def free_marking_stmt(self, env, marking_name, *args):
+    def free_marking_stmt(self, env, marking_var, *args):
         pass
 
     def gen_repr_method(self, env):
@@ -279,24 +280,31 @@ class StaticMarkingType(coretypes.MarkingType):
         items = list(self.place_types.iteritems())
         items.sort(lambda (n1, t1), (n2, t2) : cmp(n1, n2))
 
-        builder = Builder()
-        builder.begin_FunctionDef( name = "__dump__", args = A("self").ast() )
+        vp = VariableProvider()
+        self_var = vp.new_variable(self.type, name='self')
+        list_var = vp.new_variable()
 
-        builder.emit( E('s = "begin marking"') )
+        builder = Builder()
+        builder.begin_FunctionDef( name = "__dump__", args = A(self_var.name).ast() )
+
+        builder.emit( E('%s = ["{"]' % list_var.name) )
         for (i, (place_name, place_type)) in enumerate(items):
             if place_type.is_ProcessPlace:
-                builder.emit( place_type.dump_expr(env, 'self', 's') )
+                builder.emit( place_type.dump_expr(env, self_var, list_var) )
             else:
-                builder.emit(ast.AugAssign(target=ast.Name(id='s'),
-                                           op=ast.Add(),
-                                           value=ast.BinOp(left=ast.Str(s = "\n" + place_name + " - "),
-                                                           op=ast.Add(),
-                                                           right=place_type.dump_expr(env, 'self'))
+                builder.emit(stmt(ast.Call(func=E('{}.append'.format(list_var.name)),
+                                           args=[ ast.BinOp(left = ast.Str(s = repr(place_name) + " : "),
+                                                            op = ast.Add(),
+                                                            right = ast.BinOp(left = place_type.dump_expr(env, self_var),
+                                                                              op = ast.Add(),
+                                                                              right = ast.Str(', '))
+                                                            ) ]
                                            )
+                                  )
                              )
 
-        builder.emit( E('s += "\\nend marking\\n"') )
-        builder.emit_Return(E('s'))
+        builder.emit(stmt(E('%s.append("}")' % list_var.name)))
+        builder.emit_Return(E('"\\n".join({})'.format(list_var.name)))
 
         builder.end_FunctionDef()
         return builder.ast()
@@ -320,35 +328,35 @@ class StaticMarkingType(coretypes.MarkingType):
                     self.gen_dump_method(env)]
         return cls
 
-    def copy_marking_expr(self, env, marking_name, *args):
-        return ast.Call(func=ast.Attribute(value=ast.Name(id=marking_name),
+    def copy_marking_expr(self, env, marking_var, *args):
+        return ast.Call(func=ast.Attribute(value=ast.Name(id=marking_var.name),
                                            attr='copy'))
 
-    def gen_get_place(self, env, marking_name, place_name, mutable):
-        return ast.Attribute(value=ast.Name(id=marking_name),
+    def gen_get_place(self, env, marking_var, place_name, mutable):
+        return ast.Attribute(value=ast.Name(id=marking_var.name),
                              attr=self.id_provider.get(place_name))
 
     ################################################################################
     # Flow elimination
     ################################################################################
 
-    def gen_check_flow(self, env, marking_name, place_info, current_flow):
+    def gen_check_flow(self, env, marking_var, place_info, current_flow):
         place_type = self.get_place_type_by_name(place_info.process_name)
         assert( isinstance(place_type, FlowPlaceType) )
         return place_type.gen_check_flow(env = env,
-                                         marking_name = marking_name,
+                                         marking_var = marking_var,
                                          place_name = place_info.name,
                                          current_flow = current_flow)
 
-    def gen_update_flow(self, env, marking_name, place_info):
+    def gen_update_flow(self, env, marking_var, place_info):
         place_type = self.get_place_type_by_name(place_info.process_name)
         assert( isinstance(place_type, FlowPlaceType) )
         return place_type.gen_update_flow(env = env,
-                                          marking_name = marking_name,
+                                          marking_var = marking_var,
                                           place_info = place_info)
 
-    def gen_read_flow(self, env, marking_name, process_name):
-        return self._process_place_types[process_name].gen_read_flow(env, marking_name)
+    def gen_read_flow(self, env, marking_var, process_name):
+        return self._process_place_types[process_name].gen_read_flow(env, marking_var)
 
 ################################################################################
 
@@ -394,34 +402,40 @@ class OneSafePlaceType(onesafe.OneSafePlaceType, PythonPlaceType):
         return self.info.type
 
     @should_not_be_called
-    def iterable_expr(self, env, marking_name): pass
+    def iterable_expr(self, env, marking_var): pass
 
-    def remove_token_stmt(self, env, compiled_token, marking_name, *args):
-        place_expr = self.place_expr(env, marking_name)
+    def remove_token_stmt(self, env, compiled_token, marking_var, *args):
+        place_expr = self.place_expr(env, marking_var)
         return ast.Assign(targets=[place_expr],
                           value=ast.Name(id='None'))
 
-    def add_token_stmt(self, env, compiled_token, marking_name, *args):
-        place_expr = self.place_expr(env, marking_name)
+    def add_token_stmt(self, env, compiled_token, marking_var, *args):
+        place_expr = self.place_expr(env, marking_var)
         return ast.Assign(targets=[place_expr],
                           value=compiled_token)
 
     def token_expr(self, env, value):
         return E(repr(value))
 
-    def copy_expr(self, env, marking_name):
+    def copy_expr(self, env, marking_var):
         env.add_import('copy')
-        place_expr = self.place_expr(env, marking_name)
+        place_expr = self.place_expr(env, marking_var)
         return ast.Call(func=ast.Attribute(value=ast.Name(id='copy'),
                                            attr='deepcopy'),
                         args=[place_expr])
 
-    def dump_expr(self, env, marking_name):
-        place_expr = self.place_expr(env, marking_name)
+    def dump_expr(self, env, marking_var):
+        place_expr = self.place_expr(env, marking_var)
         return ast.IfExp(test=place_expr,
-                         body=ast.Call(func=ast.Name('dump'),
-                                       args=[place_expr]),
-                         orelse=ast.Str(''))
+                         body=ast.BinOp(left = ast.Str('['),
+                                        op = ast.Add(),
+                                        right = ast.BinOp(left = ast.Call(func=ast.Name('dump'),
+                                                                          args=[place_expr]),
+                                                          op = ast.Add(),
+                                                          right = ast.Str(']')
+                                                          )
+                                        ),
+                         orelse=ast.Str('[]'))
 
 ################################################################################
 
@@ -447,35 +461,41 @@ class BTPlaceType(onesafe.BTPlaceType, PythonPlaceType):
     def new_place_expr(self, env):
         return ast.Num(n=0)
 
-    def iterable_expr(self, env, marking_name):
-        place_expr = self.place_expr(env, marking_name)
+    def iterable_expr(self, env, marking_var):
+        place_expr = self.place_expr(env, marking_var)
         return ast.Call(func=ast.Name('xrange'),
                         args=[ast.Num(n=0), place_expr])
 
-    def remove_token_stmt( self, env, compiled_token, marking_name, *args):
-        place_expr = self.place_expr(env, marking_name)
+    def remove_token_stmt( self, env, compiled_token, marking_var, *args):
+        place_expr = self.place_expr(env, marking_var)
         return ast.AugAssign(target=place_expr,
                              op=ast.Sub(),
                              value=ast.Num(1))
 
-    def add_token_stmt(self, env, compiled_token, marking_name, *args):
-        place_expr = self.place_expr(env, marking_name)
+    def add_token_stmt(self, env, compiled_token, marking_var, *args):
+        place_expr = self.place_expr(env, marking_var)
         return ast.AugAssign(target=place_expr,
                              op=ast.Add(),
                              value=ast.Num(1))
 
-    def copy_expr(self, env, marking_name):
-        return self.place_expr(env, marking_name)
+    def copy_expr(self, env, marking_var):
+        return self.place_expr(env, marking_var)
 
     def token_expr(self, env, value):
         return E('dot')
 
-    def dump_expr(self, env, marking_name):
-        place_expr = self.place_expr(env, marking_name)
-        return ast.Call(func=E("' '.join"),
-                        args=[ast.BinOp(left=ast.List([ast.Str('dot')]),
-                                        op=ast.Mult(),
-                                        right=place_expr)])
+    def dump_expr(self, env, marking_var):
+        place_expr = self.place_expr(env, marking_var)
+        return ast.BinOp(left = ast.Str('['),
+                         op = ast.Add(),
+                         right = ast.BinOp(left = ast.Call(func=E("', '.join"),
+                                                           args=[ast.BinOp(left=ast.List([ast.Str('dot')]),
+                                                                           op=ast.Mult(),
+                                                                           right=place_expr)]),
+                                           op = ast.Add(),
+                                           right = ast.Str(s=']')
+                                           )
+                         )
 
 
 ################################################################################
@@ -496,29 +516,29 @@ class BTOneSafePlaceType(onesafe.BTOneSafePlaceType, PythonPlaceType):
         return E('True')
 
     @should_not_be_called
-    def iterable_expr(self, env, marking_name): pass
+    def iterable_expr(self, env, marking_var): pass
 
-    def remove_token_stmt( self, env, compiled_token, marking_name, *args):
-        place_expr = self.place_expr(env, marking_name)
+    def remove_token_stmt( self, env, compiled_token, marking_var, *args):
+        place_expr = self.place_expr(env, marking_var)
         return ast.Assign(targets=[place_expr],
                           value=ast.Name(id='True'))
 
-    def add_token_stmt(self, env, compiled_token, marking_name, *args):
-        place_expr = self.place_expr(env, marking_name)
+    def add_token_stmt(self, env, compiled_token, marking_var, *args):
+        place_expr = self.place_expr(env, marking_var)
         return ast.Assign(targets=[place_expr],
                           value=ast.Name(id='False'))
 
-    def copy_expr(self, env, marking_name):
-        return self.place_expr(env, marking_name)
+    def copy_expr(self, env, marking_var):
+        return self.place_expr(env, marking_var)
 
     def token_expr(self, env, value):
         return E('dot')
 
-    def dump_expr(self, env, marking_name):
-        place_expr = self.place_expr(env, marking_name)
+    def dump_expr(self, env, marking_var):
+        place_expr = self.place_expr(env, marking_var)
         return ast.IfExp(test=ast.UnaryOp(op=ast.Not(), operand=place_expr),
-                         body=ast.Str('dot'),
-                         orelse=ast.Str(''))
+                         body=ast.Str('[ dot ]'),
+                         orelse=ast.Str('[]'))
 
 ################################################################################
 
@@ -561,7 +581,7 @@ class FlowPlaceType(coretypes.PlaceType, PythonPlaceType):
         return E("0")
 
     @should_not_be_called
-    def iterable_expr(self, env, marking_name): pass
+    def iterable_expr(self, env, marking_var): pass
 
     @should_not_be_called
     def remove_token_stmt( self, *args, **kwargs): pass
@@ -569,15 +589,15 @@ class FlowPlaceType(coretypes.PlaceType, PythonPlaceType):
     @should_not_be_called
     def add_token_stmt(self, *args, **kwargs): pass
 
-    def copy_expr(self, env, marking_name):
+    def copy_expr(self, env, marking_var):
         """ produce an expression corresponding to a copy of the place.
 
         @param env: compiling environment
         @type env: C{Env}
-        @param marking_name: name of the marking storing the place
-        @type marking_name: C{str}
+        @param marking_var: marking storing the place
+        @type marking_var: C{VariableInfo}
         """
-        return self.place_expr(env, marking_name)
+        return self.place_expr(env, marking_var)
 
     def add_place(self, place_info):
         """ Adds a flow control place.
@@ -590,36 +610,36 @@ class FlowPlaceType(coretypes.PlaceType, PythonPlaceType):
         self._places[place_info.name] = self._counter
         self._counter += 1
 
-    def gen_check_flow(self, env, marking_name, place_name, current_flow):
+    def gen_check_flow(self, env, marking_var, place_name, current_flow):
         """ Get an ast representing the flow check.
         """
         return ast.Compare(left=current_flow,
                            ops=[ast.Eq()],
                            comparators=[ast.Num(self._places[place_name])])
 
-    def gen_update_flow(self, env, marking_name, place_info):
+    def gen_update_flow(self, env, marking_var, place_info):
         """ Get an ast representing the flow update.
         """
-        place_expr = self.place_expr(env, marking_name)
+        place_expr = self.place_expr(env, marking_var)
         return ast.Assign(targets=[place_expr],
                           value=ast.Num(self._places[place_info.name]))
 
-    def gen_read_flow(self, env, marking_name):
-        return self.place_expr(env, marking_name)
+    def gen_read_flow(self, env, marking_var):
+        return self.place_expr(env, marking_var)
 
-    def dump_expr(self, env, marking_name, variable):
-        place_expr =  self.place_expr(env, marking_name)
+    def dump_expr(self, env, marking_var, variable):
+        place_expr =  self.place_expr(env, marking_var)
         l = []
         for place in self._places:
-            l.append( ast.AugAssign(target=ast.Name(variable),
-                                    op=ast.Add(),
-                                    value= ast.BinOp(left=ast.Str( '\n' + place + ' - '),
+            l.append( stmt(ast.Call(func=E('{}.append'.format(variable.name)),
+                                    args=[ ast.BinOp(left=ast.Str( repr(place) + ' : '),
                                                      op=ast.Add(),
-                                                     right=ast.IfExp(test=self.gen_check_flow(env, marking_name, place, place_expr),
-                                                                     body=ast.Str('dot'),
-                                                                     orelse=ast.Str(''))
-                                                     )
+                                                     right=ast.IfExp(test=self.gen_check_flow(env, marking_var, place, place_expr),
+                                                                     body=ast.Str('[ dot ],'),
+                                                                     orelse=ast.Str('[],'))
+                                                     ) ]
                                     )
+                           )
                       )
         return l
 

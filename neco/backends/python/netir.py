@@ -60,13 +60,13 @@ class CompilerVisitor(coreir.CompilerVisitor):
         tuple_info = node.tuple_info
         seq = []
 
-        component_names = [ token_info.data['local_name'] for token_info in tuple_info ]
+        component_names = [ token_info.data['local_variable'].name for token_info in tuple_info ]
         seq.append( ast.Assign(targets = [ ast.Tuple([ E(name) for name in component_names ])],
-                                 value = ast.Name(tuple_info.data['local_name'])) )
+                                 value = ast.Name(tuple_info.data['local_variable'].name)) )
         cur = None
         for component in tuple_info.components:
             if component.is_Value:
-                n = Builder.If( test = Builder.Compare( left = E(component.data['local_name']),
+                n = Builder.If( test = Builder.Compare( left = E(component.data['local_variable'].name),
                                                         ops = [ ast.Eq() ],
                                                         comparators = [ E(repr(component.raw)) ] ), # TO DO unify value & pickle
                                 orelse = [] )
@@ -126,17 +126,17 @@ class CompilerVisitor(coreir.CompilerVisitor):
 
     def compile_FlushIn(self, node):
         destination_place = self.env.marking_type.get_place_type_by_name(node.place_name)
-        place_expr = destination_place.place_expr(self.env, node.marking.name)
-        return [ ast.Assign(targets=[ast.Name(id=node.token_name)],
+        place_expr = destination_place.place_expr(self.env, node.marking)
+        return [ ast.Assign(targets=[ast.Name(id=node.token_var.name)],
                             value=place_expr),
-                 destination_place.clear_stmt(self.env, node.marking.name) ]
+                 destination_place.clear_stmt(self.env, node.marking) ]
 
     def compile_FlushOut(self, node):
         destination_place = self.env.marking_type.get_place_type_by_name(node.place_name)
         multiset = self.compile(node.token_expr)
         return destination_place.add_items_stmt( env = self.env,
                                                  multiset = multiset,
-                                                 marking_name = node.marking.name )
+                                                 marking_var = node.marking )
 
     def gen_tuple(self, tuple_info):
         elts = []
@@ -162,18 +162,18 @@ class CompilerVisitor(coreir.CompilerVisitor):
         place_type = self.env.marking_type.get_place_type_by_name(node.place_name)
         return place_type.add_token_stmt(env = self.env,
                                          compiled_token = tuple,
-                                         marking_name = node.marking.name)
+                                         marking_var = node.marking)
 
     def compile_NotEmpty(self, node):
         return self.env.marking_type.gen_not_empty_function_call( env = self.env,
-                                                                  marking_name = node.marking_name,
+                                                                  marking_var = node.marking_var,
                                                                   place_name = node.place_name )
 
     def compile_TokenEnumeration(self, node):
         place_type = self.env.marking_type.get_place_type_by_name(node.place_name)
         return ast.For(target = E(node.token_var.name),
                        iter = place_type.iterable_expr(env = self.env,
-                                                       marking_name = node.marking.name),
+                                                       marking_var = node.marking),
                        body = [ self.compile(node.body) ])
 
 
@@ -210,17 +210,17 @@ class CompilerVisitor(coreir.CompilerVisitor):
         current = None
         if place_type.provides_by_index_access:
             for sub_arc in node.multiarc.sub_arcs:
-                variable = sub_arc.data['local_name']
+                variable = sub_arc.data['local_variable']
                 index = sub_arc.data['index']
 
                 assign = ast.Assign(targets=[ast.Name(variable)],
                                       value=place_type.get_token_expr(self.env,
-                                                                      node.marking_name,
+                                                                      node.marking_var,
                                                                       ast.Name(index)))
                 enumeration = ast.For( target = ast.Name(index),
                                          iter = ast.Call(func=ast.Name('range'),
                                                          args=[ast.Num(0), place_type.get_size_expr(self.env,
-                                                                                                    node.marking_name)]),
+                                                                                                    node.marking_var)]),
                                        body = [ assign ] )
                 if base == None:
                     current = enumeration
@@ -232,15 +232,15 @@ class CompilerVisitor(coreir.CompilerVisitor):
 
         else: # no index access
             for sub_arc in node.multiarc.sub_arcs:
-                variable = sub_arc.data['local_name']
+                variable = sub_arc.data['local_variable']
                 index = sub_arc.data['index']
-                init = ast.Assign( targets =  [ast.Name(index)],
+                init = ast.Assign( targets =  [ast.Name(index.name)],
                                    value = ast.Num(0) )
 
-                enumeration = ast.For( target = ast.Name(variable),
+                enumeration = ast.For( target = ast.Name(variable.name),
                                        iter = place_type.iterable_expr( env = self.env,
-                                                                        marking_name = node.marking.name),
-                                       body = [ ast.AugAssign( target = ast.Name(index),
+                                                                        marking_var = node.marking),
+                                       body = [ ast.AugAssign( target = ast.Name(index.name),
                                                                op = ast.Add(),
                                                                value = ast.Num(1) ) ] )
                 if base == None:
@@ -250,7 +250,7 @@ class CompilerVisitor(coreir.CompilerVisitor):
                     current[1].body.append([init, enumeration])
                     current = [init, enumeration]
 
-        indices = [ sub_arc.data['index'] for sub_arc in node.multiarc.sub_arcs ]
+        indices = [ sub_arc.data['index'].name for sub_arc in node.multiarc.sub_arcs ]
         inner_base, inner = self.gen_different(indices)
         if isinstance(current, list):
             current[1].body.append(inner_base)
@@ -290,11 +290,11 @@ class CompilerVisitor(coreir.CompilerVisitor):
             names[info.name] = info
 
         for (place, place_type) in self.env.marking_type.place_types.iteritems():
-            dst_place_expr = place_type.place_expr(self.env, marking_name = node.dst.name)
-            src_place_expr = place_type.place_expr(self.env, marking_name = node.src.name)
+            dst_place_expr = place_type.place_expr(self.env, marking_var = node.dst)
+            src_place_expr = place_type.place_expr(self.env, marking_var = node.src)
             if names.has_key( place ):
                 nodes.append( ast.Assign(targets=[dst_place_expr],
-                                         value=place_type.copy_expr(self.env, node.src.name)
+                                         value=place_type.copy_expr(self.env, node.src)
                                          )
                               )
             else:
@@ -313,19 +313,19 @@ class CompilerVisitor(coreir.CompilerVisitor):
         place_type = self.env.marking_type.get_place_type_by_name(node.place_name)
         return place_type.add_token_stmt(env = self.env,
                                          compiled_token = self.compile(node.token_expr),
-                                         marking_name = node.marking.name)
+                                         marking_var = node.marking)
 
     def compile_RemToken(self, node):
         place_type = self.env.marking_type.get_place_type_by_name(node.place_name)
         return place_type.remove_token_stmt(env = self.env,
                                             compiled_token = self.compile(node.token_expr),
-                                            marking_name = node.marking.name)
+                                            marking_var = node.marking)
 
     def compile_RemTuple(self, node):
         place_type = self.env.marking_type.get_place_type_by_name(node.place_name)
         return place_type.remove_token_stmt(env = self.env,
                                             compiled_token = self.compile(node.tuple_expr),
-                                            marking_name = node.marking.name)
+                                            marking_var = node.marking)
 
     def compile_Token(self, node):
         place_type = self.env.marking_type.get_place_type_by_name(node.place_name)
@@ -353,7 +353,7 @@ class CompilerVisitor(coreir.CompilerVisitor):
 
     def compile_Succs(self, node):
         body = [ ast.Assign(targets=[ast.Name(id=node.arg_marking_set.name)],
-                                     value=self.env.marking_set_type.new_marking_set_expr(self.env)) ]
+                            value=self.env.marking_set_type.new_marking_set_expr(self.env)) ]
 
         body.extend( self.compile(node.body) )
         body.append( ast.Return(ast.Name(id=node.arg_marking_set.name)) )
@@ -378,7 +378,7 @@ class CompilerVisitor(coreir.CompilerVisitor):
     ################################################################################
     def compile_OneSafeTokenEnumeration(self, node):
         place_expr = self.env.marking_type.gen_get_place( env = self.env,
-                                                          marking_name = node.marking.name,
+                                                          marking_var = node.marking,
                                                           place_name = node.place_name,
                                                           mutable = False )
         getnode = ast.Assign(targets=[ast.Name(id=node.token_var.name)],
@@ -391,7 +391,7 @@ class CompilerVisitor(coreir.CompilerVisitor):
 
     def compile_BTTokenEnumeration(self, node):
         place_expr = self.env.marking_type.gen_get_place( env = self.env,
-                                                          marking_name = node.marking_name,
+                                                          marking_var = node.marking_var,
                                                           place_name = node.place_name,
                                                           mutable = False )
         getnode = ast.Assign(targets=[ast.Name(id=node.token_name)],
@@ -403,7 +403,7 @@ class CompilerVisitor(coreir.CompilerVisitor):
     def compile_BTOneSafeTokenEnumeration(self, node):
         body = [ self.compile( node.body ) ]
         place_expr = self.env.marking_type.gen_get_place( env = self.env,
-                                                          marking_name = node.marking.name,
+                                                          marking_var = node.marking,
                                                           place_name = node.place_name,
                                                           mutable = False )
         ifnode = ast.If( test = ast.UnaryOp(op=ast.Not(), operand=place_expr),
@@ -416,18 +416,18 @@ class CompilerVisitor(coreir.CompilerVisitor):
 
     def compile_FlowCheck(self, node):
         return self.env.marking_type.gen_check_flow(env = self.env,
-                                                    marking_name = node.marking.name,
+                                                    marking_var = node.marking,
                                                     place_info = node.place_info,
                                                     current_flow = ast.Name(node.current_flow.name))
 
     def compile_ReadFlow(self, node):
         return self.env.marking_type.gen_read_flow(env=self.env,
-                                                   marking_name=node.marking.name,
+                                                   marking_var=node.marking,
                                                    process_name=node.process_name)
 
     def compile_UpdateFlow(self, node):
         return self.env.marking_type.gen_update_flow(env = self.env,
-                                                     marking_name = node.marking.name,
+                                                     marking_var = node.marking,
                                                      place_info = node.place_info)
 
 ################################################################################
