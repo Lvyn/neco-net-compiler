@@ -100,7 +100,7 @@ class MarkingType(object):
         self._flow_control_places = set()
         self._one_safe_places = set()
 
-        self._use_control_flow_elimination = config.get('process_flow_elimination')
+        self._use_control_flow_elimination = config.get('optimise_flow')
 
     @property
     def use_control_flow_elimination(self):

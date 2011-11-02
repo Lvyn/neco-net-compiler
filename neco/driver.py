@@ -98,7 +98,7 @@ def compile_net(net, *arg, **kwargs):
     print "Compiling with " + backend + " backend."
     print "################################################################################"
     print "Optimise: {optimise!s:5}".format(optimise = config.get('optimise'))
-    print "Debug:    {debug!s:5} \tPfe:  {pfe!s:5}".format(debug = config.get('debug'), pfe = config.get('process_flow_elimination'))
+    print "Debug:    {debug!s:5} \tPfe:  {pfe!s:5}".format(debug = config.get('debug'), pfe = config.get('optimise_flow'))
     print "Additional search paths:  %s" % config.get('additional_search_paths')
     print "################################################################################"
 
@@ -181,7 +181,7 @@ class CLIArgumentParser(object):
     def net_var_name(self):  pass
 
     @abstractmethod
-    def process_flow_elimination(self): pass
+    def optimise_flow(self): pass
 
     @abstractmethod
     def additional_search_paths(self):  pass
@@ -229,7 +229,7 @@ class CLIArgumentParserPy2_6(CLIArgumentParser):
     def optimise(self):     return self.args.opt
     def dump_markings(self): return self.args.dump_mk
     def net_var_name(self):  return self.args.netvar
-    def process_flow_elimination(self): return self.args.pfe
+    def optimise_flow(self): return self.args.pfe
     def additional_search_paths(self):  return self.args.spaths
     def abcd(self): return self.args.abcd
     def pnml(self): return self.args.pnml
@@ -270,7 +270,7 @@ class CLIArgumentParserPy2_7(CLIArgumentParser):
     def optimise(self):     return self.args.opt
     def dump_markings(self): return self.args.dump_mk
     def net_var_name(self):  return self.args.netvar
-    def process_flow_elimination(self): return self.args.pfe
+    def optimise_flow(self): return self.args.pfe
     def additional_search_paths(self):  return self.args.spaths
     def abcd(self): return self.args.abcd
     def pnml(self): return self.args.pnml
@@ -371,7 +371,7 @@ class Driver(object):
                    backend  = cli_argument_parser.backend(),
                    profile  = cli_argument_parser.profile(),
                    imports  = cli_argument_parser.imports(),
-                   process_flow_elimination = cli_argument_parser.process_flow_elimination(),
+                   optimise_flow = cli_argument_parser.optimise_flow(),
                    additional_search_paths  = cli_argument_parser.additional_search_paths(),
                    trace_calls = False)
 

@@ -103,7 +103,7 @@ class ProcessSuccGenerator(object):
         arg_marking_set = self._arg_marking_set
         process_info    = self._process_info
 
-        if not config.get('process_flow_elimination'):
+        if not config.get('optimise_flow'):
             return
 
         builder = self._builder
@@ -170,7 +170,7 @@ class SuccTGenerator(object):
         self.transition = transition
         self.function_name = function_name
         self.marking_type = marking_type
-        self._ignore_flow = self._ignore_flow = config.get('process_flow_elimination')
+        self._ignore_flow = self._ignore_flow = config.get('optimise_flow')
         self.env = env
 
         # this helper will create new variables and take care of shared instances
@@ -449,7 +449,9 @@ class SuccTGenerator(object):
                 raise NotImplementedError, input.arc_annotation.__class__
 
     def _gen_names(self, token_info):
-        """
+        """ Produce names for intermediary variables when handling tuples.
+
+        @param token_info: tuple or component.
         """
         if token_info.is_Tuple:
             token_info.data.register('local_variable',
@@ -535,8 +537,6 @@ class SuccTGenerator(object):
         trans = self.transition
         helper = self.variable_helper
         builder = self.builder
-
-
 
         if self._ignore_flow and output.place_info.flow_control:
             return
@@ -812,7 +812,7 @@ class Compiler(object):
         self.dump_enabled = False
         self.debug = False
 
-        self._ignore_flow = config.get('process_flow_elimination')
+        self._ignore_flow = config.get('optimise_flow')
         FactoryManager.update( factory_manager )
         fm = FactoryManager.instance()
 
@@ -943,7 +943,7 @@ class Compiler(object):
         function abstract representation nodes.
         """
         list = []
-        if config.get('process_flow_elimination'):
+        if config.get('optimise_flow'):
             for i, process in enumerate(self.net_info.process_info):
                 function_name = "succP_%d" % i # process.name
                 gen = ProcessSuccGenerator(self.env,

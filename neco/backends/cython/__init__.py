@@ -65,11 +65,10 @@ def search_file(filename, paths):
         if path[-1] != '/':
             path += '/'
         path = "".join([path, filename])
-        print "searching: ", path
         if exists(path):
             return abspath(path)
 
-    return None
+    raise IOError('{} file not found, check additional search paths'.format(filename))
 
 class Compiler(core.Compiler):
     """ Cython compiler. """
@@ -118,13 +117,9 @@ class Compiler(core.Compiler):
 
         f = open("net.pyx", "w")
         file_name = "ctypes_ext.pyx"
-        print file_name,  self.additional_search_paths
+
         path = search_file(file_name, self.additional_search_paths)
-        if not path:
-            print >> sys.stderr, "cannot find file '{file}', update include paths.".format(file=file_name)
-            exit(-1)
         ctypes_ext = open(path , "r")
-        assert(ctypes_ext != None) # TO DO error processing
 
         if config.get('profile'):
             print "PROFILE"
