@@ -357,7 +357,7 @@ cpdef state_space_graph():
                 sys.stdout.write("\r{}st {:5.3f}s (global {:5.0f}st/s, since last log {:5.0f}st/s)".format(count,
                                                                                                            elapsed_time,
                                                                                                            count / elapsed_time,
-                                                                                                           100 / (new_time-last_time)))
+                                                                                                           250 / (new_time-last_time)))
                 sys.stdout.flush()
                 last_time = new_time
     except KeyError:
