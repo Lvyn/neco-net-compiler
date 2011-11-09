@@ -603,14 +603,97 @@ class SuccTGenerator(object):
 
             for subarc in output.sub_arcs:
                 # produce code for the computation and variable assignation
-                self.gen_computed_production(subarc, tmp)
-
-            # retrieve productions
-            for value in tmp.itervalues():
-                computed_productions[output].append(value)
+                self.gen_computed_production(subarc, computed_productions)
 
         else:
             raise NotImplementedError, output.arc_annotation.__class__
+
+
+    def gen_produce(self, output_arc):
+        computed_productions = self.computed_productions
+        new_marking = self.new_marking
+        trans = self.transition
+        helper = self.variable_helper
+        builder = self.builder
+
+        builder.emit_Comment(message="Produce {output_arc} - place: {place}".format(output_arc=output_arc, place=output_arc.place_name))
+        if self._ignore_flow and output_arc.place_info.flow_control:
+            new_flow = [ place for place in trans.post if place.flow_control ]
+            assert(len(new_flow) == 1)
+            builder.emit_UpdateFlow( marking = new_marking,
+                                     place_info = new_flow[0] )
+
+
+        elif output_arc.is_Expression:
+            if computed_productions.has_key(output_arc):
+                token_expr = computed_productions[output_arc]
+
+            builder.emit_AddToken( marking = new_marking,
+                                   place_name = output_arc.place_name,
+                                   token_expr = token_expr )
+
+        elif output_arc.is_Value:
+            if computed_productions.has_key(output_arc):
+                token_expr = computed_productions[output_arc]
+            else:
+                #
+                # TO DO TRY REPR
+                #
+                value = output_arc.value
+                token_expr = netir.PyExpr( ExpressionInfo( repr(value.raw) ))
+
+            builder.emit_AddToken( marking = new_marking,
+                                   place_name = output_arc.place_name,
+                                   token_expr = token_expr )
+
+        elif output_arc.is_Variable:
+            if computed_productions.has_key(output_arc):
+                token_expr = computed_productions[output_arc]
+            else:
+                value = output_arc.value
+                token_expr = netir.Name( output_arc.name )
+
+            builder.emit_AddToken( marking = new_marking,
+                                   place_name = output_arc.place_name,
+                                   token_expr = token_expr )
+
+        elif output_arc.is_Flush:
+            inner = output_arc.inner
+            if inner.is_Variable:
+                produced_token = inner.name
+                builder.emit_FlushOut( marking = new_marking,
+                                       place_name = output_arc.place_name,
+                                       token_expr = netir.Name(produced_token) )
+
+            elif inner.is_Expression:
+                builder.emit_FlushOut( marking = new_marking,
+                                       place_name = output_arc.place_name,
+                                       token_expr = netir.PyExpr(inner) )
+            else:
+                raise NotImplementedError, "Flush.inner : %s" % inner
+
+        elif output_arc.is_Tuple:
+            # to do: if arc then use var
+            if (False):
+                pass
+            # general case:
+            else:
+                builder.emit_TupleOut( marking = new_marking,
+                                       place_name = output_arc.place_name,
+                                       tuple_info = output_arc.tuple )
+        elif output_arc.is_MultiArc:
+
+            for subarc in output_arc.sub_arcs:
+                if subarc in computed_productions:
+                    builder.emit_AddToken( marking = new_marking,
+                                           place_name = output_arc.place_name,
+                                           token_expr = computed_productions[subarc] )
+                else:
+                    self.gen_produce(subarc)
+
+        else:
+            raise NotImplementedError, output_arc.arc_annotation.__class__
+
 
 
     def __call__(self):
@@ -642,8 +725,10 @@ class SuccTGenerator(object):
         computed_productions = defaultdict(list)
         for output in trans.outputs:
             self.gen_computed_production(output, computed_productions)
+        self.computed_productions = computed_productions
 
         new_marking = helper.new_variable(self.marking_type.type)
+        self.new_marking = new_marking
         builder.emit_MarkingCopy( dst = new_marking,
                                   src = self.arg_marking,
                                   mod = trans.modified_places() )
@@ -705,80 +790,7 @@ class SuccTGenerator(object):
 
         # produce
         for output_arc in trans.outputs:
-            builder.emit_Comment(message="Produce {output_arc} - place: {place}".format(output_arc=output_arc, place=output_arc.place_name))
-            if self._ignore_flow and output_arc.place_info.flow_control:
-                new_flow = [ place for place in trans.post if place.flow_control ]
-                assert(len(new_flow) == 1)
-                builder.emit_UpdateFlow( marking = new_marking,
-                                         place_info = new_flow[0] )
-
-
-            elif output_arc.is_Expression:
-                if computed_productions.has_key(output_arc):
-                    token_expr = computed_productions[output_arc]
-
-                builder.emit_AddToken( marking = new_marking,
-                                       place_name = output_arc.place_name,
-                                       token_expr = token_expr )
-
-            elif output_arc.is_Value:
-                if computed_productions.has_key(output_arc):
-                    token_expr = computed_productions[output_arc]
-                else:
-                    #
-                    # TO DO TRY REPR
-                    #
-                    value = output_arc.value
-                    token_expr = netir.PyExpr( ExpressionInfo( repr(value.raw) ))
-
-                builder.emit_AddToken( marking = new_marking,
-                                       place_name = output_arc.place_name,
-                                       token_expr = token_expr )
-
-            elif output_arc.is_Variable:
-                if computed_productions.has_key(output_arc):
-                    token_expr = computed_productions[output_arc]
-                else:
-                    value = output_arc.value
-                    token_expr = netir.Name( output_arc.name )
-
-                builder.emit_AddToken( marking = new_marking,
-                                       place_name = output_arc.place_name,
-                                       token_expr = token_expr )
-
-            elif output_arc.is_Flush:
-                inner = output_arc.inner
-                if inner.is_Variable:
-                    produced_token = inner.name
-                    builder.emit_FlushOut( marking = new_marking,
-                                           place_name = output_arc.place_name,
-                                           token_expr = netir.Name(produced_token) )
-
-                elif inner.is_Expression:
-                    builder.emit_FlushOut( marking = new_marking,
-                                           place_name = output_arc.place_name,
-                                           token_expr = netir.PyExpr(inner) )
-                else:
-                    raise NotImplementedError, "Flush.inner : %s" % inner
-
-            elif output_arc.is_Tuple:
-                # to do: if arc then use var
-                if (False):
-                    pass
-                # general case:
-                else:
-                    builder.emit_TupleOut( marking = new_marking,
-                                           place_name = output_arc.place_name,
-                                           tuple_info = output_arc.tuple )
-            elif output_arc.is_MultiArc:
-                for production in computed_productions[output_arc]:
-                    builder.emit_AddToken( marking = new_marking,
-                                           place_name = output_arc.place_name,
-                                           token_expr = production )
-
-            else:
-                raise NotImplementedError, output_arc.arc_annotation.__class__
-
+            self.gen_produce(output_arc)
         # add marking to set
         builder.emit_AddMarking( marking_set = self.marking_set,
                                  marking = new_marking)
