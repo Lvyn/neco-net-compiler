@@ -580,7 +580,18 @@ class ArcInfo(object):
             def match_Test(_, arc_annotation):
                 self.annotation = arc_annotation._annotation
                 self.kind = ArcKind.Test
-                self.inner = TokenInfo.from_snakes( self.annotation )
+                inner = TokenInfo.from_snakes( self.annotation )
+                self.inner = inner
+
+                if inner.is_Value:
+                    self.value = inner
+                elif inner.is_Variable:
+                    self.variable = inner
+                elif inner.is_Tuple:
+                    self.tuple = inner
+                else:
+                    raise NotImplementedError, inner
+
                 if self.is_input and self.inner.is_Variable:
                     self.inner.update_type(self.place_info.type)
                 self._vars = self.inner.variables()

@@ -319,7 +319,7 @@ class SuccTGenerator(object):
                                                          comparators = [ netir.Value( value = input.value,
                                                                                       place_name = input.place_name ) ] ) )
                     input.data.register('local_variable', local_variable)
-                    #input.data.register('input', input)
+                    input.data.register('index', index)
 
                 elif inner.is_Tuple:
                     # produce names for tuple components
@@ -328,7 +328,6 @@ class SuccTGenerator(object):
                     place_info = self.net_info.place_by_name( input.place_name )
                     place_type = self.marking_type.get_place_type_by_name( place_info.name )
                     token_var = inner.data['local_variable']
-
                     # get a tuple
                     builder.begin_TokenEnumeration( arc = input,
                                                     token_var = token_var,
