@@ -1,0 +1,5 @@
+#!/usr/bin/python
+
+import neco.compilecli
+
+neco.compilecli.Main('neco-compile', False)

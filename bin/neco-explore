@@ -1,0 +1,5 @@
+#!/usr/bin/python
+
+import neco.explorecli
+
+neco.explorecli.Main('neco-explore', False)

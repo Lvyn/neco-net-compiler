@@ -775,6 +775,18 @@ class Matcher(object):
         raise NoMatchFound("No match found for {}".format(node.__class__.__name__))
 
 ################################################################################
+
+def fatal_error(msg, ret=-1):
+    """ Helper function for handling fatal errors.
+
+    this function will put C{msg} in C{sys.stderr} and exit the program
+    with C{ret} return value.
+    """
+    print >> sys.stderr, 'Error: {msg}'.format(msg=msg)
+    exit(ret)
+
+
+################################################################################
 # EOF
 ################################################################################
 
