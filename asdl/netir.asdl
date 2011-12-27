@@ -31,6 +31,11 @@ module netir version "$Revision: 1 $"
 		VariableInfo arg_marking_set,
 		Stmt* body,
 		VariableProvider variable_provider)
+
+	| CheckAtom(identifier atom,
+		    VariableInfo arg_marking,
+		    Stmt* body,
+		    Variable_Provider variable_provider)
     Block =
 	TokenEnumeration(ArcInfo arc,
 			 VariableInfo token_var,
@@ -64,6 +69,8 @@ module netir version "$Revision: 1 $"
 	| CheckType(VariableInfo variable,
 		    TypeInfo type,
 		    Stmt* body)
+
+
     Stmt =
    	 AddToken(VariableInfo marking,
 		  identifier place_name,

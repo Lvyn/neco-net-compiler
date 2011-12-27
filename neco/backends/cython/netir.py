@@ -15,22 +15,6 @@ class CompilerVisitor(coreir.CompilerVisitor):
 
     backend = "cython"
 
-    def try_declare_cvar(self, variable_name, new_type):
-        """
-
-        @param variable_name:
-        @type variable_name: C{}
-        @param new_type:
-        @type new_type: C{}
-        """
-        cvars = self.env.cvars
-        try:
-            old_type = cvars.type(variable_name)
-            if old_type < new_type:
-                cvars.update_type(variable_name, new_type)
-        except IndexError:
-            self.env.cvars.declare(variable_name, new_type)
-
     def __init__(self, env):
         self.env = env
 
@@ -91,7 +75,7 @@ class CompilerVisitor(coreir.CompilerVisitor):
                     cur.body = [n]
                     cur = n
             elif component.is_Variable:
-                self.try_declare_cvar(component.data['local_variable'].name, component.type)
+                self.env.try_declare_cvar(component.data['local_variable'].name, component.type)
 
         if cur != None:
             cur.body = [ self.compile( node.body ) ]
@@ -102,7 +86,7 @@ class CompilerVisitor(coreir.CompilerVisitor):
 
 
     def compile_Assign(self, node):
-        self.try_declare_cvar(node.variable.name, node.variable.type)
+        self.env.try_declare_cvar(node.variable.name, node.variable.type)
 
         return cyast.Assign(targets=[cyast.Name(node.variable.name)],
                             value=self.compile(node.expr))
@@ -175,9 +159,9 @@ class CompilerVisitor(coreir.CompilerVisitor):
             index_var = arc.data['index']
             size_var = self.env.variable_provider.new_variable()
 
-            self.try_declare_cvar(index_var.name, TypeInfo.Int)
-            self.try_declare_cvar(node.token_var.name, node.token_var.type)
-            self.try_declare_cvar(size_var.name, TypeInfo.Int)
+            self.env.try_declare_cvar(index_var.name, TypeInfo.Int)
+            self.env.try_declare_cvar(node.token_var.name, node.token_var.type)
+            self.env.try_declare_cvar(size_var.name, TypeInfo.Int)
 
             place_size = place_type.get_size_expr(env = self.env,
                                                   marking_var = node.marking)
@@ -200,7 +184,7 @@ class CompilerVisitor(coreir.CompilerVisitor):
                                          self.compile(node.body) ],
                                   orelse = [] ) ]
         else:
-            self.try_declare_cvar(node.token_var.name, node.token_var.type)
+            self.env.try_declare_cvar(node.token_var.name, node.token_var.type)
 
             place_type = marking_type.get_place_type_by_name(node.place_name)
             return Builder.For( target = cyast.Name(node.token_var.name),
@@ -245,8 +229,8 @@ class CompilerVisitor(coreir.CompilerVisitor):
                 variable = sub_arc.data['local_variable']
                 index_var = sub_arc.data['index']
 
-                self.try_declare_cvar(index_var.name, TypeInfo.Int)
-                self.try_declare_cvar(variable.name, place_type.token_type)
+                self.env.try_declare_cvar(index_var.name, TypeInfo.Int)
+                self.env.try_declare_cvar(variable.name, place_type.token_type)
 
                 assign = cyast.Assign(targets=[cyast.Name(variable.name)],
                                       value=place_type.get_token_expr(self.env,
@@ -273,8 +257,8 @@ class CompilerVisitor(coreir.CompilerVisitor):
                 init = cyast.Assign( targets =  [cyast.Name(index_var.name)],
                                      value = cyast.Num(0) )
 
-                self.try_declare_cvar(index_var.name, TypeInfo.Int)
-                self.try_declare_cvar(variable.name, place_type.token_type)
+                self.env.try_declare_cvar(index_var.name, TypeInfo.Int)
+                self.env.try_declare_cvar(variable.name, place_type.token_type)
 
                 enumeration = cyast.For( target = cyast.Name(variable.name),
                                          iter = place_type.iterable_expr( env = self.env,
@@ -322,7 +306,7 @@ class CompilerVisitor(coreir.CompilerVisitor):
                     )
 
     def compile_MarkingCopy(self, node):
-        self.try_declare_cvar(node.dst.name, node.dst.type)
+        self.env.try_declare_cvar(node.dst.name, node.dst.type)
         return self.env.marking_type.gen_copy( env = self.env,
                                                src_marking = node.src,
                                                dst_marking = node.dst,

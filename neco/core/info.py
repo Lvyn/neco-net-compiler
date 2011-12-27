@@ -921,6 +921,7 @@ class PlaceInfo(object):
                     self._1safe = True
 
         self.snk_place = place
+        self._name = place.name
         self.instance[self.name] = self
         self._type = TypeInfo.from_snakes_checker(place.checker())
         self.tokens = [ token for token in place.tokens ]
@@ -953,6 +954,17 @@ class PlaceInfo(object):
         self._pre = set()
         self._post = set()
 
+    def __getstate__(self):
+        d = self.__dict__
+        d['_post'] = set()
+        d['_pre'] = set()
+        d['snk_place'] = None
+        return d
+
+    def __setstate__(self, state):
+        for key, value in state.iteritems():
+            setattr(self, key, value)
+
     def update_type(self, type):
         assert(isinstance(type, TypeInfo))
         self._type = type
@@ -963,7 +975,7 @@ class PlaceInfo(object):
 
     @property
     def name(self):
-        return self.snk_place.name
+        return self._name
 
     @property
     def one_safe(self):
@@ -1354,6 +1366,16 @@ class SharedVariableHelper(VariableProvider):
 
     def set_unified(self, variable):
         self._unified[variable.name] = True
+
+
+################################################################################
+# formula related info structures
+################################################################################
+
+
+
+
+
 
 ################################################################################
 

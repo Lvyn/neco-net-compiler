@@ -27,6 +27,19 @@ def FunctionDef(name,
                 decorator_list=[]):
     return ast.FunctionDef(name, args, body, decorator_list)
 
+def FunctionDecl(name,
+                 args=ast.arguments(args=[],
+                                    vararg=None,
+                                    kwarg=None,
+                                    defaults=[]),
+                 returns = None,
+                 **kwargs):
+    return cyast_gen.FunctionDecl(name=name,
+                                  args=args,
+                                  returns=returns,
+                                  decorator_list=[],
+                                  **kwargs)
+
 def arguments(args=[], vararg=None, kwarg=None, defaults=[]):
     return ast.arguments(args, vararg, kwarg, defaults)
 
@@ -404,6 +417,26 @@ from neco import unparse
 from neco.unparse import Unparser as _Unparser
 
 class Unparser(_Unparser) :
+    def _FunctionDecl (self, tree) :
+        self.write("\n")
+        if isinstance(tree.lang, cyast_gen.Def) :
+            self.fill("def " + tree.name + "(")
+        elif isinstance(tree.lang, (cyast_gen.CDef, cyast_gen.CpDef)) :
+            if isinstance(tree.lang, cyast_gen.CDef) :
+                self.fill("cdef ")
+            else :
+                self.fill("cpdef ")
+            if tree.lang.public :
+                self.write("public ")
+            if tree.lang.api :
+                self.write("api ")
+            self.dispatch(tree.returns)
+            self.write(" " + tree.name + "(")
+        else :
+            assert False
+        self.dispatch(tree.args)
+        self.write(")")
+
     def _FunctionDef (self, tree) :
         self.write("\n")
         if isinstance(tree.lang, cyast_gen.Def) :
@@ -429,6 +462,7 @@ class Unparser(_Unparser) :
             self.dispatch(d)
         self.dispatch(tree.body)
         self.leave()
+
     def _arg (self, tree) :
         if tree.annotation :
             self.dispatch(tree.annotation)

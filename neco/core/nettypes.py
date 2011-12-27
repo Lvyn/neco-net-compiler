@@ -102,6 +102,49 @@ class MarkingType(object):
 
         self._use_control_flow_elimination = config.get('optimise_flow')
 
+    # def __getstate__(self):
+    #     d = { 'flow_control_places' : [],
+    #           'one_safe_places' : [],
+    #           'other_places' : [],
+    #           'place_types' : {} }
+
+    #     # place info structures
+    #     for place_info in self._flow_control_places:
+    #         d['flow_control_places'].append( place_info )
+
+    #     for place_info in self._one_safe_places:
+    #         print place_info, place_info.__class__
+    #         d['one_safe_places'].append( place_info )
+
+    #     for place_info in self._places:
+    #         d['other_places'].append( place_info )
+
+    #     # place types
+    #     for key, place_type in self.place_types.iteritems():
+    #         d['place_types'][key] = place_type
+
+    #     return d
+
+    # def __setstate__(self, state):
+    #     self.place_types = dict()
+    #     self._places = set()
+    #     self._flow_control_places = set()
+    #     self._one_safe_places = set()
+
+    #     self._flow_control_places = set()
+    #     for place_info in state['flow_control_places']:
+    #         self._flow_control_places.add( place_info )
+
+    #     for place_info in state['one_safe_places']:
+    #         self._one_safe_places.add( place_info )
+
+    #     for place_info in state['other_places']:
+    #         self._places.add( place_info )
+
+    #     # place types
+    #     for key, place_type in state['place_types'].iteritems():
+    #         self.place_types[key] = place_type
+
     @property
     def use_control_flow_elimination(self):
         return self._use_control_flow_elimination

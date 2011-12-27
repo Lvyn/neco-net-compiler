@@ -18,6 +18,8 @@ from cyast import Builder, E, Unparser, to_ast
 
 _backend_ = "cython"
 
+from check_impl import *
+
 ################################################################################
 
 class FactoryManager(core.FactoryManager):
@@ -102,6 +104,12 @@ class Compiler(core.Compiler):
         compiled_nodes.append(self.marking_type.gen_api(env))
         compiler = netir.CompilerVisitor(env)
 
+        # net.pxd
+        f = open("net.pxd", "w")
+        f.write("cimport ctypes_ext\n")
+        Unparser(self.marking_type.gen_pxd(env), f)
+        f.close()
+
         for node in self.successor_function_nodes:
             compiled_nodes.append( compiler.compile(node) )
 
@@ -163,6 +171,7 @@ class Compiler(core.Compiler):
             print "********************************************************************************"
 
         fp, pathname, description = imp.find_module("net")
+        self.produce_compilation_trace("trace")
 
         print "net"
         try:

@@ -1,6 +1,6 @@
 """ Main compiler interface. """
 
-import itertools
+import itertools, pickle
 from collections import defaultdict
 from snakes.nets import *
 import neco.config as config
@@ -1049,6 +1049,11 @@ class Compiler(object):
         self.process_successor_function_nodes = flatten_lists( self._gen_all_process_spec_succs() )
         self.main_successor_function_node = flatten_lists( self._gen_main_succ() )
         self.init_function_node = flatten_lists( self._gen_init() )
+
+    def produce_compilation_trace(self, compilation_trace_name):
+        trace_file = open(compilation_trace_name, 'wb')
+        pickle.dump(self.marking_type, trace_file, -1)
+        trace_file.close()
 
 ################################################################################
 

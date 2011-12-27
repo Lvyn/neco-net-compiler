@@ -11,6 +11,12 @@ module Python version "$Revision: SNAKES $"
                            expr? returns,
                            language lang,
                            CVar* decl)
+
+	      | FunctionDecl(identifier name,
+			     arguments args,
+			     expr? returns,
+			     language lang)
+
 	      | ClassDef(identifier name,
 			 expr* bases,
 			 stmt* body,

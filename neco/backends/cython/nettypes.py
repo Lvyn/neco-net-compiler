@@ -17,6 +17,8 @@ def _str_list_to_endlstr(list):
     list.pop(-1)
     return ret
 
+
+
 ################################################################################
 # Registered classes are used as cython classes (cdef)
 ################################################################################
@@ -232,6 +234,24 @@ class Env(object):
     @property
     def successor_functions(self):
         return self._successor_functions
+
+    def try_declare_cvar(self, variable_name, new_type):
+        """
+
+        @param variable_name:
+        @type variable_name: C{}
+        @param new_type:
+        @type new_type: C{}
+        """
+        cvars = self.cvars
+        try:
+            old_type = cvars.type(variable_name)
+            if old_type < new_type:
+                cvars.update_type(variable_name, new_type)
+        except IndexError:
+            self.cvars.declare(variable_name, new_type)
+
+
 
 ################################################################################
 
@@ -502,6 +522,17 @@ class ObjectPlaceType(coretypes.ObjectPlaceType, CythonPlaceType):
     def not_empty_expr(self, env, marking_var):
         return self.place_expr(env, marking_var)
 
+
+    def enumerate_tokens(env, token_variable, marking_var, body):
+        marking_type = self.env.marking_type
+        place_type = self
+        env.try_declare_cvar(token_variable.name, token_variable.type)
+        return Builder.For( target = cyast.Name(token_variable.name),
+                            iter = place_type.iterable_expr( env = env,
+                                                             marking_var = marking_var),
+                            body = [ body ])
+
+
 @provides_by_index_access
 @provides_by_index_deletion
 class IntPlaceType(coretypes.PlaceType, CythonPlaceType):
@@ -647,6 +678,36 @@ class IntPlaceType(coretypes.PlaceType, CythonPlaceType):
     @todo
     def add_items_stmt(self, env, multiset, marking_type, marking_var): pass
 
+    def enumerate_tokens(self, env, token_var, marking_var, body):
+        marking_type = env.marking_type
+
+        index_var = env.variable_provider.new_variable(type=TypeInfo.Int)
+        size_var  = env.variable_provider.new_variable(type=TypeInfo.Int)
+
+        env.try_declare_cvar(token_var.name, token_var.type)
+        env.try_declare_cvar(index_var.name, TypeInfo.Int)
+        env.try_declare_cvar(size_var.name,  TypeInfo.Int)
+
+        place_size = self.get_size_expr(env = env,
+                                        marking_var = marking_var)
+
+        get_token = self.get_token_expr(env = env,
+                                        index_expr = index_var,
+                                        marking_var = marking_var,
+                                        compiled_index = Name(index_var.name))
+
+
+        return [ cyast.Assign(targets=[cyast.Name(size_var.name)],
+                              value=place_size),
+                 Builder.CFor(start=cyast.Num(0),
+                              start_op=cyast.LtE(),
+                              target=cyast.Name(index_var.name),
+                              stop_op=cyast.Lt(),
+                              stop=cyast.Name(size_var.name),
+                              body=[ cyast.Assign(targets=[cyast.Name(token_var.name)],
+                                                  value=get_token),
+                                     body ],
+                              orelse = [] ) ]
 
 ################################################################################
 
@@ -760,16 +821,6 @@ class StaticMarkingType(coretypes.MarkingType):
         # flow_place_type and helpers exist
         self.place_types[place_info.name] = flow_place_type.get_helper(place_info)
 
-
-        # place_name = place_info.name
-        # place_type = placetype_factory.new(select_type(place_info),
-        #                                    place_info,
-        #                                    marking_type = self)
-        # if self.place_types.has_key(place_name):
-        #     raise "place exists"
-        # else:
-        #     self.place_types[place_name] = place_type
-
     def gen_types(self):
         if self.packing_enabled:
             for place_info in self.flow_control_places:
@@ -785,21 +836,6 @@ class StaticMarkingType(coretypes.MarkingType):
 
         for place_info in self.places:
             self.place_types[place_info.name] = place_type_from_info(place_info, self)
-
-        # for place_info in self.flow_control_places:
-        #     if self.packing_enabled:
-        #         self.__gen_flow_control_place_type(place_info)
-        #     else:
-        #         self.__gen_place_type(place_info, select_type)
-
-        # for place_info in self.one_safe_places:
-        #     if self.packing_enabled and place_info.one_safe:
-        #         self.__gen_one_safe_place_type(place_info)
-        #     else:
-        #         self.__gen_place_type(place_info, select_type)
-
-        # for place_info in self.places:
-        #     self.__gen_place_type(place_info, select_type)
 
     def __str__(self):
         """ Dump the marking structure. """
@@ -856,8 +892,7 @@ class StaticMarkingType(coretypes.MarkingType):
                 attr = self.id_provider.get(place_type)
                 builder.emit(cyast.Assign(targets=[cyast.Attribute(cyast.Name('self'),
                                                                    attr=attr)],
-                                          value=place_type.new_place_expr(env) )
-                             )
+                                          value=place_type.new_place_expr(env)))
         builder.end_If()
         builder.end_FunctionDef()
         return to_ast(builder)
@@ -1105,20 +1140,8 @@ class StaticMarkingType(coretypes.MarkingType):
         builder.end_FunctionDef()
         return to_ast(builder)
 
-    def _gen_C_check(self, env):
-        builder = Builder()
-        builder.begin_FunctionCDef(name="neco_check",
-                                   args=(A("self", type=type2str(self.type))
-                                         .param("atom", type=type2str(TypeInfo.Int))),
-                                   returns=E(type2str(TypeInfo.Int)),
-                                   public=True, api=True)
-        builder.emit_Return(E("self.check(atom)"))
-        builder.end_FunctionDef()
-        return to_ast(builder)
-
     def free_marking_stmt(self, env, marking_var):
         pass
-
 
     def gen_str_method(self, env):
         items = list(self.place_types.iteritems())
@@ -1291,56 +1314,73 @@ class StaticMarkingType(coretypes.MarkingType):
         builder.end_FunctionDef()
         return to_ast(builder)
 
+    def gen_pxd(self, env):
+        cls = Builder.PublicClassCDef(name="Marking",
+                                      bases=[E("object")],
+                                      spec=cyast.type_name_spec(o="Marking", t="MarkingType"))
 
-    def _gen_C_get_prop_name(self, env):
-        """ Produce a method that returns atomic properties names by ids.
+        # ################################################################################
+        # # comments
+        # ################################################################################
 
-        The method has the following signature:
-        C{cdef char* get_prop_name(Marking self, int atom)}
+        # attributes = set()
+        # for place_type in self.place_types.itervalues():
+        #     if place_type.is_packed:
+        #         attributes.add("{attribute}[{offset}]".format(attribute = self.id_provider.get(self._pack),
+        #                                                       offset = self._pack.get_field_native_offset(place_type)))
+        #     else:
+        #         attributes.add(self.id_provider.get(place_type))
+        # attribute_max = max( len(attr) for attr in attributes)
 
-        @param env: compiling environment.
-        """
-        checked_id = 'atom'
-        builder = Builder()
-        builder.begin_FunctionCDef(name='neco_get_prop_name',
-                                   args=(A(checked_id, type='int')),
-                                   returns = cyast.Name('char*'),
-                                   public=True, api=True)
+        # comms = set([])
+        # for place_type in self.place_types.itervalues():
+        #     if place_type.is_packed:
+        #         attr = "{attribute}[{offset}]".format(attribute = self.id_provider.get(self._pack),
+        #                                               offset = self._pack.get_field_native_offset(place_type))
+        #     else:
+        #         attr = self.id_provider.get(place_type)
+        #     comms.add("{info} - packed: {packed:1} - attribute: {attribute:{attribute_max}} #"
+        #                  .format(info=place_type.info,
+        #                          packed=place_type.is_packed,
+        #                          attribute=attr,
+        #                          attribute_max=attribute_max))
+        # max_length = max(len(x) - 2 for x in comms)
+        # comms = list(comms)
+        # comms.insert(0, "{text:*^{max_length}} #".format(text=' Marking Structure ', max_length=max_length))
+        # comms.append("{text:*^{max_length}} #".format(text='*', max_length=max_length))
 
-        for atom in self.atoms[0:1]:
-            self.gen_get_prop_name_case(env, builder, atom, checked_id, True)
-        for atom in self.atoms[1:]:
-            self.gen_get_prop_name_case(env, builder, atom, checked_id)
-        for atom in self.atoms:
-            builder.end_If()
+        # comms_ast = [ cyast.NComment(comm) for comm in comms ]
+        # cls.add_decl(comms_ast)
 
-        # should not be rachable in produced code, so we inform about an invalid ID
-        builder.emit(E('return \'\''))
+        ################################################################################
+        # attributes
+        ################################################################################
 
-        builder.end_FunctionDef()
-        return to_ast(builder)
+        if self._pack:
+            name = '{name}[{count}]'.format(name  = self.id_provider.get(self._pack),
+                                            count = self._pack.native_field_count())
+            cls.add_decl( cyast.CVar(name, type=type2str(self._pack.type)) )
 
-    def gen_get_prop_name_case(self, env, builder, atom, checked_id, first=False):
-        """ Produce a if/elif case in get_prop_name method.
-        """
-        if first:
-            builder.begin_If(test=cyast.Compare(left=cyast.Name(checked_id),
-                                                ops=[cyast.Eq()],
-                                                comparators=[cyast.Num(atom.id)]))
-        else:
-            builder.begin_Elif(test=cyast.Compare(left=cyast.Name(checked_id),
-                                                  ops=[cyast.Eq()],
-                                                  comparators=[cyast.Num(atom.id)]))
-        builder.emit(cyast.Comment("atom: {name}".format(name=atom.name)))
+        for place_type in self.place_types.itervalues():
+            if not place_type.is_packed and not place_type.is_helper:
+                cls.add_decl(cyast.CVar(name=self.id_provider.get(place_type),
+                                        type=type2str(place_type.type)))
 
-        builder.emit_Return(E(repr(atom.name)))
-        return
+        cls.add_method( FunctionDecl(name='copy',
+                                     args = to_ast(A("self", cyast.Name(type2str(self.type)))),
+                                     returns = cyast.Name(type2str(self.type)),
+                                     lang=cyast.CDef()) )
+        # cls.add_method( FunctionDecl(name='check',
+        #                              args = to_ast(A("self", type="Marking").param('atom', type=type2str(TypeInfo.Int))),
+        #                              returns = cyast.Name(type2str(TypeInfo.Int)),
+        #                              lang=cyast.CDef()) )
 
+        return to_ast(cls)
 
     def gen_api(self, env):
-        cls = Builder.PublicClassCDef(name = "Marking",
-                                      bases = [ E("object") ],
-                                      spec = cyast.type_name_spec(o="Marking", t="MarkingType"))
+        cls = Builder.ClassCDef(name = "Marking",
+                                bases = []) # E("object") ])
+                                      #spec = cyast.type_name_spec(o="Marking", t="MarkingType"))
 
         ################################################################################
         # methods
@@ -1353,7 +1393,7 @@ class StaticMarkingType(coretypes.MarkingType):
         cls.add_method( self.gen_hash_method(env) )
         cls.add_method( self.gen_copy_method(env) )
         cls.add_method( self.dump_expr_method(env) )
-        cls.add_method( self.gen_check_method(env) )
+        #cls.add_method( self.gen_check_method(env) )
 
         ################################################################################
         # comments
@@ -1389,20 +1429,6 @@ class StaticMarkingType(coretypes.MarkingType):
         cls.add_decl(comms_ast)
 
         ################################################################################
-        # attributes
-        ################################################################################
-
-        if self._pack:
-            name = '{name}[{count}]'.format(name  = self.id_provider.get(self._pack),
-                                            count = self._pack.native_field_count())
-            cls.add_decl( cyast.CVar(name, type=type2str(self._pack.type)) )
-
-        for place_type in self.place_types.itervalues():
-            if not place_type.is_packed and not place_type.is_helper:
-                cls.add_decl(cyast.CVar(name=self.id_provider.get(place_type),
-                                        type=type2str(place_type.type)))
-
-        ################################################################################
         # C api
         ################################################################################
 
@@ -1411,8 +1437,6 @@ class StaticMarkingType(coretypes.MarkingType):
         capi.append( self._gen_C_copy(env) )
         capi.append( self._gen_C_compare(env) )
         capi.append( self._gen_C_dump(env) )
-        capi.append( self._gen_C_check(env) )
-        capi.append( self._gen_C_get_prop_name(env) )
         return [to_ast(cls), capi]
 
 

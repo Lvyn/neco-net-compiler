@@ -609,11 +609,111 @@ def indent(n):
     return "\t" * n
 
 
+# def Enum(*names):
+#    """ Enumerations.
+
+#    --- Days of week ---
+#    >>> Days = Enum('Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su')
+#    >>> print Days
+#    enum (Mo, Tu, We, Th, Fr, Sa, Su)
+#    >>> print (Days.Mo, Days.Fr)
+#    (Mo, Fr)
+#    >>> print Days.Mo < Days.Fr
+#    True
+#    >>> print list(Days)
+#    [Mo, Tu, We, Th, Fr, Sa, Su]
+
+#    >>> for each in Days:
+#    ...     print 'Day:', each
+#    Day: Mo
+#    Day: Tu
+#    Day: We
+#    Day: Th
+#    Day: Fr
+#    Day: Sa
+#    Day: Su
+
+#    --- Yes/No ---
+#    >>> Confirmation = Enum('No', 'Yes')
+#    >>> answer = Confirmation.No
+#    >>> print 'Your answer is not', ~answer
+#    Your answer is not Yes
+#    """
+
+#    assert names, "Empty enums are not supported"
+
+#    class EnumClass(object):
+#       __slots__ = names
+#       def __iter__(self):        return iter(constants)
+#       def __len__(self):         return len(constants)
+#       def __getitem__(self, i):  return constants[i]
+#       def __repr__(self):        return 'Enum' + str(names)
+#       def __str__(self):         return 'enum ' + str(constants)
+
+#    class EnumValue(object):
+#       __slots__ = ('__value')
+#       def __init__(self, value): self.__value = value
+#       Value = property(lambda self: self.__value)
+#       EnumType = property(lambda self: EnumType)
+#       def __hash__(self):        return hash(self.__value)
+#       def __cmp__(self, other):
+#          # C fans might want to remove the following assertion
+#          # to make all enums comparable by ordinal value {;))
+#          assert self.EnumType is other.EnumType, "Only values from the same enum are comparable"
+#          return cmp(self.__value, other.__value)
+#       def __invert__(self):      return constants[maximum - self.__value]
+#       def __nonzero__(self):     return bool(self.__value)
+#       def __repr__(self):        return str(names[self.__value])
+#       def __getstate__(self):
+#           return { '__value' : self.__value }
+
+#    maximum = len(names) - 1
+#    constants = [None] * len(names)
+#    for i, each in enumerate(names):
+#       val = EnumValue(i)
+#       setattr(EnumClass, each, val)
+#       constants[i] = val
+#    constants = tuple(constants)
+#    EnumType = EnumClass()
+#    return EnumType
+
+
+class EnumValue(object):
+   #__slots__ = ('__value')
+   def __init__(self, name, value):
+       self.__name = name
+       self.__value = value
+   Value = property(lambda self: self.__value)
+   #EnumType = property(lambda self: EnumType)
+   def __hash__(self):        return hash(self.__value)
+   def __cmp__(self, other):
+       return cmp(self.__value, other.__value)
+   def __invert__(self):      return constants[maximum - self.__value]
+   def __nonzero__(self):     return bool(self.__value)
+   def __repr__(self):        return str(self.__name)
+
+class EnumClass(object):
+    #__slots__ = ('names', 'constants')
+    def __init__(self, names):
+        self.names = names
+        constants = [None] * len(names)
+        for i, name in enumerate(names):
+            val = EnumValue(name, i)
+            setattr(self, name, val)
+            constants[i] = val
+        self.constants = tuple(constants)
+
+    def __iter__(self):        return iter(self.constants)
+    def __len__(self):         return len(self.names)
+    def __getitem__(self, i):  return self.names[i]
+    def __repr__(self):        return 'Enum' + str(self.names)
+    def __str__(self):         return 'enum ' + str(self.constants)
+
 def Enum(*names):
    """ Enumerations.
 
    --- Days of week ---
-   >>> Days = Enum('Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su')
+   >>> Days = Enum2('Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su')
    >>> print Days
    enum (Mo, Tu, We, Th, Fr, Sa, Su)
    >>> print (Days.Mo, Days.Fr)
@@ -632,48 +732,8 @@ def Enum(*names):
    Day: Fr
    Day: Sa
    Day: Su
-
-   --- Yes/No ---
-   >>> Confirmation = Enum('No', 'Yes')
-   >>> answer = Confirmation.No
-   >>> print 'Your answer is not', ~answer
-   Your answer is not Yes
    """
-
-   assert names, "Empty enums are not supported"
-
-   class EnumClass(object):
-      __slots__ = names
-      def __iter__(self):        return iter(constants)
-      def __len__(self):         return len(constants)
-      def __getitem__(self, i):  return constants[i]
-      def __repr__(self):        return 'Enum' + str(names)
-      def __str__(self):         return 'enum ' + str(constants)
-
-   class EnumValue(object):
-      __slots__ = ('__value')
-      def __init__(self, value): self.__value = value
-      Value = property(lambda self: self.__value)
-      EnumType = property(lambda self: EnumType)
-      def __hash__(self):        return hash(self.__value)
-      def __cmp__(self, other):
-         # C fans might want to remove the following assertion
-         # to make all enums comparable by ordinal value {;))
-         assert self.EnumType is other.EnumType, "Only values from the same enum are comparable"
-         return cmp(self.__value, other.__value)
-      def __invert__(self):      return constants[maximum - self.__value]
-      def __nonzero__(self):     return bool(self.__value)
-      def __repr__(self):        return str(names[self.__value])
-
-   maximum = len(names) - 1
-   constants = [None] * len(names)
-   for i, each in enumerate(names):
-      val = EnumValue(i)
-      setattr(EnumClass, each, val)
-      constants[i] = val
-   constants = tuple(constants)
-   EnumType = EnumClass()
-   return EnumType
+   return EnumClass(names)
 
 ################################################################################
 
@@ -694,6 +754,25 @@ def todo(function):
                .format(function_name=function.__name__))
         raise RuntimeError(msg)
     return wrapper
+
+################################################################################
+
+class Matcher(object):
+
+    def match(self, node):
+        """ Match a node. """
+        method = 'case_' + node.__class__.__name__
+        matcher = getattr(self, method, self.no_match_found)
+        return matcher(node)
+
+    def no_match_found(self, node):
+        """Called if no explicit match function exists."""
+        class NoMatchFound(Exception):
+            def __init__(self, str):
+                self._str = str
+            def __str__(self):
+                return self._str
+        raise NoMatchFound("No match found for {}".format(node.__class__.__name__))
 
 ################################################################################
 # EOF

@@ -25,7 +25,9 @@ from abc import ABCMeta, abstractmethod
 from time import time
 
 import backends
+import core.check
 import core.onesafe as onesafe
+import snakes.utils.ctlstar.build as ctlstar
 import inspect
 import config
 import random
@@ -111,6 +113,28 @@ def compile_net(net, *arg, **kwargs):
     compiler.optimise_netir()
     return compiler.compile()
 
+def compile_checker(trace_file, formula, *arg, **kwargs):
+    """ Produce checking functions for a compiled net.
+    """
+
+    #TODO: use trace file to store configuration options
+    backends = get_backends()
+    backend = config.get('backend')
+    try:
+        backend_instance = backends[backend]
+    except KeyError as e:
+        raise UnknownBackend(e)
+
+    print "################################################################################"
+    print "Compiling formula {} with backend {} ".format(formula, backend)
+    print "################################################################################"
+    print "Optimise: {optimise!s:5}".format(optimise = config.get('optimise'))
+    print "Additional search paths:  %s" % config.get('additional_search_paths')
+    print "################################################################################"
+
+    compiler = core.check.CheckerCompiler(trace_file, ctlstar.parse(formula), backend_instance)
+    return compiler.compile()
+
 def fatal_error(msg, ret=-1):
     """ Helper function for handling fatal errors.
 
@@ -150,6 +174,7 @@ class CLIArgumentParser(object):
     lo_import,  so_import,  d_import,  h_import  = '--import',           '-i',  [],      'specify additionnal file to import'
     lo_clean,   so_clean,   d_clean,   h_clean   = '--clean',            '-c',  [],      'clean all produced files'
     lo_graph,   so_graph,   d_graph,   h_graph   = '--graph',            '-g',  None,    'dump marking graph'
+    lo_check,   so_check,   d_check,   h_check   = '--check',            '-ch',  None,    'Check a formula'
 
     m_module, m_netvar, m_backend, m_include, m_atoms, m_dump_mk, m_abcd, m_pnml, m_import = 'MODULE', 'VARIABLE', 'LANGUAGE', 'PATH', 'ATOM', 'FILE', 'FILE', 'FILE', 'FILE'
     m_map_file, m_graph_file = 'MAP_FILE', 'GRAPH_FILE'
@@ -259,6 +284,8 @@ class CLIArgumentParserPy2_7(CLIArgumentParser):
         parser.add_argument(self.lo_clean,   self.so_clean,   default=self.d_clean,   help=self.h_clean,   dest='clean',   action='store_true')
         parser.add_argument(self.lo_graph,   self.so_graph,   default=self.d_graph,   help=self.h_graph,   dest='graph',   nargs=2, metavar=(self.m_map_file,
                                                                                                                                              self.m_graph_file))
+        parser.add_argument(self.lo_check, self.so_check, default=self.d_check, help=self.h_check, dest='check', metavar='FORMULA', type=str)
+
         self.args = parser.parse_args()
 
     def module(self):  return self.args.module
@@ -277,6 +304,7 @@ class CLIArgumentParserPy2_7(CLIArgumentParser):
     def imports(self): return self.args.imports
     def clean(self): return self.args.clean
     def graph(self): return self.args.graph
+    def check(self): return self.args.check
 
 
 def produce_pnml_file(abcd_file, pnml_file = None):
@@ -387,13 +415,21 @@ class Driver(object):
         self.abcd          = cli_argument_parser.abcd()
         self.pnml          = cli_argument_parser.pnml()
         self.do_clean      = cli_argument_parser.clean()
-
+        self.check         = cli_argument_parser.check()
         graph = cli_argument_parser.graph()
+
+        print "CHECK: ", self.check
+        if self.check:
+            compile_checker("trace", self.check) # "G has(@'s1', 3, 4)"
+            return
+
         if graph:
             self.map_file, self.graph_file = graph
             self.graph = True
         else:
             self.graph = False
+
+
 
         ################################################################################
         # check options
