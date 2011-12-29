@@ -61,8 +61,8 @@ class Main(object):
         formula = args.formula
         
         # setup config
-        config.set(#debug    = cli_argument_parser.debug(),
-                   profile  = profile,
+        config.set(#debug = cli_argument_parser.debug(),
+                   profile = profile,
                    backend = 'cython', # force cython
                    formula = formula,
                    trace_calls = False)

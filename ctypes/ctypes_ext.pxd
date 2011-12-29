@@ -41,3 +41,17 @@ cdef extern from "ctypes.h":
     # neco_list_node_t* neco_list_node_next(neco_list_node_t* node)
 
     void __Pyx_INCREF(object o)
+
+cdef class MultiSet:
+    cdef dict _data
+
+    cdef MultiSet copy(MultiSet self)
+    cdef void add(MultiSet self, object elt)
+    cdef add_items(self, items)
+    cdef void remove(MultiSet self, elt)
+    cdef size(MultiSet self)
+    cdef int hash(MultiSet self)
+    cdef int compare(MultiSet self, MultiSet other)
+    cdef void update(MultiSet self, MultiSet other)
+    cdef list domain(MultiSet self)
+    cpdef __dump__(MultiSet self)

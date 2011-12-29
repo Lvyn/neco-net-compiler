@@ -98,7 +98,7 @@ register_cython_type(TypeInfo.Char, 'char')
 register_cython_type(TypeInfo.Int, 'int')
 register_cython_type(TypeInfo.Short, 'short')
 register_cython_type(TypeInfo.IntPlace, from_neco_lib('int_place_type_t*'))
-register_cython_type(TypeInfo.MultiSet, 'MultiSet')
+register_cython_type(TypeInfo.MultiSet, 'ctypes_ext.MultiSet')
 register_cython_type(TypeInfo.UnsignedChar, 'unsigned char')
 register_cython_type(TypeInfo.UnsignedInt, 'unsigned int')
 
@@ -442,7 +442,7 @@ class ObjectPlaceType(coretypes.ObjectPlaceType, CythonPlaceType):
                                            token_type = place_info.type)
 
     def new_place_expr(self, env):
-        return cyast.Call(func=cyast.Name(id="MultiSet"))
+        return cyast.Call(func=cyast.Name(id=type2str(TypeInfo.MultiSet)))
 
     def delete_stmt(self, env, marking_var):
         return []
@@ -485,7 +485,7 @@ class ObjectPlaceType(coretypes.ObjectPlaceType, CythonPlaceType):
     def clear_stmt(self, env, marking_var):
         place_expr = self.place_expr(env, marking_var)
         return cyast.Assign(targets=[place_expr],
-                            value=cyast.Call(func=cyast.Name("MultiSet")))
+                            value=cyast.Call(func=cyast.Name(type2str(TypeInfo.MultiSet))))
 
     def not_empty_expr(self, env, marking_var):
         return self.place_expr(env, marking_var)
@@ -1148,8 +1148,11 @@ class StaticMarkingType(coretypes.MarkingType):
         items.sort(lambda (n1, t1), (n2, t2) : cmp(n1, n2))
 
         builder = Builder()
+        vp = VariableProvider()
+        self_var = vp.new_variable(self.type, "self")
+
         builder.begin_FunctionDef( name = "__str__",
-                                   args = A("self") )
+                                   args = A(self_var.name, type=type2str(self.type)))
         visited = set()
         builder.emit(E('s = ""'))
         for i, (place_name, place_type) in enumerate(items):
@@ -1170,7 +1173,7 @@ class StaticMarkingType(coretypes.MarkingType):
             builder.emit(cyast.AugAssign(target=cyast.Name('s'),
                                          op=cyast.Add(),
                                          value=cyast.Call(func=cyast.Name("str"),
-                                                          args=[place_type.dump_expr(env, 'self')])
+                                                          args=[place_type.dump_expr(env, self_var)])
                                          )
                          )
 
@@ -1388,7 +1391,7 @@ class StaticMarkingType(coretypes.MarkingType):
 
         cls.add_method( self.gen_init_method(env) )
         cls.add_method( self.gen_dealloc_method(env) )
-        #cls.add_method( self.gen_str_method(env) )
+        cls.add_method( self.gen_str_method(env) )
         cls.add_method( self.gen_richcmp_method(env) )
         cls.add_method( self.gen_hash_method(env) )
         cls.add_method( self.gen_copy_method(env) )

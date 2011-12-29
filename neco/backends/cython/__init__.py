@@ -91,9 +91,7 @@ class Compiler(core.Compiler):
 
         env.add_pyx_declaration("cimport ctypes_ext")
         env.add_pyx_declaration("from snakes.nets import dot")
-        env.add_pyx_declaration("import cPickle")
-        env.add_pyx_declaration("import StringIO")
-        env.add_pyx_declaration("from time import time")
+        env.add_pyx_declaration("import ctypes_ext, cPickle, StringIO")
 
         for mod in config.get('imports'):
             env.add_pyx_declaration("from {} import *".format(mod))
@@ -107,6 +105,7 @@ class Compiler(core.Compiler):
         # net.pxd
         f = open("net.pxd", "w")
         f.write("cimport ctypes_ext\n")
+
         Unparser(self.marking_type.gen_pxd(env), f)
         f.close()
 
@@ -124,10 +123,10 @@ class Compiler(core.Compiler):
         module_ast = ast.fix_missing_locations(ast.Module(body = compiled_nodes))
 
         f = open("net.pyx", "w")
-        file_name = "ctypes_ext.pyx"
+        file_name = "include.pyx"
 
         path = search_file(file_name, self.additional_search_paths)
-        ctypes_ext = open(path , "r")
+        include_pyx = open(path , "r")
 
         if config.get('profile'):
             print "PROFILE"
@@ -135,7 +134,7 @@ class Compiler(core.Compiler):
 
         f.write(env.pyx_declarations)
 
-        for line in ctypes_ext:
+        for line in include_pyx:
              f.write(line)
 
         Unparser(module_ast, f)

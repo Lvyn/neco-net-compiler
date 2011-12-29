@@ -5,6 +5,7 @@ all: mkln
 mkln:
 	ln -sf $(CTYPES)/ctypes_ext.pxd .
 	ln -sf $(CTYPES)/ctypes_ext.pyx .
+	ln -sf $(CTYPES)/include.pyx .
 	ln -sf $(CTYPES)/ctypes.h .
 	ln -sf $(CTYPES)/libctypesd.so .
 	ln -sf $(CTYPES)/libctypes.so .

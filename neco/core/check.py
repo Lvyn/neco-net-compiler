@@ -133,11 +133,43 @@ class FormulaPrinter(object):
         self.separator()
         self.dispatch(tree.child)
 
+    def _CtlBinary(self, tree):
+        self.dispatch(tree.left)
+        self.separator()
+        self.dispatch(tree.op)
+        self.separator()
+        self.dispatch(tree.right)
+
+    def _Not(self, tree):
+        self.output.write("!")
+
+    def _And(self, tree):
+        self.output.write('/\\')
+
+    def _Or(self, tree):
+        self.output.write('\\/')
+
+    def _Imply(self, tree):
+        self.output.wrtie("=>")
+
+
+    def _Iff(self, tree):
+        self.output.wrtie("<=>")
+
+    def _Until(self, tree):
+        self.output.wrtie("U")
+
     def _All(self, tree):
         self.output.write("A")
 
     def _Globally(self, tree):
         self.output.write("G")
+
+    def _Future(self, tree):
+        self.output.write("F")
+
+    def _Next(self, tree):
+        self.output.write("X")
 
     def _Instance(self, tree):
         self.output.write(repr(tree.name))

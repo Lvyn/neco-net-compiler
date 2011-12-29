@@ -69,7 +69,7 @@ def gen_InPlace_function(checker_env, function_name, place_name):
 
     place_type = marking_type.get_place_type_by_name(place_name)
     token_var = variable_provider.new_variable(type=place_type.token_type)
-    check_var = variable_provider.new_variable(type=TypeInfo.Int)
+    #check_var = variable_provider.new_variable(type=TypeInfo.Int)
 
     builder.begin_FunctionCDef(name = function_name,
                                args = (cyast.A(marking_var.name,
@@ -82,22 +82,19 @@ def gen_InPlace_function(checker_env, function_name, place_name):
 
     main_body = []
 
+    loop_var = variable_provider.new_variable(type=place_type.token_type)
     inner_body = cyast.If(cyast.Compare(cyast.Name(token_var.name),
                                         [cyast.Eq()],
-                                        [cyast.Name(token_var.name)]),
-                          [ cyast.Assign(targets = [ cyast.Name(check_var.name) ],
-                                         value = cyast.Num(1)),
-                            cyast.Break() ])
+                                        [cyast.Name(loop_var.name)]),
+                          [ cyast.Return( cyast.Num(1) ) ])
     node = place_type.enumerate_tokens(checker_env,
-                                       token_var,
+                                       loop_var,
                                        marking_var,
                                        body = [ inner_body ])
-    main_body.append( cyast.Assign(targets=[cyast.Name(check_var.name)], value=cyast.Num(0)) )
+
+    # main_body.append( cyast.Assign(targets=[cyast.Name(check_var.name)], value=cyast.Num(0)) )
     main_body.append( node )
-    main_body.append( cyast.If(cyast.Compare(cyast.Name(check_var.name),
-                                             [cyast.Eq()],
-                                             [cyast.Num(0)]),
-                               [ cyast.Return(value=cyast.Num(0)) ] ) )
+    main_body.append( cyast.Return(value=cyast.Num(0)) )
 
     for stmt in main_body:
         builder.emit(stmt)
@@ -129,14 +126,18 @@ def gen_check_function(checker_env, id, prop):
                                decl = [],
                                public=False, api=False)
 
+
     ### begin matcher
     class matcher(Matcher):
         def case_InPlace(_, node):
             place_name = node.place.place
 
+
             calls = []
             for token_expr in node.data:
                 function_name = "check_in_{}".format(checker_env.id_provider.get(place_name))
+
+                # builder.emit( E( "print >> sys.stderr, 'checking if " + ast.dump(token_expr) + " is in " + place_name + "'" ) )
 
                 try:
                     function = checker_env.get_check_function(function_name)
@@ -192,7 +193,7 @@ def gen_main_check_function(checker_env, id_prop_map):
 
         builder.emit_Return(checker_env.get_check_function("check_{}".format(ident)).call([cyast.Name(marking_var.name)]))
 
-    if (len(id_prop_map) > 0):
+    for _ in id_prop_map:
         builder.end_If()
 
     builder.emit(cyast.Print(dest=E('sys.stderr'),
