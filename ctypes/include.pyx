@@ -2,6 +2,12 @@
 import sys
 from time import time
 
+cpdef dump(object obj):
+    if hasattr(obj, '__dump__'):
+        return obj.__dump__()
+    else:
+        return repr(obj)
+
 cpdef state_space():
     cdef set visited
     cdef set visit
