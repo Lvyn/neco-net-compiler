@@ -90,7 +90,7 @@ def gen_InPlace_function(checker_env, function_name, place_name):
     node = place_type.enumerate_tokens(checker_env,
                                        loop_var,
                                        marking_var,
-                                       body = [ inner_body ])
+                                       body=inner_body)
 
     # main_body.append( cyast.Assign(targets=[cyast.Name(check_var.name)], value=cyast.Num(0)) )
     main_body.append( node )
@@ -225,6 +225,7 @@ def produce_and_compile_pyx(checker_env, id_prop_map):
     f.write("cimport net\n")
     f.write("cimport ctypes_ext\n")
     f.write("import sys\n")
+    f.write("from snakes.nets import *\n")
 
     for function_ast in checker_env.functions():
         Unparser(function_ast, f)

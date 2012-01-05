@@ -56,6 +56,8 @@ class FormulaDecomposer(object):
                 if isinstance(field, asdl.atom):
                     identifier = "p " + str(self.get_formula_id(field))
                     setattr(formula, field_name, asdl.Instance(name=str(identifier), args=[]))
+                    print identifier, ast.dump(field)
+                    print
                 else:
                     # recursive call on sub-formula
                     formula.field = self.decompose(field)
@@ -124,21 +126,31 @@ class FormulaPrinter(object):
     def separator(self):
         self.output.write(' ')
 
+    def left_parenthesis(self):
+        self.output.write(' ( ')
+
+    def right_parenthesis(self):
+        self.output.write(' ) ')
+
     def _Spec(self, tree):
         self.dispatch(tree.main)
         self.output.write('\n')
 
     def _CtlUnary(self, tree):
+        self.left_parenthesis()
         self.dispatch(tree.op)
         self.separator()
         self.dispatch(tree.child)
+        self.right_parenthesis()
 
     def _CtlBinary(self, tree):
+        self.left_parenthesis()
         self.dispatch(tree.left)
         self.separator()
         self.dispatch(tree.op)
         self.separator()
         self.dispatch(tree.right)
+        self.right_parenthesis()
 
     def _Not(self, tree):
         self.output.write("!")
@@ -150,14 +162,14 @@ class FormulaPrinter(object):
         self.output.write('\\/')
 
     def _Imply(self, tree):
-        self.output.wrtie("=>")
+        self.output.write("=>")
 
 
     def _Iff(self, tree):
-        self.output.wrtie("<=>")
+        self.output.write("<=>")
 
     def _Until(self, tree):
-        self.output.wrtie("U")
+        self.output.write("U")
 
     def _All(self, tree):
         self.output.write("A")

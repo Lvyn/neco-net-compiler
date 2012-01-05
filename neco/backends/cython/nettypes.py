@@ -523,12 +523,12 @@ class ObjectPlaceType(coretypes.ObjectPlaceType, CythonPlaceType):
         return self.place_expr(env, marking_var)
 
 
-    def enumerate_tokens(env, token_variable, marking_var, body):
-        marking_type = self.env.marking_type
+    def enumerate_tokens(self, checker_env, token_variable, marking_var, body):
+        marking_type = checker_env.marking_type
         place_type = self
-        env.try_declare_cvar(token_variable.name, token_variable.type)
+        checker_env.try_declare_cvar(token_variable.name, token_variable.type)
         return Builder.For( target = cyast.Name(token_variable.name),
-                            iter = place_type.iterable_expr( env = env,
+                            iter = place_type.iterable_expr( env = checker_env,
                                                              marking_var = marking_var),
                             body = [ body ])
 
@@ -1155,21 +1155,19 @@ class StaticMarkingType(coretypes.MarkingType):
                                    args = A(self_var.name, type=type2str(self.type)))
         visited = set()
         builder.emit(E('s = ""'))
-        for i, (place_name, place_type) in enumerate(items):
-            if i > 0:
-                builder.emit(E('s += ", "'))
-            # if place_type.is_packed:
-            #     if place_type.pack in visited:
-            #         continue
+        first = True
+        for (place_name, place_type) in items:
 
-            #     assert(False and "TO DO")
-
-            #     place_type = self.get_place_type_by_name(place_name)
-            #     builder.emit( E('s').add_assign( place_type.dump_expr(env, 'self') ) )
-            # else:
             place_type = self.get_place_type_by_name(place_name)
-            builder.emit( E( 's += %s' % repr(place_name + ': ')) )
 
+            if not place_type.is_revelant:
+                continue
+
+            if not first:
+                builder.emit(E('s += ", "'))
+            first = False
+
+            builder.emit( E( 's += %s' % repr(place_name + ': ')) )
             builder.emit(cyast.AugAssign(target=cyast.Name('s'),
                                          op=cyast.Add(),
                                          value=cyast.Call(func=cyast.Name("str"),
@@ -1733,6 +1731,15 @@ class OneSafePlaceType(onesafe.OneSafePlaceType, CythonPlaceType):
                                             ),
                            orelse=cyast.Str('[]'))
 
+    def enumerate_tokens(self, checker_env, loop_var, marking_var, body):
+        helper_expr = self.existence_helper_place_type.place_expr(checker_env, marking_var)
+        place_expr = self.place_expr(checker_env, marking_var)
+        return cyast.If(test=helper_expr,
+                        body=[cyast.Assign(targets=[cyast.Name(loop_var.name)],
+                                           value=place_expr),
+                              body],
+                        orelse=[])
+
 
 ################################################################################
 
@@ -1789,7 +1796,6 @@ class BTPlaceType(onesafe.BTPlaceType, CythonPlaceType):
                                                )
                            )
 
-
     def iterable_expr(self, env, marking_var):
         place_expr = self.place_expr(env, marking_var)
         return cyast.Call(func=cyast.Name('range'),
@@ -1815,6 +1821,13 @@ class BTPlaceType(onesafe.BTPlaceType, CythonPlaceType):
 
     def token_expr(self, env, token):
         return E("dot")
+
+    def enumerate_tokens(self, checker_env, loop_var, marking_var, body):
+        return cyast.If(test=self.not_empty_expr(checker_env, marking_var),
+                        body=[cyast.Assign(targets=[cyast.Name(loop_var.name)],
+                                           value=E("dot")),
+                              body],
+                        orelse=[])
 
 ################################################################################
 
@@ -1978,6 +1991,13 @@ class PackedBT1SPlaceType(coretypes.PlaceType, CythonPlaceType):
                                       body=cyast.Num(1),
                                       orelse=cyast.Num(0))])
 
+    def enumerate_tokens(self, checker_env, loop_var, marking_var, body):
+        return [ cyast.Assign(targets = [cyast.Name(loop_var.name)],
+                              value = cyast.IfExp(test=self.gen_get_place(checker_env, marking_var),
+                                                  body=E('dot'),
+                                                  orelse=E('None'))),
+                 body ]
+
 ################################################################################
 #
 ################################################################################
@@ -2074,12 +2094,21 @@ class FlowPlaceType(coretypes.PlaceType, CythonPlaceType):
             if place_name == place_info.name:
                 mask = int(self.pack.field_compatible_mask(self.info, next_flow))
                 check =  Builder.EqCompare(self.place_expr(env, marking_var), E(mask))
-                return cyast.BinOp(left=cyast.Str(repr(place_name) + ' : '),
-                                   op=cyast.Add(),
-                                   right=cyast.IfExp(test=check,
-                                                     body=cyast.Str('[dot],'),
-                                                     orelse=cyast.Str('[],'))
-                                   )
+                return cyast.IfExp(test=check,
+                                   body=cyast.Str('[dot]'),
+                                   orelse=cyast.Str('[]'))
+        assert(False)
+
+    def enumerate_tokens(self, checker_env, loop_var, marking_var, body, place_info):
+        for (place_name, next_flow) in self._places.iteritems():
+            if place_name == place_info.name:
+                mask = int(self.pack.field_compatible_mask(self.info, next_flow))
+                check =  Builder.EqCompare(self.place_expr(env, marking_var), E(mask))
+                return cyast.If(test=check,
+                                body=[ cyast.Assign(targets=[cyast.Name(loop_var.name)],
+                                                    values=E('dot')),
+                                       body ],
+                                orelse=[])
         assert(False)
 
 @helper_place_type
@@ -2135,6 +2164,9 @@ class FlowPlaceTypeHelper(coretypes.PlaceType, CythonPlaceType):
 
     def dump_expr(self, env, marking_var):
         return self.flow_place_type.dump_expr(env, marking_var, self.info)
+
+    def enumerate_tokens(self, checker_env, loop_var, marking_var, body):
+        return self.flow_place_type.enumerate_tokens(checker_env, loop_var, marking_var, body, self.info)
 
 ################################################################################
 
