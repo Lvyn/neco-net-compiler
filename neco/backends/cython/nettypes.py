@@ -1662,7 +1662,7 @@ class OneSafePlaceType(onesafe.OneSafePlaceType, CythonPlaceType):
                                            op=Sub(),
                                            right=right)
         elif type.is_UserType or type.is_AnyType:
-            token_compare_expr=cyast.Call(func=cyast.Name("__neco_compare__"),
+            token_compare_expr=cyast.Call(func=cyast.Name(from_neco_lib("__neco_compare__")),
                                           args=[left, right])
         else:
             raise NotImplemented

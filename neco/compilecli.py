@@ -82,70 +82,73 @@ def load_snakes_net(module_name, net_var_name):
                                                                             module=module_name))
 
 class Main(object):
-    
+
     _instance_ = None # unique instance
-    
+
     def __init__(self, progname, logo=False):
 
         print "{} uses python {}".format(progname, sys.version)
         assert(not self.__class__._instance_) # assert called only once
         self.__class__._instance_ = self # setup the unique instance
-        
+
         if logo:
             print g_logo
-        
+
         # parse arguments
-        
+
         parser = argparse.ArgumentParser(progname,
                                          argument_default=argparse.SUPPRESS,
                                          formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-        
+
         parser.add_argument('--lang', '-l', default='python', dest='language', choices=['python', 'cython'],
                             help='set target language')
-        
+
         parser.add_argument('--abcd', dest='abcd', default=None, metavar='FILE', type=str,
                             help='ABCD file to be compiled')
-        
+
         parser.add_argument('--pnml', dest='pnml', default=None, metavar='FILE', type=str,
                             help='ABCD file to be compiled ( or produced if used with --abcd )')
-        
+
         parser.add_argument('--module', '-m',  default=None, dest='module',  metavar='MODULE',  type=str,
                             help='Python module containing the Petri net to be compiled')
-        
+
         parser.add_argument('--netvar', '-v', default='net', dest='netvar', metavar='VARIABLE', type=str,
                             help='Variable holding the Petri net')
-        
+
         parser.add_argument('--optimise', '-O', default=False, dest='optimise', action='store_true',
                             help='enable optimisations')
-        
+
         parser.add_argument('--optimise-flow', '-Of', default=False, dest='optimise_flow', action='store_true',
                             help='enable flow control optimisations')
-        
+
         parser.add_argument('--profile', '-p', default=False, dest='profile', action='store_true',
                             help='enable profiling support')
-        
+
         parser.add_argument('--import', '-i', default=[], dest='imports', action='append',
                             help='add additional files to be imported')
-        
+
         parser.add_argument('--include', '-I', default=[], dest='includes', action='append',
                             help='additionnal include paths (cython)')
-        
+
         args = parser.parse_args()
-        
+
         # retrieve arguments
-        
+
         abcd = args.abcd
         pnml = args.pnml
         module = args.module
         netvar = args.netvar
         profile = args.profile
-        
+
         self.abcd = abcd
         self.pnml = pnml
         self.module = module
         self.netvar = args.netvar
         self.profile = profile
-        
+
+        if args.optimise_flow:
+            args.optimise = True
+
         # setup config
         config.set( # debug    = cli_argument_parser.debug(),
                    optimise = args.optimise,
@@ -155,49 +158,49 @@ class Main(object):
                    optimise_flow = args.optimise_flow,
                    additional_search_paths  = args.includes,
                    trace_calls = False)
-        
-        
+
+
         # checks for conflicts in options
         if module:
             if abcd:
                 fatal_error("A snakes module cannot be used with an abcd file.")
             elif pnml:
                 fatal_error("A snakes module cannot be used with a pnml file.")
-    
+
         # retrieve the Petri net from abcd file (produces a pnml file)
         remove_pnml = not pnml
         if abcd:
             pnml = produce_pnml_file(abcd, pnml)
-    
+
         # retrieve the Petri net from pnml file
         if pnml:
             petri_net = load_pnml_file(pnml, remove_pnml)
-    
+
         # retrieve the Petri net from module
         else:
             if not module:
                 module = 'spec'
             if not netvar:
                 netvar = 'net'
-                
+
             petri_net = load_snakes_net(module, netvar)
-    
+
         self.petri_net = petri_net
-    
+
         if profile:
             # produce compiler trace
             import cProfile
             cProfile.run('compilecli.Main._instance_.compile()', 'compile.prof')
-    
+
         else: # without profiler
             self.compile()
-            
+
     def compile(self):
         """ Compile the model. """
         for f in g_produced_files:
             try:   os.remove(f)
             except OSError: pass # ignore errors
-    
+
         start = time()
         compiled_net = compile_net(net = self.petri_net)
         end = time()
