@@ -3,6 +3,7 @@ from StringIO import StringIO
 from abc import abstractmethod, ABCMeta
 from snakes.utils.ctlstar.build import build, parse
 import snakes.lang.ctlstar.asdl as asdl
+from neco import config
 from neco.utils import Matcher
 import netir
 from netir import Builder
@@ -82,8 +83,8 @@ class CheckerCompiler(object):
 
     __metaclass__ = ABCMeta
 
-    def __init__(self, compilation_trace_name, formula, backend):
-        trace_file = open(compilation_trace_name, 'rb')
+    def __init__(self, formula, backend):
+        trace_file = open(config.get('trace_file'), 'rb')
 
         trace = pickle.load(trace_file)
         self.marking_type = trace #trace.get_marking_type()

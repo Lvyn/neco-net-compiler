@@ -130,6 +130,9 @@ class Main(object):
         parser.add_argument('--include', '-I', default=[], dest='includes', action='append',
                             help='additionnal include paths (cython)')
 
+        parser.add_argument('--trace', '-t', default='trace', dest='trace', metavar='TRACEFILE', type=str,
+                            help='additionnal include paths (cython)')
+
         args = parser.parse_args()
 
         # retrieve arguments
@@ -139,6 +142,7 @@ class Main(object):
         module = args.module
         netvar = args.netvar
         profile = args.profile
+        trace = args.trace
 
         self.abcd = abcd
         self.pnml = pnml
@@ -157,8 +161,8 @@ class Main(object):
                    imports  = args.imports,
                    optimise_flow = args.optimise_flow,
                    additional_search_paths  = args.includes,
-                   trace_calls = False)
-
+                   trace_calls = False,
+                   trace_file = trace)
 
         # checks for conflicts in options
         if module:

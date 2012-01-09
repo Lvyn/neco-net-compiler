@@ -78,7 +78,7 @@ def compile_net(net, *arg, **kwargs):
     return compiler.compile()
 
 
-def compile_checker(trace_file, formula, *arg, **kwargs):
+def compile_checker(formula, *arg, **kwargs):
     """ Produce checking functions for a compiled net.
     """
 
@@ -94,5 +94,5 @@ def compile_checker(trace_file, formula, *arg, **kwargs):
     print "Compiling formula {} ".format(formula)
     print "################################################################################"
     
-    compiler = core.check.CheckerCompiler(trace_file, ctlstar.parse(formula), backend_instance)
+    compiler = core.check.CheckerCompiler(ctlstar.parse(formula), backend_instance)
     return compiler.compile()

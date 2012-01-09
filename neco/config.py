@@ -2,12 +2,12 @@
 
 Every option is stored in a global dictionnary and made
 available between modules. The communication is done
-using a temporary file C{/tmp/neco_{h}} where {h} is the
-hash value of C{'neco'}.
+using a temporary file C{/tmp/neco_{h}_{pid}} where {h} is the
+hash value of C{'neco'} and pid the current proccess id.
 
 """
 
-import shelve
+import shelve, os
 
 _default_options_ = [
     ('backend', 'python'),
@@ -20,7 +20,7 @@ _default_options_ = [
     ('imports', []),
 ]
 
-_dict_name_ = '/tmp/neco_{h}'.format(h=hash('neco'))
+_dict_name_ = '/tmp/neco_{}_{}'.format(hash('neco'), os.getpid())
 
 def set(**kwargs):
     """ Set options.
@@ -63,4 +63,15 @@ def init():
             d[key] = value
     d.close()
 
+
+
+def uninit():
+    try:
+        os.remove(_dict_name_)
+    except OSError:
+        pass
+
 init()
+
+import atexit
+atexit.register(uninit)

@@ -170,7 +170,7 @@ class Compiler(core.Compiler):
             print "********************************************************************************"
 
         fp, pathname, description = imp.find_module("net")
-        self.produce_compilation_trace("trace")
+        self.produce_compilation_trace(config.get('trace_file'))
 
         print "net"
         try:
