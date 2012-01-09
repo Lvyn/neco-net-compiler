@@ -1220,21 +1220,16 @@ class StaticMarkingType(coretypes.MarkingType):
         builder.emit(E('s = ["{"]'))
         for (i, (place_name, place_type)) in enumerate(items):
             if place_type.is_revelant:
-
-                if isinstance(place_type, FlowPlaceTypeHelper):
-                    builder.emit(stmt(cyast.Call(func = E('s.append'),
-                                                 args = [place_type.dump_expr(env, self_var)])))
-                else:
-                    builder.emit(stmt(cyast.Call(func = E('s.append'),
-                                                 args = [ ast.BinOp(left=cyast.Str(s=repr(place_name) + " : "),
-                                                                    op=cyast.Add(),
-                                                                    right=ast.BinOp(left=place_type.dump_expr(env, self_var),
-                                                                                    op=cyast.Add(),
-                                                                                    right=cyast.Str(s=',')
-                                                                                    ) ) ]
-                                                 )
-                                      )
-                                 )
+                builder.emit(stmt(cyast.Call(func = E('s.append'),
+                                             args = [ ast.BinOp(left=cyast.Str(s=repr(place_name) + " : "),
+                                                                op=cyast.Add(),
+                                                                right=ast.BinOp(left=place_type.dump_expr(env, self_var),
+                                                                                op=cyast.Add(),
+                                                                                right=cyast.Str(s=',')
+                                                                                ) ) ]
+                                            )
+                                  )
+                             )
         builder.emit(stmt(E('s.append("}")')))
         builder.emit_Return(E('"\\n".join(s)'))
 

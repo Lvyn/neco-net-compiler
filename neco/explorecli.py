@@ -47,9 +47,9 @@ def try_open_file(file_name):
 
 
 class Main(object):
-    
+
     _instance_ = None
-    
+
     def __init__(self, progname, logo=False):
 
         print "{} uses python {}".format(progname, sys.version)
@@ -57,50 +57,50 @@ class Main(object):
         self.__class__._instance_ = self # setup the unique instance
         if logo:
             print g_logo
-            
+
         # parse arguments
         parser = argparse.ArgumentParser(progname,
                                          argument_default=argparse.SUPPRESS,
                                          formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-        
+
         parser.add_argument('--dump', '-d', default=None, dest='dump', metavar='DUMPFILE', type=str,
                             help='dump markings to file (supports bz2 and gz compression)')
-                                         
+
         parser.add_argument('--graph', '-g', default=None, dest='graph', nargs=2, metavar=('MAPFILE',
                                                                                           'GRAPHFILE'),
                             help='produce reachability graph (supports bz2 and gz compression)')
-        
+
         parser.add_argument('--profile', '-p', default=False, dest='profile', action='store_true',
                             help='enable profiling support')
-        
+
         args = parser.parse_args()
-                
+
         profile = args.profile
         dump_markings = args.dump
         graph = args.graph
-        
+
         # setup config
         config.set(#debug    = cli_argument_parser.debug(),
                    profile  = profile,
                    trace_calls = False)
 
         self.dump_markings = dump_markings
-        self.graph = bool(graph)        
+        self.graph = bool(graph)
         if graph:
             map_file, graph_file = graph
             self.map_file, self.graph_file = map_file, graph_file
-        
+
         if dump_markings:
             if graph:
                 fatal_error("dump markings option cannot be used with graph option.")
-        
+
         # load module
         try:
             fp, pathname, description = imp.find_module("net")
             self.compiled_net = imp.load_module("net", fp, pathname, description)
         except ImportError:
             fatal_error("No net module in PYTHONPATH", -1)
-        
+
         # explore
         if profile:
             # produce exploration trace
@@ -162,7 +162,7 @@ class Main(object):
         graph_file = try_open_file(self.graph_file)
 
         net = self.compiled_net
-                
+
         start = time()
         graph, map = net.state_space_graph()
         end = time()
