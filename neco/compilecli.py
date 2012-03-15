@@ -153,6 +153,8 @@ class Main(object):
         if args.optimise_flow:
             args.optimise = True
 
+        env_includes = os.environ['NECO_INCLUDE'].split(":")
+        args.includes.extend(env_includes)
         # setup config
         config.set( # debug    = cli_argument_parser.debug(),
                    optimise = args.optimise,

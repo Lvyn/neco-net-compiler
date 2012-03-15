@@ -1,0 +1,6 @@
+NECO_INCLUDE=$(pwd)/../ctypes
+
+echo export PATH=\$PATH:$(pwd)
+echo export NECO_INCLUDE=$NECO_INCLUDE
+echo export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:.:$NECO_INCLUDE
+echo export PYTHONPATH=\$PYTHONPATH:$(pwd)/..

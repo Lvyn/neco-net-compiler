@@ -66,6 +66,9 @@ class Main(object):
         profile = args.profile
         formula = args.formula
 
+        env_includes = os.environ['NECO_INCLUDE'].split(":")
+        args.includes.extend(env_includes)
+
         # setup config
         config.set(#debug = cli_argument_parser.debug(),
                    profile = profile,
