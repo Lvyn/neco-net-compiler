@@ -6,8 +6,7 @@ abspath="$(cd "${0%/*}" 2>/dev/null; echo "$PWD"/"${0##*/}")"
 path_only=`dirname "$abspath"`
 
 NECO_INCLUDE=$path_only/../ctypes
-echo export PATH=\$PATH:$path_only
-echo export NECO_INCLUDE=$NECO_INCLUDE
-echo export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:.:$NECO_INCLUDE
-echo export PYTHONPATH=\$PYTHONPATH:$path_only/..
-
+echo PATH=$PATH:$path_only
+echo NECO_INCLUDE=$NECO_INCLUDE
+echo LD_LIBRARY_PATH=$LD_LIBRARY_PATH:.:$NECO_INCLUDE
+echo PYTHONPATH=$PYTHONPATH:$path_only/..
