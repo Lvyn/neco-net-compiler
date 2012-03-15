@@ -1,6 +1,13 @@
-NECO_INCLUDE=$(pwd)/../ctypes
+#!/bin/sh
 
-echo export PATH=\$PATH:$(pwd)
+# get absolute path
+abspath="$(cd "${0%/*}" 2>/dev/null; echo "$PWD"/"${0##*/}")"
+# to get the path only - not the script name
+path_only=`dirname "$abspath"`
+
+NECO_INCLUDE=$path_only/../ctypes
+echo export PATH=\$PATH:$path_only
 echo export NECO_INCLUDE=$NECO_INCLUDE
-echo export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:.:$NECO_INCLUDE
-echo export PYTHONPATH=\$PYTHONPATH:$(pwd)/..
+echo export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:.:$NECO_INCLUDE
+echo export PYTHONPATH=\$PYTHONPATH:$path_only/..
+
