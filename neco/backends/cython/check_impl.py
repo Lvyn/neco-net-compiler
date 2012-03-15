@@ -5,6 +5,7 @@ from neco.utils import Matcher, flatten_ast, IDProvider
 from neco.core.info import VariableProvider, TypeInfo
 from nettypes import type2str, register_cython_type
 from cyast import Builder, E, Unparser, to_ast
+from neco import config
 
 ################################################################################
 #
@@ -229,15 +230,21 @@ def produce_and_compile_pyx(checker_env, id_prop_map):
 
     for function_ast in checker_env.functions():
         Unparser(function_ast, f)
-
     f.close()
+
+    includes = config.get('additional_search_paths')
+    include_dirs = includes
+    library_dirs = includes
+
+    include_dirs.append('.')
+    library_dirs.append('.')
 
     setup(name="checker.pyx",
           cmdclass={'build_ext': build_ext},
           ext_modules=[Extension("checker", ["checker.pyx"],
-                                 include_dirs = ['../common'],
-                                 extra_compile_args=[], # '-ggdb'],
-                                 extra_link_args=['-lctypes'],
-                                 library_dirs = ['../common'])],
+                                 include_dirs = include_dirs,
+                                 extra_compile_args = [],
+                                 extra_link_args = ['-lctypes'],
+                                 library_dirs = library_dirs)],
           script_args=["build_ext", "--inplace"])
 

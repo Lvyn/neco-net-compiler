@@ -12,7 +12,7 @@ if (2, 7, 0) <= sys.version_info < (3,0,0) :
 else:
     raise RuntimeError("unsupported python version")
 
-import argparse
+import argparse, sys, os
 import neco.config as config
 from neco.utils import fatal_error
 from neco import compile_net, g_logo
@@ -41,10 +41,13 @@ class Main(object):
         if logo:
             print g_logo
 
+        prog = os.path.basename(sys.argv[0])
+        formula_meta = 'FORMULA'
         # parse arguments
         parser = argparse.ArgumentParser(progname,
                                          argument_default=argparse.SUPPRESS,
-                                         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+                                         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+                                         usage="{} [OPTIONS] {}".format(prog, formula_meta))
 
         parser.add_argument('--trace', '-t', default='trace', dest='trace', metavar='TRACEFILE', type=str,
                             help='compilation trace file')
@@ -52,7 +55,10 @@ class Main(object):
         parser.add_argument('--profile', '-p', default='profile', dest='profile', action='store_true',
                             help='enable profiling.')
 
-        parser.add_argument('formula', metavar='FORMULA', type=str, help='formula')
+        parser.add_argument('--include', '-I', default=['.'], dest='includes', action='append', metavar='PATH',
+                            help='additionnal search paths (libs, files).')
+
+        parser.add_argument('formula', metavar=formula_meta, type=str, help='formula')
 
         args = parser.parse_args()
 
@@ -66,6 +72,7 @@ class Main(object):
                    backend = 'cython', # force cython
                    formula = formula,
                    trace_calls = False,
+                   additional_search_paths = args.includes,
                    trace_file = trace)
 
         compile_checker(formula)
