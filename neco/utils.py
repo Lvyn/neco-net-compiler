@@ -713,7 +713,7 @@ def Enum(*names):
    """ Enumerations.
 
    --- Days of week ---
-   >>> Days = Enum2('Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su')
+   >>> Days = Enum('Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su')
    >>> print Days
    enum (Mo, Tu, We, Th, Fr, Sa, Su)
    >>> print (Days.Mo, Days.Fr)

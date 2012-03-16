@@ -1209,17 +1209,17 @@ class VariableProvider(object):
     """ Simple class that produces new variable names.
 
     >>> v = VariableProvider()
-    >>> v.new_variable()
+    >>> v.new_variable().name
     '_v0'
-    >>> v.new_variable()
+    >>> v.new_variable().name
     '_v1'
-    >>> v.new_variable()
+    >>> v.new_variable().name
     '_v2'
     >>> ws = set(['_v1', 'a', 'b'])
     >>> v = VariableProvider(ws)
-    >>> v.new_variable()
+    >>> v.new_variable().name
     '_v0'
-    >>> v.new_variable()
+    >>> v.new_variable().name
     '_v2'
     >>> sorted(ws)
     ['_v0', '_v1', '_v2', 'a', 'b']
