@@ -557,9 +557,15 @@ class SuccTGenerator(object):
                     check = False
                 print ">>>> END TO DO %s <<<< " % __FILE__
             except:
-                pass
+                print "computing ", output.expr.raw
+
+            if (not output_impl_type.is_AnyType) and check:
+                builder.begin_CheckType( variable = variable,
+                                         type = output_impl_type )
+
 
             computed_productions[output].append(netir.Name( variable.name ))
+            # TO DO rafine tuples
 
         elif output.is_Value:
             value = output.value
