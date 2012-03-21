@@ -132,6 +132,7 @@ class Compiler(core.Compiler):
             print "PROFILE"
             f.write("# cython: profile=True\n")
 
+        f.write("from neco.extsnakes import Pid\n")
         f.write(env.pyx_declarations)
 
         for line in include_pyx:

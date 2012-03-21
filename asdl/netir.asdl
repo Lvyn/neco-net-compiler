@@ -112,8 +112,8 @@ module netir version "$Revision: 1 $"
 	| ProcedureCall(identifier function_name,
 			Expr* arguments)
 
-	| Assign(Name variable,
-		 Expr expr)
+	| Assign(VariableInfo variable,
+		 	 Expr expr)
 
 	| Print(str message)
 

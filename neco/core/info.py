@@ -606,7 +606,7 @@ class ArcInfo(object):
                                   for annotation in arc_annotation.components ]
                 self.pid = VariableInfo(name = arc_annotation.pid.name, type = TypeInfo.Pid)
                 self.counter  = VariableInfo(name = arc_annotation.counter.name, type = TypeInfo.Int)
-                self.new_pids = [ VariableInfo(name = pid, type = TypeInfo.Pid) for pid in arc_annotation.new_pids ]
+                self.new_pids = [ VariableInfo(name = pid.name, type = TypeInfo.Pid) for pid in arc_annotation.new_pids ]
 
             def default(_, arc_annotation):
                 raise NotImplementedError, arc_annotation.__class__

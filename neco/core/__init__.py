@@ -557,7 +557,7 @@ class SuccTGenerator(object):
                     check = False
                 print ">>>> END TO DO %s <<<< " % __FILE__
             except:
-                print "computing ", output.expr.raw
+                print "type of '{}' will be checked".format(output.expr.raw)
 
             if (not output_impl_type.is_AnyType) and check:
                 builder.begin_CheckType( variable = variable,
@@ -744,8 +744,8 @@ class SuccTGenerator(object):
                     expr = ExpressionInfo('{}.next({} + {})'.format(pid.name, counter_var.name, i))
                 else:
                     expr = ExpressionInfo('{}.next({})'.format(pid.name, counter_var.name))
-                print expr
-                builder.emit_Assign(new_pid.name, PyExpr(expr))
+                
+                builder.emit_Assign(variable = new_pid, expr = PyExpr(expr))
                 i += 1                       
 
         # guard
