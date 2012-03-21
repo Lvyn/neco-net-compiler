@@ -2,9 +2,10 @@
 
 import inspect
 import types
-from snakes.nets import *
+# from snakes.nets import *
+# import snakes.typing as typ
+from neco.extsnakes import *
 from collections import defaultdict
-import snakes.typing as typ
 import snakes.plugins.status as status
 from abc import *
 from neco.utils import multidict, TypeMatch, Enum, RegDict
@@ -160,10 +161,14 @@ class TypeInfo(object):
         """
         if checker == Instance(int):
             return TypeInfo.Int
+        if checker == tNatural:
+            return TypeInfo.Int
         elif checker == Instance(BlackToken):
             return TypeInfo.BlackToken
         elif checker == Instance(str):
             return TypeInfo.String
+        elif checker == Instance(Pid):
+            return TypeInfo.Pid
         elif isinstance(checker, CrossProduct):
             return TypeInfo.TupleType( [ TypeInfo.from_snakes_checker( t ) for t in checker._types ] )
         elif checker == Instance(object) or checker == tAll:
@@ -182,28 +187,28 @@ class TypeInfo(object):
         @rtype: C{TypeInfo}
         """
         class matcher(TypeMatch):
-            def match_BlackToken(_, raw):
+            def match_BlackToken(self, raw):
                 return TypeInfo.BlackToken
 
-            def match_int(_, raw):
+            def match_int(self, raw):
                 return TypeInfo.Int
 
-            def match_str(_, raw):
+            def match_str(self, raw):
                 return TypeInfo.String
 
-            def match_tuple(_, raw):
+            def match_tuple(self, raw):
                 return TypeInfo.TupleType( [ TypeInfo.from_raw( elt ) for elt in raw ] )
 
-            def default(_, raw):
+            def default(self, raw):
                 return TypeInfo.AnyType
         return matcher().match(raw)
 
     @classmethod
     def from_snakes(cls, obj):
         class matcher(TypeMatch):
-            def match_Value(_, obj):
+            def match_Value(self, obj):
                 return cls.from_raw(obj.value)
-            def default(_, obj):
+            def default(self, obj):
                 raise NotImplementedError, repr(obj)
         return matcher().match(obj)
 
@@ -286,6 +291,8 @@ TypeInfo.register_type('Bool')
 TypeInfo.register_type('String')
 TypeInfo.register_type('BlackToken')
 
+TypeInfo.register_type('Pid')
+
 ################################################################################
 
 TokenKind = Enum("Variable", "Value", "Expression", "Tuple")
@@ -322,10 +329,6 @@ class TokenInfo(object):
     def update_type(self, type):
         assert(isinstance(type, TypeInfo))
         self._type = type
-
-    # @abstractmethod
-    # def gen_names(self, variable_helper):
-    #     pass
 
     @abstractmethod
     def base_names(self):
@@ -412,10 +415,6 @@ class ValueInfo(TokenInfo):
     def __str__(self):
         return "Value<%s>(%s)" % (str(self.type), str(self._raw))
 
-    # def gen_names(self, variable_helper):
-    #     self.name = variable_helper.new_variable()
-    #     self.local_name = self.name
-
     def base_names(self):
         return (self.name, self.local_name)
 
@@ -439,9 +438,6 @@ class VariableInfo(TokenInfo):
     def name(self):
         return self._name
 
-    # def gen_names(self, variable_helper):
-    #     self.local_name = variable_helper.new_variable_name( self.name )
-
     def base_names(self):
         return (self.name, self.local_name)
 
@@ -458,10 +454,6 @@ class ExpressionInfo(TokenInfo):
 
     def variables(self):
         return defaultdict(lambda : 0) # To do
-
-    # def gen_names(self, variable_helper):
-    #     self.name = variable_helper.fresh(True, base = "tuple_expr_")
-    #     self.local_name = self.name
 
     def base_names(self):
         return (self.name, self.local_name)
@@ -491,25 +483,6 @@ class TupleInfo(TokenInfo):
 
     def __str__(self):
         return "TupleInfo(%s)" % (", ".join([ str(c) for c in self.components]))
-
-    # def gen_names(self, variable_helper):
-    #     self.name = variable_helper.new_variable()
-    #     for component in self:
-    #         component.gen_names(variable_helper)
-
-    # def base(self):
-    #     base = []
-    #     for component in self.components:
-    #         if component.is_Variable:
-    #             name, local_name = component.base_names()
-    #             base.append(local_name)
-    #         elif component.is_Value:
-    #             base.append(component.name)
-    #         elif component.is_Expression:
-    #             raise NotImplementedError, "tuple::expression"
-    #         elif component.is_Tuple:
-    #             base.append(component.name)
-    #     return base
 
     def split(self):
         return self.components
@@ -545,7 +518,7 @@ def build_tuple(info):
 
 ################################################################################
 
-ArcKind = Enum("Variable", "Value", "Test", "Flush", "Tuple", "Expression", "MultiArc")
+ArcKind = Enum("Variable", "Value", "Test", "Flush", "Tuple", "Expression", "MultiArc", "GeneratorMultiArc")
 class ArcInfo(object):
 
     def __init__(self, place_info, arc_annotation, is_input):
@@ -627,6 +600,13 @@ class ArcInfo(object):
                 for arc in self.sub_arcs:
                     for name, occurences in arc.variables().iteritems():
                         vardict[name] += occurences
+            def match_GeneratorMultiArc(_, arc_annotation):
+                self.kind = ArcKind.GeneratorMultiArc
+                self.sub_arcs = [ ArcInfo( place_info, annotation, is_input )
+                                  for annotation in arc_annotation.components ]
+                self.pid = VariableInfo(name = arc_annotation.pid.name, type = TypeInfo.Pid)
+                self.counter  = VariableInfo(name = arc_annotation.counter.name, type = TypeInfo.Int)
+                self.new_pids = [ VariableInfo(name = pid, type = TypeInfo.Pid) for pid in arc_annotation.new_pids ]
 
             def default(_, arc_annotation):
                 raise NotImplementedError, arc_annotation.__class__
@@ -706,6 +686,10 @@ class ArcInfo(object):
         return self.kind == ArcKind.MultiArc
 
     @property
+    def is_GeneratorMultiArc(self):
+        return self.kind == ArcKind.GeneratorMultiArc
+
+    @property
     def place_name(self):
         return self.place_info.name
 
@@ -741,6 +725,7 @@ class TransitionInfo(object):
         self._post = set()
         self._pre = set()
         self._process_name = ""
+        self.generator_arc = None
 
         inputs = []
         for place, arc_annotation in trans.input():
@@ -760,6 +745,8 @@ class TransitionInfo(object):
             self.add_post(place_info)
             output = ArcInfo( place_info, arc_annotation, is_input = False)
             outputs.append( output )
+            if output.is_GeneratorMultiArc:
+                self.generator_arc = output
 
         self.outputs = outputs
 

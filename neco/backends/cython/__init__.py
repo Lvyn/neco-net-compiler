@@ -31,7 +31,7 @@ class FactoryManager(core.FactoryManager):
         placetype_products = []
         markingtype_products = []
         markingsettype_products = []
-        for name, obj in inspect.getmembers(nettypes, inspect.isclass):
+        for _, obj in inspect.getmembers(nettypes, inspect.isclass):
             if issubclass(obj, coretypes.PlaceType):
                 placetype_products.append(obj)
             elif issubclass(obj, coretypes.MarkingType):
@@ -135,7 +135,7 @@ class Compiler(core.Compiler):
         f.write(env.pyx_declarations)
 
         for line in include_pyx:
-             f.write(line)
+            f.write(line)
 
         Unparser(module_ast, f)
 

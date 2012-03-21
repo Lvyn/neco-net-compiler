@@ -12,7 +12,21 @@ asdl/cyast_gen.py
 asdl/netir_gen.py
 neco/backends/cython/cyast_gen.py
 neco/core/netir_gen.py
-
+*.orig
+*_res
+*/checker.[ch]
+*/checker.pyx
+*/checker_api.h
+ctypes/ctypes_extd.pyx
+ctypes/ctypes_extd.pxd
+tests/benchmarks/ubi*
+tests/common/include.pyx
+*/net.c
+tests/benchmarks/flow_process/net_api.h
+*/net.h
+*/net.py
+*.gz
+*.bz2
 syntax: regexp
 .*/.gone/.*
 .gone/.*

@@ -10,6 +10,7 @@ from info import *
 from itertools import izip_longest
 
 from glue import FactoryManager
+from neco.core.netir_gen import PyExpr
 
 ################################################################################
 
@@ -216,7 +217,7 @@ class SuccTGenerator(object):
 
                     # compare values
                     self.builder.begin_If( netir.Compare(left=netir.Name(first_local.name),
-                                                         ops = [netir.EQ() for i in local_variables],
+                                                         ops = [netir.EQ()] * len(local_variables),
                                                          comparators = [netir.Name(loc_var.name) for loc_var in local_variables] ) )
 
                     # build a witness with the initial variable name
@@ -534,7 +535,6 @@ class SuccTGenerator(object):
 
         """
         trans = self.transition
-        helper = self.variable_helper
         builder = self.builder
 
         if self._ignore_flow and output.place_info.flow_control:
@@ -604,9 +604,11 @@ class SuccTGenerator(object):
             pass
 
         elif output.is_MultiArc:
-            # temporary list for holding productions
-            tmp = defaultdict(list)
+            for subarc in output.sub_arcs:
+                # produce code for the computation and variable assignation
+                self.gen_computed_production(subarc, computed_productions)
 
+        elif output.is_GeneratorMultiArc:
             for subarc in output.sub_arcs:
                 # produce code for the computation and variable assignation
                 self.gen_computed_production(subarc, computed_productions)
@@ -697,6 +699,17 @@ class SuccTGenerator(object):
                 else:
                     self.gen_produce(subarc)
 
+        elif output_arc.is_GeneratorMultiArc:
+
+            for subarc in output_arc.sub_arcs:
+                if subarc in computed_productions:
+                    builder.emit_AddToken( marking = new_marking,
+                                           place_name = output_arc.place_name,
+                                           token_expr = computed_productions[subarc] )
+                else:
+                    self.gen_produce(subarc)
+
+
         else:
             raise NotImplementedError, output_arc.arc_annotation.__class__
 
@@ -716,6 +729,24 @@ class SuccTGenerator(object):
 
         # for loops
         self.gen_enumerators()
+
+        # produce new pids if process Petri net.
+        
+        if trans.generator_arc:
+            # ok, that looks like a process Petri net... you quack, you're a duck...
+            generator_arc = trans.generator_arc
+            pid = generator_arc.pid
+            new_pids = generator_arc.new_pids
+            counter_var = generator_arc.counter
+            i = 0
+            for new_pid in new_pids:
+                if i > 0:
+                    expr = ExpressionInfo('{}.next({} + {})'.format(pid.name, counter_var.name, i))
+                else:
+                    expr = ExpressionInfo('{}.next({})'.format(pid.name, counter_var.name))
+                print expr
+                builder.emit_Assign(new_pid.name, PyExpr(expr))
+                i += 1                       
 
         # guard
         guard = ExpressionInfo( trans.trans.guard._str )
@@ -793,6 +824,7 @@ class SuccTGenerator(object):
                         raise NotImplementedError, sub_arc.arc_annotation
             else:
                 raise NotImplementedError, arc.arc_annotation
+
 
         # produce
         for output_arc in trans.outputs:
