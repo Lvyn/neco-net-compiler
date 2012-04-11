@@ -35,6 +35,92 @@ class Pid(object):
         p = Pid()
         p.data = [ x for x in self.data ]
         return p
+    
+    def __iter__(self):
+        return iter(self.data)
+    
+    def __bool__(self):
+        return self.data # False iff empty
+
+    def __int__(self):
+        assert(len(self.data) == 1)
+        return self.data[0]
+        
+    def __add__(self, frag):
+        pid = self.copy()
+        for e in frag.data:
+            pid.data.append(int(e))
+        return pid
+    
+    def __len__(self):
+        return len(self.data)
+    
+    def __lt__(self, other):
+        sl = len(self.data)
+        ol = len(other.data)
+        if sl < ol:
+            return True
+        elif ol > sl:
+            return False
+        else:
+            for se, oe in zip(self.data, other.data):
+                if se < oe:
+                    continue
+                else:
+                    return False
+            return True
+    
+    def at(self, i):
+        return self.data[i]
+    
+    def subpid(self, begin = 0, end = None):
+        """
+        >>> pid = Pid('1.2.3.4')
+        >>> pid.subpid(0)
+        Pid('1.2.3.4')
+        >>> pid.subpid(1)
+        Pid('2.3.4')
+        >>> pid.subpid(0, -1)
+        Pid('1.2.3')
+        >>> pid.subpid(1, -1)
+        Pid('2.3')
+        >>> pid.subpid(1, 3)
+        Pid('2.3')
+        """
+        pid = self.copy()
+        for _ in range(0, begin):
+            pid.data.pop(0)
+            
+        if end:
+            if end > 0:
+                for _ in range(end, len(self.data)):
+                    pid.data.pop(-1)
+            elif end < 0: 
+                max = len(self.data)
+                for _ in range(max + end, max):
+                    pid.data.pop(-1)
+        return pid
+        
+    
+    def prefix(self):
+        """
+        >>> pid = Pid('1.2.3')
+        >>> pid.prefix()
+        Pid('1.2')
+        """
+        pid = self.copy()
+        pid.data.pop(-1)
+        return pid
+
+    def suffix(self):
+        """
+        >>> pid = Pid('1.2.3')
+        >>> pid.suffix()
+        Pid('2.3')
+        """
+        pid = self.copy()
+        pid.data.pop(0)
+        return pid
 
     def __hash__(self):
         """
