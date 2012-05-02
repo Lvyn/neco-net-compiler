@@ -14,19 +14,39 @@ from nets import *
 
 class Pid(object):
     
-    def __init__(self, str_repr = None):
+    def __init__(self):
         """
         
-        >>> pid = Pid('1.1.1')
+        >>> pid = Pid()
         >>> pid.data
-        [1, 1, 1]
+        []
         
         """
-        self.data = [ int(s) for s in str_repr.split('.') ] if str_repr else []
-
+        self.data = [] 
+    
+    @classmethod
+    def from_str(self, str_repr = None):
+        """ 
+        >>> str(Pid.from_str('1.2.3'))
+        '1.2.3'
+        """
+        pid = Pid()
+        pid.data = [ int(s) for s in str_repr.split('.') ] if str_repr else []
+        return pid
+    
+    @classmethod
+    def from_list(self, frag_list = None):
+        """
+        >>> str(Pid.from_list([1,2,3]))
+        '1.2.3'
+        """
+        pid = Pid()
+        pid.data = frag_list if frag_list else []
+        return pid
+    
     def copy(self):
         """
-        >>> p1 = Pid('1.1')
+        >>> p1 = Pid.from_str('1.1')
         >>> p2 = p1.copy()
         >>> p1.data[1] = 2
         >>> str(p1), str(p2)
@@ -75,17 +95,17 @@ class Pid(object):
     
     def subpid(self, begin = 0, end = None):
         """
-        >>> pid = Pid('1.2.3.4')
+        >>> pid = Pid.from_str('1.2.3.4')
         >>> pid.subpid(0)
-        Pid('1.2.3.4')
+        Pid.from_str('1.2.3.4')
         >>> pid.subpid(1)
-        Pid('2.3.4')
+        Pid.from_str('2.3.4')
         >>> pid.subpid(0, -1)
-        Pid('1.2.3')
+        Pid.from_str('1.2.3')
         >>> pid.subpid(1, -1)
-        Pid('2.3')
+        Pid.from_str('2.3')
         >>> pid.subpid(1, 3)
-        Pid('2.3')
+        Pid.from_str('2.3')
         """
         pid = self.copy()
         for _ in range(0, begin):
@@ -104,9 +124,9 @@ class Pid(object):
     
     def prefix(self):
         """
-        >>> pid = Pid('1.2.3')
+        >>> pid = Pid.from_str('1.2.3')
         >>> pid.prefix()
-        Pid('1.2')
+        Pid.from_str('1.2')
         """
         pid = self.copy()
         pid.data.pop(-1)
@@ -114,19 +134,27 @@ class Pid(object):
 
     def suffix(self):
         """
-        >>> pid = Pid('1.2.3')
+        >>> pid = Pid.from_str('1.2.3')
         >>> pid.suffix()
-        Pid('2.3')
+        Pid.from_str('2.3')
         """
         pid = self.copy()
         pid.data.pop(0)
         return pid
 
+    def ends_with(self):
+        """
+        >>> pid = Pid.from_str('1.2.3')
+        >>> pid.ends_with()
+        3
+        """
+        return self.data[-1]
+        
     def __hash__(self):
         """
-        >>> hash(Pid('1.2')) == hash(Pid('1.2'))
+        >>> hash(Pid.from_str('1.2')) == hash(Pid.from_str('1.2'))
         True
-        >>> hash(Pid('1.2')) == hash(Pid('1.3'))
+        >>> hash(Pid.from_str('1.2')) == hash(Pid.from_str('1.3'))
         False
         """
         h, mult, i = 0xDEADDAD, 0xDEADBEEF, 0
@@ -138,7 +166,7 @@ class Pid(object):
     
     def __eq__(self, other):
         """
-        >>> Pid('1.1.1') == Pid('1.1.1')
+        >>> Pid.from_str('1.1.1') == Pid.from_str('1.1.1')
         True
         """
         return self.data == other.data
@@ -146,25 +174,25 @@ class Pid(object):
     
     def __ne__(self, other):
         """
-        >>> Pid('1.1.1') != Pid('1.1.2')
+        >>> Pid.from_str('1.1.1') != Pid.from_str('1.1.2')
         True
         """
         return self.data != other.data
     
     def next(self, pid_component):
         """
-        >>> Pid('1').next('1') == Pid('1.1')
+        >>> Pid.from_str('1').next('0') == Pid.from_str('1.1')
         True
-        >>> Pid('1.2').next('3').next(4) == Pid('1.2.3.4')
+        >>> Pid.from_str('1.2').next('2').next(3) == Pid.from_str('1.2.3.4')
         True
         """
         p = self.copy()
-        p.data.append(int(pid_component))
+        p.data.append(int(pid_component)+1)
         return p
     
     def parent(self, other):
         """
-        >>> p111, p1113, p11, p11124 = Pid('1.1.1'), Pid('1.1.1.3'), Pid('1.1'), Pid('1.1.1.2.4')
+        >>> p111, p1113, p11, p11124 = Pid.from_str('1.1.1'), Pid.from_str('1.1.1.3'), Pid.from_str('1.1'), Pid.from_str('1.1.1.2.4')
         >>> p111.parent(p111)
         False
         >>> p111.parent(p1113)
@@ -191,7 +219,7 @@ class Pid(object):
 
     def parent1(self, other):
         """
-        >>> p111, p1113, p11, p11124 = Pid('1.1.1'), Pid('1.1.1.3'), Pid('1.1'), Pid('1.1.1.2.4')
+        >>> p111, p1113, p11, p11124 = Pid.from_str('1.1.1'), Pid.from_str('1.1.1.3'), Pid.from_str('1.1'), Pid.from_str('1.1.1.2.4')
         >>> p111.parent1(p111)
         False
         >>> p111.parent1(p1113)
@@ -218,7 +246,7 @@ class Pid(object):
 
     def sibling(self, other):
         """
-        >>> p111, p1113, p112, p115 = Pid('1.1.1'), Pid('1.1.1.3'), Pid('1.1.2'), Pid('1.1.5')
+        >>> p111, p1113, p112, p115 = Pid.from_str('1.1.1'), Pid.from_str('1.1.1.3'), Pid.from_str('1.1.2'), Pid.from_str('1.1.5')
         >>> p111.sibling(p111)
         False
         >>> p111.sibling(p1113)
@@ -248,7 +276,7 @@ class Pid(object):
     
     def sibling1(self, other):
         """
-        >>> p111, p1113, p112, p115 = Pid('1.1.1'), Pid('1.1.1.3'), Pid('1.1.2'), Pid('1.1.5')
+        >>> p111, p1113, p112, p115 = Pid.from_str('1.1.1'), Pid.from_str('1.1.1.3'), Pid.from_str('1.1.2'), Pid.from_str('1.1.5')
         >>> p111.sibling1(p111)
         False
         >>> p111.sibling1(p1113)
@@ -277,16 +305,16 @@ class Pid(object):
 
     def __repr__(self):
         """
-        >>> repr(Pid('1.1.1'))
-        "Pid('1.1.1')"
-        >>> Pid('1.1.1') == eval(repr(Pid('1.1.1')))
+        >>> repr(Pid.from_str('1.1.1'))
+        "Pid.from_str('1.1.1')"
+        >>> Pid.from_str('1.1.1') == eval(repr(Pid.from_str('1.1.1')))
         True
         """
-        return 'Pid(\'' + '.'.join([repr(e) for e in self.data]) + '\')'  
+        return 'Pid.from_str(\'' + '.'.join([repr(e) for e in self.data]) + '\')'  
     
     def __str__(self):
         """
-        >>> str(Pid('1.1.1'))
+        >>> str(Pid.from_str('1.1.1'))
         '1.1.1'
         """
         return '.'.join([repr(e) for e in self.data])
@@ -392,12 +420,15 @@ class ProcessPetriNet(PetriNet):
     def __init__(self, name):
         """
         >>> ProcessPetriNet('net').place()
-        [Place('sgen', MultiSet([(Pid('1'), 0)]), CrossProduct(Instance(Pid), (Instance(int) & GreaterOrEqual(0))))]
+        [Place('sgen', MultiSet([(Pid.from_str('1'), 0)]), CrossProduct(Instance(Pid), (Instance(int) & GreaterOrEqual(0))))]
         
         """
         PetriNet.__init__(self, name)
         # add generator place
-        generator_place = Place("sgen", [(Pid('1'), 0)], CrossProduct(tPid, tNatural))
+        initial_pid = Pid.from_str('1')
+        generator_place = Place("sgen", [(initial_pid, 0)], CrossProduct(tPid, tNatural))
+        
+        self._initial_pid = initial_pid
         self.name_provider = NameProvider()
         self._generator_place = generator_place
         self.add_place(self._generator_place)
@@ -405,6 +436,9 @@ class ProcessPetriNet(PetriNet):
         self.get_operations       = defaultdict(list)
         self.terminate_operations = defaultdict(set)
    
+    def initial_pid(self):
+        return self._initial_pid
+    
     def add_get_pid(self, trans, count = 1):
         pid_var, count_var = Variable('x'), Variable('x')
         # override names, begins with _ which is usually illegal
@@ -467,6 +501,9 @@ class ProcessPetriNet(PetriNet):
                     tuple_list = [ Tuple( [ pid_var, expr ]) ]
                 # add new thread coutners
                 tuple_list.extend([ Tuple([new_pid_var, Value(0)]) for new_pid_var in new_pids ])
+                
+                if not tuple_list:
+                    continue
                 # add generator arc
                 generator_arc = GeneratorMultiArc(pid_var, counter_var, new_pids, tuple_list)
                 self.add_output(self._generator_place.name, trans, generator_arc)

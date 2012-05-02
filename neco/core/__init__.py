@@ -829,6 +829,11 @@ class SuccTGenerator(object):
         # produce
         for output_arc in trans.outputs:
             self.gen_produce(output_arc)
+        
+        # add pid normalization step if needed
+        if ( config.get('pid_normalization') ):
+            builder.emit_NormalizeMarking( marking = new_marking )
+        
         # add marking to set
         builder.emit_AddMarking( marking_set = self.marking_set,
                                  marking = new_marking)

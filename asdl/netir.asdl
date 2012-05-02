@@ -122,6 +122,8 @@ module netir version "$Revision: 1 $"
 
 	| Comment(str message)
 
+	| NormalizeMarking(VariableInfo marking)
+
     Expr =
 	PyExpr(string expr)
 

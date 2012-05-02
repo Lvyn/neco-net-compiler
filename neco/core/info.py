@@ -292,6 +292,7 @@ TypeInfo.register_type('String')
 TypeInfo.register_type('BlackToken')
 
 TypeInfo.register_type('Pid')
+TypeInfo.register_type('Dict')
 
 ################################################################################
 

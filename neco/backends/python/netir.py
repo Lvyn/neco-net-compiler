@@ -430,6 +430,10 @@ class CompilerVisitor(coreir.CompilerVisitor):
                                                      marking_var = node.marking,
                                                      place_info = node.place_info)
 
+    def compile_NormalizeMarking(self, node):
+        return self.env.marking_type.normalize_marking_call(env = self.env,
+                                                            marking_var = node.marking)
+        
 ################################################################################
 # EOF
 ################################################################################

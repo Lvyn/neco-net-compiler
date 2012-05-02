@@ -132,6 +132,9 @@ class Main(object):
 
         parser.add_argument('--trace', '-t', default='trace', dest='trace', metavar='TRACEFILE', type=str,
                             help='additionnal include paths (cython)')
+        
+        parser.add_argument('--pid-normalization', default=False, dest='pid_normalization', action='store_true',
+                            help='enable process identifier normalization (wip)')
 
         args = parser.parse_args()
 
@@ -162,9 +165,10 @@ class Main(object):
                    profile  = args.profile,
                    imports  = args.imports,
                    optimise_flow = args.optimise_flow,
-                   additional_search_paths  = args.includes,
+                   additional_search_paths = args.includes,
                    trace_calls = False,
-                   trace_file = trace)
+                   trace_file = trace,
+                   pid_normalization = args.pid_normalization)
 
         # checks for conflicts in options
         if module:

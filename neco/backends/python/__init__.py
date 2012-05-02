@@ -46,6 +46,7 @@ class Compiler(core.Compiler):
             env.add_declaration(decl)
 
         env.add_declaration("from neco.backends.python.data import multiset, dump")
+        env.add_declaration("import neco.backends.python.data as data")
         env.add_declaration("from snakes.nets import *")
         env.add_declaration("import cPickle")
         env.add_declaration("import StringIO")

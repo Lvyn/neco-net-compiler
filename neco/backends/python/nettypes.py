@@ -9,6 +9,17 @@ from neco.core.info import *
 
 import pyast as ast
 
+GENERATOR_PLACE = 'sgen'
+
+neco_stubs = {
+    'object_place_type_update_pids'     : 'data.neco__multiset_update_pids',
+    'object_place_type_update_pid_tree' : 'data.neco__iterable_update_pid_tree',
+    'create_pid_tree'    : 'data.neco__create_pid_tree',
+    'normalize_pid_tree' : 'data.neco__normalize_pid_tree',
+    'generator_place_update_pids'     : 'data.neco__generator_token_transformer',
+    'generator_place_update_pid_tree' : 'data.neco__generator_multiset_update_pid_tree',
+}
+
 ################################################################################
 
 def type2str(type):
@@ -126,6 +137,19 @@ class ObjectPlaceType(coretypes.ObjectPlaceType, PythonPlaceType):
         return ast.Call(func=ast.Attribute(value=place_expr,
                                            attr='__dump__'))
 
+    def update_pids_stmt(self, env, marking_var, new_pid_dict_var):
+        stub_name = neco_stubs['object_place_type_update_pids']
+        return ast.Assign(targets=[self.place_expr(env, marking_var)],
+                          value=ast.Call(func=ast.Name(stub_name),
+                                         args=[self.place_expr(self, marking_var),
+                                               ast.Name(new_pid_dict_var.name)]))
+    
+    def update_pid_tree(self, env, marking_var, pid_tree_var):
+        stub_name = neco_stubs['object_place_type_update_pid_tree']
+        return stmt(ast.Call(func=ast.Name(stub_name),
+                             args=[self.place_expr(self, marking_var),
+                                   ast.Name(pid_tree_var.name)]))
+
 ################################################################################
 
 class StaticMarkingType(coretypes.MarkingType):
@@ -201,6 +225,62 @@ class StaticMarkingType(coretypes.MarkingType):
         function.body = if_block
         return function
 
+    def gen_update_pids(self, env):
+        vp = VariableProvider()
+        self_var = vp.new_variable(self.type, name='self')
+        new_pid_dict_var = vp.new_variable(self.type, name='new_pid_dict')
+
+        function = ast.FunctionDef(name='update_pids',
+                                   args=A(self_var.name).param(new_pid_dict_var.name).ast())
+            
+        body = []
+        for place_type in self.place_types.itervalues():
+            body.append( place_type.update_pids_stmt(env, self_var, new_pid_dict_var) )
+        function.body = body
+        return function
+    
+    def gen_normalize_pids(self, env):
+        vp = VariableProvider()
+        self_var = vp.new_variable(self.type, name='self')
+        tree_var = vp.new_variable(TypeInfo.AnyType,  name='tree')
+        pid_dict_var = vp.new_variable(TypeInfo.Dict, name='pid_dict')
+        
+        function = ast.FunctionDef(name='normalize_pids',
+                                   args=A(self_var.name).ast())
+        body = []
+        body.append(ast.Assign(targets=[ast.Name(id=tree_var.name)],
+                               value=ast.Call(func=ast.Name(neco_stubs['create_pid_tree']),
+                                              args=[])))
+        # build the tree
+        for name, place_type in self.place_types.iteritems():
+            if name == GENERATOR_PLACE:
+                body.append(stmt(ast.Call(func=ast.Name(neco_stubs['generator_place_update_pid_tree']),
+                                          args=[ place_type.place_expr(env, self_var), ast.Name(id=tree_var.name) ] )))
+            else:
+                body.append(place_type.update_pid_tree(env, self_var, tree_var))
+        # normalize tree and get dict
+        body.append(ast.Assign(targets=[ast.Name(id=pid_dict_var.name)],
+                               value=ast.Call(func=ast.Name(neco_stubs['normalize_pid_tree']),
+                                              args=[ast.Name(tree_var.name)])))
+        # update tokens with new pids
+        for name, place_type in self.place_types.iteritems():
+            if name == GENERATOR_PLACE:
+                body.append( ast.Assign(targets=[ place_type.place_expr(env, self_var) ],
+                                        value=ast.Call(func=ast.Name(neco_stubs['generator_place_update_pids']),
+                                                       args=[place_type.place_expr(env, self_var),
+                                                             ast.Name(pid_dict_var.name)]) ) )
+            else:
+                body.append( place_type.update_pids_stmt(env, self_var, pid_dict_var) )
+                
+        
+        function.body = body
+        return function
+            
+    def normalize_marking_call(self, env, marking_var):
+        return stmt(ast.Call(func=ast.Attribute(value=ast.Name(id=marking_var.name),
+                                           attr='normalize_pids'),
+                             args = []))
+
     def gen_copy_method(self, env):
         vp = VariableProvider()
         self_var = vp.new_variable(self.type, name='self')
@@ -227,6 +307,9 @@ class StaticMarkingType(coretypes.MarkingType):
                                    args=A('self').param(other).ast())
         return_str = "return ("
         for i, (name, place_type) in enumerate(self.place_types.iteritems()):
+            if name == GENERATOR_PLACE and config.get('pid_normalization'):
+                continue
+            
             id_name = self.id_provider.get(name)
             if i > 0:
                 return_str += " and "
@@ -242,6 +325,9 @@ class StaticMarkingType(coretypes.MarkingType):
         builder.emit( E('h = 0') )
 
         for name, place_type in self.place_types.iteritems():
+            if name == GENERATOR_PLACE and config.get('pid_normalization'):
+                continue
+            
             magic = hash(name)
             builder.emit( E('h ^= hash(self.' + self.id_provider.get(name) + ') ^ ' + str(magic)) )
 
@@ -325,7 +411,9 @@ class StaticMarkingType(coretypes.MarkingType):
                     self.gen_eq_method(env),
                     self.gen_hash_method(env),
                     self.gen_copy_method(env),
-                    self.gen_dump_method(env)]
+                    self.gen_dump_method(env),
+                    self.gen_update_pids(env),
+                    self.gen_normalize_pids(env)]
         return cls
 
     def copy_marking_expr(self, env, marking_var, *args):

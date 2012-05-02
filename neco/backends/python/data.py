@@ -316,8 +316,153 @@ class multiset(hdict):
             l.append(dump(token))
             l.append(', ')
         l.append(']')
-        return "".join(l)
+        return "".join(l) 
+    
+from neco.extsnakes import Pid
 
+def neco__tuple_update_pids(tup, new_pid_dict):
+    """
+    This function updates pids, with respect to C{new_pid_dict}, of a tuple object (C{tup}). 
+    
+    For example lets consider the dictionary
+
+    >>> pid_dict = { Pid.from_str('2') : Pid.from_str('1'), Pid.from_str('2.4') : Pid.from_str('1.1') }
+    
+    and token 
+
+    >>> token = (Pid.from_str('2'), Pid.from_str('2.4'), 42, Pid.from_str('2'))
+    
+    then this function updates the tuple in the following way
+
+    >>> neco__tuple_update_pids(token, pid_dict)
+    (Pid.from_str('1'), Pid.from_str('1.1'), 42, Pid.from_str('1'))
+    
+    The transformation is recursive on tuples
+
+    >>> token = (Pid.from_str('2'), Pid.from_str('2.4'), (42, Pid.from_str('2.4'), (Pid.from_str('2'), )), Pid.from_str('2'))
+    >>> neco__tuple_update_pids(token, pid_dict)
+    (Pid.from_str('1'), Pid.from_str('1.1'), (42, Pid.from_str('1.1'), (Pid.from_str('1'),)), Pid.from_str('1'))
+    
+    """
+    new_iterable = []
+    for tok in tup:
+        if isinstance(tok, Pid):
+            new_tok = Pid.from_list(new_pid_dict[tok].data)
+        elif isinstance(tok, tuple):
+            new_tok = neco__tuple_update_pids(tok, new_pid_dict)
+        else:
+            new_tok = tok
+        new_iterable.append(new_tok)
+    return tuple(new_iterable)
+
+from collections import Iterable
+from copy import copy # a swallow copy is enough here
+
+def neco__multiset_update_pids(ms, new_pid_dict):
+    """
+    This function updates pids within a multiset C{ms} with resepect to C{new_pid_dict}.
+    
+    >>> ms = multiset()
+    >>> ms.add_items([1, 2, Pid.from_str('2'), Pid.from_str('3')])
+    >>> neco__multiset_update_pids(ms, {Pid.from_str('2') : Pid.from_str('1'), Pid.from_str('3') : Pid.from_str('2')})
+    multiset([Pid.from_str('1'), 1, 2, Pid.from_str('2')])
+    
+    See L{neco__iterable_update_pids}.
+    """
+    new_ms = multiset()
+    for tok, count in ms.iteritems():
+        if isinstance(tok, Pid):
+            new_tok = Pid.from_list( new_pid_dict[tok].data )
+        elif isinstance(tok, tuple):
+            new_tok = neco__tuple_update_pids(tok, new_pid_dict)
+        else:
+            new_tok = tok
+        new_ms[new_tok] = count
+    return new_ms
+
+def neco__generator_token_transformer(ms, new_pid_dict):
+    """
+    This function updated a generator place multiset C{ms} with resepect to C{new_pid_dict}.
+
+    >>> sgen = multiset([ (Pid.from_str('1'), 6), (Pid.from_str('1.4'), 2) ])
+    >>> pid_tree = neco__create_pid_tree() 
+    >>> neco__generator_multiset_update_pid_tree(sgen, pid_tree)
+    >>> new_pid_dict = neco__normalize_pid_tree(pid_tree)
+    >>> new_pid_dict
+    {Pid.from_str('1'): Pid.from_str('1'), Pid.from_str('1.7'): Pid.from_str('1.3'), Pid.from_str('1.4.3'): Pid.from_str('1.1.1'), Pid.from_str('1.4'): Pid.from_str('1.1')}
+    >>> neco__generator_token_transformer(sgen, new_pid_dict)
+    multiset([(Pid.from_str('1'), 3), (Pid.from_str('1.1'), 1)])
+    
+    """
+    new_ms = multiset()
+    for pid, n in ms:
+        new_pid = Pid.from_list( new_pid_dict[pid].data )
+        new_n   = Pid.from_list( new_pid_dict[ pid.next(n) ].data ).ends_with() - 1
+        new_ms.add( (new_pid, new_n) )
+    return new_ms
+
+from process import PidTree
+
+def neco__generator_multiset_update_pid_tree(ms, pid_tree):
+    """
+    This function updates a pid tree (C{pid_tree}) retrieving data from a generator place multiset C{ms}.
+    
+    >>> sgen = multiset([ (Pid.from_str('1'), 6), (Pid.from_str('1.4'), 2) ])
+    >>> pid_tree = neco__create_pid_tree() 
+    >>> neco__generator_multiset_update_pid_tree(sgen, pid_tree)
+    >>> pid_tree.print_structure()
+    <active=F>
+    |-1-<active=T>
+      |-4-<active=T>
+      | |-3-<active=T>
+      |-7-<active=T>
+
+    """
+    for pid, n in ms:
+        pid_tree.expanded_insert(pid)
+        pid_tree.expanded_insert(pid.next(n))
+
+def neco__iterable_update_pid_tree(iterable, pid_tree):
+    """
+    This function inserts pids to a pid tree (C{pid_tree}) from an iterable object (C{iterable}). 
+    
+    For example consider an empty tree and the token
+
+    >>> tree = PidTree()
+    >>> token = (Pid.from_str('1.1'), 42, Pid.from_str('1.2'), Pid.from_str('1.1'))
+    
+    then the call of the function modifies the tree as follows  
+
+    >>> neco__iterable_update_pid_tree(token, tree)
+    >>> tree.print_structure()
+    <active=F>
+    |-1-<active=F>
+      |-1-<active=T>
+      |-2-<active=T>
+    
+    Pids are also grabed from inner tuples if the iterable object is a tuple.
+
+    >>> token = (Pid.from_str('1.1'), (42, Pid.from_str('1'), (Pid.from_str('1.1.1'),)), Pid.from_str('1.2'), Pid.from_str('1.1'))
+    >>> neco__iterable_update_pid_tree(token, tree)
+    >>> tree.print_structure()
+    <active=F>
+    |-1-<active=T>
+      |-1-<active=T>
+      | |-1-<active=T>
+      |-2-<active=T>
+    """
+    for tok in iterable:
+        if isinstance(tok, Pid):
+            pid_tree.expanded_insert(tok)
+        elif isinstance(tok, tuple):
+            neco__iterable_update_pid_tree(tok, pid_tree)
+
+def neco__create_pid_tree():
+    return PidTree()
+
+def neco__normalize_pid_tree(pid_tree):
+    return pid_tree.reduce_sibling_offsets()
+    
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
