@@ -132,9 +132,12 @@ class Main(object):
 
         parser.add_argument('--trace', '-t', default='trace', dest='trace', metavar='TRACEFILE', type=str,
                             help='additionnal include paths (cython)')
-        
+
         parser.add_argument('--pid-normalization', default=False, dest='pid_normalization', action='store_true',
                             help='enable process identifier normalization (wip)')
+
+        parser.add_argument('--no-stats', default=False, dest='no_stats', action='store_true',
+                            help='disable dynamic stats (transitions/sec, etc.)')
 
         args = parser.parse_args()
 
@@ -164,6 +167,7 @@ class Main(object):
                    backend  = args.language,
                    profile  = args.profile,
                    imports  = args.imports,
+                   no_stats = args.no_stats,
                    optimise_flow = args.optimise_flow,
                    additional_search_paths = args.includes,
                    trace_calls = False,

@@ -52,11 +52,8 @@ class Main(object):
 
     def __init__(self, progname, logo=False):
 
-        print "{} uses python {}".format(progname, sys.version)
         assert(not self.__class__._instance_) # assert called only once
         self.__class__._instance_ = self # setup the unique instance
-        if logo:
-            print g_logo
 
         # parse arguments
         parser = argparse.ArgumentParser(progname,
@@ -73,6 +70,9 @@ class Main(object):
         parser.add_argument('--profile', '-p', default=False, dest='profile', action='store_true',
                             help='enable profiling support')
 
+        parser.add_argument('--print-mcc', default=False, dest='print_mcc', action='store_true',
+                            help='prints only states count as output (ignored if any other option is given).')
+
         args = parser.parse_args()
 
         profile = args.profile
@@ -81,8 +81,15 @@ class Main(object):
 
         # setup config
         config.set(#debug    = cli_argument_parser.debug(),
+                   print_mcc = args.print_mcc,
                    profile  = profile,
                    trace_calls = False)
+
+        if not args.print_mcc:
+            print "{} uses python {}".format(progname, sys.version)
+            if logo:
+                print g_logo
+
 
         self.dump_markings = dump_markings
         self.graph = bool(graph)
@@ -133,8 +140,11 @@ class Main(object):
         start = time()
         ss = net.state_space()
         end = time()
-        print "exploration time: ", end - start
-        print "len visited = %d" % (len(ss))
+        if config.get('print_mcc'):
+            print len(ss)
+        else:
+            print "exploration time: ", end - start
+            print "len visited = %d" % (len(ss))
 
     def explore_dump(self):
         """ Explore state space. """

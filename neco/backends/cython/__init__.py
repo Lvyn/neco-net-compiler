@@ -123,7 +123,10 @@ class Compiler(core.Compiler):
         module_ast = ast.fix_missing_locations(ast.Module(body = compiled_nodes))
 
         f = open("net.pyx", "w")
-        file_name = "include.pyx"
+        if config.get('no_stats'):
+            file_name = "include_no_stats.pyx"
+        else:
+            file_name = "include.pyx"
 
         path = search_file(file_name, self.additional_search_paths)
         include_pyx = open(path , "r")
