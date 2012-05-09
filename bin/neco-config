@@ -9,4 +9,4 @@ NECO_INCLUDE=$path_only/../ctypes
 echo PATH=$PATH:$path_only
 echo NECO_INCLUDE=$NECO_INCLUDE
 echo LD_LIBRARY_PATH=$LD_LIBRARY_PATH:.:$NECO_INCLUDE
-echo PYTHONPATH=$PYTHONPATH:$path_only/..
+echo PYTHONPATH=$PYTHONPATH:$path_only/..:$path_only/../ctypes
