@@ -928,7 +928,7 @@ class StaticMarkingType(coretypes.MarkingType):
         return to_ast(builder)
 
     def _gen_C_compare_aux(self, builder, tests):
-        try:
+        while tests:
             test = tests.pop()
             # l - r == 0 ?:
             builder.emit(cyast.Assign(targets=[cyast.Name("tmp")],
@@ -947,10 +947,7 @@ class StaticMarkingType(coretypes.MarkingType):
             builder.end_If()
             builder.end_If()
 
-            self._gen_C_compare_aux(builder, tests)
-
-        except IndexError:
-            builder.emit_Return(cyast.Num(0))
+        builder.emit_Return(cyast.Num(0))
 
     def _gen_C_compare(self, env):
 
