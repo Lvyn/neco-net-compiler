@@ -1,6 +1,6 @@
 """ Cython basic net types. """
 
-import math
+import math, sys
 import neco.utils as utils
 from neco.utils import Factory, should_not_be_called, todo
 import neco.core.nettypes as coretypes
@@ -1073,7 +1073,7 @@ class StaticMarkingType(coretypes.MarkingType):
                                                              op = cyast.Mult(),
                                                              right = cyast.Num(mult) ) ) )
                 #E('h').assign(E('h').xor(native_field).mult(E(mult))) )
-                mult += (82520L + i + i)
+                mult = (mult + (82520L + i + i)) % sys.maxint
                 i += 1
 
         for place_type in self.place_types.itervalues():
@@ -1096,7 +1096,7 @@ class StaticMarkingType(coretypes.MarkingType):
                                                                 right=cyast.Num(mult))
                                               )
                                  )
-                mult += (82521L * i + i)
+                mult = (mult + (82521 * i + i)) % sys.maxint
                 i += 1
 
         builder.emit_Return(E("h"))
