@@ -17,6 +17,12 @@ module netir version "$Revision: 1 $"
 		Stmt* body,
 		TransitionInfo transition_info,
 		VariableProvider variable_provider)
+		
+	| IsFireable(identifier function_name,
+			 	 VariableInfo arg_marking,
+			     Stmt* body,
+			     TransitionInfo transition_info,
+			     VariableProvider variable_provider)
 
 	| SuccP(identifier function_name,
 		VariableInfo arg_marking_set,
@@ -124,6 +130,8 @@ module netir version "$Revision: 1 $"
 
 	| NormalizeMarking(VariableInfo marking)
 
+	| Return(Expr expr)
+	
     Expr =
 	PyExpr(string expr)
 

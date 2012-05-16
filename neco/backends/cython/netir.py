@@ -18,6 +18,9 @@ class CompilerVisitor(coreir.CompilerVisitor):
     def __init__(self, env):
         self.env = env
 
+    def compile_Return(self, node):
+        return [ cyast.Return(self.compile(node.expr)) ]
+
     def compile_Print(self, node):
         return [cyast.Print(values = [cyast.Str(node.message)], nl=True)]
 
@@ -185,7 +188,6 @@ class CompilerVisitor(coreir.CompilerVisitor):
                                   orelse = [] ) ]
         else:
             self.env.try_declare_cvar(node.token_var.name, node.token_var.type)
-
             place_type = marking_type.get_place_type_by_name(node.place_name)
             return Builder.For( target = cyast.Name(node.token_var.name),
                                 iter = place_type.iterable_expr( env = self.env,
@@ -356,6 +358,7 @@ class CompilerVisitor(coreir.CompilerVisitor):
             variable = input.variable
             place_info = input.place_info
             type = self.env.marking_type.get_place_type_by_name(place_info.name).token_type
+            
             if (not type.is_UserType) or (is_cython_type(type)):
                 return CVarSet( [ cyast.CVar(name=variable.name, type=type2str(type)) ] )
 
@@ -535,6 +538,7 @@ class CompilerVisitor(coreir.CompilerVisitor):
                                                      marking_var = node.marking,
                                                      place_info  = node.place_info)
 
+        
 ################################################################################
 # EOF
 ################################################################################

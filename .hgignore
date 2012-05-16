@@ -27,6 +27,15 @@ tests/benchmarks/flow_process/net_api.h
 */net.py
 *.gz
 *.bz2
+doc/api/*
+net.pyx
+net_api.h
+net.pxd
+*.pdf
+*.dot
+*.ps
+*.svg
+*.jpeg
 syntax: regexp
 .*/.gone/.*
 .gone/.*

@@ -785,6 +785,11 @@ def fatal_error(msg, ret=-1):
     print >> sys.stderr, 'Error: {msg}'.format(msg=msg)
     exit(ret)
 
+def reverse_map(a_b_map):
+    b_a_map = {}
+    for a, b in a_b_map.iteritems():
+        b_a_map[b] = a
+    return b_a_map
 
 ################################################################################
 # EOF

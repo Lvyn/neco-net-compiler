@@ -3,7 +3,7 @@
 import inspect
 import types
 # from snakes.nets import *
-# import snakes.typing as typ
+# import snakes.typing as type
 from neco.extsnakes import *
 from collections import defaultdict
 import snakes.plugins.status as status
@@ -1032,7 +1032,7 @@ class PlaceInfo(object):
 class NetInfo(object):
 
     def __init__(self, net):
-        self.net = net
+        # self.net = net
 
         self.places = []
         for p in net.place():
@@ -1072,7 +1072,12 @@ class NetInfo(object):
             if p.name == name:
                 return p
         assert False, 'place not found'
-
+        
+    def transition_by_name(self, name):
+        for t in self.transitions:
+            if t.name == name:
+                return t
+        assert False, 'transition not found'
 
 class AtomInfo(object):
     """ Atomic proposition related informations.
@@ -1370,7 +1375,29 @@ class SharedVariableHelper(VariableProvider):
 if __name__ == '__main__':
     import doctest
     doctest.testmod()
-
+#    from snakes.nets import *
+#
+#    net = PetriNet('Net')
+#    s1 = Place('s1', [ dot ], tBlackToken)
+#    s1.is_OneSafe = False
+#    
+#    s2 = Place('s2', [ dot ], tBlackToken)
+#    s2.is_OneSafe = False
+#    
+#    net.add_place(s1)
+#    net.add_place(s2)
+#    
+#    transition = Transition('t', Expression('True'))
+#    net.add_transition(transition)
+#    
+#    net.add_input('s1', 't', Variable("x"))
+#    net.add_output('s2', 't', Variable("x"))
+#    
+#    info = NetInfo(net)
+#    
+#    import pickle, StringIO
+#    pickle.dump(info, StringIO.StringIO(), -1)
+    
 
 ################################################################################
 # EOF

@@ -6,31 +6,88 @@ from neco.core.info import VariableProvider, TypeInfo
 from nettypes import type2str, register_cython_type
 from cyast import Builder, E, Unparser, to_ast
 from neco import config
+import neco.core as core
+import neco.core.info as info
+from neco.core.properties import operator_to_string, IntegerComparison, Sum
+from snakes.nets import WordSet
+from neco.utils import flatten_lists
+
+__operator_to_cyast_map = { 
+    IntegerComparison.LT : cyast.Lt(),
+    IntegerComparison.LE : cyast.LtE(),
+    IntegerComparison.EQ : cyast.Eq(),
+    IntegerComparison.GT : cyast.Gt(),
+    IntegerComparison.GE : cyast.GtE()
+}
+
+def operator_to_cyast(operator):
+    return __operator_to_cyast_map[operator]
+    
 
 ################################################################################
 #
 ################################################################################
 class CheckerEnv(nettypes.Env):
 
-    def __init__(self, word_set, marking_type):
+    def __init__(self, word_set, net_info, marking_type):
         nettypes.Env.__init__(self, word_set, marking_type, None)
-
+        self.net_info = net_info
         self.id_provider = IDProvider()
         self.check_functions = {}
+        
+        self.transition_id_provider = IDProvider()
+        self._is_fireable_functions = {}
 
     def get_check_function(self, name):
         """
         @raise KeyError: if check function does not exist.
         """
         return self.check_functions[name]
-
+    
+    def place_card_expression(self, marking_var, place_name):
+        place_type = self.marking_type.get_place_type_by_name(place_name)
+        return place_type.card_expr(self, marking_var)
+        
     def register_check_function(self, name, function):
         self.check_functions[name] = function
+        
+    def is_fireable_expression(self, marking_var, transition_name):
+        try:
+            function = self._is_fireable_functions[transition_name]            
+        except KeyError:
+            # function does not exist
+            transition = self.net_info.transition_by_name(transition_name)
+            transition_id = self.transition_id_provider.get(transition)
+            function_name = "isfireable_t{}".format(transition_id)
+            
+            generator = IsFireableGenerator(self, transition, function_name)
+            function_ir = generator()
+            
+            opt = config.get('optimise')
+            from neco.core import onesafe
+            optpass = onesafe.OptimisationPass()     
+            
+            if opt:
+                function_ir = optpass.transform_ast(self.net_info, function_ir)
+                function_ir = flatten_lists( function_ir )
+
+            
+            visitor = CheckerCompileVisitor(self)
+            function_ast = visitor.compile( function_ir )        
+
+            function = FunctionWrapper(function_name, function_ast)
+            self._is_fireable_functions[transition_name] = function
+
+        return function.call( [ cyast.Name(marking_var.name) ] )
 
     def functions(self):
         for fun in self.check_functions.itervalues():
             yield fun.ast()
 
+    def is_fireable_functions(self):
+        for fun in self._is_fireable_functions.itervalues():
+            yield fun.ast()
+            
 class FunctionWrapper(object):
     """
     """
@@ -93,7 +150,6 @@ def gen_InPlace_function(checker_env, function_name, place_name):
                                        marking_var,
                                        body=inner_body)
 
-    # main_body.append( cyast.Assign(targets=[cyast.Name(check_var.name)], value=cyast.Num(0)) )
     main_body.append( node )
     main_body.append( cyast.Return(value=cyast.Num(0)) )
 
@@ -104,10 +160,104 @@ def gen_InPlace_function(checker_env, function_name, place_name):
     return FunctionWrapper(function_name, cyast.to_ast(builder))
 
 
+class IsFireableGenerator(core.SuccTGenerator):
+    
+    def __init__(self, checker_env, transition, function_name):
+        
+        # DO NOT CALL BASE CLASS __init__ !
+        
+        self.net_info = checker_env.net_info
+        self.builder = core.netir.Builder()
+        self.transition = transition
+        self.function_name = function_name
+        self.marking_type = checker_env.marking_type
+        self._ignore_flow = self._ignore_flow = config.get('optimise_flow')
+        self.env = checker_env
+
+        # this helper will create new variables and take care of shared instances
+        helper = info.SharedVariableHelper( transition.shared_input_variables(),
+                                            WordSet(transition.variables().keys()) )
+        self.variable_helper = helper
+
+        if config.get('optimise'):
+            self.transition.order_inputs()
+
+        # function arguments
+        self.arg_marking = helper.new_variable(type = self.marking_type.type)
+
+        # create function
+        self.builder.begin_function_IsFireable( function_name     = self.function_name,
+                                                arg_marking       = self.arg_marking,
+                                                transition_info   = self.transition,
+                                                variable_provider = helper )
+        
+    def __call__(self):
+        trans = self.transition
+        builder = self.builder
+        
+        self.gen_enumerators()
+        
+        guard = info.ExpressionInfo(trans.trans.guard._str)
+        try:
+            if eval(guard.raw) != True:
+                builder.begin_GuardCheck( condition = core.netir.PyExpr(guard) )
+        except:
+            builder.begin_GuardCheck( condition = core.netir.PyExpr(guard) )
+        
+        # guard valid
+        success = info.ExpressionInfo("True")
+        failure = info.ExpressionInfo("False")
+        
+        builder.emit_Return(core.netir.PyExpr(success))
+        builder.end_all_blocks()
+        
+        builder.emit_Return(core.netir.PyExpr(failure))
+        builder.end_function()
+        return builder.ast()    
+
+def gen_check_expression(checker_env, marking_var, formula):
+    if formula.isIntegerComparison():
+        operator = operator_to_cyast(formula.operator)
+        left = gen_check_expression( checker_env, marking_var, formula.left )
+        right = gen_check_expression( checker_env, marking_var, formula.right )
+        return cyast.Compare(left=left,
+                             ops=[operator],
+                             comparators=[right] )
+        
+    elif formula.isIntegerConstant():
+        return cyast.Num(int(formula.value))
+        
+    elif formula.isCard():
+        return checker_env.place_card_expression(marking_var, formula.place_name)
+    
+    elif formula.isSum():
+        operands = formula.operands            
+        head = operands[0]
+        tail = operands[1:]
+        
+        left  = gen_check_expression(checker_env, marking_var, head)
+        if len(tail) > 1:
+            right = gen_check_expression(checker_env, marking_var, Sum(tail))
+        else:
+            right = gen_check_expression(checker_env, marking_var, tail[0])
+        
+        
+        return cyast.BinOp(left = left,
+                           op = cyast.Add(),
+                           right = right)
+    
+    elif formula.isIsFireable():
+        return checker_env.is_fireable_expression(marking_var,                                                  
+                                                  formula.transition_name)
+    
+    else:
+        print >> sys.stderr, "Unknown atomic proposition {!s}".format(formula)
+        raise NotImplementedError
+
 ################################################################################
 #
 ################################################################################
-def gen_check_function(checker_env, id, prop):
+def gen_check_function(checker_env, id, atom):
 
     marking_type = checker_env.marking_type
     register_cython_type(marking_type.type, 'net.Marking')
@@ -127,34 +277,10 @@ def gen_check_function(checker_env, id, prop):
                                decl = [],
                                public=False, api=False)
 
-
-    ### begin matcher
-    class matcher(Matcher):
-        def case_InPlace(_, node):
-            place_name = node.place.place
-
-
-            calls = []
-            for token_expr in node.data:
-                function_name = "check_in_{}".format(checker_env.id_provider.get(place_name))
-
-                # builder.emit( E( "print >> sys.stderr, 'checking if " + ast.dump(token_expr) + " is in " + place_name + "'" ) )
-
-                try:
-                    function = checker_env.get_check_function(function_name)
-                    calls.append( function.call(args=[cyast.Name(marking_var.name),
-                                                      token_expr]) )
-                except KeyError:
-                    function = gen_InPlace_function(checker_env, function_name, place_name)
-                    checker_env.register_check_function(function_name, function)
-                    calls.append( function.call(args=[cyast.Name(marking_var.name),
-                                                      token_expr]) )
-
-            builder.emit_Return(cyast.Compare(left = [cyast.Num(1)],
-                                             ops = [cyast.Eq()] * len(calls),
-                                             comparators = calls))
-    ### end matcher
-    matcher().match(prop)
+    formula = atom.formula
+    builder.emit( cyast.Return( gen_check_expression(checker_env,
+                                                     marking_var,
+                                                     formula) ) )
 
     builder.end_FunctionDef()
     tree = cyast.to_ast(builder)
@@ -209,6 +335,44 @@ def gen_main_check_function(checker_env, id_prop_map):
     return tree
 
 
+class CheckerCompileVisitor(netir.CompilerVisitor):
+    
+    def __init__(self, env):
+        netir.CompilerVisitor.__init__(self, env)
+    
+    def compile_IsFireable(self, node):
+        self.env.push_cvar_env()
+        self.env.push_variable_provider(node.variable_provider)
+
+        self.var_helper = node.transition_info.variable_helper
+
+        stmts = [ self.compile( node.body ) ]
+
+        decl = netir.CVarSet()
+        inputs = node.transition_info.inputs
+        for input in inputs:
+            decl.extend(self.try_gen_type_decl(input))
+
+        inter_vars = node.transition_info.intermediary_variables
+        for var in inter_vars:
+            if (not var.type.is_UserType) or netir.is_cython_type( var.type ):
+                decl.add(cyast.CVar(name=var.name,
+                                    type=type2str(var.type))
+        )
+
+        additionnal_decls = self.env.pop_cvar_env()
+        for var in additionnal_decls:
+            decl.add(var)
+
+        result = to_ast( Builder.FunctionDef(name = node.function_name,
+                                             args = (netir.A(node.arg_marking.name, type = type2str(node.arg_marking.type))),
+                                             body = stmts,
+                                             lang = cyast.CDef( public = False ),
+                                             returns = cyast.Name("int"),
+                                             decl = decl) )
+        return result
+
+
 from Cython.Distutils import build_ext
 from distutils.core import setup
 from distutils.extension import Extension
@@ -220,6 +384,16 @@ def produce_and_compile_pyx(checker_env, id_prop_map):
 
     gen_main_check_function(checker_env, id_prop_map) # updates env
 
+#    list = []
+#    for i,t in enumerate(checker_env.net_info.transitions):
+#        function_name = "is_fireable_{!s}".format(t) # TO DO use name + escape
+#        gen = IsFireableGenerator(checker_env,
+#                              checker_env.net_info,
+#                              core.netir.Builder(),
+#                              t,
+#                              function_name)
+#        list.append( gen() )
+
     checker_module = cyast.Module(body=functions)
     f = open("checker.pyx", "w")
 
@@ -227,7 +401,9 @@ def produce_and_compile_pyx(checker_env, id_prop_map):
     f.write("cimport ctypes_ext\n")
     f.write("import sys\n")
     f.write("from snakes.nets import *\n")
-
+    
+    for function_ast in checker_env.is_fireable_functions():
+        Unparser(function_ast, f)
     for function_ast in checker_env.functions():
         Unparser(function_ast, f)
     f.close()

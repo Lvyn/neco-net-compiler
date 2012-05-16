@@ -48,7 +48,7 @@ def register_cython_type(typeinfo, id):
     @param id: name used as type name.
     @type id: C{str}
     """
-    __registered_cython_types[typeinfo] = id
+    __registered_cython_types[str(typeinfo)] = id
 
 def is_cython_type(typeinfo):
     """ Check if a type is registered.
@@ -58,9 +58,8 @@ def is_cython_type(typeinfo):
     @return: C{True} if registered, C{False} otherwise.
     @rtype bool
     """
-    if __registered_cython_types.has_key(typeinfo):
-        return True
-    return False
+    return __registered_cython_types.has_key(str(typeinfo))
+        
 
 ################################################################################
 
@@ -72,7 +71,7 @@ def type2str(type):
     """
     if type.is_UserType:
         if is_cython_type(type):
-            return __registered_cython_types[type]
+            return __registered_cython_types[str(type)]
         else:
             return 'object'
     elif type.is_TupleType:
@@ -881,7 +880,7 @@ class StaticMarkingType(coretypes.MarkingType):
 
         builder.begin_If( cyast.Name('alloc') )
 
-        if self._pack:
+        if self._pack and self._pack.native_field_count() > 0:
             builder.emit( self._pack.gen_initialise(env, self_var) )
 
         # init places
@@ -912,7 +911,7 @@ class StaticMarkingType(coretypes.MarkingType):
         builder.emit( E('m = Marking()') )
 
         # copy packs
-        if self._pack:
+        if self._pack and self._pack.native_field_count() > 0:
             builder.emit( self._pack.copy_expr(env, src_marking_var = self_var, dst_marking_var = marking_var) )
 
         # copy places
@@ -967,7 +966,7 @@ class StaticMarkingType(coretypes.MarkingType):
 
         i = 0
         tests = []
-        if self._pack:
+        if self._pack and self._pack.native_field_count() > 0:
             if self.packing_enabled:
                 gen = self._pack.gen_tests(left_marking_var=left_marking_var,
                                            right_marking_var=right_marking_var)
@@ -1063,7 +1062,7 @@ class StaticMarkingType(coretypes.MarkingType):
         mult = 0xBADBEEF
         i = 0
 
-        if self._pack:
+        if self._pack and self._pack.native_field_count() > 0:
             for index in range(0, self._pack.native_field_count()):
                 native_field = self._pack.get_native_field(self_var, index)
                 builder.emit( cyast.Assign(targets=[cyast.Name('h')],
@@ -1312,44 +1311,11 @@ class StaticMarkingType(coretypes.MarkingType):
                                       bases=[E("object")],
                                       spec=cyast.type_name_spec(o="Marking", t="MarkingType"))
 
-        # ################################################################################
-        # # comments
-        # ################################################################################
-
-        # attributes = set()
-        # for place_type in self.place_types.itervalues():
-        #     if place_type.is_packed:
-        #         attributes.add("{attribute}[{offset}]".format(attribute = self.id_provider.get(self._pack),
-        #                                                       offset = self._pack.get_field_native_offset(place_type)))
-        #     else:
-        #         attributes.add(self.id_provider.get(place_type))
-        # attribute_max = max( len(attr) for attr in attributes)
-
-        # comms = set([])
-        # for place_type in self.place_types.itervalues():
-        #     if place_type.is_packed:
-        #         attr = "{attribute}[{offset}]".format(attribute = self.id_provider.get(self._pack),
-        #                                               offset = self._pack.get_field_native_offset(place_type))
-        #     else:
-        #         attr = self.id_provider.get(place_type)
-        #     comms.add("{info} - packed: {packed:1} - attribute: {attribute:{attribute_max}} #"
-        #                  .format(info=place_type.info,
-        #                          packed=place_type.is_packed,
-        #                          attribute=attr,
-        #                          attribute_max=attribute_max))
-        # max_length = max(len(x) - 2 for x in comms)
-        # comms = list(comms)
-        # comms.insert(0, "{text:*^{max_length}} #".format(text=' Marking Structure ', max_length=max_length))
-        # comms.append("{text:*^{max_length}} #".format(text='*', max_length=max_length))
-
-        # comms_ast = [ cyast.NComment(comm) for comm in comms ]
-        # cls.add_decl(comms_ast)
-
         ################################################################################
         # attributes
         ################################################################################
 
-        if self._pack:
+        if self._pack and self._pack.native_field_count() > 0: # at least one bit used
             name = '{name}[{count}]'.format(name  = self.id_provider.get(self._pack),
                                             count = self._pack.native_field_count())
             cls.add_decl( cyast.CVar(name, type=type2str(self._pack.type)) )
@@ -1363,17 +1329,12 @@ class StaticMarkingType(coretypes.MarkingType):
                                      args = to_ast(A("self", cyast.Name(type2str(self.type)))),
                                      returns = cyast.Name(type2str(self.type)),
                                      lang=cyast.CDef()) )
-        # cls.add_method( FunctionDecl(name='check',
-        #                              args = to_ast(A("self", type="Marking").param('atom', type=type2str(TypeInfo.Int))),
-        #                              returns = cyast.Name(type2str(TypeInfo.Int)),
-        #                              lang=cyast.CDef()) )
 
         return to_ast(cls)
 
     def gen_api(self, env):
         cls = Builder.ClassCDef(name = "Marking",
-                                bases = []) # E("object") ])
-                                      #spec = cyast.type_name_spec(o="Marking", t="MarkingType"))
+                                bases = [])
 
         ################################################################################
         # methods
@@ -1386,7 +1347,6 @@ class StaticMarkingType(coretypes.MarkingType):
         cls.add_method( self.gen_hash_method(env) )
         cls.add_method( self.gen_copy_method(env) )
         cls.add_method( self.dump_expr_method(env) )
-        #cls.add_method( self.gen_check_method(env) )
 
         ################################################################################
         # comments
@@ -1463,7 +1423,7 @@ class StaticMarkingType(coretypes.MarkingType):
         assign_packs = assign_packs - copy_packs
 
 
-        if self._pack:
+        if self._pack and self._pack.native_field_count() > 0:
             nodes.append( self._pack.copy_expr(env, src_marking_var = src_marking, dst_marking_var = dst_marking) )
 
         for place_type in copy_places:
@@ -1820,6 +1780,9 @@ class BTPlaceType(onesafe.BTPlaceType, CythonPlaceType):
                                            value=E("dot")),
                               body],
                         orelse=[])
+        
+    def card_expr(self, checker_env, marking_var):
+        return self.place_expr(checker_env, marking_var)
 
 ################################################################################
 

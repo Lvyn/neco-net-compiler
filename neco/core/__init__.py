@@ -193,8 +193,7 @@ class SuccTGenerator(object):
                                            transition_info   = self.transition,
                                            variable_provider = helper )
 
-        # self.builder.emit(netir.Print("calling {}".format(self.function_name)))
-
+        
         # remember this succ function
         env.register_succ_function(transition, function_name)
 
@@ -265,6 +264,7 @@ class SuccTGenerator(object):
             # variable
             if input.is_Variable:
                 variable = input.variable
+                
                 # if the variable is shared a new variable is produced, the variable is used otherwise
                 local_variable = variable_helper.new_variable_occurence(variable)
 
@@ -297,7 +297,6 @@ class SuccTGenerator(object):
                                                     place_name = input.place_name )
 
                     self.try_unify_shared_variable(variable)
-
                     input.data.register('local_variable', local_variable)
                     input.data.register('index', index)
 
@@ -589,9 +588,9 @@ class SuccTGenerator(object):
 
         elif output.is_Variable:
             variable = output.variable
-            if not (output_impl_type.is_AnyType or (variable.type == output_impl_type)):
-                builder.begin_CheckType( variable = variable,
-                                         type = output_impl_type )
+            # if not (output_impl_type.is_AnyType or (variable.type == output_impl_type)):
+            #     builder.begin_CheckType( variable = variable,
+            #                              type = output_impl_type )
 
             computed_productions[output].append(netir.Name( variable.name ))
 
@@ -1095,7 +1094,9 @@ class Compiler(object):
 
     def produce_compilation_trace(self, compilation_trace_name):
         trace_file = open(compilation_trace_name, 'wb')
-        pickle.dump(self.marking_type, trace_file, -1)
+        trace_object = { "marking_type" : self.marking_type,
+                         "optimise" : config.get("optimise") }
+        pickle.dump(trace_object, trace_file, -1)
         trace_file.close()
 
 ################################################################################

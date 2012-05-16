@@ -54,7 +54,11 @@ def get(name):
     d.close()
     return res
 
-
+def dump_config():
+    d = shelve.open(_dict_name_)
+    for key, value in d.iteritems():
+        print '{!s} : {!s}'.format(key, value)
+    d.close()
 
 def init():
     d = shelve.open(_dict_name_)

@@ -1,194 +1,74 @@
-import pickle, ast, sys
-from StringIO import StringIO
-from abc import abstractmethod, ABCMeta
-from snakes.utils.ctlstar.build import build, parse
-import snakes.lang.ctlstar.asdl as asdl
+import pickle
 from neco import config
-from neco.utils import Matcher
-import netir
-from netir import Builder
-from info import VariableProvider
+import properties
+from neco.utils import IDProvider, reverse_map
+from neco.core.properties import operator_to_string
+import neco.core.info as info
+# from neco.utils import Matcher
+# import netir
+# from netir import Builder
+# from info import VariableProvider
 
-class FormulaDecomposer(object):
-    """ Class responsible of formula decomposition.
-
-    It handles two maps:
-    - id_prop_map that associates an unique integer identifier with an unique atomic proposition;
-    - prop_id_map that associates an unique atomic proposition identifier with an unique integer.
-
-    Each time a formula is decomposed and an atomic proposition is found the maps are updated.
-
-    """
-
-    def __init__(self):
-        """ initialize the decomposer.
-        """
-        self.last_id = -1
-        self.id_prop_map = {}
-        self.prop_id_map = {}
-
-    def get_formula_id(self, formula):
-        """ Returns an unique identifier for a formula.
-
-        @param formula: formula to identify.
-        @return: Unique integer identifier.
-        """
-        if formula in self.prop_id_map:
-            return self.prop_id_map[formula]
-        else:
-            self.last_id += 1
-            self.id_prop_map[self.last_id] = formula
-            self.prop_id_map[formula] = self.last_id
-            return self.last_id
-
-    def __call__(self, formula):
-        """ Function style operator for calling decompose. """
-        return self.decompose(formula)
-
-    def decompose(self, formula):
-        """ Decompose a formula.
-
-        @param formula: formula to decompose
-        @return: updated formula where atomic propositions were replaced with NAME instances.
-        """
-        for field_name in formula._fields:
-            field = getattr(formula, field_name)
-            if isinstance(field, asdl._AST):
-                if isinstance(field, asdl.atom):
-                    identifier = "p " + str(self.get_formula_id(field))
-                    setattr(formula, field_name, asdl.Instance(name=str(identifier), args=[]))
-                    print identifier, ast.dump(field)
-                    print
-                else:
-                    # recursive call on sub-formula
-                    formula.field = self.decompose(field)
-        return formula
-
-    def get_id_prop_map(self):
-        """ Get the id-prop map.
-        @return: id-prop map.
-        """
-        return self.id_prop_map
-
-    def get_prop_id_map(self):
-        """ Get the prop-id map.
-        @return: prop-id map.
-        """
-        return self.id_prop_map
-
+def spot_formula(formula):
+    
+    if formula.isAtomicProposition():
+        return '(p' + str(formula.identifier) + ')'
+    elif formula.isConjunction():
+        subformulas = [ spot_formula(subformula) for subformula in formula ]
+        return '(' + ' /\\ '.join( subformulas ) + ')'
+    elif formula.isNegation():
+        return '(!' + spot_formula(formula.formula) + ')'
+    elif formula.isGlobally():
+        return '(G ' + spot_formula(formula.formula) + ')'
+    elif formula.isFuture():
+        return '(F ' + spot_formula(formula.formula) + ')' 
+    else:
+        raise NotImplementedError
 
 class CheckerCompiler(object):
     """ Class responsible of compiling atomic propositions and provide id-prop maps.
     """
 
-    __metaclass__ = ABCMeta
-
-    def __init__(self, formula, backend):
+    def __init__(self, formula, net, backend):
         trace_file = open(config.get('trace_file'), 'rb')
 
         trace = pickle.load(trace_file)
-        self.marking_type = trace #trace.get_marking_type()
+        self.marking_type = trace['marking_type']
+        config.set(optimise=trace['optimise'])
+        
+        self.net_info = info.NetInfo(net) #trace.get_marking_type()
 
-        # decompose formula
-        fd = FormulaDecomposer()
-        self.formula = fd.decompose(formula)
-        self.id_prop_map = fd.get_id_prop_map()
-        self.prop_id_map = fd.get_prop_id_map()
+        # normalize and decompose formula
+        formula = properties.normalize_formula(formula)
+        formula = properties.transform_formula(formula)
+        formula = properties.extract_atoms(formula)
+        self.formula = formula
+        self.id_prop_map = properties.build_atom_map(formula, IDProvider(), {})
+        # self.prop_id_map = reverse_map(self.id_prop_map)
+        # fd = FormulaDecomposer()
+        # self.formula = fd.decompose(formula)
+        # self.id_prop_map = fd.get_id_prop_map()
+        # self.prop_id_map = fd.get_prop_id_map()
 
-        # write formula to buf, replace all ' by "
-        buf = StringIO()
-        FormulaPrinter(buf).dispatch(self.formula)
-        neco_formula = buf.getvalue().replace("'", '"')
-
+        print "compiled formula: {!s}".format(self.formula)
+        spot_str = spot_formula(self.formula)
+        print "spot formula:     {!s}".format(spot_str)
+        print "atomic propositions:"
+        for i, (key, value) in enumerate(self.id_prop_map.iteritems(), start=1):
+            print "{!s:>3}. p{!s:<3} = {!s}".format(i, key, value)
+        print "end atomic propositions"
+        print
+        
         # write formula to file
         formula_file = open('neco_formula', 'w')
-        formula_file.write(neco_formula)
+        formula_file.write(spot_str)
         formula_file.close()
 
         self.backend = backend
-        self.checker_env = backend.CheckerEnv(set(), self.marking_type)
+        self.checker_env = backend.CheckerEnv(set(), self.net_info, self.marking_type)
 
     def compile(self):
         """ Produce compiled checker.
         """
-
         self.backend.produce_and_compile_pyx(self.checker_env, self.id_prop_map)
 
-
-################################################################################
-# tiny formula printer
-################################################################################
-
-class FormulaPrinter(object):
-
-    def __init__(self, output = sys.stdout):
-        self.output = output
-
-    def separator(self):
-        self.output.write(' ')
-
-    def left_parenthesis(self):
-        self.output.write(' ( ')
-
-    def right_parenthesis(self):
-        self.output.write(' ) ')
-
-    def _Spec(self, tree):
-        self.dispatch(tree.main)
-        self.output.write('\n')
-
-    def _CtlUnary(self, tree):
-        self.left_parenthesis()
-        self.dispatch(tree.op)
-        self.separator()
-        self.dispatch(tree.child)
-        self.right_parenthesis()
-
-    def _CtlBinary(self, tree):
-        self.left_parenthesis()
-        self.dispatch(tree.left)
-        self.separator()
-        self.dispatch(tree.op)
-        self.separator()
-        self.dispatch(tree.right)
-        self.right_parenthesis()
-
-    def _Not(self, tree):
-        self.output.write("!")
-
-    def _And(self, tree):
-        self.output.write('/\\')
-
-    def _Or(self, tree):
-        self.output.write('\\/')
-
-    def _Imply(self, tree):
-        self.output.write("=>")
-
-
-    def _Iff(self, tree):
-        self.output.write("<=>")
-
-    def _Until(self, tree):
-        self.output.write("U")
-
-    def _All(self, tree):
-        self.output.write("A")
-
-    def _Globally(self, tree):
-        self.output.write("G")
-
-    def _Future(self, tree):
-        self.output.write("F")
-
-    def _Next(self, tree):
-        self.output.write("X")
-
-    def _Instance(self, tree):
-        self.output.write(repr(tree.name))
-
-    def dispatch(self, tree):
-
-        attr_name = '_' + tree.__class__.__name__
-        method = getattr(self, attr_name)
-        method(tree)
