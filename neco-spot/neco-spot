@@ -1,0 +1,21 @@
+#!/usr/bin/python2.7
+
+import subprocess, sys
+
+def read_formula(file_name):
+    f = open('neco_formula', 'r')
+    s = f.read()
+    f.close()
+    return s
+    
+
+formula = read_formula('neco_formula')
+print formula
+args = ['necospotcli']
+args.extend(sys.argv[1:])
+args.append(formula)
+# print args
+try:
+    subprocess.call(args)
+except OSError as e:
+    print ">> ", e
