@@ -17,6 +17,7 @@ ctypes:
 
 asdl:
 	$(PYTHON) -m snakes.lang.asdl --output=neco/core/netir_gen.py asdl/netir.asdl
+	$(PYTHON) -m snakes.lang.asdl --output=neco/core/properties_gen.py asdl/properties.asdl
 	$(PYTHON) -m snakes.lang.asdl --output=neco/backends/cython/cyast_gen.py asdl/cython.asdl
 
 tests:

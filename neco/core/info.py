@@ -1071,13 +1071,13 @@ class NetInfo(object):
         for p in self.places:
             if p.name == name:
                 return p
-        assert False, 'place not found'
+        raise LookupError("place of ID {} does not exist".format(name))
         
     def transition_by_name(self, name):
         for t in self.transitions:
             if t.name == name:
                 return t
-        assert False, 'transition not found'
+        raise LookupError("transition of ID {} does not exist".format(name))
 
 class AtomInfo(object):
     """ Atomic proposition related informations.

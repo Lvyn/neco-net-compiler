@@ -1,6 +1,6 @@
 #!/usr/bin/python2.7
 
-import subprocess, sys
+import subprocess, sys, re
 
 def read_formula(file_name):
     f = open('neco_formula', 'r')
@@ -8,14 +8,47 @@ def read_formula(file_name):
     f.close()
     return s
     
+def parse_neco_formula_file(file_name):
+    options = []
+    formula = None
+    f = open(file_name, 'r')
+    for line in f:
+        if line[0] == '\n':
+            continue
+        elif line[0] == '#':
+            line = line[1:-1] # remove # and \n
+            splited = line.split(' ')
+            splited = [ item for item in splited if item != '' ]
+            options.extend(splited)
+        else:
+            if formula:
+                print >> sys.stderr, "(E) l{}. : only one formula allowed"
+                exit(1)
+            formula = line if line[-1] != '\n' else line[0:-1]
+            
+            
+    f.close()
+    return options, formula
 
-formula = read_formula('neco_formula')
-print formula
-args = ['necospotcli']
-args.extend(sys.argv[1:])
-args.append(formula)
+options, formula = parse_neco_formula_file('neco_formula')
+
+opts = []
+opts.extend(options)
+opts.extend(sys.argv[1:])
+
+call = ['necospotcli']
+call.extend(opts)
+call.append(formula)
+
 # print args
 try:
-    subprocess.call(args)
+    # if opts:
+    #     print "running necospotcli with option{} {}".format('s' if len(opts) > 1 else '',
+    #                                                         " ".join(opts))
+    # else:
+    #     print "running necospotcli"
+    # print "formula : {}".format(formula)
+    
+    subprocess.call(call)
 except OSError as e:
     print ">> ", e

@@ -1,23 +1,40 @@
-import pickle
+import pickle, sys
 from neco import config
 import properties
 from neco.utils import IDProvider, reverse_map
-from neco.core.properties import operator_to_string
 import neco.core.info as info
 # from neco.utils import Matcher
 # import netir
 # from netir import Builder
 # from info import VariableProvider
 
+def has_deadlocks(formula):
+    if formula.isIsDeadlock():
+        return True
+    return properties.reduce_ast( lambda acc, node: acc or has_deadlocks(node),
+                                  formula,
+                                  False )
+    
 def spot_formula(formula):
     
     if formula.isAtomicProposition():
         return '(p' + str(formula.identifier) + ')'
+    elif formula.isIsDeadlock():
+        return 'DEAD'
     elif formula.isConjunction():
-        subformulas = [ spot_formula(subformula) for subformula in formula ]
-        return '(' + ' /\\ '.join( subformulas ) + ')'
+        return '(' + ' /\\ '.join(map(spot_formula, formula.operands)) + ')'
+    elif formula.isDisjunction():
+        return '(' + ' \\/ '.join(map(spot_formula, formula.operands)) + ')'
+    elif formula.isExclusiveDisjunction():
+        return '(' + ' ^ '.join(map(spot_formula, formula.operands)) + ')'
+    elif formula.isImplication():
+        return '(' + spot_formula(formula.left) + ' => ' + spot_formula(formula.right) + ')'
+    elif formula.isEquivalence():
+        return '(' + spot_formula(formula.left) + ' <=> ' + spot_formula(formula.right) + ')'
     elif formula.isNegation():
         return '(!' + spot_formula(formula.formula) + ')'
+    elif formula.isNext():
+        return "(X {})".format(spot_formula(formula.formula))
     elif formula.isGlobally():
         return '(G ' + spot_formula(formula.formula) + ')'
     elif formula.isFuture():
@@ -40,16 +57,17 @@ class CheckerCompiler(object):
 
         # normalize and decompose formula
         formula = properties.normalize_formula(formula)
+        try:
+            properties.check_locations(formula, self.net_info)
+        except (LookupError, TypeError) as e:
+            print >> sys.stderr, e.message
+            exit(1)
+        
         formula = properties.transform_formula(formula)
         formula = properties.extract_atoms(formula)
         self.formula = formula
         self.id_prop_map = properties.build_atom_map(formula, IDProvider(), {})
-        # self.prop_id_map = reverse_map(self.id_prop_map)
-        # fd = FormulaDecomposer()
-        # self.formula = fd.decompose(formula)
-        # self.id_prop_map = fd.get_id_prop_map()
-        # self.prop_id_map = fd.get_prop_id_map()
-
+        
         print "compiled formula: {!s}".format(self.formula)
         spot_str = spot_formula(self.formula)
         print "spot formula:     {!s}".format(spot_str)
@@ -61,7 +79,10 @@ class CheckerCompiler(object):
         
         # write formula to file
         formula_file = open('neco_formula', 'w')
+        if has_deadlocks(formula):
+            formula_file.write("#-d DEAD\n")
         formula_file.write(spot_str)
+        formula_file.write("\n")
         formula_file.close()
 
         self.backend = backend

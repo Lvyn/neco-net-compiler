@@ -7,11 +7,34 @@ PROPERTY_NAME = "property"
 ID_NAME = "id"
 
 STRUCTURAL_ONLY = "structural-only"
+LTL_ONLY = "ltl-only"
+CTL_ONLY = "ctl-only"
+REACHABILITY_ONLY = "reachability-only"
+
+PROPERTY_TAG = [ STRUCTURAL_ONLY, LTL_ONLY, CTL_ONLY, REACHABILITY_ONLY ]
+
+INVARIANT = "invariant"
+IMPOSSIBILITY = "impossibility"
+
+ALL_PATHS = "all-paths"
+EXISTS_PATH = "exists-path"
 
 CONJUNCTION = "conjunction"
-NEGATION = "negation"
+DISJUNCTION = "disjunction"
+EXCLUSIVE_DISJUNCTION = "exclusive-disjunction"
 
+NEGATION = "negation"
+EQUIVALENCE = "equivalence"
+IMPLICATION = "implication"
+
+GLOBALLY = "globally"
+FINALLY = "finally"
+NEXT = "next"
+UNTIL = "until"
+
+IS_DEADLOCK = "is-deadlock"
 IS_LIVE = "is-live"
+IS_FIREABLE = "is-fireable"
 LEVEL = "level"
 LEVEL_0 = "l0"
 LEVEL_1 = "l1"
@@ -28,18 +51,62 @@ INTEGER_NE = "integer-ne"
 INTEGER_GT = "integer-gt"
 INTEGER_GE = "integer-ge"
 
+MULTISET_LE = "multiset-le"
+MULTISET_LT = "multiset-lt"
+MULTISET_EQ = "multiset-eq"
+MULTISET_NE = "multiset-ne"
+MULTISET_GT = "multiset-gt"
+MULTISET_GE = "multiset-ge"
+
+MULTISET_CARDINALITY = "multiset-cardinality"
+MULTISET_CONSTANT = "multiset-constant"
+
 PLACE_BOUND = "place-bound"
 PLACE_NAME = "place-name"
+PLACE_MARKING = "place-marking"
 INTEGER_CONSTANT = "integer-constant"
 
-PROPERTY_TAG = [ STRUCTURAL_ONLY ]
-FORMULA_HEAD = [ CONJUNCTION, NEGATION,
+TUPLE = "tuple"
+BINDING = "binding"
+VALUE_VARIABLE = "value-variable"
+VALUE_CONSTANT = "value-constant"
+
+
+FORMULA_HEAD = [ INVARIANT, IMPOSSIBILITY,
+                 # LOGIC OPERATORS
+                 CONJUNCTION, DISJUNCTION, EXCLUSIVE_DISJUNCTION, EQUIVALENCE, IMPLICATION, NEGATION,
+                 # INTEGER COMPARISON
                  INTEGER_LE, INTEGER_LT, INTEGER_EQ, INTEGER_NE, INTEGER_GT, INTEGER_GE,
-                 IS_LIVE]
+                 # ATOMS
+                 IS_LIVE, IS_FIREABLE, 
+                 #CTL:
+                 ALL_PATHS, EXISTS_PATH ]
 
 NAME_ATTRIBUTE = "name"
 
+class ReachabilityHelper(object):
 
+    def __init__(self, kind, formula):
+        self.kind = kind
+        self.formula = formula
+        
+    @classmethod
+    def Invariant(cls, *args):
+        return ReachabilityHelper(INVARIANT, *args)
+    
+    @classmethod
+    def Impossibility(cls, *args):
+        return ReachabilityHelper(IMPOSSIBILITY, *args)
+    
+    def isInvariant(self):
+        return self.kind == INVARIANT
+    
+    def isImpossibility(self):
+        return self.kind == IMPOSSIBILITY 
+        
+    def __iter__(self):
+        yield self.formula
+        
 class ParserError(Exception):
     
     def __init__(self, message):
@@ -193,45 +260,159 @@ def parse_is_live(node):
 
     return properties.IsLive(string_to_level(level), transition)
 
-__string_to_integer_comparigon_op_map = {
-    INTEGER_LE: properties.IntegerComparison.LE,
-    INTEGER_LT: properties.IntegerComparison.LT,
-    INTEGER_EQ: properties.IntegerComparison.EQ,
-    INTEGER_NE: properties.IntegerComparison.NE,
-    INTEGER_GT: properties.IntegerComparison.GT,
-    INTEGER_GE: properties.IntegerComparison.GE,
+def parse_is_fireable(node):
+    transition = "" 
+    transition_found = RunOnce(ParserError.should_appear_only_once(TRANSITION_NAME, IS_FIREABLE))
+    for child in node.childNodes:
+        if child.nodeName == TRANSITION_NAME:
+            transition_found()
+            transition = get_attribute(child, NAME_ATTRIBUTE)
+        else:
+            raise ParserError.expected(TRANSITION_NAME, child.nodeName)
+
+    return properties.IsFireable(transition)
+
+
+__string_to_operator_map = {
+    INTEGER_LE: properties.LE(),
+    INTEGER_LT: properties.LT(),
+    INTEGER_EQ: properties.EQ(),
+    INTEGER_NE: properties.NE(),
+    INTEGER_GT: properties.GT(),
+    INTEGER_GE: properties.GE(),
+    
+    MULTISET_LE: properties.LE(),
+    MULTISET_LT: properties.LT(),
+    MULTISET_EQ: properties.EQ(),
+    MULTISET_NE: properties.NE(),
+    MULTISET_GT: properties.GT(),
+    MULTISET_GE: properties.GE(),
 }
 
-def string_to_integer_comparison_op(s):
-    return __string_to_integer_comparigon_op_map[s]
+def string_to_operator(s):
+    return __string_to_operator_map[s]
+
+def parse_subformulas(elt, count = None):
+    formulas = [ parse_formula(e) for e in elt.childNodes ]
+    if count != None and len(formulas) != count:
+        raise ParserError.should_appear_only_once
+    return formulas
+
+def parse_binding(node):
+    name, value = None, None
+    got_variable = RunOnce( ParserError.should_appear_only_once(VALUE_VARIABLE, BINDING) )
+    got_value    = RunOnce( ParserError.should_appear_only_once(VALUE_CONSTANT, BINDING) )
+    for child in node.childNodes:
+        if child.nodeName == VALUE_VARIABLE:
+            got_variable()
+            name = get_attribute(child, "name")
+        elif child.nodeName == VALUE_CONSTANT:
+            got_value()
+            value = get_attribute(child, "value")
+    return name, value
+
+def parse_value(node):
+    return get_attribute(node, "value")
+
+def get_tuple(elt):
+    got_binding = False
+    got_value = False
+    value_list = []
+    value_map = {}
+    for node in elt.childNodes:
+        if node.nodeName == BINDING:
+            got_binding = True
+            name, value = parse_binding(node)
+            if name in value_map:
+                raise SyntaxError("{} appears twice in tuple".format(name))
+            value_map[name] = value
+            
+        elif node.nodeName == VALUE_CONSTANT:
+            got_value = True
+            value = parse_value(node)
+            value_list.append(value)
+        else:
+            raise ParserError("malformed tuple, {} found".format(node.nodeName))
+    if got_value and got_binding:
+        raise SyntaxError("mixing up values and bindings is not allowed")
+    
+    if got_binding:
+        values_items = sorted( value_map.iteritems(),
+                               cmp = lambda pair1, pair2 : cmp(pair1[0], pair2[0]) )
+        value_list = map( lambda pair : pair[1],
+                          values_items )
+    
+    #value_list = map(lambda s : eval(s),
+    #                 value_list)
+    return tuple(value_list)
+    
+            
     
 def parse_formula(elt):
-    if elt.nodeName == CONJUNCTION:
-        formula = properties.Conjunction( [ parse_formula(child) for child in elt.childNodes ] )
-        return formula
-    
-    elif elt.nodeName == NEGATION:
-        if len(elt.childNodes) != 1:
-            raise ParserError.should_have_exaclty_n_childs(elt, 1)
+    if elt.nodeName in [ INVARIANT, IMPOSSIBILITY ]:
+        subformulas = parse_subformulas(elt, 1)
+        return ReachabilityHelper( elt.nodeName, subformulas[0] )
         
-        child = elt.childNodes[0]
-        return properties.Negation( parse_formula(child) )
+    elif elt.nodeName == NEXT:
+        subformulas = parse_subformulas(elt, 1)        
+        return properties.Next( subformulas[0] )
+    
+    elif elt.nodeName == GLOBALLY:
+        subformulas = parse_subformulas(elt, 1)        
+        return properties.Globally( subformulas[0] )
+    
+    elif elt.nodeName == FINALLY:
+        subformulas = parse_subformulas(elt, 1)        
+        return properties.Future( subformulas[0] )
+    
+    elif elt.nodeName == UNTIL:
+        subformulas = parse_subformulas(elt, 1)        
+        return properties.Until( subformulas[0] )
+    
+    elif elt.nodeName == IS_DEADLOCK:
+        return properties.IsDeadlock()
+    
+    elif elt.nodeName in [ALL_PATHS, EXISTS_PATH]:
+        print >> sys.stderr, "{!s} should not appear here".format(elt.nodeName)
+        exit(-1)
+    
+    elif elt.nodeName == CONJUNCTION:
+        return properties.Conjunction( parse_subformulas(elt) )
+    
+    elif elt.nodeName == EQUIVALENCE:
+        subformulas = parse_subformulas(elt, 2)
+        return properties.Equivalence(subformulas[0], subformulas[1])
+        
+    elif elt.nodeName == IMPLICATION:
+        subformulas = parse_subformulas(elt, 2)
+        return properties.Implication(subformulas[0], subformulas[1])
+        
+    elif elt.nodeName == DISJUNCTION:
+        return properties.Disjunction( parse_subformulas(elt) )
+        
+    elif elt.nodeName == EXCLUSIVE_DISJUNCTION:
+        return properties.ExclusiveDisjunction( parse_subformulas(elt) )
+        
+    elif elt.nodeName == NEGATION:
+        subformulas = parse_subformulas(elt, 1)
+        return properties.Negation( formula=subformulas[0] )
     
     elif elt.nodeName == SUM:
-        formula = properties.Sum( [ parse_formula(child) for child in elt.childNodes ] )
+        subformulas = parse_subformulas(elt)
+        formula = properties.Sum( operands=subformulas )
         if len(formula.operands) == 0:
             raise ParserError.cannot_be_empty(elt)
         return formula
     
     elif elt.nodeName in [INTEGER_LE, INTEGER_LT, INTEGER_EQ, INTEGER_NE, INTEGER_GT, INTEGER_GE ]:
-        if len(elt.childNodes) != 2:
-            raise ParserError.should_have_exaclty_n_childs(elt, 2)
-        
-        left = parse_formula(elt.childNodes[0])
-        right = parse_formula(elt.childNodes[1])
-        return properties.IntegerComparison(string_to_integer_comparison_op(elt.nodeName),
-                                            left,
-                                            right)
+        subformulas = parse_subformulas(elt, 2) 
+        operator = string_to_operator(elt.nodeName)
+        return properties.IntegerComparison(operator, subformulas[0], subformulas[1])
+    
+    elif elt.nodeName in [MULTISET_LE, MULTISET_LT, MULTISET_EQ, MULTISET_NE, MULTISET_GT, MULTISET_GE ]:
+        subformulas = parse_subformulas(elt, 2) 
+        operator = string_to_operator(elt.nodeName)
+        return properties.MultisetComparison(operator, subformulas[0], subformulas[1])
     
     elif elt.nodeName == PLACE_BOUND:
         if len(elt.childNodes) != 1:
@@ -240,15 +421,37 @@ def parse_formula(elt):
         name = parse_node_name(elt.childNodes[0])
         return properties.PlaceBound(name)
     
+    elif elt.nodeName == MULTISET_CARDINALITY:
+        subformulas = parse_subformulas(elt, 1)
+        return properties.MultisetCard( subformulas[0] )
+    
+    elif elt.nodeName == PLACE_MARKING:
+        if len(elt.childNodes) != 1:
+            raise ParserError.should_have_exaclty_n_childs(elt, 1)
+        
+        name = parse_node_name(elt.childNodes[0])
+        return properties.PlaceMarking(name)
+    
     elif elt.nodeName == INTEGER_CONSTANT:
         value = get_attribute(elt, 'value')
-        return properties.IntegerConstant(value)    
+        return properties.IntegerConstant(value)
+    
+    elif elt.nodeName == MULTISET_CONSTANT:    
+        tuple = parse_subformulas(elt, 1)
+        return properties.MultisetConstant(tuple)
 
     elif elt.nodeName == IS_LIVE:
         return parse_is_live(elt)
     
+    elif elt.nodeName == IS_FIREABLE:
+        return parse_is_fireable(elt)
+    
+    elif elt.nodeName == TUPLE:
+        return get_tuple(elt)
+    
     else:
-        raise SyntaxError
+        raise SyntaxError("{} nodes are not supported".format(elt.nodeName))
+    
     return None
 
 def typebased_transformation(prop):
@@ -256,7 +459,22 @@ def typebased_transformation(prop):
         # transform to LTL using G(formula)
         formula = prop.formula
         prop.formula = properties.Globally( formula )
+        
+    elif prop.tag == LTL_ONLY:
+        pass # nothing to do
     
+    elif prop.tag == CTL_ONLY:
+        # CTL properties are not supported
+        print >> sys.stderr, "CTL formulae are not supported"
+        exit(-1)
+    
+    elif prop.tag == REACHABILITY_ONLY:
+        helper = prop.formula
+        if helper.isInvariant():
+            prop.formula = properties.Globally( helper.formula )
+        if helper.isImpossibility():
+            prop.formula = properties.Negation( properties.Future( helper.formula ) )
+        
     else:
         raise NotImplementedError
     
@@ -283,13 +501,16 @@ def get_properties(property_set):
             elif elt.nodeName in PROPERTY_TAG:
                 tag_found()
                 prop.tag = elt.nodeName
+                if prop.tag == CTL_ONLY:
+                    print >> sys.stderr, "CTL Formulae are not supported"
+                    exit(-1) 
                 
-            elif elt.nodeName in FORMULA_HEAD:
+            else: # elif elt.nodeName in FORMULA_HEAD:
                 formula_found()
                 prop._formula = parse_formula(elt)
 
         if not formula_found.called():
-            ParserError("no formula found in {!s}".format(child.nodeName))
+            raise ParserError("no formula found in {!s}".format(child.nodeName))
         
         prop = typebased_transformation(prop)
         props.append(prop)

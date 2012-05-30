@@ -1,28 +1,31 @@
-import ast, sys
+import sys
 import cyast, netir, nettypes
-from pprint import pprint
-from neco.utils import Matcher, flatten_ast, IDProvider
+from neco.utils import flatten_ast, IDProvider
 from neco.core.info import VariableProvider, TypeInfo
 from nettypes import type2str, register_cython_type
 from cyast import Builder, E, Unparser, to_ast
 from neco import config
 import neco.core as core
 import neco.core.info as info
-from neco.core.properties import operator_to_string, IntegerComparison, Sum
 from snakes.nets import WordSet
 from neco.utils import flatten_lists
 
-__operator_to_cyast_map = { 
-    IntegerComparison.LT : cyast.Lt(),
-    IntegerComparison.LE : cyast.LtE(),
-    IntegerComparison.EQ : cyast.Eq(),
-    IntegerComparison.GT : cyast.Gt(),
-    IntegerComparison.GE : cyast.GtE()
-}
 
 def operator_to_cyast(operator):
-    return __operator_to_cyast_map[operator]
-    
+    if   operator.isLT():
+        return cyast.Lt()
+    elif operator.isLE():
+        return cyast.LtE()
+    elif operator.isEQ():
+        return cyast.Eq()
+    elif operator.isNE(): 
+        return cyast.NotEq()
+    elif operator.isGT(): 
+        return cyast.Gt()
+    elif operator.isGE():
+        return cyast.GtE()
+    else:
+        raise NotImplementedError(operator.__class__)
 
 ################################################################################
 #
@@ -79,6 +82,12 @@ class CheckerEnv(nettypes.Env):
             self._is_fireable_functions[transition_name] = function
 
         return function.call( [ cyast.Name(marking_var.name) ] )
+
+    def gen_multiset_card_expression(self, marking_var, multiset):
+        
+        if multiset.isPlaceMarking():
+            mrk_type = self.marking_type
+            mrk_type.get_place_type_by_name()
 
     def functions(self):
         for fun in self.check_functions.itervalues():
@@ -215,6 +224,29 @@ class IsFireableGenerator(core.SuccTGenerator):
         builder.end_function()
         return builder.ast()    
 
+def gen_multiset_comparison(checker_env, marking_var, cython_op, left, right):
+    
+    
+    if left.isPlaceMarking():
+        left_place_type  = checker_env.marking_type.get_place_type_by_name(left.place_name)
+        left_multiset = left_place_type.multiset_expr(checker_env, marking_var)
+        print >> sys.stderr, "[W] using multiset fallback for {}, this may result in slow execution times".format(left.place_name)
+    else:
+        raise NotImplementedError
+        
+    if right.isPlaceMarking():    
+        right_place_type = checker_env.marking_type.get_place_type_by_name(right.place_name)
+        right_multiset = right_place_type.multiset_expr(checker_env, marking_var)
+        print >> sys.stderr, "[W] using multiset fallback for {}, this may result in slow execution times".format(right.place_name)
+    else:
+        raise NotImplementedError
+    
+    return cyast.Compare(left=left_multiset,
+                         ops=[cython_op],
+                         comparators=[right_multiset] )
+        
+    # return checker_env.marking_type.gen_place_comparison(checker_env, marking_var, op, left.place_name, right.place_name)
+
 def gen_check_expression(checker_env, marking_var, formula):
     if formula.isIntegerComparison():
         operator = operator_to_cyast(formula.operator)
@@ -224,11 +256,19 @@ def gen_check_expression(checker_env, marking_var, formula):
                              ops=[operator],
                              comparators=[right] )
         
+    elif formula.isMultisetComparison():
+        operator = operator_to_cyast(formula.operator)
+        return gen_multiset_comparison(checker_env, marking_var, operator, formula.left, formula.right)
+        
     elif formula.isIntegerConstant():
         return cyast.Num(int(formula.value))
         
-    elif formula.isCard():
-        return checker_env.place_card_expression(marking_var, formula.place_name)
+    elif formula.isMultisetCardinality():
+        multiset = formula.multiset
+        if multiset.isPlaceMarking():
+            return checker_env.place_card_expression(marking_var, multiset.place_name)
+        else:
+            raise NotImplementedError
     
     elif formula.isSum():
         operands = formula.operands            
@@ -246,9 +286,16 @@ def gen_check_expression(checker_env, marking_var, formula):
                            op = cyast.Add(),
                            right = right)
     
+    elif formula.isIsDeadlock():
+        pass # nothing to do just add option -d DEAD to neco-spot
+    
     elif formula.isIsFireable():
         return checker_env.is_fireable_expression(marking_var,                                                  
                                                   formula.transition_name)
+
+    elif formula.isMultisetCard():
+        return checker_env.gen_multiset_card_expression(marking_var,
+                                                        formula.multiset)
     
     else:
         print >> sys.stderr, "Unknown atomic proposition {!s}".format(formula)
@@ -260,9 +307,7 @@ def gen_check_expression(checker_env, marking_var, formula):
 def gen_check_function(checker_env, id, atom):
 
     marking_type = checker_env.marking_type
-    register_cython_type(marking_type.type, 'net.Marking')
-    TypeInfo.register_type('Marking')
-
+    
     variable_provider = VariableProvider()
     checker_env.push_cvar_env()
     checker_env.push_variable_provider(variable_provider)
@@ -372,27 +417,20 @@ class CheckerCompileVisitor(netir.CompilerVisitor):
                                              decl = decl) )
         return result
 
-
 from Cython.Distutils import build_ext
 from distutils.core import setup
 from distutils.extension import Extension
 
 def produce_and_compile_pyx(checker_env, id_prop_map):
+    marking_type = checker_env.marking_type
+    register_cython_type(marking_type.type, 'net.Marking')
+    TypeInfo.register_type('Marking')
+
     functions = []
     for id, prop in id_prop_map.iteritems():
         gen_check_function(checker_env, id, prop) # updates env
 
     gen_main_check_function(checker_env, id_prop_map) # updates env
-
-#    list = []
-#    for i,t in enumerate(checker_env.net_info.transitions):
-#        function_name = "is_fireable_{!s}".format(t) # TO DO use name + escape
-#        gen = IsFireableGenerator(checker_env,
-#                              checker_env.net_info,
-#                              core.netir.Builder(),
-#                              t,
-#                              function_name)
-#        list.append( gen() )
 
     checker_module = cyast.Module(body=functions)
     f = open("checker.pyx", "w")

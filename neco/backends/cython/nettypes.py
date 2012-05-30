@@ -17,8 +17,6 @@ def _str_list_to_endlstr(list):
     list.pop(-1)
     return ret
 
-
-
 ################################################################################
 # Registered classes are used as cython classes (cdef)
 ################################################################################
@@ -1534,6 +1532,20 @@ class StaticMarkingType(coretypes.MarkingType):
         if (witness == None):
             raise RuntimeError("no witness for process {process}".format(process = process_name))
         return witness.gen_read_flow(env, marking_var)
+    
+    def gen_place_comparison(self, env, marking_var, op, left_place_name, right_place_name):
+        # 1 = lt
+        # 2 = le
+        # 3 = eq
+        # 4 = ne
+        left_type  = self.get_place_type_by_name(left_place_name)
+        right_type = self.get_place_type_by_name(right_place_name)
+        
+        if left_type.__class__ == right_type.__class__:
+            return left_type.gen_place_compraison(env, marking_var, op, right_type)
+        else:
+            raise NotImplementedError
+        
 
 ################################################################################
 
@@ -1781,8 +1793,12 @@ class BTPlaceType(onesafe.BTPlaceType, CythonPlaceType):
                               body],
                         orelse=[])
         
-    def card_expr(self, checker_env, marking_var):
-        return self.place_expr(checker_env, marking_var)
+    def card_expr(self, env, marking_var):
+        return self.place_expr(env, marking_var)
+    
+    def multiset_expr(self, env, marking_var):
+        return cyast.Call(func=E(type2str(TypeInfo.MultiSet)),
+                          args=[ cyast.Dict([E('dot')], [self.place_expr(env, marking_var)])])    
 
 ################################################################################
 
