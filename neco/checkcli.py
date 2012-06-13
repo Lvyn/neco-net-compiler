@@ -17,6 +17,8 @@ import neco.config as config
 from neco.utils import fatal_error
 from neco import compile_net, g_logo
 
+import cPickle as pickle
+
 import backends
 
 import backends
@@ -28,6 +30,17 @@ from time import time
 
 from neco import compile_checker
 import core.xmlproperties
+
+def exclusive(elts, acc = False):
+    try:
+        e = bool(elts.pop())
+    except IndexError:
+        return True
+    
+    if e and acc:
+        return False
+    else:
+        return exclusive(elts, e ^ acc)
 
 class Main(object):
 
@@ -45,7 +58,7 @@ class Main(object):
         parser = argparse.ArgumentParser(progname,
                                          argument_default=argparse.SUPPRESS,
                                          formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-                                         usage="{} [OPTIONS] {}".format(prog, formula_meta))
+                                         usage="{} [OPTIONS]".format(prog))
 
         parser.add_argument('--trace', '-t', default='trace', dest='trace', metavar='TRACEFILE', type=str,
                             help='compilation trace file')
@@ -56,32 +69,41 @@ class Main(object):
         parser.add_argument('--include', '-I', default=['.'], dest='includes', action='append', metavar='PATH',
                             help='additionnal search paths (libs, files).')
 
-        parser.add_argument('--formula', metavar=formula_meta, type=str, help='formula', default=None)
+        parser.add_argument('--formula', metavar=formula_meta, type=str, help='formula', default="false")
 
         parser.add_argument('--xml', metavar=xml_formula_meta, default=None, dest='xml', type=str, help='xml formula file')
 
-        parser.add_argument('--model', '-m', metavar='model', default=None, dest='model', type=str)
-        parser.add_argument('--pnml', metavar='pnml', default=None, dest='pnml', type=str)
-        
         if cli_args:
             args = parser.parse_args(cli_args)
         else:
             args = parser.parse_args()
         
 
-        trace = args.trace
+        trace_file = args.trace
         profile = args.profile
         formula = args.formula
         xml_file = args.xml
-        model = args.model
-        pnml = args.pnml
         
-        if model and pnml:
-            raise RuntimeError
-
         if formula and xml_file:
             raise RuntimeError
-
+        
+        trace_fd = open(trace_file)
+        trace = pickle.load(trace_fd)
+        model_file = trace['model']
+        i = model_file.rfind('.')
+        ext = model_file[i+1:]
+        name = model_file[:i]
+        
+        model, abcd, pnml = (None,)*3
+        if ext == 'py':
+            model = name
+        elif ext == 'abcd':
+            abcd = name
+        elif ext == 'pnml':
+            pnml = name
+        
+        assert(exclusive([model, abcd, pnml]))
+        
         net = None
         if pnml:
             import compilecli
@@ -114,7 +136,7 @@ class Main(object):
                    formula = formula,
                    trace_calls = False,
                    additional_search_paths = args.includes,
-                   trace_file = trace)
+                   trace_file = trace_file)
 
         compile_checker(formula, net)
 

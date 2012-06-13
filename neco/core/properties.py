@@ -96,6 +96,8 @@ def formula_to_str(formula):
         return "({} {} {})".format(formula_to_str(formula.left),
                                    formula_to_str(formula.operator),
                                    formula_to_str(formula.right))
+    elif formula.isBool():
+        return "{!s}".format(formula.value)
     elif formula.isLive():
         return "Live{!s}({!r})".format(formula.level, formula.transition_name)
     elif formula.isFireable():
@@ -290,7 +292,8 @@ def transform_formula(formula):
           formula.isMultisetCardinality() or
           formula.isIntegerConstant() or
           formula.isImplication() or
-          formula.isEquivalence()):
+          formula.isEquivalence() or
+          formula.isBool()):
         return map_ast(transform_formula, formula)
         
     else:
@@ -350,6 +353,7 @@ class PropertyParser(Yappy):
                           (" bool_expr -> LIVE ( INTEGER , ID )", self.live_rule),
                           (" bool_expr -> FIREABLE ( ID )",       self.fireable_rule),
                           (" bool_expr -> DEADLOCK",              self.deadlock_rule),
+                          (" bool_expr -> BOOL",                  self.bool_rule),
                           (" int_expr -> int_expr + int_expr",    self.plus_rule),
                           (" int_expr -> BOUND ( ID )",           self.bound_rule),
                           (" int_expr -> CARD ( ms_expr )",       self.card_rule),
@@ -369,6 +373,7 @@ class PropertyParser(Yappy):
                     (r'=>|->',          lambda x : ('IMPL', x),     ('IMPL',  40,  'left')),
                     (r'<=|<|=|!=|>=|>', lambda x : ('CMP', x),      ('CMP',   800, 'left')),
                     (r'\+',             lambda x : (x, x),          ('+',     750, 'left')),
+                    (r'true|false',     lambda x : ('BOOL', x),     ('BOOL',     700, 'noassoc')),
                     (r'live',           lambda x : ('LIVE', x),     ('LIVE',     700, 'noassoc')),
                     (r'fireable',       lambda x : ('FIREABLE', x), ('FIREABLE', 700, 'noassoc')),
                     (r'deadlock',       lambda x : ('DEADLOCK', x), ('DEADLOCK', 700, 'noassoc')),
@@ -399,6 +404,13 @@ class PropertyParser(Yappy):
         
     def default_rule(self, tokens, ctx):
         return tokens[0]
+    
+    def bool_rule(self, tokens, ctx):
+        b = tokens[0]
+        if b == 'true':
+            return Bool(True)
+        else:
+            return Bool(False)
     
     def globally_rule(self, tokens, ctx):
         """ 

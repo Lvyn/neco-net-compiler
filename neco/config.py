@@ -18,6 +18,7 @@ _default_options_ = [
     ('additional_search_paths', ['.']),
     ('trace_calls', False),
     ('imports', []),
+    ('model', [])
 ]
 
 _dict_name_ = '/tmp/neco_{}_{}'.format(hash('neco'), os.getpid())

@@ -23,6 +23,7 @@ module Properties version "0.1"
 						Live(int level, identifier transition_name) |
 						Fireable(identifier transition_name) |
 						Deadlock |
+						Bool(bool value) |
 	                	AtomicProposition(Formula formula)
 
     ComparisonOperator = LT | LE | EQ | NE | GT | GE

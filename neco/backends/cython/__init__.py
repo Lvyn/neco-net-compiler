@@ -1,6 +1,7 @@
 """ Python backend plugin. """
 
 import ast, inspect, sys, shutil, imp
+import os
 from os.path import exists, abspath
 from string import join
 
@@ -102,8 +103,14 @@ class Compiler(core.Compiler):
         compiled_nodes.append(self.marking_type.gen_api(env))
         compiler = netir.CompilerVisitor(env)
 
+        base_dir = "build/"
+        try:
+            os.mkdir(base_dir)
+        except OSError:
+            pass
+        
         # net.pxd
-        f = open("net.pxd", "w")
+        f = open(base_dir + "net.pxd", "w")
         f.write("cimport ctypes_ext\n")
 
         Unparser(self.marking_type.gen_pxd(env), f)
@@ -122,7 +129,7 @@ class Compiler(core.Compiler):
 
         module_ast = ast.fix_missing_locations(ast.Module(body = compiled_nodes))
 
-        f = open("net.pyx", "w")
+        f = open(base_dir + "net.pyx", "w")
         if config.get('no_stats'):
             file_name = "include_no_stats.pyx"
         else:
@@ -149,12 +156,12 @@ class Compiler(core.Compiler):
         f.write(env.ending_pyx_declarations)
 
         path = search_file("ctypes_ext.pxd", self.additional_search_paths)
-        shutil.copyfile(path, "ctypes_ext.pxd")
+        shutil.copyfile(path, base_dir + "ctypes_ext.pxd")
 
         path = search_file("ctypes.h", self.additional_search_paths)
-        shutil.copyfile(path, "ctypes.h")
+        shutil.copyfile(path, base_dir + "ctypes.h")
 
-        f = open("ctypes_ext.pxd", "a")
+        f = open(base_dir + "ctypes_ext.pxd", "a")
         f.write( env.pxd_declarations )
         f.close()
 
@@ -164,18 +171,19 @@ class Compiler(core.Compiler):
             print self.additional_search_paths
             print "********************************************************************************"
 
-        setup(name="net.pyx",
+        setup(name=base_dir + "net.pyx",
               cmdclass={'build_ext': build_ext},
-              ext_modules=[Extension("net", ["net.pyx"],
-                                     include_dirs = self.additional_search_paths,
+              ext_modules=[Extension("net", [base_dir + "net.pyx"],
+                                     include_dirs = self.additional_search_paths + [base_dir],
                                      extra_compile_args=[], # '-ggdb'],
                                      extra_link_args=['-lctypes'],
-                                     library_dirs = self.additional_search_paths)],
-              script_args=["build_ext", "--inplace"])
+                                     library_dirs = self.additional_search_paths + [base_dir])],
+              script_args=["build_ext", "--inplace"],
+              options = { 'build': { 'build_base': 'build' } })
 
         if config.get('debug'):
             print "********************************************************************************"
-
+        
         fp, pathname, description = imp.find_module("net")
         self.produce_compilation_trace(config.get('trace_file'))
 

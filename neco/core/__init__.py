@@ -1095,7 +1095,8 @@ class Compiler(object):
     def produce_compilation_trace(self, compilation_trace_name):
         trace_file = open(compilation_trace_name, 'wb')
         trace_object = { "marking_type" : self.marking_type,
-                         "optimise" : config.get("optimise") }
+                         "optimise" : config.get("optimise"),
+                         "model" : config.get("model") }
         pickle.dump(trace_object, trace_file, -1)
         trace_file.close()
 

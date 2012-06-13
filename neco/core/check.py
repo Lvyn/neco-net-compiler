@@ -38,7 +38,9 @@ def spot_formula(formula):
     elif formula.isGlobally():
         return '(G ' + spot_formula(formula.formula) + ')'
     elif formula.isFuture():
-        return '(F ' + spot_formula(formula.formula) + ')' 
+        return '(F ' + spot_formula(formula.formula) + ')'
+    elif formula.isBool():
+        return 'true' if formula.value else 'false'
     else:
         raise NotImplementedError
 
@@ -52,6 +54,7 @@ class CheckerCompiler(object):
         trace = pickle.load(trace_file)
         self.marking_type = trace['marking_type']
         config.set(optimise=trace['optimise'])
+        config.set(model=trace['model'])
         
         self.net_info = info.NetInfo(net) #trace.get_marking_type()
 

@@ -165,7 +165,7 @@ class Main(object):
             exit(0)
             for f in g_produced_files:
                 try:
-                    handler = open(f)
+                    handler = open(base_dir + f)
                 except IOError:
                     continue
                 
@@ -212,12 +212,27 @@ class Main(object):
         self.module = module
         self.netvar = args.netvar
         self.profile = profile
-
+        model_file = None
+        
         if args.optimise_flow:
             args.optimise = True
 
         env_includes = os.environ['NECO_INCLUDE'].split(":")
         args.includes.extend(env_includes)
+
+        # checks for conflicts in options
+        if module:
+            model_file = module + '.py'
+            if abcd:
+                fatal_error("A snakes module cannot be used with an abcd file.")
+            elif pnml:
+                fatal_error("A snakes module cannot be used with a pnml file.")
+
+        elif abcd:
+            model_file = abcd
+        elif pnml:
+            model_file = pnml
+
         # setup config
         config.set( # debug    = cli_argument_parser.debug(),
                    optimise = args.optimise,
@@ -229,15 +244,10 @@ class Main(object):
                    additional_search_paths = args.includes,
                    trace_calls = False,
                    trace_file = trace,
-                   pid_normalization = args.pid_normalization)
-
-        # checks for conflicts in options
-        if module:
-            if abcd:
-                fatal_error("A snakes module cannot be used with an abcd file.")
-            elif pnml:
-                fatal_error("A snakes module cannot be used with a pnml file.")
-
+                   pid_normalization = args.pid_normalization,
+                   model = model_file)
+            
+            
         # retrieve the Petri net from abcd file (produces a pnml file)
         remove_pnml = not pnml
         if abcd:

@@ -420,6 +420,7 @@ class CheckerCompileVisitor(netir.CompilerVisitor):
 from Cython.Distutils import build_ext
 from distutils.core import setup
 from distutils.extension import Extension
+import os
 
 def produce_and_compile_pyx(checker_env, id_prop_map):
     marking_type = checker_env.marking_type
@@ -433,7 +434,14 @@ def produce_and_compile_pyx(checker_env, id_prop_map):
     gen_main_check_function(checker_env, id_prop_map) # updates env
 
     checker_module = cyast.Module(body=functions)
-    f = open("checker.pyx", "w")
+    
+    base_dir = "build/"
+    try:
+        os.mkdir(base_dir)
+    except OSError:
+        pass
+    
+    f = open(base_dir + "checker.pyx", "w")
 
     f.write("cimport net\n")
     f.write("cimport ctypes_ext\n")
@@ -453,12 +461,13 @@ def produce_and_compile_pyx(checker_env, id_prop_map):
     include_dirs.append('.')
     library_dirs.append('.')
 
-    setup(name="checker.pyx",
+    setup(name=base_dir + "checker.pyx",
           cmdclass={'build_ext': build_ext},
-          ext_modules=[Extension("checker", ["checker.pyx"],
-                                 include_dirs = include_dirs,
+          ext_modules=[Extension("checker", [base_dir + "checker.pyx"],
+                                 include_dirs = include_dirs + [base_dir],
                                  extra_compile_args = [],
                                  extra_link_args = ['-lctypes'],
-                                 library_dirs = library_dirs)],
-          script_args=["build_ext", "--inplace"])
+                                 library_dirs = library_dirs + [base_dir])],
+          script_args=["build_ext", "--inplace"],
+          options = { 'build': { 'build_base': 'build' } })
 
