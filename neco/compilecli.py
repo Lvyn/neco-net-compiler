@@ -24,8 +24,10 @@ from neco import compile_net, g_logo
 
 import backends
 
-g_produced_files = ["net.so",
+g_produced_files = ["*.pyc",
+                    "net.so",
                     "net.pyx",
+                    "net.pxd",
                     "net_api.h",
                     "net.h",
                     "net.c",
@@ -33,7 +35,8 @@ g_produced_files = ["net.so",
                     "net.pyc",
                     "net.pyo",
                     "ctypes.h",
-                    "ctypes_ext.pxd"]
+                    "ctypes_ext.pxd",
+                    "trace"]
 
 def produce_pnml_file(abcd_file, pnml_file = None):
     """ Compile an abcd file to pnml.
@@ -85,7 +88,7 @@ class Main(object):
 
     _instance_ = None # unique instance
 
-    def __init__(self, progname, logo=False):
+    def __init__(self, progname='compilecli', logo=False, cli_args=None):
 
         print "{} uses python {}".format(progname, sys.version)
         assert(not self.__class__._instance_) # assert called only once
@@ -128,10 +131,10 @@ class Main(object):
                             help='add additional files to be imported')
 
         parser.add_argument('--include', '-I', default=[], dest='includes', action='append',
-                            help='additionnal include paths (cython)')
+                            help='additional include paths (cython)')
 
         parser.add_argument('--trace', '-t', default='trace', dest='trace', metavar='TRACEFILE', type=str,
-                            help='additionnal include paths (cython)')
+                            help='additional include paths (cython)')
 
         parser.add_argument('--pid-normalization', default=False, dest='pid_normalization', action='store_true',
                             help='enable process identifier normalization (wip)')
@@ -139,9 +142,63 @@ class Main(object):
         parser.add_argument('--no-stats', default=False, dest='no_stats', action='store_true',
                             help='disable dynamic stats (transitions/sec, etc.)')
 
-        args = parser.parse_args()
+        parser.add_argument('--clean', default=False, dest='clean', action='store_true',
+                            help='clean produced files')
+
+        if cli_args:
+            args = parser.parse_args(cli_args)
+        else:
+            args = parser.parse_args()
 
         # retrieve arguments
+        
+        if args.clean:
+            skip = False
+            
+            # expand globs
+            new_files = []
+            to_remove = []
+            import glob
+            for f in g_produced_files:
+                if f[0] == '*':
+                    files = glob.glob(f)
+            exit(0)
+            for f in g_produced_files:
+                try:
+                    handler = open(f)
+                except IOError:
+                    continue
+                
+                if handler:                        
+                    handler.close()
+                    if skip:
+                        print "removing {}".format(f)
+                        os.remove(f)
+                    else:
+                        while(True):
+                            got = raw_input("remove '{}'? (y/n/a) : ".format(f)).upper()
+                            if got in ['Y', 'YES']:
+                                try:
+                                    print "removing {}".format(f)
+                                    os.remove(f)
+                                except OSError:
+                                    print >> sys.stderr, "Error while removing {}".format(f)
+                                break
+                            elif got in ['N', 'NO']:
+                                break
+                            elif got in ['A', 'ALL']:
+                                try:
+                                    print "removing {}".format(f)   
+                                    os.remove(f)
+                                except OSError:
+                                    print >> sys.stderr, "Error while removing {}".format(f)
+                                skip = True
+                                break
+                            else:
+                                print >> sys.stderr, "please use y(es), n(o), or a(ll)."
+                                continue
+                            
+            exit(0)
 
         abcd = args.abcd
         pnml = args.pnml

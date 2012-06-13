@@ -31,13 +31,9 @@ import core.xmlproperties
 
 class Main(object):
 
-    _instance_ = None
-
-    def __init__(self, progname, logo=False):
+    def __init__(self, progname='checkcli', logo=False, cli_args=None):
 
         print "{} uses python {}".format(progname, sys.version)
-        assert(not self.__class__._instance_) # assert called only once
-        self.__class__._instance_ = self # setup the unique instance
 
         if logo:
             print g_logo
@@ -67,7 +63,11 @@ class Main(object):
         parser.add_argument('--model', '-m', metavar='model', default=None, dest='model', type=str)
         parser.add_argument('--pnml', metavar='pnml', default=None, dest='pnml', type=str)
         
-        args = parser.parse_args()
+        if cli_args:
+            args = parser.parse_args(cli_args)
+        else:
+            args = parser.parse_args()
+        
 
         trace = args.trace
         profile = args.profile
@@ -95,7 +95,8 @@ class Main(object):
         args.includes.extend(env_includes)
 
         if formula:
-            raise NotImplementedError
+            formula = core.properties.PropertyParser().input(formula)
+            
         elif xml_file:
             properties = core.xmlproperties.parse(xml_file)
             if not properties:
@@ -118,4 +119,4 @@ class Main(object):
         compile_checker(formula, net)
 
 if __name__ == '__main__':
-    Main('ckeckcli')
+    Main()

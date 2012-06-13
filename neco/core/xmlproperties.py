@@ -258,7 +258,7 @@ def parse_is_live(node):
         else:
             raise ParserError.expected(textual_disjunction(LEVEL, TRANSITION_NAME), child.nodeName)
 
-    return properties.IsLive(string_to_level(level), transition)
+    return properties.Live(string_to_level(level), transition)
 
 def parse_is_fireable(node):
     transition = "" 
@@ -270,7 +270,7 @@ def parse_is_fireable(node):
         else:
             raise ParserError.expected(TRANSITION_NAME, child.nodeName)
 
-    return properties.IsFireable(transition)
+    return properties.Fireable(transition)
 
 
 __string_to_operator_map = {
@@ -370,7 +370,7 @@ def parse_formula(elt):
         return properties.Until( subformulas[0] )
     
     elif elt.nodeName == IS_DEADLOCK:
-        return properties.IsDeadlock()
+        return properties.Deadlock()
     
     elif elt.nodeName in [ALL_PATHS, EXISTS_PATH]:
         print >> sys.stderr, "{!s} should not appear here".format(elt.nodeName)

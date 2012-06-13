@@ -19,11 +19,11 @@ module Properties version "0.1"
     NaryLogicOperator = Conjunction(Formula* operands) | Disjunction(Formula* operands) | ExclusiveDisjunction(Formula* operands)
 
     BooleanExpression = IntegerComparison(ComparisonOperator operator, IntegerExpression left, IntegerExpression right) |
-    		        MultisetComparison(ComparisonOperator operator, MultisetExpression left, MultisetExpression right) |
-			IsLive(int level, identifier transition_name) |
-			IsFireable(identifier transition_name) |
-			IsDeadlock |
-	                AtomicProposition(Formula formula)
+    		        	MultisetComparison(ComparisonOperator operator, MultisetExpression left, MultisetExpression right) |
+						Live(int level, identifier transition_name) |
+						Fireable(identifier transition_name) |
+						Deadlock |
+	                	AtomicProposition(Formula formula)
 
     ComparisonOperator = LT | LE | EQ | NE | GT | GE
 

@@ -9,7 +9,7 @@ import neco.core.info as info
 # from info import VariableProvider
 
 def has_deadlocks(formula):
-    if formula.isIsDeadlock():
+    if formula.isDeadlock():
         return True
     return properties.reduce_ast( lambda acc, node: acc or has_deadlocks(node),
                                   formula,
@@ -19,7 +19,7 @@ def spot_formula(formula):
     
     if formula.isAtomicProposition():
         return '(p' + str(formula.identifier) + ')'
-    elif formula.isIsDeadlock():
+    elif formula.isDeadlock():
         return 'DEAD'
     elif formula.isConjunction():
         return '(' + ' /\\ '.join(map(spot_formula, formula.operands)) + ')'

@@ -1,5 +1,7 @@
 import properties_gen
 from properties_gen import *
+import yappy.parser
+from yappy.parser import Yappy, grules
 import inspect, sys, copy
 
 def __new(obj, *args, **kwargs):
@@ -16,7 +18,7 @@ def dispatch_ast(function, formula):
                 if is_AST(f):
                     function(f)
         elif is_AST(field):
-            function(field)        
+            function(field)
 
 def map_ast(function, formula):
     if not is_AST(formula):
@@ -94,11 +96,11 @@ def formula_to_str(formula):
         return "({} {} {})".format(formula_to_str(formula.left),
                                    formula_to_str(formula.operator),
                                    formula_to_str(formula.right))
-    elif formula.isIsLive():
-        return "Islive{!s}({!s})".format(formula.level, formula.transition_name)
-    elif formula.isIsFireable():
-        return "IsFireable({!s})".format(formula.transition_name)
-    elif formula.isIsDeadlock():
+    elif formula.isLive():
+        return "Live{!s}({!r})".format(formula.level, formula.transition_name)
+    elif formula.isFireable():
+        return "Fireable({!r})".format(formula.transition_name)
+    elif formula.isDeadlock():
         return "Deadlock"
     elif formula.isAtomicProposition():
         return "AtomicProposition<{}>".format(formula_to_str(formula.formula))
@@ -117,18 +119,16 @@ def formula_to_str(formula):
         return ">"
     # IntegerExpression
     elif formula.isPlaceBound():
-        return "PlaceBound({!s})".format(formula.place_name)
+        return "PlaceBound({!r})".format(formula.place_name)
     elif formula.isIntegerConstant():
         return "Int({!s})".format(formula.value)
-    elif formula.isPlaceBound():
-        return "PlaceBound({!s})".format(formula_to_str(formula.place_name))
     elif formula.isSum():
         return "(" + " + ".join(map(formula_to_str, formula.operands)) + ")"
     elif formula.isMultisetCardinality():
         return "MultisetCardinality({!s})".format(formula_to_str(formula.multiset))
     # MultisetExpression
     elif formula.isPlaceMarking():
-        return "PlaceMarking({!s})".format(formula.place_name)
+        return "PlaceMarking({!r})".format(formula.place_name)
     elif formula.isMultisetConstant():
         ms_str = '[' + ', '.join(map(str, formula.elements)) + ']'
         return "MultisetConstant({})".format(ms_str)
@@ -147,8 +147,8 @@ __update_LTLFormula_class_str()
 def __match_atom(formula):
     return ( formula.isIntegerComparison() or
              formula.isMultisetComparison() or
-             formula.isIsLive() or
-             formula.isIsFireable() or 
+             formula.isLive() or
+             formula.isFireable() or 
              formula.isPlaceMarking() or
              formula.isMultisetCardinality() )
 
@@ -181,7 +181,6 @@ def extract_atoms(formula):
     return new_formula
 
 def normalize_formula(formula):
-    
     if (formula.isIntegerComparison() or
         formula.isMultisetComparison()):
         
@@ -237,10 +236,10 @@ def transform_formula(formula):
     if not is_AST(formula):
         return copy.deepcopy(formula)
     
-    if formula.isIsLive():
+    if formula.isLive():
         if formula.level != 0:
             raise NotImplementedError
-        return Negation(Future(IsFireable( formula.transition_name )))
+        return Negation(Future(Fireable( formula.transition_name )))
     
     elif formula.isPlaceBound():
         return properties_gen.MultisetCardinality(PlaceMarking(formula.place_name))
@@ -279,8 +278,8 @@ def transform_formula(formula):
         else:
             return map_ast(transform_formula, formula)
 
-    elif (formula.isIsDeadlock() or 
-          formula.isIsFireable() or
+    elif (formula.isDeadlock() or 
+          formula.isFireable() or
           formula.isPlaceMarking() or
           formula.isMultisetConstant() or
           formula.isNext() or
@@ -301,7 +300,7 @@ def check_locations(formula, net_info):
     if formula.isPlaceBound() or formula.isPlaceMarking(): 
         net_info.place_by_name(formula.place_name)
     
-    elif formula.isIsLive() or formula.isIsFireable():
+    elif formula.isLive() or formula.isFireable():
         net_info.transition_by_name(formula.transition_name)
     
     elif formula.isMultisetComparison():
@@ -326,31 +325,289 @@ def build_atom_map(formula, name_provider, name_atom_map):
 
     return name_atom_map
 
+### PARSER
+
+#yappy.parser._DEBUG = 1
+class PropertyParser(Yappy):
+    
+    def __init__(self):
+        
+        grammar = grules([(" formula -> G formula",               self.globally_rule),
+                          (" formula -> F formula",               self.future_rule),
+                          (" formula -> X formula",               self.next_rule),
+                          (" formula -> formula UNTIL formula",   self.until_rule),
+                          (" formula -> formula AND formula",     self.and_rule),
+                          (" formula -> formula OR formula",      self.or_rule),
+                          (" formula -> formula XOR formula",     self.xor_rule),
+                          (" formula -> formula EQUIV formula",   self.equiv_rule),
+                          (" formula -> formula IMPL formula",    self.impl_rule),
+                          (" formula -> NOT formula",             self.not_rule),
+                          (" formula -> ( formula )",             self.scope_rule),
+                          (" formula -> bool_expr",               self.default_rule),
+                          (" bool_expr -> int_expr CMP int_expr", self.integer_cmp_rule),
+                          (" bool_expr -> ms_expr CMP ms_expr",   self.multiset_cmp_rule),
+                          #(" bool_expr -> LIVE ( ID )",           self.live_rule),
+                          (" bool_expr -> LIVE ( INTEGER , ID )", self.live_rule),
+                          (" bool_expr -> FIREABLE ( ID )",       self.fireable_rule),
+                          (" bool_expr -> DEADLOCK",              self.deadlock_rule),
+                          (" int_expr -> int_expr + int_expr",    self.plus_rule),
+                          (" int_expr -> BOUND ( ID )",           self.bound_rule),
+                          (" int_expr -> CARD ( ms_expr )",       self.card_rule),
+                          (" int_expr -> INTEGER",                self.integer_rule),
+                          (" int_expr -> ( int_expr )",           self.scope_rule),
+                          (" ms_expr  -> MARKING ( ID )",         self.marking_rule),
+                          (" ms_expr  -> [ ]",                    self.empty_multiset_rule),
+                          (" ms_expr  -> [ ms_elts ]",            self.multiset_rule),
+                          (" ms_elts -> ms_elts , ms_elts",       self.multiset_elts_seq_rule),
+                          (" ms_elts -> INTEGER",                 lambda l, c : [ self.integer_rule(l, c) ]),
+                          (" ms_elts -> DOT",                     lambda l, c : [ self.blacktoken_rule(l, c) ]),
+                          ])
+        
+        tokenize = [(r'"[a-zA-Z]+(\s*[a-zA-Z_0-9]+)*"|\'[a-zA-Z]+(\s*[a-zA-Z_0-9]+)*\'',  lambda x : ('ID', x[1:-1])), # protected ids
+                    (r'\s', ""), # skip white spaces
+                    (r'<=>|<->',        lambda x : ('EQUIV', x),    ('EQUIV', 50, 'left')),
+                    (r'=>|->',          lambda x : ('IMPL', x),     ('IMPL',  40,  'left')),
+                    (r'<=|<|=|!=|>=|>', lambda x : ('CMP', x),      ('CMP',   800, 'left')),
+                    (r'\+',             lambda x : (x, x),          ('+',     750, 'left')),
+                    (r'live',           lambda x : ('LIVE', x),     ('LIVE',     700, 'noassoc')),
+                    (r'fireable',       lambda x : ('FIREABLE', x), ('FIREABLE', 700, 'noassoc')),
+                    (r'deadlock',       lambda x : ('DEADLOCK', x), ('DEADLOCK', 700, 'noassoc')),
+                    (r'bound',   lambda x : ('BOUND', x),     ('BOUND',   700, 'noassoc')),
+                    (r'card',    lambda x : ('CARD', x),      ('CARD',    700, 'noassoc')),
+                    (r'marking', lambda x : ('MARKING', x),   ('MARKING', 700, 'noassoc')),
+                    (r'dot|@',   lambda x : ('DOT', x),       ('DOT',     700, 'noassoc')),
+                    (r'!',       lambda x : ('NOT', x),       ('NOT',     600, 'noassoc')),
+                    (r'G',       lambda x : ('G', x),         ('G',       500, 'noassoc')),
+                    (r'F',       lambda x : ('F', x),         ('F',       500, 'noassoc')),
+                    (r'X',       lambda x : ('X', x),         ('X',       500, 'noassoc')),
+                    (r'U',       lambda x : ('UNTIL', x),     ('UNTIL',   400, 'left')),
+                    (r'/\\',     lambda x : ('AND', x),       ('AND',     300, 'left')),
+                    (r'\\/',     lambda x : ('OR',  x),       ('OR',      200, 'left')),
+                    (r'\^',      lambda x : ('XOR', x),       ('XOR',     200, 'left')),
+                    (r';',       lambda x : (x, x),           (';',       10,  'left')),
+                    (r',',       lambda x : (x, x),           (',',       10,  'left')),
+                    (r'\(|\)|\[|\]|\{|\}',       lambda x : (x, x)),
+                    (r'[a-zA-Z]+[a-zA-Z_0-9]*',  lambda x : ('ID', x)),
+                    (r'[0-9]+',  lambda x : ('INTEGER', x)),
+                    ]
+#        import os
+#        try:
+#            os.remove("YappyTab")
+#        except:
+#            pass
+        Yappy.__init__(self, tokenize=tokenize, grammar=grammar)
+        
+    def default_rule(self, tokens, ctx):
+        return tokens[0]
+    
+    def globally_rule(self, tokens, ctx):
+        """ 
+        >>> print ast.dump(PropertyParser().input('G deadlock'))
+        Globally(formula=Deadlock())
+        """ 
+        return Globally(tokens[1])
+    
+    def future_rule(self, tokens, ctx):
+        """ 
+        >>> print ast.dump(PropertyParser().input('F deadlock'))
+        Future(formula=Deadlock())
+        """ 
+        return Future(tokens[1])
+    
+    def next_rule(self, tokens, ctx):
+        """ 
+        >>> print ast.dump(PropertyParser().input('X deadlock'))
+        Next(formula=Deadlock())
+        """ 
+        return Next(tokens[1])
+    
+    def not_rule(self, tokens, ctx):
+        """
+        >>> print ast.dump(PropertyParser().input('! deadlock'))
+        Negation(formula=Deadlock())
+        """
+        return Negation(tokens[1])
+    
+    def until_rule(self, tokens, ctx):
+        """
+        >>> print ast.dump(PropertyParser().input('deadlock U deadlock'))
+        Until(left=Deadlock(), right=Deadlock())
+        """
+        return Until(tokens[0], tokens[2])
+    
+    def and_rule(self, tokens, ctx):
+        """
+        >>> print ast.dump(PropertyParser().input('deadlock /\\ deadlock'))
+        Conjunction(operands=[Deadlock(), Deadlock()])
+        """
+        return Conjunction([ tokens[0], tokens[2] ])
+    
+    def or_rule(self, tokens, ctx):
+        """
+        >>> print ast.dump(PropertyParser().input('deadlock \\/ deadlock'))
+        Disjunction(operands=[Deadlock(), Deadlock()])
+        """
+        return Disjunction([ tokens[0], tokens[2] ])
+    
+    def xor_rule(self, tokens, ctx):
+        """
+        >>> print ast.dump(PropertyParser().input('deadlock ^ deadlock'))
+        ExclusiveDisjunction(operands=[Deadlock(), Deadlock()])
+        """
+        return ExclusiveDisjunction([ tokens[0], tokens[2] ])
+    
+    def equiv_rule(self, tokens, ctx):
+        """
+        >>> print ast.dump(PropertyParser().input('deadlock <=> deadlock'))
+        Equivalence(left=Deadlock(), right=Deadlock())
+        """
+        return Equivalence(tokens[0], tokens[2])
+    
+    def impl_rule(self, tokens, ctx):
+        """
+        >>> print ast.dump(PropertyParser().input('deadlock => deadlock'))
+        Implication(left=Deadlock(), right=Deadlock())
+        """
+        return Implication(tokens[0], tokens[2])
+    
+    def plus_rule(self, tokens, ctx):
+        """
+        >>> print ast.dump(PropertyParser().input('1 + 2 < 4'))
+        IntegerComparison(operator=LT(), left=Sum(operands=[IntegerConstant(value='1'), IntegerConstant(value='2')]), right=IntegerConstant(value='4'))
+        """
+        return Sum([tokens[0], tokens[2]])
+    
+    def scope_rule(self, tokens, ctx):
+        """
+        >>> print ast.dump(PropertyParser().input('(1 + 1) + 1 < 4'))
+        IntegerComparison(operator=LT(), left=Sum(operands=[Sum(operands=[IntegerConstant(value='1'), IntegerConstant(value='1')]), IntegerConstant(value='1')]), right=IntegerConstant(value='4'))
+        >>> print ast.dump(PropertyParser().input('1 + (1 + 1) < 4'))
+        IntegerComparison(operator=LT(), left=Sum(operands=[IntegerConstant(value='1'), Sum(operands=[IntegerConstant(value='1'), IntegerConstant(value='1')])]), right=IntegerConstant(value='4'))
+        """
+        return tokens[1]
+    
+    def id_rule(self, tokens, ctx):
+        return tokens[0]
+    
+    def bound_rule(self, tokens, ctx):
+        """
+        >>> print ast.dump(PropertyParser().input('bound(s1) = 1'))
+        IntegerComparison(operator=EQ(), left=PlaceBound(place_name='s1'), right=IntegerConstant(value='1'))
+        """
+        return PlaceBound(tokens[2])
+    
+    def marking_rule(self, tokens, ctx):
+        """
+        >>> print ast.dump(PropertyParser().input('marking(s1) = []'))
+        MultisetComparison(operator=EQ(), left=PlaceMarking(place_name='s1'), right=MultisetConstant(elements=[]))
+        """
+        return PlaceMarking(tokens[2])
+    
+    def live_rule(self, tokens, ctx):
+        """
+        >>> print ast.dump(PropertyParser().input('live(0, t1)'))
+        Live(level='0', transition_name='t1')
+        """
+        return Live(tokens[2], tokens[4])
+    
+    def fireable_rule(self, tokens, ctx):
+        """
+        >>> print ast.dump(PropertyParser().input('fireable(t)'))
+        Fireable(transition_name='t')
+        """
+        return Fireable(tokens[2])
+    
+    def deadlock_rule(self, tokens, ctx):
+        """
+        >>> print ast.dump(PropertyParser().input('deadlock'))
+        Deadlock()
+        """
+        return Deadlock()
+    
+    def integer_rule(self, tokens, ctx):
+        """
+        >>> print ast.dump(PropertyParser().input('1 = 1'))
+        IntegerComparison(operator=EQ(), left=IntegerConstant(value='1'), right=IntegerConstant(value='1'))
+        """
+        return IntegerConstant(tokens[0])
+    
+    def card_rule(self, tokens, ctx):
+        """
+        >>> print ast.dump(PropertyParser().input('card(marking(s)) = 1'))
+        IntegerComparison(operator=EQ(), left=MultisetCardinality(multiset=PlaceMarking(place_name='s')), right=IntegerConstant(value='1'))
+        """
+        return MultisetCardinality(tokens[2])
+
+    __operator_map__ = { '<' : LT(), '<=' : LE(), '=' : EQ(), '!=' : NE(), '>=' :  GE(), '>' : GT() }     
+    def integer_cmp_rule(self, tokens, ctx):
+        """
+        >>> def dump(e): print ast.dump(PropertyParser().input(e))
+        >>> dump('1 <= 1')
+        IntegerComparison(operator=LE(), left=IntegerConstant(value='1'), right=IntegerConstant(value='1'))
+        >>> dump('1 < 1')
+        IntegerComparison(operator=LT(), left=IntegerConstant(value='1'), right=IntegerConstant(value='1'))
+        >>> dump('1 = 1')
+        IntegerComparison(operator=EQ(), left=IntegerConstant(value='1'), right=IntegerConstant(value='1'))
+        >>> dump('1 != 1')
+        IntegerComparison(operator=NE(), left=IntegerConstant(value='1'), right=IntegerConstant(value='1'))
+        >>> dump('1 >= 1')
+        IntegerComparison(operator=GE(), left=IntegerConstant(value='1'), right=IntegerConstant(value='1'))
+        >>> dump('1 > 1')
+        IntegerComparison(operator=GT(), left=IntegerConstant(value='1'), right=IntegerConstant(value='1'))
+        """
+        return IntegerComparison(self.__operator_map__[tokens[1]], tokens[0], tokens[2])
+    
+    def multiset_cmp_rule(self, tokens, ctx):
+        """
+        >>> def dump(e): print ast.dump(PropertyParser().input(e))
+        >>> dump('[] <= []')
+        MultisetComparison(operator=LE(), left=MultisetConstant(elements=[]), right=MultisetConstant(elements=[]))
+        >>> dump('[] < []')
+        MultisetComparison(operator=LT(), left=MultisetConstant(elements=[]), right=MultisetConstant(elements=[]))
+        >>> dump('[] = []')
+        MultisetComparison(operator=EQ(), left=MultisetConstant(elements=[]), right=MultisetConstant(elements=[]))
+        >>> dump('[] != []')
+        MultisetComparison(operator=NE(), left=MultisetConstant(elements=[]), right=MultisetConstant(elements=[]))
+        >>> dump('[] >= []')
+        MultisetComparison(operator=GE(), left=MultisetConstant(elements=[]), right=MultisetConstant(elements=[]))
+        >>> dump('[] > []')
+        MultisetComparison(operator=GT(), left=MultisetConstant(elements=[]), right=MultisetConstant(elements=[]))
+        """
+        return MultisetComparison(self.__operator_map__[tokens[1]], tokens[0], tokens[2])
+    
+    def empty_multiset_rule(self, tokens, ctx):
+        """
+        >>> print ast.dump(PropertyParser().input('[] = []'))
+        MultisetComparison(operator=EQ(), left=MultisetConstant(elements=[]), right=MultisetConstant(elements=[]))
+        """
+        return MultisetConstant([])
+    
+    def multiset_rule(self, tokens, ctx):
+        """
+        >>> print ast.dump(PropertyParser().input('[] < [1]'))
+        MultisetComparison(operator=LT(), left=MultisetConstant(elements=[]), right=MultisetConstant(elements=[IntegerConstant(value='1')]))
+        >>> print ast.dump(PropertyParser().input('[] < [1, 1, 1]'))
+        MultisetComparison(operator=LT(), left=MultisetConstant(elements=[]), right=MultisetConstant(elements=[IntegerConstant(value='1'), IntegerConstant(value='1'), IntegerConstant(value='1')]))
+        >>> print ast.dump(PropertyParser().input('[] < [dot, 1, dot]'))
+        MultisetComparison(operator=LT(), left=MultisetConstant(elements=[]), right=MultisetConstant(elements=['DOT', IntegerConstant(value='1'), 'DOT']))
+        """
+        return MultisetConstant(tokens[1])
+    
+    def multiset_elts_seq_rule(self, tokens, ctx):
+        return tokens[0] + tokens[2]
+    
+    def blacktoken_rule(self, tokens, ctx):
+        return "DOT"
+    
+#p = PropertyParser()
+#print "out: ", p.input("F [dot] < marking( place52 ) \\/ G card( marking( 'long place name' )) + 1 + 1 + 1 <= 5 U bound( p3 ) <= 4")
+#f = "G bound( place2 ) <= 1 \\/ G ( card(marking('long place name')) = card(marking(shortname)) => [1,1,1] <= marking(place3) )"
+#formula = p.input(f)
+#print formula
+#
+#print ast.dump(formula)
+
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
     
-    class NameProvider(object):
-        
-        def __init__(self, prefix = ""):
-            self._prefix = prefix
-            self._begin = 0
-            
-        def get(self, obj):
-            self._begin += 1
-            return self._prefix + "_" + str(self._begin)
-
-    from xmlproperties import parse
-    props = parse('../../tests/check/lamport_fmea-2.23.xml')
-    for prop in props:
-        print formula_to_str(prop.formula)
-        
-        formula = transform_formula(prop.formula)
-        print formula_to_str(formula)
-        
-        formula = extract_atoms(formula)
-        print formula_to_str(formula)
-        
-        map = build_atom_map(formula, NameProvider(), {})
-        for key, value in map.iteritems():
-            print "{!s} : {!s}".format(key, value)

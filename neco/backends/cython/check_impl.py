@@ -286,10 +286,10 @@ def gen_check_expression(checker_env, marking_var, formula):
                            op = cyast.Add(),
                            right = right)
     
-    elif formula.isIsDeadlock():
+    elif formula.isDeadlock():
         pass # nothing to do just add option -d DEAD to neco-spot
     
-    elif formula.isIsFireable():
+    elif formula.isFireable():
         return checker_env.is_fireable_expression(marking_var,                                                  
                                                   formula.transition_name)
 
