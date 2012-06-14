@@ -173,7 +173,7 @@ class CompilerVisitor(coreir.CompilerVisitor):
         place_type = self.env.marking_type.get_place_type_by_name(node.place_name)
         return ast.For(target = E(node.token_var.name),
                        iter = place_type.iterable_expr(env = self.env,
-                                                       marking_var = node.marking),
+                                                       marking_var = node.marking_var),
                        body = [ self.compile(node.body) ])
 
 
@@ -391,10 +391,10 @@ class CompilerVisitor(coreir.CompilerVisitor):
 
     def compile_BTTokenEnumeration(self, node):
         place_expr = self.env.marking_type.gen_get_place( env = self.env,
-                                                          marking_var = node.marking_var,
+                                                          marking_var = node.marking,
                                                           place_name = node.place_name,
                                                           mutable = False )
-        getnode = ast.Assign(targets=[ast.Name(id=node.token_name)],
+        getnode = ast.Assign(targets=[ast.Name(id=node.token_var.name)],
                              value=ast.Name(id='dot'))
         ifnode = ast.If(test=ast.Compare(left=place_expr, ops=[ast.Gt()], comparators=[ast.Num(0)]),
                         body=[ getnode, self.compile( node.body ) ] )

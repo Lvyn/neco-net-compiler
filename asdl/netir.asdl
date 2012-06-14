@@ -1,62 +1,48 @@
 module netir version "$Revision: 1 $"
 {
-    Node =
-	FunctionDef
-	| Expr
-	| Stmt
+    Node = FunctionDef | Expr | Stmt
 
     FunctionDef =
 	Init(identifier function_name,
 	     VariableInfo marking,
-	     Stmt* body,
-	     VariableProvider variable_provider)
+	     VariableProvider variable_provider,
+	     Stmt* body)
 
 	| SuccT(identifier function_name,
 		VariableInfo arg_marking_set,
 		VariableInfo arg_marking,
-		Stmt* body,
 		TransitionInfo transition_info,
-		VariableProvider variable_provider)
-		
-	| IsFireable(identifier function_name,
-			 	 VariableInfo arg_marking,
-			     Stmt* body,
-			     TransitionInfo transition_info,
-			     VariableProvider variable_provider)
+		VariableProvider variable_provider,
+		Stmt* body)
 
 	| SuccP(identifier function_name,
 		VariableInfo arg_marking_set,
 		VariableInfo arg_marking,
 		VariableInfo flow_variable,
-		Stmt* body,
 		ProcessInfo process_info,
-		VariableProvider variable_provider)
+		VariableProvider variable_provider,
+		Stmt* body)
 
 	| Succs(identifier function_name,
 		VariableInfo arg_marking,
 		VariableInfo arg_marking_set,
-		Stmt* body,
-		VariableProvider variable_provider)
-
-	| CheckAtom(identifier atom,
-		    VariableInfo arg_marking,
-		    Stmt* body,
-		    Variable_Provider variable_provider)
-    Block =
-	TokenEnumeration(ArcInfo arc,
-			 VariableInfo token_var,
-			 VariableInfo marking,
-			 identifier place_name,
-			 Stmt* body)
-
+		VariableProvider variable_provider,
+		Stmt* body)
+		    
+    Block = TokenEnumeration(ArcInfo arc,
+				 			 VariableInfo token_var,
+			 				 VariableInfo marking_var,
+			 		 		 identifier place_name,
+			 		 		 Stmt* body)
+			 
 	| MultiTokenEnumeration(ArcInfo multiarc,
-				VariableInfo marking,
-				identifier place_name,
-				Stmt* body)
-
+							VariableInfo marking,
+							identifier place_name,
+							Stmt* body)
+    
 	| NotEmpty(VariableInfo marking,
-		   identifier place_name,
-		   Stmt* body)
+		   	   identifier place_name,
+		   	   Stmt* body)
 
 	| GuardCheck(Expr condition,
 		     Stmt* body)
@@ -75,17 +61,16 @@ module netir version "$Revision: 1 $"
 	| CheckType(VariableInfo variable,
 		    TypeInfo type,
 		    Stmt* body)
-
-
+				
     Stmt =
    	 AddToken(VariableInfo marking,
-		  identifier place_name,
-		  Expr token_expr)
+		  	 identifier place_name,
+		  	 Expr token_expr)
 
 	| RemToken(VariableInfo marking,
-		   identifier place_name,
-		   Expr token_expr,
-		   str? use_index)
+		   	   identifier place_name,
+		   	   Expr token_expr,
+		       str? use_index)
 
 	| MarkingCopy(VariableInfo dst,
 		      VariableInfo src,
@@ -103,13 +88,9 @@ module netir version "$Revision: 1 $"
 		   identifier place_name,
 		   Expr token_expr)
 
-	| RemToken(VariableInfo marking,
-		   identifier place_name,
-		   Expr token_expr)
-
 	| RemTuple(VariableInfo marking,
-		   identifier place_name,
-		   Expr tuple_expr)
+		       identifier place_name,
+		       Expr tuple_expr)
 
 	| TupleOut(VariableInfo marking,
 		   identifier place_name,
@@ -132,14 +113,13 @@ module netir version "$Revision: 1 $"
 
 	| Return(Expr expr)
 	
-    Expr =
-	PyExpr(string expr)
+    Expr = PyExpr(string expr)
 
 	| ReadFlow(VariableInfo marking,
 		   identifier process_name)
 
 	| FunctionCall(identifier function_name,
-		       Expr* arguments)
+		       expr* arguments)
 
 	| Token(object value,
 		identifier place_name)
@@ -151,17 +131,18 @@ module netir version "$Revision: 1 $"
         | Tuple(Expr* components)
 
 	| Compare(Expr left,
-		  operator* ops,
+		  Operator* ops,
 		  Expr* comparators)
 
 	| Pickle( object obj )
 
 	| FlowCheck(VariableInfo marking,
-		    Expr? current_flow,
-		    PlaceInfo place_info)
+			    PlaceInfo place_info,
+			    Expr? current_flow)
+			    
     PComponent =
 	PVar(identifier name)
 	| PValue(object value)
 
-    operator = EQ
+    Operator = EQ
 }

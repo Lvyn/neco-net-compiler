@@ -2,9 +2,8 @@
 compiling Snakes Petri nets
 """
 
-import utils
-import inspect
-import snakes.utils.ctlstar.build as ctlstar
+import utils, inspect
+import core, backends, config
 
 g_logo = """
   *      *
@@ -40,7 +39,7 @@ def get_backends():
     @rtype: C{dict(str -> module)}
     """
     bends = {}
-    for (name, module) in inspect.getmembers(backends, inspect.ismodule):
+    for (_, module) in inspect.getmembers(backends, inspect.ismodule):
         if hasattr(module, "_backend_"):
             bends[module._backend_] = module
     return bends
@@ -54,7 +53,7 @@ def compile_net(net, *arg, **kwargs):
     backends = get_backends()
     backend = config.get('backend')
     try:
-        compiler = backends[backend].Compiler(net, *arg, **kwargs)
+        compiler = core.Compiler(net, backend=backends[backend].compile_impl)
     except KeyError as e:
         raise UnknownBackend(e)
 
@@ -67,15 +66,14 @@ def compile_net(net, *arg, **kwargs):
     print "Additional search paths: %s" % config.get('additional_search_paths')
     print "################################################################################"
 
-    compiler.set_marking_type_by_name("StaticMarkingType")
+    # compiler.set_marking_type_by_name("StaticMarkingType")
 
     if config.get('optimise'):
         from neco.core import onesafe
+        print "adding pass"
         compiler.add_optimisation(onesafe.OptimisationPass())
 
-    compiler.gen_netir()
-    compiler.optimise_netir()
-    return compiler.compile()
+    return compiler.run()
 
 
 def compile_checker(formula, net, *arg, **kwargs):

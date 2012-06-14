@@ -1,12 +1,12 @@
-""" Abstract syntax tree for representing functions and algorithms.
+""" Abstract syntax tree for functions and algorithms.
 
-Uses file netir_gen that was automatically generated.
+Serves as a proxy for netir_gen (automatically generated from asdl).
 """
 
 import inspect, types
 from ast import NodeVisitor, NodeTransformer
 import netir_gen
-from netir_gen import *
+from netir_gen import * 
 
 class CurrentBlockError(Exception):
     """ Exception used in helpers, raised when a operation
@@ -76,7 +76,7 @@ def emit(self, stmt_node):
     Adds a statements to current node.
 
     @param stmt_node: ast statement node
-    @type stmt_node: C{Stmt}
+    @type stmt_node: C{stmt}
     """
     self._current_scope.append(stmt_node)
 
@@ -147,7 +147,7 @@ class BuilderBase(object):
         Adds a new begin_<C{cls}> method to builder.
 
         @param cls: ast stmt class
-        @type cls: C{Stmt}
+        @type cls: C{stmt}
         """
         method = __caller__(emit, cls)
         method_name = "emit_%s" % cls.__name__

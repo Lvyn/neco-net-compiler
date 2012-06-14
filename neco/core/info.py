@@ -1034,6 +1034,7 @@ class NetInfo(object):
     def __init__(self, net):
         # self.net = net
 
+        self.declare = getattr(net, '_declare', [])
         self.places = []
         for p in net.place():
             self.places.append( PlaceInfo(p) )

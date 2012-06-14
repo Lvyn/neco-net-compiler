@@ -15,6 +15,7 @@ _default_options_ = [
     ('optimise', False),
     ('optimise_flow', False),
     ('debug', False),
+    ('dump_enabled', True),
     ('additional_search_paths', ['.']),
     ('trace_calls', False),
     ('imports', []),

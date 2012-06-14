@@ -101,7 +101,7 @@ class MarkingType(object):
         self._one_safe_places = set()
 
         self._use_control_flow_elimination = config.get('optimise_flow')
-
+    
     # def __getstate__(self):
     #     d = { 'flow_control_places' : [],
     #           'one_safe_places' : [],
@@ -179,10 +179,10 @@ class MarkingType(object):
         """
         return self.place_types[name]
 
-    def append(self, place_info):
+    def add(self, place_info):
         """ Add a place info instance to marking type.
 
-        The place info will be added into a list depending on its properties.
+        The place info will be added into a set depending on its properties.
         A flow control place will be added to C{self.flow_control_places},
         a one bounded place will be added to C{self.one_safe_places}, other
         places will be addeed to C{self.places}.
@@ -272,6 +272,46 @@ class MarkingSetType(object):
         """ Produce a add marking function call for the marking set structure.
         """
         pass
+    
+################################################################################
+    
+class OneSafePlaceType(PlaceType):
+    """ Base class for one safe place types.
+    """
+
+    def __init__(self, place_info, marking_type, type, token_type):
+        PlaceType.__init__(self,
+                           place_info = place_info,
+                           marking_type = marking_type,
+                           type = type,
+                           token_type = token_type)
+
+################################################################################
+
+class BTPlaceType(PlaceType):
+    """ Base class for black token place types.
+    """
+
+    def __init__(self, place_info, marking_type, type, token_type):
+        PlaceType.__init__(self,
+                           place_info = place_info,
+                           marking_type = marking_type,
+                           type = type,
+                           token_type = token_type)
+
+################################################################################
+
+class BTOneSafePlaceType(PlaceType):
+    """ Base class for one safe black token place types.
+    """
+
+    def __init__(self, place_info, marking_type, type, token_type):
+        PlaceType.__init__(self,
+                           place_info = place_info,
+                           marking_type = marking_type,
+                           type = type,
+                           token_type = token_type)
+
 
 ################################################################################
 # EOF

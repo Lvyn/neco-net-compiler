@@ -9,7 +9,6 @@ import netir, nettypes
 from info import *
 from itertools import izip_longest
 
-from glue import FactoryManager
 from neco.core.netir_gen import PyExpr
 
 ################################################################################
@@ -23,6 +22,26 @@ class CompilingEnvironment(object):
         """
         self._succ_function_names = {}
         self._process_succ_function_names = set()
+
+        self.successor_function_nodes = []
+        self.process_successor_function_nodes = []
+        self.main_successor_function_node = None
+        self.init_function_node = None
+
+        self.global_names = WordSet([])
+        self._successor_functions = []
+
+    @property
+    def successor_functions(self):
+        return self._successor_functions
+    
+    def function_nodes(self):
+        for node in self.successor_function_nodes:
+            yield node
+        for node in self.process_successor_function_nodes:
+            yield node
+        yield self.main_successor_function_node
+        yield self.init_function_node    
 
     @property
     def succ_functions(self):
@@ -171,7 +190,7 @@ class SuccTGenerator(object):
         self.transition = transition
         self.function_name = function_name
         self.marking_type = marking_type
-        self._ignore_flow = self._ignore_flow = config.get('optimise_flow')
+        self.ignore_flow = self.ignore_flow = config.get('optimise_flow')
         self.env = env
 
         # this helper will create new variables and take care of shared instances
@@ -247,7 +266,7 @@ class SuccTGenerator(object):
 
         # loop over inputs
         for input in trans.inputs:
-            if self._ignore_flow and input.place_info.flow_control:
+            if self.ignore_flow and input.place_info.flow_control:
                 continue
 
             builder.emit_Comment("Enumerate {input} - place: {place}".format(input=input, place=input.place_name))
@@ -391,7 +410,7 @@ class SuccTGenerator(object):
                 # get a tuple
                 builder.begin_TokenEnumeration( arc = input,
                                                 token_var = token_variable,
-                                                marking = self.arg_marking,
+                                                marking_var = self.arg_marking,
                                                 place_name = input.place_name ) # no index access
 
                 if not (input.tuple.type.is_TupleType and len(input.tuple.type) == len(input.tuple)):
@@ -536,7 +555,7 @@ class SuccTGenerator(object):
         trans = self.transition
         builder = self.builder
 
-        if self._ignore_flow and output.place_info.flow_control:
+        if self.ignore_flow and output.place_info.flow_control:
             return
 
         output_impl_type = self.marking_type.get_place_type_by_name( output.place_info.name ).token_type
@@ -624,7 +643,7 @@ class SuccTGenerator(object):
         builder = self.builder
 
         builder.emit_Comment(message="Produce {output_arc} - place: {place}".format(output_arc=output_arc, place=output_arc.place_name))
-        if self._ignore_flow and output_arc.place_info.flow_control:
+        if self.ignore_flow and output_arc.place_info.flow_control:
             new_flow = [ place for place in trans.post if place.flow_control ]
             assert(len(new_flow) == 1)
             builder.emit_UpdateFlow( marking = new_marking,
@@ -773,7 +792,7 @@ class SuccTGenerator(object):
         for arc in trans.inputs:
             builder.emit_Comment(message = "Consume {arc} - place: {place}".format(arc=arc, place=arc.place_name))
 
-            if self._ignore_flow and arc.place_info.flow_control:
+            if self.ignore_flow and arc.place_info.flow_control:
                 continue
             elif arc.is_Variable:
                 builder.emit_RemToken( marking = new_marking,
@@ -811,13 +830,13 @@ class SuccTGenerator(object):
                         builder.emit_RemToken( marking = new_marking,
                                                place_name = arc.place_name,
                                                token_expr = netir.Name(sub_arc.data['local_variable'].name),
-                                               use_index = sub_arc.data['index'] )
+                                               use_index = None )
                     elif sub_arc.is_Value:
                         builder.emit_RemToken( marking = new_marking,
                                                place_name = arc.place_name,
                                                token_expr = netir.Value( value = sub_arc.value,
                                                                          place_name = arc.place_name ),
-                                               use_index = sub_arc.data['index'] )
+                                               use_index = None )
 
                     else:
                         raise NotImplementedError, sub_arc.arc_annotation
@@ -852,7 +871,7 @@ class Compiler(object):
     This class is used to produce a library from a snake.nets.PetriNet.
     """
 
-    def __init__(self, net, factory_manager = FactoryManager(), atoms = []):
+    def __init__(self, net, backend):
         """ Initialise the compiler from a Petri net.
 
         builds the basic info structure from the snakes petri net representation
@@ -860,111 +879,58 @@ class Compiler(object):
         @param net: Petri net.
         @type net: C{snakes.nets.PetriNet}
         """
-        self.env = CompilingEnvironment()
-        self.net = net
-        self.dump_enabled = False
-        self.debug = False
+        
+        self.backend = backend
+        
+        self.dump_enabled = config.get("dump_enabled")
+        self.debug = config.get("debug")
 
-        self._ignore_flow = config.get('optimise_flow')
-        FactoryManager.update( factory_manager )
-        fm = FactoryManager.instance()
-
+        self.ignore_flow = config.get('optimise_flow')
+        
         self.net_info = NetInfo(net)
         self.markingtype_class = "StaticMarkingType"
-        self.marking_type = fm.markingtype_factory.new(self.markingtype_class)
+        self.marking_type = backend.new_marking_type(self.markingtype_class)
 
         self.optimisations = []
+        
+        self.env = backend.new_compiling_environment(WordSet(), self.marking_type)
+        self.env.net_info = self.net_info
         self.rebuild_marking_type()
-
-        self.successor_function_nodes = []
-        self.process_successor_function_nodes = []
-        self.main_successor_function_node = None
-        self.init_function_node = None
-
-        self.global_names = WordSet([])
-        self._successor_functions = []
-        # TODO hardcoded for testing
-        self.atoms = [] # [ info.AtomInfo(atom, ['s1', 's2']) for atom in atoms ]
-
-    @property
-    def successor_functions(self):
-        return self._successor_functions
-
-    @property
-    def marking_type(self):
-        """ Marking type. """
-        return self._marking_type
-
-    @marking_type.setter
-    def marking_type(self, marking_type):
-        self._marking_type = marking_type
-        self.markingset_type = FactoryManager.instance().markingsettype_factory.new_MarkingSetType(marking_type)
-
-    @property
-    def factory_manager(self):
-        """ Factory Manager. """
-        return FactoryManager.instance()
-
-    @factory_manager.setter
-    def factory_manager(self, factory_manager):
-        FactoryManager.update( factory_manager )
-
-    def set_marking_type_by_name(self, markingtype_class):
-        """ Specify set marking type by name (places will be rebuild).
-
-        @param markingtype_class: marking type name.
-        @type markingtype_class: C{str}
-        """
-        self.markingtype_class = markingtype_class
-        self.marking_type = FactoryManager.instance().markingtype_factory.new(self.markingtype_class)
-        self.rebuild_marking_type()
-
-    def available_marking_types(self):
-        """ Get all available marking types.
-
-        @return: marking types
-        @rtype: C{list<str>}
-        """
-        return self.markingtype_factory.products()
+        print "compiler !"
 
     def rebuild_marking_type(self):
         """ Rebuild the marking type. (places will be rebuild) """
+        if self.dump_enabled:
+            print self.marking_type
+            
         # add place types to the marking type
         for place_info in self.net_info.places:
-            self.marking_type.append( place_info )
+            self.marking_type.add( place_info ) # will not create duplicates
 
-        fm = FactoryManager.instance()
         self.marking_type.gen_types()
         if self.dump_enabled:
             print self.marking_type
 
     def add_optimisation(self, opt):
-        """ Add an optimisation.
+        """ Add an optimization.
 
-        @param opt: optimisation pass.
+        @param opt: optimization pass.
         @type opt: C{neco.opt.OptimisationPass}
         """
-        global g_opt
-        g_opt = True
         self.optimisations.append(opt)
-        # update factories and updates modules
-        #self.factory_manager = opt.update_factory_manager(self.factory_manager)
-
-        opt.update_factory_manager()
-        fm = FactoryManager.instance()
-        self.marking_type = fm.markingtype_factory.new(self.markingtype_class)
+        self.marking_type = self.backend.new_marking_type(self.markingtype_class)
         self.rebuild_marking_type()
 
     def optimise_netir(self):
-        """ Run optimisation passes on the AST. """
+        """ Run optimization passes on AST. """
+        env = self.env
         for opt in self.optimisations:
-            self.successor_function_nodes = [ opt.transform_ast(net_info = self.net_info, node = node)
-                                              for node in self.successor_function_nodes ]
-            self.process_successor_function_nodes = [ opt.transform_ast(net_info = self.net_info, node = node)
-                                                      for node in self.process_successor_function_nodes ]
-            self.successor_function_nodes = flatten_lists( self.successor_function_nodes )
-            self.process_successor_function_nodes = flatten_lists( self.process_successor_function_nodes )
-
+            env.successor_function_nodes = [ opt.transform_ast(net_info = self.net_info, node = node)
+                                             for node in env.successor_function_nodes ]
+            env.process_successor_function_nodes = [ opt.transform_ast(net_info = self.net_info, node = node)
+                                                     for node in env.process_successor_function_nodes ]
+            env.successor_function_nodes = flatten_lists( env.successor_function_nodes )
+            env.process_successor_function_nodes = flatten_lists( env.process_successor_function_nodes )
 
     def _gen_all_spec_succs(self):
         """ Build all needed instances of transition specific
@@ -972,13 +938,14 @@ class Compiler(object):
 
         This method updates C{self._nodes}.
         """
+        env = self.env
         list = []
         for i,t in enumerate(self.net_info.transitions):
             function_name = "succs_%d" % i # TO DO use name + escape
             if self.dump_enabled:
                 print function_name + " <=> " + t.name
-            assert( function_name not in self.global_names )
-            self.global_names.add(function_name)
+            assert( function_name not in env.global_names )
+            env.global_names.add(function_name)
 
             gen = SuccTGenerator(self.env,
                                  self.net_info,
@@ -988,7 +955,6 @@ class Compiler(object):
                                  self.marking_type)
             list.append( gen() )
 
-            self._successor_functions.append( (function_name, t.process_name) )
         return list
 
     def _gen_all_process_spec_succs(self):
@@ -1024,7 +990,7 @@ class Compiler(object):
         markingset_node  = netir.Name(arg_marking_set.name)
         marking_arg_node = netir.Name(arg_marking.name)
 
-        if self._ignore_flow:
+        if self.ignore_flow:
             for function_name in self.env.process_succ_functions:
                 builder.emit_ProcedureCall( function_name = function_name,
                                             arguments = [ markingset_node,
@@ -1053,7 +1019,7 @@ class Compiler(object):
         for place_info in self.net_info.places:
             if len(place_info.tokens) > 0:
                 # add tokens
-                if self._ignore_flow and place_info.flow_control:
+                if self.ignore_flow and place_info.flow_control:
                     builder.emit_UpdateFlow(marking = marking,
                                             place_info = place_info);
                     continue
@@ -1087,10 +1053,12 @@ class Compiler(object):
     def gen_netir(self):
         """ produce abstract representation nodes.
         """
-        self.successor_function_nodes = flatten_lists( self._gen_all_spec_succs() )
-        self.process_successor_function_nodes = flatten_lists( self._gen_all_process_spec_succs() )
-        self.main_successor_function_node = flatten_lists( self._gen_main_succ() )
-        self.init_function_node = flatten_lists( self._gen_init() )
+        env = self.env
+        
+        env.successor_function_nodes = flatten_lists( self._gen_all_spec_succs() )
+        env.process_successor_function_nodes = flatten_lists( self._gen_all_process_spec_succs() )
+        env.main_successor_function_node = flatten_lists( self._gen_main_succ() )
+        env.init_function_node = flatten_lists( self._gen_init() )
 
     def produce_compilation_trace(self, compilation_trace_name):
         trace_file = open(compilation_trace_name, 'wb')
@@ -1099,6 +1067,11 @@ class Compiler(object):
                          "model" : config.get("model") }
         pickle.dump(trace_object, trace_file, -1)
         trace_file.close()
+        
+    def run(self):
+        self.gen_netir()
+        self.optimise_netir()
+        return self.backend.compile_IR(self.env)
 
 ################################################################################
 

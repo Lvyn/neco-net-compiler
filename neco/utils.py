@@ -1,6 +1,7 @@
 """ Utility classes and functions. """
 
 import types, sys, re, ast
+from os.path import exists, abspath
 from functools import wraps
 from abc import abstractmethod, ABCMeta
 from snakes.nets import WordSet
@@ -126,75 +127,86 @@ def flatten_ast(nodes):
     return _flatten_ast().visit(nodes)
 
 
-class Factory(object):
-    """ Generic factory class. """
+def search_file(filename, paths):
+    for path in paths:
+        if path[-1] != '/':
+            path += '/'
+        path = "".join([path, filename])
+        if exists(path):
+            return abspath(path)
 
-    class Builder(object):
-        """ Class that handles product construction. """
-
-        def __init__(self, product_cls):
-            """ initialise the builder with the product.
-
-            @param product_cls: product class
-            @type product_cls: C{class}
-            """
-            self.product_cls = product_cls
-
-        def __call__(self, factory, *args, **kw):
-            """ builder call method for intuitive use. """
-            return self.product_cls(*args, **kw)
-
-    def __init__(self, products = []):
-        """ initialise a factory from a C{list} or a C{dict} of products """
-        if isinstance(products, list):
-            new_products = {}
-            for product_cls in products:
-                new_products[product_cls] = "new_%s" % product_cls.__name__
-            products = new_products
-
-        for product_cls, method_name in products.iteritems():
-            method = types.MethodType(Factory.Builder(product_cls), self, Factory)
-            setattr(self, method_name, method)
-
-    def new(self, class_name, *args, **kwargs):
-        """ build product by name.
-
-        Calls the new_'class_name' method.
-
-        @param class_name: product class name
-        @type class_name: C{str}
-        @param args: product __init__ function arguments
-        @param kwargs: product __init__ function keyword argmuments
-        """
-        try:
-            function = getattr(self, "new_" + class_name)
-        except AttributeError:
-            raise UnsupportedTypeException(class_name)
-        return function(*args, **kwargs)
-
-    def register(self, product_cls, method_name = ""):
-        """ register a new product.
-
-        Generates a new_`product.__class__` method by default, i.e., if the method_name
-        argument is not given.
-
-        @param product_cls: product class
-        @type product_cls: C{class}
-        @param method_name: generated method name, new_`product.__class__` by default.
-        @type method_name: C{str}
-        """
-        method = types.MethodType(Factory.Builder(product_cls), self, Factory)
-        if method_name == "":
-            method_name = "new_%s" % product_cls.__name__
-        setattr(self, method_name, method)
-
-    def unregister(self, method_name):
-        """ unregister a product by deleting its method.
-
-        @param method_name: method name
-        @type method_name: C{str}
-        """
-        delattr(self, method_name)
+    raise IOError('{} file not found, check additional search paths'.format(filename))
+#
+#
+#class Factory(object):
+#    """ Generic factory class. """
+#
+#    class Builder(object):
+#        """ Class that handles product construction. """
+#
+#        def __init__(self, product_cls):
+#            """ initialise the builder with the product.
+#
+#            @param product_cls: product class
+#            @type product_cls: C{class}
+#            """
+#            self.product_cls = product_cls
+#
+#        def __call__(self, factory, *args, **kw):
+#            """ builder call method for intuitive use. """
+#            return self.product_cls(*args, **kw)
+#
+#    def __init__(self, products = []):
+#        """ initialise a factory from a C{list} or a C{dict} of products """
+#        if isinstance(products, list):
+#            new_products = {}
+#            for product_cls in products:
+#                new_products[product_cls] = "new_%s" % product_cls.__name__
+#            products = new_products
+#
+#        for product_cls, method_name in products.iteritems():
+#            method = types.MethodType(Factory.Builder(product_cls), self, Factory)
+#            setattr(self, method_name, method)
+#
+#    def new(self, class_name, *args, **kwargs):
+#        """ build product by name.
+#
+#        Calls the new_'class_name' method.
+#
+#        @param class_name: product class name
+#        @type class_name: C{str}
+#        @param args: product __init__ function arguments
+#        @param kwargs: product __init__ function keyword argmuments
+#        """
+#        try:
+#            function = getattr(self, "new_" + class_name)
+#        except AttributeError:
+#            raise UnsupportedTypeException(class_name)
+#        return function(*args, **kwargs)
+#
+#    def register(self, product_cls, method_name = ""):
+#        """ register a new product.
+#
+#        Generates a new_`product.__class__` method by default, i.e., if the method_name
+#        argument is not given.
+#
+#        @param product_cls: product class
+#        @type product_cls: C{class}
+#        @param method_name: generated method name, new_`product.__class__` by default.
+#        @type method_name: C{str}
+#        """
+#        method = types.MethodType(Factory.Builder(product_cls), self, Factory)
+#        if method_name == "":
+#            method_name = "new_%s" % product_cls.__name__
+#        setattr(self, method_name, method)
+#
+#    def unregister(self, method_name):
+#        """ unregister a product by deleting its method.
+#
+#        @param method_name: method name
+#        @type method_name: C{str}
+#        """
+#        delattr(self, method_name)
 
 
 ################################################################################

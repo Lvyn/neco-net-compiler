@@ -1,14 +1,15 @@
 """ Cython basic net types. """
 
 import math, sys
+import neco.config as config
 import neco.utils as utils
-from neco.utils import Factory, should_not_be_called, todo
+from neco.utils import should_not_be_called, todo
+from neco.core import onesafe, CompilingEnvironment
+from neco.core.info import TypeInfo, VariableProvider, PlaceInfo
 import neco.core.nettypes as coretypes
 from neco.core.nettypes import provides_by_index_access, provides_by_index_deletion
-from neco.core.info import *
-from neco.core import onesafe
 import cyast
-from cyast import *
+from cyast import Builder, A, to_ast, E, stmt, FunctionDecl, CVar, Sub
 from maskbitfield import MaskBitfield
 
 def _str_list_to_endlstr(list):
@@ -137,10 +138,12 @@ class CVars(object):
 
 ################################################################################
 
-class Env(object):
+class Env(CompilingEnvironment):
     """ Compiling environment used for compiling with Cython backend. """
 
     def __init__(self, word_set, marking_type, marking_set_type):
+        CompilingEnvironment.__init__(self)
+        
         self._word_set = word_set
         self._marking_type = marking_type
         self._marking_set_type = marking_set_type
@@ -150,8 +153,7 @@ class Env(object):
         self._pxd_declarations = []
         self._c_declarations = []
 
-        self._successor_functions = []
-
+        
         self._cvar_decl = []
         self._variable_providers = []
 
@@ -227,10 +229,6 @@ class Env(object):
 
     def add_successor_function(self, function_name, process):
         self._successor_functions.append( (function_name, process) )
-
-    @property
-    def successor_functions(self):
-        return self._successor_functions
 
     def try_declare_cvar(self, variable_name, new_type):
         """
@@ -1215,9 +1213,9 @@ class StaticMarkingType(coretypes.MarkingType):
         for (i, (place_name, place_type)) in enumerate(items):
             if place_type.is_revelant:
                 builder.emit(stmt(cyast.Call(func = E('s.append'),
-                                             args = [ ast.BinOp(left=cyast.Str(s=repr(place_name) + " : "),
+                                             args = [ cyast.BinOp(left=cyast.Str(s=repr(place_name) + " : "),
                                                                 op=cyast.Add(),
-                                                                right=ast.BinOp(left=place_type.dump_expr(env, self_var),
+                                                                right=cyast.BinOp(left=place_type.dump_expr(env, self_var),
                                                                                 op=cyast.Add(),
                                                                                 right=cyast.Str(s=',')
                                                                                 ) ) ]
@@ -1571,7 +1569,7 @@ class MarkingSetType(coretypes.MarkingSetType):
 # opt
 ################################################################################
 
-class OneSafePlaceType(onesafe.OneSafePlaceType, CythonPlaceType):
+class OneSafePlaceType(coretypes.OneSafePlaceType, CythonPlaceType):
     """ Cython one safe place Type implementation.
 
     Somehow peculiar because encoded using two place types, one packed for
@@ -1579,7 +1577,7 @@ class OneSafePlaceType(onesafe.OneSafePlaceType, CythonPlaceType):
     """
 
     def __init__(self, place_info, marking_type, helper):
-        onesafe.OneSafePlaceType.__init__(self,
+        coretypes.OneSafePlaceType.__init__(self,
                                           place_info,
                                           marking_type,
                                           place_info.type,
@@ -1707,14 +1705,14 @@ class OneSafePlaceType(onesafe.OneSafePlaceType, CythonPlaceType):
 
 ################################################################################
 
-class BTPlaceType(onesafe.BTPlaceType, CythonPlaceType):
+class BTPlaceType(coretypes.BTPlaceType, CythonPlaceType):
     """ Python black token place type implementation.
 
     @attention: Using this place type without the BTTokenEnumerator may introduce inconsistency.
     """
 
     def __init__(self, place_info, marking_type):
-        onesafe.BTPlaceType.__init__(self,
+        coretypes.BTPlaceType.__init__(self,
                                      place_info=place_info,
                                      marking_type=marking_type,
                                      type=TypeInfo.Short,
@@ -1802,7 +1800,7 @@ class BTPlaceType(onesafe.BTPlaceType, CythonPlaceType):
 
 ################################################################################
 
-class BTOneSafePlaceType(onesafe.BTOneSafePlaceType, CythonPlaceType):
+class BTOneSafePlaceType(coretypes.BTOneSafePlaceType, CythonPlaceType):
     """ Python one safe black token place type.
 
     Using this place type without the BTOneSafeTokenEnumerator may introduce inconsistency.
@@ -2280,34 +2278,6 @@ class PackedPlaceTypes(object):
                                     slice=cyast.Index(cyast.Num(index)))
             tests.append( (left, right, ) )
         return tests
-
-
-################################################################################
-# factories
-################################################################################
-
-import sys, inspect
-
-__placetype_products = []
-__markingtype_products = []
-__markingsettype_products = []
-for name, obj in inspect.getmembers(sys.modules[__name__], inspect.isclass):
-    if issubclass(obj, coretypes.PlaceType):
-        __placetype_products.append(obj)
-    elif issubclass(obj, coretypes.MarkingType):
-        __markingtype_products.append(obj)
-    elif issubclass(obj, coretypes.MarkingSetType):
-        __markingsettype_products.append(obj)
-
-placetype_factory = Factory(__placetype_products)
-""" python place type factory """
-
-markingtype_factory = Factory(__markingtype_products)
-""" python marking type factory """
-
-markingsettype_factory = Factory(__markingsettype_products)
-""" python marking set type factory """
-
 
 ################################################################################
 # EOF

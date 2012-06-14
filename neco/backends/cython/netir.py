@@ -330,7 +330,7 @@ class CompilerVisitor(coreir.CompilerVisitor):
         index = node.use_index
         marking_type = self.env.marking_type
         place_type = marking_type.get_place_type_by_name(node.place_name)
-        if place_type.provides_by_index_deletion:
+        if place_type.provides_by_index_deletion and index:
             return place_type.remove_by_index_stmt(env = self.env,
                                                    index_var = index,
                                                    marking_var = node.marking,

@@ -1,6 +1,6 @@
 """ Python basic net types. """
 
-from neco.utils import Factory, should_not_be_called, todo
+from neco.utils import should_not_be_called, todo
 import neco.utils as utils
 import neco.core.nettypes as coretypes
 from neco.core import onesafe
@@ -50,12 +50,15 @@ TypeInfo.register_type("Multiset")
 
 class PythonPlaceType(object):
     """ Base class for python backend place types. """
+     
+    allow_pids = False
 
     def place_expr(self, env, marking_var):
         return self.marking_type.gen_get_place(env,
                                                marking_var = marking_var,
                                                place_name = self.info.name,
                                                mutable = False)
+        
     @property
     def is_ProcessPlace(self):
         return False
@@ -66,14 +69,16 @@ class PythonPlaceType(object):
 
 class ObjectPlaceType(coretypes.ObjectPlaceType, PythonPlaceType):
     """ Python implementation of the fallback place type. """
-
+    
+    allow_pids = True
+    
     def __init__(self, place_info, marking_type):
         coretypes.ObjectPlaceType.__init__(self,
                                            place_info = place_info,
                                            marking_type = marking_type,
                                            type = TypeInfo.MultiSet,
                                            token_type = place_info.type)
-
+        
     def new_place_expr(self, env):
         return E("multiset([])")
 
@@ -162,6 +167,14 @@ class StaticMarkingType(coretypes.MarkingType):
         self.id_provider = utils.NameProvider()
         self._process_place_types = {}
 
+    def __str__(self):
+        s = []
+        s.append('Marking:')
+        for name, place_type in self.place_types.iteritems():
+            s.append('{} : {}'.format(name, place_type.__class__))
+        s.append('End')
+        return '\n'.join(s)
+    
     def gen_types(self):
         """ Build place types using C{select_type} predicate.
         """
@@ -202,7 +215,11 @@ class StaticMarkingType(coretypes.MarkingType):
 
         for place_info in self.places:
             place_name = place_info.name
-            place_type = ObjectPlaceType(place_info, marking_type = self)
+            
+            if place_info.type.is_BlackToken:
+                place_type = BTPlaceType(place_info, marking_type = self)
+            else:
+                place_type = ObjectPlaceType(place_info, marking_type = self)
 
             if self.place_types.has_key(place_name):
                 raise RuntimeError("{name} place exists".format(name=place_name))
@@ -235,7 +252,14 @@ class StaticMarkingType(coretypes.MarkingType):
             
         body = []
         for place_type in self.place_types.itervalues():
+            print place_type
+            if not place_type.allow_pids:
+                continue
             body.append( place_type.update_pids_stmt(env, self_var, new_pid_dict_var) )
+        
+        if not body:
+            body = [ast.Pass()]
+        
         function.body = body
         return function
     
@@ -253,6 +277,9 @@ class StaticMarkingType(coretypes.MarkingType):
                                               args=[])))
         # build the tree
         for name, place_type in self.place_types.iteritems():
+            if not place_type.allow_pids:
+                continue
+            
             if name == GENERATOR_PLACE:
                 body.append(stmt(ast.Call(func=ast.Name(neco_stubs['generator_place_update_pid_tree']),
                                           args=[ place_type.place_expr(env, self_var), ast.Name(id=tree_var.name) ] )))
@@ -264,6 +291,9 @@ class StaticMarkingType(coretypes.MarkingType):
                                               args=[ast.Name(tree_var.name)])))
         # update tokens with new pids
         for name, place_type in self.place_types.iteritems():
+            if not place_type.allow_pids:
+                continue
+            
             if name == GENERATOR_PLACE:
                 body.append( ast.Assign(targets=[ place_type.place_expr(env, self_var) ],
                                         value=ast.Call(func=ast.Name(neco_stubs['generator_place_update_pids']),
@@ -271,7 +301,9 @@ class StaticMarkingType(coretypes.MarkingType):
                                                              ast.Name(pid_dict_var.name)]) ) )
             else:
                 body.append( place_type.update_pids_stmt(env, self_var, pid_dict_var) )
-                
+           
+        if not body:
+            body = [ast.Pass()]
         
         function.body = body
         return function
@@ -471,12 +503,12 @@ class MarkingSetType(coretypes.MarkingSetType):
 # opt
 ################################################################################
 
-class OneSafePlaceType(onesafe.OneSafePlaceType, PythonPlaceType):
+class OneSafePlaceType(coretypes.OneSafePlaceType, PythonPlaceType):
     """ Python one safe place Type implementation
     """
 
     def __init__(self, place_info, marking_type):
-        onesafe.OneSafePlaceType.__init__(self,
+        coretypes.OneSafePlaceType.__init__(self,
                                           place_info = place_info,
                                           marking_type = marking_type,
                                           type = TypeInfo.AnyType,
@@ -527,7 +559,7 @@ class OneSafePlaceType(onesafe.OneSafePlaceType, PythonPlaceType):
 
 ################################################################################
 
-class BTPlaceType(onesafe.BTPlaceType, PythonPlaceType):
+class BTPlaceType(coretypes.BTPlaceType, PythonPlaceType):
     """ Python black token place type implementation.
 
     @attention: Using this place type without the BTTokenEnumerator may introduce inconsistency.
@@ -540,7 +572,7 @@ class BTPlaceType(onesafe.BTPlaceType, PythonPlaceType):
         @param marking_type:
         @type marking_type: C{}
         """
-        onesafe.BTPlaceType.__init__(self,
+        coretypes.BTPlaceType.__init__(self,
                                      place_info = place_info,
                                      marking_type = marking_type,
                                      type = TypeInfo.Int,
@@ -588,13 +620,13 @@ class BTPlaceType(onesafe.BTPlaceType, PythonPlaceType):
 
 ################################################################################
 
-class BTOneSafePlaceType(onesafe.BTOneSafePlaceType, PythonPlaceType):
+class BTOneSafePlaceType(coretypes.BTOneSafePlaceType, PythonPlaceType):
     """ Python one safe black token place type
 
     Using this place type without the BTOneSafeTokenEnumerator may introduce inconsistency.
     """
     def __init__(self, place_info, marking_type):
-        onesafe.BTOneSafePlaceType.__init__(self,
+        coretypes.BTOneSafePlaceType.__init__(self,
                                             place_info = place_info,
                                             marking_type = marking_type,
                                             type = TypeInfo.Bool,
@@ -730,33 +762,6 @@ class FlowPlaceType(coretypes.PlaceType, PythonPlaceType):
                            )
                       )
         return l
-
-
-################################################################################
-# factories
-################################################################################
-import sys, inspect
-
-__placetype_products = []
-__markingtype_products = []
-__markingsettype_products = []
-for name, obj in inspect.getmembers(sys.modules[__name__], inspect.isclass):
-    if issubclass(obj, coretypes.PlaceType):
-        __placetype_products.append(obj)
-    elif issubclass(obj, coretypes.MarkingType):
-        __markingtype_products.append(obj)
-    elif issubclass(obj, coretypes.MarkingSetType):
-        __markingsettype_products.append(obj)
-
-placetype_factory = Factory(__placetype_products)
-""" python place type factory """
-
-markingtype_factory = Factory(__markingtype_products)
-""" python marking type factory """
-
-markingsettype_factory = Factory(__markingsettype_products)
-""" python marking set type factory """
-
 
 ################################################################################
 # EOF
