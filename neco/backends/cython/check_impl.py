@@ -66,7 +66,7 @@ class CheckerEnv(nettypes.Env):
             generator = IsFireableGenerator(self, transition, function_name)
             function_ir = generator()
             
-            opt = config.get('optimise')
+            opt = config.get('optimize')
             from neco.core import onesafe
             optpass = onesafe.OptimisationPass()     
             
@@ -180,7 +180,7 @@ class IsFireableGenerator(core.SuccTGenerator):
         self.transition = transition
         self.function_name = function_name
         self.marking_type = checker_env.marking_type
-        self._ignore_flow = self._ignore_flow = config.get('optimise_flow')
+        self._ignore_flow = self._ignore_flow = config.get('optimize_flow')
         self.env = checker_env
 
         # this helper will create new variables and take care of shared instances
@@ -188,7 +188,7 @@ class IsFireableGenerator(core.SuccTGenerator):
                                             WordSet(transition.variables().keys()) )
         self.variable_helper = helper
 
-        if config.get('optimise'):
+        if config.get('optimize'):
             self.transition.order_inputs()
 
         # function arguments

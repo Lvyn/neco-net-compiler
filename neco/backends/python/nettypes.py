@@ -3,7 +3,6 @@
 from neco.utils import should_not_be_called, todo
 import neco.utils as utils
 import neco.core.nettypes as coretypes
-from neco.core import onesafe
 from pyast import Builder, E, A, stmt
 from neco.core.info import *
 
@@ -178,7 +177,7 @@ class StaticMarkingType(coretypes.MarkingType):
     def gen_types(self):
         """ Build place types using C{select_type} predicate.
         """
-        opt = config.get('optimise')
+        opt = config.get('optimize')
         for place_info in self.flow_control_places:
             try:
                 self._process_place_types[place_info.process_name].add_place(place_info)
@@ -557,6 +556,20 @@ class OneSafePlaceType(coretypes.OneSafePlaceType, PythonPlaceType):
                                         ),
                          orelse=ast.Str('[]'))
 
+    def enumerate(self, env, marking_var, token_var, compiled_body):
+        place_expr = env.marking_type.gen_get_place( env = env,
+                                                     marking_var = marking_var,
+                                                     place_name = self.info.name,
+                                                     mutable = False )
+        getnode = ast.Assign(targets=[ast.Name(id=token_var.name)],
+                             value=place_expr)
+        ifnode = ast.If(test=ast.Compare(left=ast.Name(id=token_var.name),
+                                         ops=[ast.NotEq()],
+                                         comparators=[ast.Name(id='None')]),
+                                         body=[ compiled_body ] )
+        return [ getnode, ifnode ]
+    
+        
 ################################################################################
 
 class BTPlaceType(coretypes.BTPlaceType, PythonPlaceType):
@@ -616,6 +629,16 @@ class BTPlaceType(coretypes.BTPlaceType, PythonPlaceType):
                                            right = ast.Str(s=']')
                                            )
                          )
+    def enumerate(self, env, marking_var, token_var, compiled_body):
+        place_expr = env.marking_type.gen_get_place( env = env,
+                                                     marking_var = marking_var,
+                                                     place_name = self.info.name,
+                                                     mutable = False )
+        getnode = ast.Assign(targets=[ast.Name(id=token_var.name)],
+                             value=ast.Name(id='dot'))
+        ifnode = ast.If(test=ast.Compare(left=place_expr, ops=[ast.Gt()], comparators=[ast.Num(0)]),
+                        body=[ getnode, compiled_body ] )
+        return [ ifnode ]
 
 
 ################################################################################
@@ -660,6 +683,15 @@ class BTOneSafePlaceType(coretypes.BTOneSafePlaceType, PythonPlaceType):
                          body=ast.Str('[ dot ]'),
                          orelse=ast.Str('[]'))
 
+    def enumerate(self, env, marking_var, token_var, compiled_body):
+        place_expr = env.marking_type.gen_get_place( env = env,
+                                                     marking_var = marking_var,
+                                                     place_name = self.info.name,
+                                                     mutable = False )
+        ifnode = ast.If( test = ast.UnaryOp(op=ast.Not(), operand=place_expr),
+                         body = compiled_body )
+        return [ ifnode ]
+    
 ################################################################################
 
 class FlowPlaceType(coretypes.PlaceType, PythonPlaceType):

@@ -4,28 +4,28 @@ module netir version "$Revision: 1 $"
 
     FunctionDef =
 	Init(identifier function_name,
-	     VariableInfo marking,
+	     VariableInfo marking_var,
 	     VariableProvider variable_provider,
 	     Stmt* body)
 
 	| SuccT(identifier function_name,
-		VariableInfo arg_marking_set,
-		VariableInfo arg_marking,
+		VariableInfo arg_marking_set_var,
+		VariableInfo arg_marking_var,
 		TransitionInfo transition_info,
 		VariableProvider variable_provider,
 		Stmt* body)
 
 	| SuccP(identifier function_name,
-		VariableInfo arg_marking_set,
-		VariableInfo arg_marking,
+		VariableInfo arg_marking_set_var,
+		VariableInfo arg_marking_var,
 		VariableInfo flow_variable,
 		ProcessInfo process_info,
 		VariableProvider variable_provider,
 		Stmt* body)
 
 	| Succs(identifier function_name,
-		VariableInfo arg_marking,
-		VariableInfo arg_marking_set,
+		VariableInfo arg_marking_var,
+		VariableInfo arg_marking_set_var,
 		VariableProvider variable_provider,
 		Stmt* body)
 		    
@@ -36,11 +36,11 @@ module netir version "$Revision: 1 $"
 			 		 		 Stmt* body)
 			 
 	| MultiTokenEnumeration(ArcInfo multiarc,
-							VariableInfo marking,
+							VariableInfo marking_var,
 							identifier place_name,
 							Stmt* body)
     
-	| NotEmpty(VariableInfo marking,
+	| NotEmpty(VariableInfo marking_var,
 		   	   identifier place_name,
 		   	   Stmt* body)
 
@@ -63,11 +63,11 @@ module netir version "$Revision: 1 $"
 		    Stmt* body)
 				
     Stmt =
-   	 AddToken(VariableInfo marking,
+   	 AddToken(VariableInfo marking_var,
 		  	 identifier place_name,
 		  	 Expr token_expr)
 
-	| RemToken(VariableInfo marking,
+	| RemToken(VariableInfo marking_var,
 		   	   identifier place_name,
 		   	   Expr token_expr,
 		       str? use_index)
@@ -76,23 +76,22 @@ module netir version "$Revision: 1 $"
 		      VariableInfo src,
 		      PlaceInfo* mod)
 
-	| AddMarking(VariableInfo marking_set,
-		     VariableInfo marking)
-
+	| AddMarking(VariableInfo marking_set_var,
+		     VariableInfo marking_var)
 
 	| FlushIn(VariableInfo token_var,
-		  VariableInfo marking,
+		  VariableInfo marking_var,
 		  identifier place_name)
 
-	| FlushOut(VariableInfo marking,
+	| FlushOut(VariableInfo marking_var,
 		   identifier place_name,
 		   Expr token_expr)
 
-	| RemTuple(VariableInfo marking,
+	| RemTuple(VariableInfo marking_var,
 		       identifier place_name,
 		       Expr tuple_expr)
 
-	| TupleOut(VariableInfo marking,
+	| TupleOut(VariableInfo marking_var,
 		   identifier place_name,
 		   TupleInfo  tuple_info)
 
@@ -104,18 +103,18 @@ module netir version "$Revision: 1 $"
 
 	| Print(str message)
 
-	| UpdateFlow(VariableInfo marking,
+	| UpdateFlow(VariableInfo marking_var,
 		     PlaceInfo place_info)
 
 	| Comment(str message)
 
-	| NormalizeMarking(VariableInfo marking)
+	| NormalizeMarking(VariableInfo marking_var)
 
 	| Return(Expr expr)
 	
     Expr = PyExpr(string expr)
 
-	| ReadFlow(VariableInfo marking,
+	| ReadFlow(VariableInfo marking_var,
 		   identifier process_name)
 
 	| FunctionCall(identifier function_name,
@@ -128,7 +127,7 @@ module netir version "$Revision: 1 $"
 
 	| Value(object value, identifier place_name)
 
-        | Tuple(Expr* components)
+    | Tuple(Expr* components)
 
 	| Compare(Expr left,
 		  Operator* ops,
@@ -136,7 +135,7 @@ module netir version "$Revision: 1 $"
 
 	| Pickle( object obj )
 
-	| FlowCheck(VariableInfo marking,
+	| FlowCheck(VariableInfo marking_var,
 			    PlaceInfo place_info,
 			    Expr? current_flow)
 			    

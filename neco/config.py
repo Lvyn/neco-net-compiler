@@ -12,8 +12,8 @@ import shelve, os
 _default_options_ = [
     ('backend', 'python'),
     ('profile', False),
-    ('optimise', False),
-    ('optimise_flow', False),
+    ('optimize', False),
+    ('optimize_flow', False),
     ('debug', False),
     ('dump_enabled', True),
     ('additional_search_paths', ['.']),

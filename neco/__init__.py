@@ -45,7 +45,7 @@ def get_backends():
     return bends
 
 def compile_net(net, *arg, **kwargs):
-    """ Compile C{net} Petri net into a Python module.
+    """ Compile Petri net C{net} into a Python module.
 
     The compiler and compilation options are these from C{config} module.
     The produced module is loaded and can be used for state space exploration.
@@ -60,19 +60,13 @@ def compile_net(net, *arg, **kwargs):
     print "################################################################################"
     print "Compiling with " + backend + " backend."
     print "################################################################################"
-    print "optimisations:           {optimise!s:5}".format(optimise = config.get('optimise'))
+    print "optimisations:           {optimize!s:5}".format(optimize = config.get('optimize'))
     print "Debug:                   {debug!s:5}".format(debug = config.get('debug'))
-    print "flow optimisations:      {pfe!s:5}".format(pfe=config.get('optimise_flow'))
+    print "flow optimisations:      {pfe!s:5}".format(pfe=config.get('optimize_flow'))
     print "Additional search paths: %s" % config.get('additional_search_paths')
     print "################################################################################"
 
     # compiler.set_marking_type_by_name("StaticMarkingType")
-
-    if config.get('optimise'):
-        from neco.core import onesafe
-        print "adding pass"
-        compiler.add_optimisation(onesafe.OptimisationPass())
-
     return compiler.run()
 
 

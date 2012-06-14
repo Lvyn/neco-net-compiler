@@ -118,10 +118,10 @@ class Main(object):
         parser.add_argument('--netvar', '-v', default='net', dest='netvar', metavar='VARIABLE', type=str,
                             help='Variable holding the Petri net')
 
-        parser.add_argument('--optimise', '-O', default=False, dest='optimise', action='store_true',
+        parser.add_argument('--optimize', '-O', default=False, dest='optimize', action='store_true',
                             help='enable optimisations')
 
-        parser.add_argument('--optimise-flow', '-Of', default=False, dest='optimise_flow', action='store_true',
+        parser.add_argument('--optimize-flow', '-Of', default=False, dest='optimize_flow', action='store_true',
                             help='enable flow control optimisations')
 
         parser.add_argument('--profile', '-p', default=False, dest='profile', action='store_true',
@@ -214,8 +214,8 @@ class Main(object):
         self.profile = profile
         model_file = None
         
-        if args.optimise_flow:
-            args.optimise = True
+        if args.optimize_flow:
+            args.optimize = True
 
         env_includes = os.environ['NECO_INCLUDE'].split(":")
         args.includes.extend(env_includes)
@@ -235,12 +235,12 @@ class Main(object):
 
         # setup config
         config.set( # debug    = cli_argument_parser.debug(),
-                   optimise = args.optimise,
+                   optimize = args.optimize,
                    backend  = args.language,
                    profile  = args.profile,
                    imports  = args.imports,
                    no_stats = args.no_stats,
-                   optimise_flow = args.optimise_flow,
+                   optimize_flow = args.optimize_flow,
                    additional_search_paths = args.includes,
                    trace_calls = False,
                    trace_file = trace,

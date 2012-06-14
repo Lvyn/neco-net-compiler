@@ -37,6 +37,9 @@ class PlaceType(object):
         self._by_index_access   = self.__class__._by_index_access_
         self._by_index_deletion = self.__class__._by_index_deletion_
 
+    def one_safe(self):
+        return self.info.one_safe
+
     @property
     def type(self):
         return self._type
@@ -100,7 +103,7 @@ class MarkingType(object):
         self._flow_control_places = set()
         self._one_safe_places = set()
 
-        self._use_control_flow_elimination = config.get('optimise_flow')
+        self._use_control_flow_elimination = config.get('optimize_flow')
     
     # def __getstate__(self):
     #     d = { 'flow_control_places' : [],

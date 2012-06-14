@@ -126,17 +126,17 @@ class CompilerVisitor(coreir.CompilerVisitor):
 
     def compile_FlushIn(self, node):
         destination_place = self.env.marking_type.get_place_type_by_name(node.place_name)
-        place_expr = destination_place.place_expr(self.env, node.marking)
+        place_expr = destination_place.place_expr(self.env, node.marking_var)
         return [ ast.Assign(targets=[ast.Name(id=node.token_var.name)],
                             value=place_expr),
-                 destination_place.clear_stmt(self.env, node.marking) ]
+                 destination_place.clear_stmt(self.env, node.marking_var) ]
 
     def compile_FlushOut(self, node):
         destination_place = self.env.marking_type.get_place_type_by_name(node.place_name)
         multiset = self.compile(node.token_expr)
         return destination_place.add_items_stmt( env = self.env,
                                                  multiset = multiset,
-                                                 marking_var = node.marking )
+                                                 marking_var = node.marking_var )
 
     def gen_tuple(self, tuple_info):
         elts = []
@@ -162,7 +162,7 @@ class CompilerVisitor(coreir.CompilerVisitor):
         place_type = self.env.marking_type.get_place_type_by_name(node.place_name)
         return place_type.add_token_stmt(env = self.env,
                                          compiled_token = tuple,
-                                         marking_var = node.marking)
+                                         marking_var = node.marking_var)
 
     def compile_NotEmpty(self, node):
         return self.env.marking_type.gen_not_empty_function_call( env = self.env,
@@ -171,12 +171,15 @@ class CompilerVisitor(coreir.CompilerVisitor):
 
     def compile_TokenEnumeration(self, node):
         place_type = self.env.marking_type.get_place_type_by_name(node.place_name)
-        return ast.For(target = E(node.token_var.name),
-                       iter = place_type.iterable_expr(env = self.env,
-                                                       marking_var = node.marking_var),
-                       body = [ self.compile(node.body) ])
+        if hasattr(place_type, 'enumerate'):
+            return place_type.enumerate(self.env, node.marking_var, node.token_var, self.compile(node.body))
+        else:    
+            return ast.For(target = E(node.token_var.name),
+                           iter = place_type.iterable_expr(env = self.env,
+                                                           marking_var = node.marking_var),
+                           body = [ self.compile(node.body) ])
 
-
+    
     def gen_different(self, indices):
 
         base = None
@@ -239,7 +242,7 @@ class CompilerVisitor(coreir.CompilerVisitor):
 
                 enumeration = ast.For( target = ast.Name(variable.name),
                                        iter = place_type.iterable_expr( env = self.env,
-                                                                        marking_var = node.marking),
+                                                                        marking_var = node.marking_var),
                                        body = [ ast.AugAssign( target = ast.Name(index.name),
                                                                op = ast.Add(),
                                                                value = ast.Num(1) ) ] )
@@ -306,26 +309,26 @@ class CompilerVisitor(coreir.CompilerVisitor):
 
     def compile_AddMarking(self, node):
         return self.env.marking_set_type.add_marking_stmt(env = self.env,
-                                                          markingset = node.marking_set,
-                                                          marking = node.marking)
+                                                          markingset = node.marking_set_var,
+                                                          marking = node.marking_var)
 
     def compile_AddToken(self, node):
         place_type = self.env.marking_type.get_place_type_by_name(node.place_name)
         return place_type.add_token_stmt(env = self.env,
                                          compiled_token = self.compile(node.token_expr),
-                                         marking_var = node.marking)
+                                         marking_var = node.marking_var)
 
     def compile_RemToken(self, node):
         place_type = self.env.marking_type.get_place_type_by_name(node.place_name)
         return place_type.remove_token_stmt(env = self.env,
                                             compiled_token = self.compile(node.token_expr),
-                                            marking_var = node.marking)
+                                            marking_var = node.marking_var)
 
     def compile_RemTuple(self, node):
         place_type = self.env.marking_type.get_place_type_by_name(node.place_name)
         return place_type.remove_token_stmt(env = self.env,
                                             compiled_token = self.compile(node.tuple_expr),
-                                            marking_var = node.marking)
+                                            marking_var = node.marking_var)
 
     def compile_Token(self, node):
         place_type = self.env.marking_type.get_place_type_by_name(node.place_name)
@@ -335,36 +338,36 @@ class CompilerVisitor(coreir.CompilerVisitor):
     def compile_SuccT(self, node):
         self.env.push_variable_provider(node.variable_provider)
         stmts = [ self.compile( node.body ),
-                  E('return ' + node.arg_marking_set.name) ]
+                  E('return ' + node.arg_marking_set_var.name) ]
         result = ast.FunctionDef(name = node.function_name,
-                                 args = ast.arguments(args=[ast.Name(id=node.arg_marking_set.name),
-                                                            ast.Name(id=node.arg_marking.name)]),
+                                 args = ast.arguments(args=[ast.Name(id=node.arg_marking_set_var.name),
+                                                            ast.Name(id=node.arg_marking_var.name)]),
                                  body = stmts)
         self.env.pop_variable_provider()
         return result
 
     def compile_SuccP(self, node):
         stmts = [ self.compile( node.body ),
-                  E('return ' + node.arg_marking_set.name) ]
+                  E('return ' + node.arg_marking_set_var.name) ]
         return ast.FunctionDef(name = node.function_name,
-                               args = ast.arguments(args=[ast.Name(id=node.arg_marking_set.name),
-                                                          ast.Name(id=node.arg_marking.name)]),
+                               args = ast.arguments(args=[ast.Name(id=node.arg_marking_set_var.name),
+                                                          ast.Name(id=node.arg_marking_var.name)]),
                                body = stmts)
 
     def compile_Succs(self, node):
-        body = [ ast.Assign(targets=[ast.Name(id=node.arg_marking_set.name)],
+        body = [ ast.Assign(targets=[ast.Name(id=node.arg_marking_set_var.name)],
                             value=self.env.marking_set_type.new_marking_set_expr(self.env)) ]
 
         body.extend( self.compile(node.body) )
-        body.append( ast.Return(ast.Name(id=node.arg_marking_set.name)) )
+        body.append( ast.Return(ast.Name(id=node.arg_marking_set_var.name)) )
         return ast.FunctionDef( name = node.function_name,
-                                args = ast.arguments(args=[ast.Name(id=node.arg_marking.name)]),
+                                args = ast.arguments(args=[ast.Name(id=node.arg_marking_var.name)]),
                                 body = body )
 
     def compile_Init(self, node):
-        new_marking = ast.Assign(targets=[ast.Name(id=node.marking.name)],
+        new_marking = ast.Assign(targets=[ast.Name(id=node.marking_var.name)],
                                  value=self.env.marking_type.new_marking_expr(self.env))
-        return_stmt = ast.Return(ast.Name(id=node.marking.name))
+        return_stmt = ast.Return(ast.Name(id=node.marking_var.name))
 
         stmts = [new_marking]
         stmts.extend( self.compile(node.body) )
@@ -374,65 +377,28 @@ class CompilerVisitor(coreir.CompilerVisitor):
                                 body = stmts )
 
     ################################################################################
-    # opts
-    ################################################################################
-    def compile_OneSafeTokenEnumeration(self, node):
-        place_expr = self.env.marking_type.gen_get_place( env = self.env,
-                                                          marking_var = node.marking,
-                                                          place_name = node.place_name,
-                                                          mutable = False )
-        getnode = ast.Assign(targets=[ast.Name(id=node.token_var.name)],
-                             value=place_expr)
-        ifnode = ast.If(test=ast.Compare(left=ast.Name(id=node.token_var.name),
-                                         ops=[ast.NotEq()],
-                                         comparators=[ast.Name(id='None')]),
-                        body=[ self.compile( node.body ) ] )
-        return [ getnode, ifnode ]
-
-    def compile_BTTokenEnumeration(self, node):
-        place_expr = self.env.marking_type.gen_get_place( env = self.env,
-                                                          marking_var = node.marking,
-                                                          place_name = node.place_name,
-                                                          mutable = False )
-        getnode = ast.Assign(targets=[ast.Name(id=node.token_var.name)],
-                             value=ast.Name(id='dot'))
-        ifnode = ast.If(test=ast.Compare(left=place_expr, ops=[ast.Gt()], comparators=[ast.Num(0)]),
-                        body=[ getnode, self.compile( node.body ) ] )
-        return [ ifnode ]
-
-    def compile_BTOneSafeTokenEnumeration(self, node):
-        body = [ self.compile( node.body ) ]
-        place_expr = self.env.marking_type.gen_get_place( env = self.env,
-                                                          marking_var = node.marking,
-                                                          place_name = node.place_name,
-                                                          mutable = False )
-        ifnode = ast.If( test = ast.UnaryOp(op=ast.Not(), operand=place_expr),
-                         body = body )
-        return [ ifnode ]
-
-    ################################################################################
     # Flow elimination
     ################################################################################
 
     def compile_FlowCheck(self, node):
         return self.env.marking_type.gen_check_flow(env = self.env,
-                                                    marking_var = node.marking,
+                                                    marking_var = node.marking_var,
                                                     place_info = node.place_info,
                                                     current_flow = ast.Name(node.current_flow.name))
 
     def compile_ReadFlow(self, node):
         return self.env.marking_type.gen_read_flow(env=self.env,
-                                                   marking_var=node.marking,
+                                                   marking_var=node.marking_var,
                                                    process_name=node.process_name)
 
     def compile_UpdateFlow(self, node):
         return self.env.marking_type.gen_update_flow(env = self.env,
-                                                     marking_var = node.marking,
+                                                     marking_var = node.marking_var,
                                                      place_info = node.place_info)
 
     def compile_NormalizeMarking(self, node):
         return self.env.marking_type.normalize_marking_call(env = self.env,
-                                                            marking_var = node.marking)
+                                                            marking_var = node.marking_var)
         
 ################################################################################
 # EOF

@@ -108,11 +108,11 @@ class CompilerVisitor(coreir.CompilerVisitor):
         destination_place = self.env.marking_type.get_place_type_by_name(node.place_name)
         return [cyast.Assign(targets=[cyast.Name(node.token_var.name)],
                              value=self.env.marking_type.gen_get_place(env = self.env,
-                                                                       marking_var = node.marking,
+                                                                       marking_var = node.marking_var,
                                                                        place_name = node.place_name)
                              ),
                 destination_place.clear_stmt(env=self.env,
-                                             marking_var=node.marking )
+                                             marking_var=node.marking_var )
                 ]
 
     def compile_FlushOut(self, node):
@@ -121,7 +121,7 @@ class CompilerVisitor(coreir.CompilerVisitor):
         var = self.env.new_variable()
         return destination_place.add_items_stmt(env = self.env,
                                                 multiset = multiset,
-                                                marking_var = node.marking )
+                                                marking_var = node.marking_var )
 
     def gen_tuple(self, tuple_info):
         elts = []
@@ -147,17 +147,23 @@ class CompilerVisitor(coreir.CompilerVisitor):
         return place_type.add_token_stmt(env = self.env,
                                          token_expr = tuple_info,
                                          compiled_token = tuple,
-                                         marking_var = node.marking)
+                                         marking_var = node.marking_var)
 
     def compile_NotEmpty(self, node):
         place_type = self.env.marking_type.get_place_type_by_name(node.place_name)
         return place_type.not_empty_expr(env = self.env,
-                                         marking_var = node.marking)
+                                         marking_var = node.marking_var)
 
     def compile_TokenEnumeration(self, node):
-        arc = node.arc
         marking_type = self.env.marking_type
         place_type = marking_type.get_place_type_by_name(node.place_name)
+        
+        print "enumeration of {}".format(place_type)
+        if hasattr(place_type, 'enumerate'):
+            return place_type.enumerate(self.env, node.marking_var, node.token_var, self.compile(node.body) )
+        
+        arc = node.arc
+
         if place_type.provides_by_index_access:
             index_var = arc.data['index']
             size_var = self.env.variable_provider.new_variable()
@@ -167,11 +173,11 @@ class CompilerVisitor(coreir.CompilerVisitor):
             self.env.try_declare_cvar(size_var.name, TypeInfo.Int)
 
             place_size = place_type.get_size_expr(env = self.env,
-                                                  marking_var = node.marking)
+                                                  marking_var = node.marking_var)
 
             get_token = place_type.get_token_expr( env = self.env,
                                                    index_expr = index_var,
-                                                   marking_var = node.marking,
+                                                   marking_var = node.marking_var,
                                                    compiled_index = Name(index_var.name) )
 
 
@@ -191,7 +197,7 @@ class CompilerVisitor(coreir.CompilerVisitor):
             place_type = marking_type.get_place_type_by_name(node.place_name)
             return Builder.For( target = cyast.Name(node.token_var.name),
                                 iter = place_type.iterable_expr( env = self.env,
-                                                                 marking_var = node.marking),
+                                                                 marking_var = node.marking_var),
                                 body = [ self.compile(node.body) ])
 
 
@@ -237,12 +243,12 @@ class CompilerVisitor(coreir.CompilerVisitor):
                 assign = cyast.Assign(targets=[cyast.Name(variable.name)],
                                       value=place_type.get_token_expr(self.env,
                                                                       index_expr = index_var,
-                                                                      marking_var = node.marking,
+                                                                      marking_var = node.marking_var,
                                                                       compiled_index = cyast.Name(index_var.name)))
                 enumeration = cyast.For( target = cyast.Name(index_var.name),
                                          iter = cyast.Call(func=cyast.Name('range'),
                                                            args=[cyast.Num(0), place_type.get_size_expr(self.env,
-                                                                                                        node.marking)]),
+                                                                                                        node.marking_var)]),
                                          body = [ assign ] )
                 if base == None:
                     current = enumeration
@@ -264,7 +270,7 @@ class CompilerVisitor(coreir.CompilerVisitor):
 
                 enumeration = cyast.For( target = cyast.Name(variable.name),
                                          iter = place_type.iterable_expr( env = self.env,
-                                                                          marking_var = node.marking ),
+                                                                          marking_var = node.marking_var ),
                                          body = [ cyast.AugAssign( target = cyast.Name(index_var.name),
                                                                    op = cyast.Add(),
                                                                    value = cyast.Num(1) ) ] )
@@ -316,15 +322,15 @@ class CompilerVisitor(coreir.CompilerVisitor):
 
     def compile_AddMarking(self, node):
         return stmt( self.env.marking_set_type.add_marking_stmt(env = self.env,
-                                                                markingset_var = node.marking_set,
-                                                                marking_var = node.marking) )
+                                                                markingset_var = node.marking_set_var,
+                                                                marking_var = node.marking_var) )
 
     def compile_AddToken(self, node):
         place_type = self.env.marking_type.get_place_type_by_name(node.place_name)
         return place_type.add_token_stmt( env = self.env,
                                           token_expr = node.token_expr,
                                           compiled_token = self.compile(node.token_expr),
-                                          marking_var = node.marking )
+                                          marking_var = node.marking_var )
 
     def compile_RemToken(self, node):
         index = node.use_index
@@ -333,20 +339,20 @@ class CompilerVisitor(coreir.CompilerVisitor):
         if place_type.provides_by_index_deletion and index:
             return place_type.remove_by_index_stmt(env = self.env,
                                                    index_var = index,
-                                                   marking_var = node.marking,
+                                                   marking_var = node.marking_var,
                                                    compiled_index = index)
         else:
             return place_type.remove_token_stmt(env = self.env,
                                                 token_expr = node.token_expr,
                                                 compiled_token = self.compile(node.token_expr),
-                                                marking_var = node.marking)
+                                                marking_var = node.marking_var)
 
     def compile_RemTuple(self, node):
         place_type = self.env.marking_type.get_place_type_by_name(node.place_name)
         return place_type.remove_token_stmt(env = self.env,
                                             token_expr = node.tuple_expr,
                                             compiled_token = self.compile(node.tuple_expr),
-                                            marking_var = node.marking)
+                                            marking_var = node.marking_var)
 
     def compile_Token(self, node):
         place_type = self.env.marking_type.get_place_type_by_name(node.place_name)
@@ -401,8 +407,8 @@ class CompilerVisitor(coreir.CompilerVisitor):
             decl.add(var)
 
         result = to_ast( Builder.FunctionDef(name = node.function_name,
-                                             args = (A(node.arg_marking_set.name, type = type2str(node.arg_marking_set.type))
-                                                     .param(node.arg_marking.name, type = type2str(node.arg_marking.type))),
+                                             args = (A(node.arg_marking_set_var.name, type = type2str(node.arg_marking_set_var.type))
+                                                     .param(node.arg_marking_var.name, type = type2str(node.arg_marking_var.type))),
                                              body = stmts,
                                              lang = cyast.CDef( public = False ),
                                              returns = cyast.Name("void"),
@@ -422,8 +428,8 @@ class CompilerVisitor(coreir.CompilerVisitor):
             decl.add(var)
 
         return Builder.FunctionDef( name = node.function_name,
-                                    args = (A(node.arg_marking_set.name, type = type2str(node.arg_marking_set.type))
-                                            .param(node.arg_marking.name, type = type2str(node.arg_marking.type))),
+                                    args = (A(node.arg_marking_set_var.name, type = type2str(node.arg_marking_set_var.type))
+                                            .param(node.arg_marking_var.name, type = type2str(node.arg_marking_var.type))),
                                     body = stmts,
                                     lang = cyast.CDef( public = False ),
                                     returns = E("void"),
@@ -432,13 +438,13 @@ class CompilerVisitor(coreir.CompilerVisitor):
     def compile_Succs(self, node):
         body = []
         body.extend( self.compile( node.body ) )
-        body.append( E("return " + node.arg_marking_set.name) )
+        body.append( E("return " + node.arg_marking_set_var.name) )
         f1 = Builder.FunctionCDef(name=node.function_name,
-                                  args=A(node.arg_marking.name, type2str(node.arg_marking.type)),
+                                  args=A(node.arg_marking_var.name, type2str(node.arg_marking_var.type)),
                                   body=body,
                                   returns=cyast.Name("set"),
-                                  decl=[ cyast.CVar(name=node.arg_marking_set.name,
-                                                    type=type2str(node.arg_marking_set.type),
+                                  decl=[ cyast.CVar(name=node.arg_marking_set_var.name,
+                                                    type=type2str(node.arg_marking_set_var.type),
                                                     init=self.env.marking_set_type.new_marking_set_expr(self.env)) ]
                                   )
 
@@ -468,9 +474,9 @@ class CompilerVisitor(coreir.CompilerVisitor):
 
 
     def compile_Init(self, node):
-        new_marking = cyast.Assign(targets=[cyast.Name(node.marking.name)],
+        new_marking = cyast.Assign(targets=[cyast.Name(node.marking_var.name)],
                                    value=self.env.marking_type.new_marking_expr(self.env))
-        return_stmt = E( "return {}".format(node.marking.name))
+        return_stmt = E( "return {}".format(node.marking_var.name))
 
         stmts = [new_marking]
         stmts.extend( self.compile(node.body) )
@@ -479,63 +485,42 @@ class CompilerVisitor(coreir.CompilerVisitor):
         f1 = Builder.FunctionDef( name = node.function_name,
                                   body = stmts,
                                   returns = cyast.Name("Marking"),
-                                  decl = [ cyast.CVar( node.marking.name, type2str(node.marking.type) )])
+                                  decl = [ cyast.CVar( node.marking_var.name, type2str(node.marking_var.type) )])
 
         f2 = Builder.FunctionCDef( name = "neco_init",
                                    body = [ stmts ],
                                    returns = cyast.Name("Marking"),
-                                   decl = [ cyast.CVar( node.marking.name, type2str(node.marking.type) )])
+                                   decl = [ cyast.CVar( node.marking_var.name, type2str(node.marking_var.type) )])
 
         return [f1, f2]
 
     ################################################################################
     # opts
     ################################################################################
-    def compile_OneSafeTokenEnumeration(self, node):
-        place_type = self.env.marking_type.get_place_type_by_name(node.place_name)
-        getnode = cyast.Assign(targets=[cyast.Name(node.token_var.name)],
-                               value=place_type.place_expr(env = self.env,
-                                                           marking_var = node.marking)
-                               )
-        ifnode = Builder.If(test = place_type.not_empty_expr(self.env, marking_var = node.marking),
-                            body = [ getnode, self.compile( node.body ) ])
-        return [ to_ast(ifnode) ]
-
-    def compile_BTTokenEnumeration(self, node):
-        place_type = self.env.marking_type.get_place_type_by_name(node.place_name)
-        ifnode = Builder.If(test = Builder.Compare(left = to_ast(place_type.place_expr(env = self.env,
-                                                                                       marking_var = node.marking)),
-                                                   ops = [ cyast.Gt() ],
-                                                   comparators = [ cyast.Num( n = 0 ) ] ),
-                            body = [ self.compile( node.body ) ])
-        return [ ifnode ]
-
-    def compile_BTOneSafeTokenEnumeration(self, node):
-        body = [ self.compile( node.body ) ]
-        place_type = self.env.marking_type.get_place_type_by_name(node.place_name)
-        ifnode = Builder.If(test = place_type.place_expr(env = self.env,
-                                                         marking_var = node.marking),
-                            body = body )
-        return [ ifnode ]
-
+    # def compile_OneSafeTokenEnumeration(self, node):
+    
+    # def compile_BTTokenEnumeration(self, node):
+        
+    # def compile_BTOneSafeTokenEnumeration(self, node):
+        
     ################################################################################
     # Flow elimination
     ################################################################################
 
     def compile_FlowCheck(self, node):
         return self.env.marking_type.gen_check_flow(env=self.env,
-                                                    marking_var  = node.marking,
+                                                    marking_var  = node.marking_var,
                                                     place_info   = node.place_info,
                                                     current_flow = node.current_flow)
 
     def compile_ReadFlow(self, node):
         return self.env.marking_type.gen_read_flow(env=self.env,
-                                                   marking_var  = node.marking,
+                                                   marking_var  = node.marking_var,
                                                    process_name = node.process_name)
 
     def compile_UpdateFlow(self, node):
         return self.env.marking_type.gen_update_flow(env=self.env,
-                                                     marking_var = node.marking,
+                                                     marking_var = node.marking_var,
                                                      place_info  = node.place_info)
 
         

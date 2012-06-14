@@ -53,7 +53,7 @@ class CheckerCompiler(object):
 
         trace = pickle.load(trace_file)
         self.marking_type = trace['marking_type']
-        config.set(optimise=trace['optimise'])
+        config.set(optimize=trace['optimize'])
         config.set(model=trace['model'])
         
         self.net_info = info.NetInfo(net) #trace.get_marking_type()

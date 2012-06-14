@@ -4,7 +4,7 @@ import math, sys
 import neco.config as config
 import neco.utils as utils
 from neco.utils import should_not_be_called, todo
-from neco.core import onesafe, CompilingEnvironment
+from neco.core import CompilingEnvironment
 from neco.core.info import TypeInfo, VariableProvider, PlaceInfo
 import neco.core.nettypes as coretypes
 from neco.core.nettypes import provides_by_index_access, provides_by_index_deletion
@@ -738,7 +738,7 @@ class StaticMarkingType(coretypes.MarkingType):
         self.id_provider = utils.NameProvider() # used to produce attribute names
         self._process_place_types = {}
 
-        if config.get('optimise'):
+        if config.get('optimize'):
             self.packing_enabled = True
         else:
             self.packing_enabled = False
@@ -1462,44 +1462,8 @@ class StaticMarkingType(coretypes.MarkingType):
             return cyast.Attribute(value=cyast.Name(marking_var.name),
                                    attr=self.id_provider.get(place_type))
 
-    # def gen_get_place_size(self, env, marking_name, place_name):
-    #     place_type = self.get_place_type_by_name(place_name)
-
-    #     assert (not place_type.is_packed)
-    #     return place_type.get_size_expr(env = env, marking_name = marking_name)
-
-    # def gen_get_token(self, env, marking_name, place_name, index):
-    #     place_type = self.get_place_type_by_name(place_name)
-
-    #     assert (not place_type.is_packed)
-    #     return place_type.get_token_expr(env = env,
-    #                                      marking_name = marking_name,
-    #                                      index = index)
-
     def gen_get_pack(self, env, marking_var, pack):
         return E(marking_var.name).attr(self.id_provider.get(pack))
-
-    # def remove_token_stmt(self, env, token, marking_name, place_name):
-    #     place_type = self.get_place_type_by_name(place_name)
-    #     return place_type.remove_token_stmt(env = env,
-    #                                                      compiled_token = token,
-    #                                                      marking_name = marking_name)
-
-    # def remove_by_index_stmt(self, env, token, marking_name, place_name, index):
-    #     place_type = self.get_place_type_by_name(place_name)
-    #     return place_type.remove_by_index_stmt(env = env,
-    #                                                         index = index,
-    #                                                         marking_name = marking_name)
-
-    # def add_token_stmt(self, env, token, marking_name, place_name):
-    #     place_type = self.get_place_type_by_name(place_name)
-    #     return place_type.add_token_stmt(env = env,
-    #                                                   compiled_token = token,
-    #                                                   marking_name = marking_name)
-
-    # def token_expr(self, env, place_name, value):
-    #     place_type = self.get_place_type_by_name(place_name)
-    #     return place_type.token_expr(env, value)
 
     ################################################################################
     # Flow elimination
@@ -1701,7 +1665,16 @@ class OneSafePlaceType(coretypes.OneSafePlaceType, CythonPlaceType):
                                            value=place_expr),
                               body],
                         orelse=[])
-
+        
+    def enumerate(self, env, marking_var, token_var, compiled_body):
+        place_type = env.marking_type.get_place_type_by_name(self.info.name)
+        getnode = cyast.Assign(targets=[cyast.Name(token_var.name)],
+                               value=place_type.place_expr(env = env,
+                                                           marking_var = marking_var)
+                               )
+        ifnode = Builder.If(test = place_type.not_empty_expr(env, marking_var = marking_var),
+                            body = [ getnode, compiled_body ])
+        return [ to_ast(ifnode) ]
 
 ################################################################################
 
@@ -1798,6 +1771,15 @@ class BTPlaceType(coretypes.BTPlaceType, CythonPlaceType):
         return cyast.Call(func=E(type2str(TypeInfo.MultiSet)),
                           args=[ cyast.Dict([E('dot')], [self.place_expr(env, marking_var)])])    
 
+    def enumerate(self, env, marking_var, token_var, compiled_body):
+        place_type = env.marking_type.get_place_type_by_name(self.info.name)
+        ifnode = Builder.If(test = Builder.Compare(left = to_ast(place_type.place_expr(env = env,
+                                                                                       marking_var = marking_var)),
+                                                   ops = [ cyast.Gt() ],
+                                                   comparators = [ cyast.Num( n = 0 ) ] ),
+                            body = [ compiled_body ])
+        return [ ifnode ]
+
 ################################################################################
 
 class BTOneSafePlaceType(coretypes.BTOneSafePlaceType, CythonPlaceType):
@@ -1822,13 +1804,20 @@ class BTOneSafePlaceType(coretypes.BTOneSafePlaceType, CythonPlaceType):
 
     def add_token_stmt(self, env, token_expr, compiled_token, marking_var):
         place_expr = self.place_expr(env, marking_var)
-        return Builder.LValut(place_expr).assign("1")
+        return Builder.LValue(place_expr).assign("1")
 
     def copy_expr(self, env, marking_var):
         return self.place_expr(env, marking_var)
 
     def token_expr(self, env, token):
         return E("dot")
+
+    def enumerate(self, env, marking_var, token_var, compiled_body):
+        place_type = env.marking_type.get_place_type_by_name(self.info.name)
+        ifnode = Builder.If(test = place_type.place_expr(env = env,
+                                                         marking_var = marking_var),
+                            body = compiled_body )
+        return [ ifnode ]
 
 ################################################################################
 
@@ -1966,6 +1955,16 @@ class PackedBT1SPlaceType(coretypes.PlaceType, CythonPlaceType):
                                                   body=E('dot'),
                                                   orelse=E('None'))),
                  body ]
+
+    def enumerate(self, env, marking_var, token_var, compiled_body):
+        place_type = env.marking_type.get_place_type_by_name(self.info.name)
+        ifnode = Builder.If(test = Builder.Compare(left = to_ast(place_type.place_expr(env = env,
+                                                                                       marking_var = marking_var)),
+                                                   ops = [ cyast.Gt() ],
+                                                   comparators = [ cyast.Num( n = 0 ) ] ),
+                            body = [ compiled_body ])
+        return [ ifnode ]
+
 
 ################################################################################
 #
