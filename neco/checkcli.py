@@ -6,27 +6,17 @@ The loading of the module will raise a runtime error
 if loaded with wrong python version.
 """
 
-import subprocess, re, sys
+import sys
 if (2, 7, 0) <= sys.version_info < (3,0,0) :
     VERSION=(2,7)
 else:
     raise RuntimeError("unsupported python version")
 
-import argparse, sys, os
+import argparse, os
 import neco.config as config
-from neco.utils import fatal_error
-from neco import compile_net, g_logo
+from neco import g_logo
 
 import cPickle as pickle
-
-import backends
-
-import backends
-import core.check
-import core.onesafe as onesafe
-
-import imp, cProfile, pstats, os, bz2, gzip
-from time import time
 
 from neco import compile_checker
 import core.xmlproperties

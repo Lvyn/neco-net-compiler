@@ -493,15 +493,6 @@ class CompilerVisitor(coreir.CompilerVisitor):
                                    decl = [ cyast.CVar( node.marking_var.name, type2str(node.marking_var.type) )])
 
         return [f1, f2]
-
-    ################################################################################
-    # opts
-    ################################################################################
-    # def compile_OneSafeTokenEnumeration(self, node):
-    
-    # def compile_BTTokenEnumeration(self, node):
-        
-    # def compile_BTOneSafeTokenEnumeration(self, node):
         
     ################################################################################
     # Flow elimination
@@ -523,7 +514,6 @@ class CompilerVisitor(coreir.CompilerVisitor):
                                                      marking_var = node.marking_var,
                                                      place_info  = node.place_info)
 
-        
 ################################################################################
 # EOF
 ################################################################################

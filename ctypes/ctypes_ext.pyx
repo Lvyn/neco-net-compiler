@@ -205,56 +205,21 @@ cdef class MultiSet:
                 assert(False)
 
     def __richcmp__(MultiSet self, MultiSet other, int op):
-        if op == 2: # ==
-            if len(self) != len(other):
-                return False
-            else:
-                for val in self._data:
-                    try :
-                        if self._data[val] != other._data[val] :
-                            return False
-                    except (KeyError, TypeError) :
-                        return False
-            return True
-
-        elif op == 0: # <
-            assert(False)
-            if not set(self.keys()) <= set(other.keys()):
-                return False
-            result = False
-            for value, times in dict.items(self):
-                count = other.get(value, 0)
-                if times > count:
-                    return False
-                elif times < count:
-                    result = True
-            return result or (dict.__len__(self) < dict.__len__(other))
-
-        elif op == 1: # <=
-            assert(False)
-            if not set(self.keys()) <= set(other.keys()):
-                return False
-            for value, times in dict.items(self):
-                count = other.get(value, 0)
-                if times > count:
-                    return False
-            return True
-
-        elif op == 3: # !=
-            assert(False)
-            return not (self == other)
-
-        elif op == 4: # >
-            assert(False)
-            return (other < self)
-
-        elif op == 5: # >=
-            assert(False)
-            return (other <= self)
-
-        else:
-            raise ValueError()
-
+        cdef int res = self.compare(other)
+        print "cmp op {}, res {}".format(op, res)
+        if op == 0:
+            return res < 0
+        elif op == 1:
+            return res <= 0
+        elif op == 2:
+            return res == 0
+        elif op == 3:
+            return res != 0
+        elif op == 4:
+            return res > 0
+        elif op == 5:
+            return res >= 0
+        
     cdef void update(MultiSet self, MultiSet other):
         self._data.update(self, other._data)
 
@@ -270,98 +235,18 @@ cdef class MultiSet:
 
         return '[' + ', '.join(elts) + ']'
 
-
-# ################################################################################
-
-# cpdef state_space():
-#     cdef set visited
-#     cdef set visit
-#     cdef set succ
-#     cdef int count
-#     #cdef int last_count = 0
-#     start = time()
-#     last_time = start
-#     try:
-#         visited = set()
-#         visit = set([init()])
-#         succ = set()
-#         count = 0
-#         start = time()
-#         while True:
-#             count += 1
-#             m = visit.pop()
-#             visited.add(m)
-#             succ = succs(m)
-#             visit.update(succ.difference(visited))
-#             if (count % 250 == 0):
-#                 new_time = time()
-#                 elapsed_time = new_time - start
-#                 sys.stdout.write("\r{}st {:5.3f}s (global {:5.0f}st/s, since last log {:5.0f}st/s)".format(count,
-#                                                                                                            elapsed_time,
-#                                                                                                            count / elapsed_time,
-#                                                                                                            100 / (new_time-last_time)))
-#                 sys.stdout.flush()
-#                 last_time = new_time
-#     except KeyError:
-#         print
-#         return visited
-#     return visited
-
-
-# cpdef state_space_graph():
-#     """ State space exploration function with on the fly marking dump. """
-#     cdef set visit
-#     cdef set visited = set()
-#     cdef set succ
-#     cdef int count = 0
-#     cdef int next = 1
-#     cdef dict graph = {}
-#     cdef dict mrk_id_map = {}
-#     cdef list succ_list = []
-#     start = time()
-#     last_time = start
-
-#     cdef Marking m = init()
-#     cdef Marking s_mrk
-
-#     visit = set([m])
-#     mrk_id_map[m] = next
-#     next += 1
-
-#     try:
-#         while True:
-#             count += 1
-#             m = visit.pop()
-#             visited.add(m)
-
-#             # new marking, get the id
-#             current_node_id = mrk_id_map[m]
-#             succ = succs(m)
-#             succ_list = []
-
-#             for s_mrk in succ:
-#                 if mrk_id_map.has_key(s_mrk):
-#                     node_id = mrk_id_map[s_mrk]
-#                     succ_list.append(node_id)
-#                 else:
-#                     node_id = next
-#                     next += 1
-#                     succ_list.append(node_id)
-#                     mrk_id_map[s_mrk] = node_id
-
-#             graph[current_node_id] = succ_list
-
-#             visit.update(succ.difference(visited))
-#             if (count % 250 == 0):
-#                 new_time = time()
-#                 elapsed_time = new_time - start
-#                 sys.stdout.write("\r{}st {:5.3f}s (global {:5.0f}st/s, since last log {:5.0f}st/s)".format(count,
-#                                                                                                            elapsed_time,
-#                                                                                                            count / elapsed_time,
-#                                                                                                            250 / (new_time-last_time)))
-#                 sys.stdout.flush()
-#                 last_time = new_time
-#     except KeyError:
-#         print
-#         return graph, mrk_id_map
-#     return graph, mrk_id_map
+    cdef has_key(MultiSet self, object key):
+        return self._data.has_key(key)
+    
+cdef MultiSet int_place_type_to_multiset(ctypes_ext.int_place_type_t* pt):
+    cdef MultiSet ms = MultiSet()
+    cdef int index = 0
+    cdef int max = ctypes_ext.int_place_type_size(pt)
+    cdef int value
+    
+    for 0 <= index < max:
+        value = ctypes_ext.int_place_type_get(pt, index)
+        ms.add(value)
+        
+    print ms.__dump__()
+    return ms 

@@ -89,10 +89,10 @@ class CheckerCompiler(object):
         formula_file.close()
 
         self.backend = backend
-        self.checker_env = backend.CheckerEnv(set(), self.net_info, self.marking_type)
+        self.checker_env = backend.check_impl.CheckerEnv(set(), self.net_info, self.marking_type)
 
     def compile(self):
         """ Produce compiled checker.
         """
-        self.backend.produce_and_compile_pyx(self.checker_env, self.id_prop_map)
+        self.backend.check_impl.produce_and_compile_pyx(self.checker_env, self.id_prop_map)
 

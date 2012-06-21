@@ -526,7 +526,9 @@ class ObjectPlaceType(coretypes.ObjectPlaceType, CythonPlaceType):
                             iter = place_type.iterable_expr( env = checker_env,
                                                              marking_var = marking_var),
                             body = [ body ])
-
+    
+    def multiset_expr(self, env, marking_var):
+        return self.place_expr(env, marking_var)
 
 @provides_by_index_access
 @provides_by_index_deletion
@@ -703,6 +705,14 @@ class IntPlaceType(coretypes.PlaceType, CythonPlaceType):
                                                   value=get_token),
                                      body ],
                               orelse = [] ) ]
+    
+    def multiset_expr(self, env, marking_var):
+        self.check_marking_type(marking_var)
+
+        place_expr = self.place_expr(env, marking_var)
+        return cyast.Call(func=E(from_neco_lib("int_place_type_to_multiset")),
+                          args=[place_expr])
+        
 
 ################################################################################
 

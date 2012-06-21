@@ -4,6 +4,7 @@ compiling Snakes Petri nets
 
 import utils, inspect
 import core, backends, config
+import core.check
 
 g_logo = """
   *      *

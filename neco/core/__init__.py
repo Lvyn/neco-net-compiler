@@ -1071,7 +1071,9 @@ class Compiler(object):
     def run(self):
         self.gen_netir()
         self.optimize_netir()
-        return self.backend.compile_IR(self.env)
+        net = self.backend.compile_IR(self.env)
+        self.produce_compilation_trace(config.get('trace_file'))
+        return net
 
 ################################################################################
 

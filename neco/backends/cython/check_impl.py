@@ -1,4 +1,4 @@
-import sys
+import sys, StringIO, pickle
 import cyast, netir, nettypes
 from neco.utils import flatten_ast, IDProvider
 from neco.core.info import VariableProvider, TypeInfo
@@ -7,9 +7,9 @@ from cyast import Builder, E, Unparser, to_ast
 from neco import config
 import neco.core as core
 import neco.core.info as info
-from snakes.nets import WordSet
+from snakes.nets import WordSet, dot
 from neco.utils import flatten_lists
-
+from collections import defaultdict
 
 def operator_to_cyast(operator):
     if   operator.isLT():
@@ -65,15 +65,6 @@ class CheckerEnv(nettypes.Env):
             
             generator = IsFireableGenerator(self, transition, function_name)
             function_ir = generator()
-            
-            opt = config.get('optimize')
-            from neco.core import onesafe
-            optpass = onesafe.OptimisationPass()     
-            
-            if opt:
-                function_ir = optpass.transform_ast(self.net_info, function_ir)
-                function_ir = flatten_lists( function_ir )
-
             
             visitor = CheckerCompileVisitor(self)
             function_ast = visitor.compile( function_ir )        
@@ -180,7 +171,7 @@ class IsFireableGenerator(core.SuccTGenerator):
         self.transition = transition
         self.function_name = function_name
         self.marking_type = checker_env.marking_type
-        self._ignore_flow = self._ignore_flow = config.get('optimize_flow')
+        self.ignore_flow = config.get('optimize_flow')
         self.env = checker_env
 
         # this helper will create new variables and take care of shared instances
@@ -192,11 +183,11 @@ class IsFireableGenerator(core.SuccTGenerator):
             self.transition.order_inputs()
 
         # function arguments
-        self.arg_marking = helper.new_variable(type = self.marking_type.type)
+        self.arg_marking_var = helper.new_variable(type = self.marking_type.type)
 
         # create function
         self.builder.begin_function_IsFireable( function_name     = self.function_name,
-                                                arg_marking       = self.arg_marking,
+                                                arg_marking_var   = self.arg_marking_var,
                                                 transition_info   = self.transition,
                                                 variable_provider = helper )
         
@@ -224,20 +215,37 @@ class IsFireableGenerator(core.SuccTGenerator):
         builder.end_function()
         return builder.ast()    
 
+def build_multiset(elements):
+    def zero(): return 0
+    l = defaultdict(zero)
+    for e in elements:
+            l[eval(e)] += 1
+    
+    return E("ctypes_ext.MultiSet({!r})".format(dict(l)))
+    
+def multiset_expr_from_place_name(checker_env, marking_var, place_name):        
+    place_type  = checker_env.marking_type.get_place_type_by_name(place_name)
+    multiset = place_type.multiset_expr(checker_env, marking_var)
+    print >> sys.stderr, "[W] using multiset fallback for {}, this may result in slow execution times".format(place_name)
+    return multiset
+    
 def gen_multiset_comparison(checker_env, marking_var, cython_op, left, right):
     
-    
     if left.isPlaceMarking():
-        left_place_type  = checker_env.marking_type.get_place_type_by_name(left.place_name)
-        left_multiset = left_place_type.multiset_expr(checker_env, marking_var)
-        print >> sys.stderr, "[W] using multiset fallback for {}, this may result in slow execution times".format(left.place_name)
+        left_multiset = multiset_expr_from_place_name(checker_env, marking_var, left.place_name) 
+        
+    elif left.isMultisetConstant():
+        left_multiset = build_multiset(left.elements)
+        
     else:
         raise NotImplementedError
         
     if right.isPlaceMarking():    
-        right_place_type = checker_env.marking_type.get_place_type_by_name(right.place_name)
-        right_multiset = right_place_type.multiset_expr(checker_env, marking_var)
-        print >> sys.stderr, "[W] using multiset fallback for {}, this may result in slow execution times".format(right.place_name)
+        right_multiset = multiset_expr_from_place_name(checker_env, marking_var, right.place_name)
+        
+    elif right.isMultisetConstant():
+        right_multiset = build_multiset(right.elements)
+        
     else:
         raise NotImplementedError
     
@@ -245,8 +253,6 @@ def gen_multiset_comparison(checker_env, marking_var, cython_op, left, right):
                          ops=[cython_op],
                          comparators=[right_multiset] )
         
-    # return checker_env.marking_type.gen_place_comparison(checker_env, marking_var, op, left.place_name, right.place_name)
-
 def gen_check_expression(checker_env, marking_var, formula):
     if formula.isIntegerComparison():
         operator = operator_to_cyast(formula.operator)
@@ -410,7 +416,7 @@ class CheckerCompileVisitor(netir.CompilerVisitor):
             decl.add(var)
 
         result = to_ast( Builder.FunctionDef(name = node.function_name,
-                                             args = (netir.A(node.arg_marking.name, type = type2str(node.arg_marking.type))),
+                                             args = (netir.A(node.arg_marking_var.name, type = type2str(node.arg_marking_var.type))),
                                              body = stmts,
                                              lang = cyast.CDef( public = False ),
                                              returns = cyast.Name("int"),
@@ -445,7 +451,8 @@ def produce_and_compile_pyx(checker_env, id_prop_map):
 
     f.write("cimport net\n")
     f.write("cimport ctypes_ext\n")
-    f.write("import sys\n")
+    f.write("import sys, StringIO\n")
+    f.write("import cPickle as pickle\n")
     f.write("from snakes.nets import *\n")
     
     for function_ast in checker_env.is_fireable_functions():

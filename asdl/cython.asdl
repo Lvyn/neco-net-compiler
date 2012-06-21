@@ -6,11 +6,11 @@ module Python version "$Revision: SNAKES $"
 	    | Suite(stmt* body)
 
 	stmt = FunctionDef(identifier name,
-                           arguments args,
-                           stmt* body,
-                           expr? returns,
-                           language lang,
-                           CVar* decl)
+                       arguments args,
+                       stmt* body,
+                       expr? returns,
+                       language lang,
+                       CVar* decl)
 
 	      | FunctionDecl(identifier name,
 			     arguments args,

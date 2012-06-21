@@ -28,6 +28,12 @@ module netir version "$Revision: 1 $"
 		VariableInfo arg_marking_set_var,
 		VariableProvider variable_provider,
 		Stmt* body)
+	
+	| IsFireable(identifier function_name,
+			 	 VariableInfo arg_marking_var,
+			     TransitionInfo transition_info,
+			     VariableProvider variable_provider,	
+			     Stmt* body)
 		    
     Block = TokenEnumeration(ArcInfo arc,
 				 			 VariableInfo token_var,

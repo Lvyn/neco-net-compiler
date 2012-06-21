@@ -55,3 +55,6 @@ cdef class MultiSet:
     cdef void update(MultiSet self, MultiSet other)
     cdef list domain(MultiSet self)
     cpdef __dump__(MultiSet self)
+    cdef has_key(MultiSet self, object key)
+
+cdef MultiSet int_place_type_to_multiset(int_place_type_t* pt)

@@ -363,8 +363,9 @@ class PropertyParser(Yappy):
                           (" ms_expr  -> [ ]",                    self.empty_multiset_rule),
                           (" ms_expr  -> [ ms_elts ]",            self.multiset_rule),
                           (" ms_elts -> ms_elts , ms_elts",       self.multiset_elts_seq_rule),
-                          (" ms_elts -> INTEGER",                 lambda l, c : [ self.integer_rule(l, c) ]),
-                          (" ms_elts -> DOT",                     lambda l, c : [ self.blacktoken_rule(l, c) ]),
+                          (" ms_elts -> INTEGER",                 lambda l, c : [ l[0] ]),
+                          (" ms_elts -> DOT",                     lambda l, c : [ 'dot' ]),
+                          (" ms_elts -> ID",                      lambda l, c : [ '"' + l[0]  + '"' ]),
                           ])
         
         tokenize = [(r'"[a-zA-Z]+(\s*[a-zA-Z_0-9]+)*"|\'[a-zA-Z]+(\s*[a-zA-Z_0-9]+)*\'',  lambda x : ('ID', x[1:-1])), # protected ids
@@ -608,8 +609,8 @@ class PropertyParser(Yappy):
     def multiset_elts_seq_rule(self, tokens, ctx):
         return tokens[0] + tokens[2]
     
-    def blacktoken_rule(self, tokens, ctx):
-        return "DOT"
+    def py_expr_rule(self, tokens, ctx):
+        return tokens[0]
     
 #p = PropertyParser()
 #print "out: ", p.input("F [dot] < marking( place52 ) \\/ G card( marking( 'long place name' )) + 1 + 1 + 1 <= 5 U bound( p3 ) <= 4")

@@ -1,12 +1,11 @@
 """ Cython AST and helper functions.
 
 This module provides all contents from C{cyast_gen}, which is automatically generated
-from C{cyast.asdl}.
+from C{cyast_gen.asdl}.
 
 """
 
-import neco.core.netir as coreir
-import cyast_gen
+import cyast_gen 
 from cyast_gen import *
 from neco.core.netir import CurrentBlockError
 
@@ -19,7 +18,7 @@ def Call(func, args=[], keywords=[], starargs=None, kwargs=None):
     return ast.Call(func, args, keywords, starargs, kwargs)
 
 def FunctionDef(name,
-                args=ast.arguments(args=[],
+                args=cyast_gen.arguments(args=[],
                                    vararg=None,
                                    kwarg=None,
                                    defaults=[]),
@@ -28,7 +27,7 @@ def FunctionDef(name,
     return ast.FunctionDef(name, args, body, decorator_list)
 
 def FunctionDecl(name,
-                 args=ast.arguments(args=[],
+                 args=cyast_gen.arguments(args=[],
                                     vararg=None,
                                     kwarg=None,
                                     defaults=[]),
@@ -55,10 +54,10 @@ def ClassDef(name, bases=[], body=[], decorator_list=[]):
 def Index(value):
     return ast.Index(value=value)
 
-def Subscript(value, slice, ctx=ast.Load()):
+def Subscript(value, slice, ctx=cyast_gen.Load()):
     return ast.Subscript(value=value, slice=slice)
 
-def List(elts, ctx=ast.Store()):
+def List(elts, ctx=cyast_gen.Store()):
     return ast.List(elts=elts, ctx=ctx)
 
 ################################################################################
@@ -413,8 +412,7 @@ class Python2Cythyon(ast.NodeTransformer):
 
 
 ################################################################################
-from neco import unparse
-from neco.unparse import Unparser as _Unparser
+from neco.backends.python.unparse import Unparser as _Unparser
 
 class Unparser(_Unparser) :
     def _FunctionDecl (self, tree) :

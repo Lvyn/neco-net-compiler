@@ -1,10 +1,11 @@
 """ Python basic net types. """
 
-from neco.utils import should_not_be_called, todo
+from neco.utils import should_not_be_called
 import neco.utils as utils
 import neco.core.nettypes as coretypes
 from pyast import Builder, E, A, stmt
-from neco.core.info import *
+from neco.core.info import TypeInfo, VariableProvider, PlaceInfo
+import neco.config as config
 
 import pyast as ast
 
@@ -21,24 +22,24 @@ neco_stubs = {
 
 ################################################################################
 
-def type2str(type):
+def type2str(type_info):
     """ Type to string translation.
 
     @param type: type to translate
     @type type: C{TypeInfo}
     """
-    if type.is_UserType:
-        if type.is_BlackToken:
+    if type_info.is_UserType:
+        if type_info.is_BlackToken:
             return "BlackToken"
-        elif type.is_Bool:
+        elif type_info.is_Bool:
             return "bool"
-        elif type.is_Int:
+        elif type_info.is_Int:
             return "int"
-        elif type.is_String:
+        elif type_info.is_String:
             return "str"
         else:
-            return str(type)
-    elif type.is_TupleType:
+            return str(type_info)
+    elif type_info.is_TupleType:
         return "tuple"
     else:
         return "object"

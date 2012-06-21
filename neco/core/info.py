@@ -35,6 +35,14 @@ class TypeInfo(object):
             self._type_name = type_name
         elif self.is_TupleType:
             self._subtypes = subtypes
+            
+    @classmethod
+    def get(cls, type_name):
+        t = getattr(cls, type_name, None)
+        if not t:
+            print >> sys.stderr, "[W] cannot get type {!s}".format(type_name)
+            t = cls.AnyType 
+        return t
 
     @classmethod
     def UserType(cls, type_name):
