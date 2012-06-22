@@ -253,14 +253,17 @@ class TypeInfo(object):
         @return: C{True} if equal, C{False} otherwise.
         @rtype: C{bool}
         """
-        if self._kind == other._kind:
-            if self.is_TupleType:
-                return self._subtypes == other._subtypes
+        try:
+            if self._kind == other._kind:
+                if self.is_TupleType:
+                    return self._subtypes == other._subtypes
+                else:
+                    return self._type_name == other._type_name
             else:
-                return self._type_name == other._type_name
-        else:
+                return False
+        except AttributeError:
             return False
-
+        
     def __lt__(self, other):
         if self._kind == other._kind:
             return True
@@ -272,6 +275,9 @@ class TypeInfo(object):
     def __gt__(self, other):
         return other.__lt__(self)
 
+    def __ne__(self, other):
+        return not self == other
+    
     @property
     def is_AnyType(self):
         return self._kind == TypeKind.AnyType

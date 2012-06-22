@@ -226,7 +226,8 @@ def build_multiset(elements):
 def multiset_expr_from_place_name(checker_env, marking_var, place_name):        
     place_type  = checker_env.marking_type.get_place_type_by_name(place_name)
     multiset = place_type.multiset_expr(checker_env, marking_var)
-    print >> sys.stderr, "[W] using multiset fallback for {}, this may result in slow execution times".format(place_name)
+    if place_type.type != TypeInfo.MultiSet:
+        print >> sys.stderr, "[W] using multiset fallback for {}, this may result in slow execution times".format(place_name)
     return multiset
     
 def gen_multiset_comparison(checker_env, marking_var, cython_op, left, right):
@@ -236,7 +237,10 @@ def gen_multiset_comparison(checker_env, marking_var, cython_op, left, right):
         
     elif left.isMultisetConstant():
         left_multiset = build_multiset(left.elements)
-        
+
+    elif left.isMultisetPythonExpression():
+        left_multiset = E(left.expr)
+                
     else:
         raise NotImplementedError
         
@@ -246,6 +250,9 @@ def gen_multiset_comparison(checker_env, marking_var, cython_op, left, right):
     elif right.isMultisetConstant():
         right_multiset = build_multiset(right.elements)
         
+    elif right.isMultisetPythonExpression():
+        right_multiset = E(right.expr)
+                
     else:
         raise NotImplementedError
     

@@ -413,7 +413,7 @@ class GeneratorMultiArc(ArcAnnotation):
             l.extend(component.vars())
         return l
     
-class ProcessPetriNet(PetriNet):
+class DPCPetriNet(PetriNet):
     
     strict = True
     
@@ -439,7 +439,7 @@ class ProcessPetriNet(PetriNet):
     def initial_pid(self):
         return self._initial_pid
     
-    def add_get_pid(self, trans, count = 1):
+    def add_get_pid(self, trans):
         pid_var, count_var = Variable('x'), Variable('x')
         # override names, begins with _ which is usually illegal
         pid_var.name   = self.name_provider.new()
@@ -449,6 +449,20 @@ class ProcessPetriNet(PetriNet):
         self.spawn_operations[trans][pid_var] # force output arc creation
         # return variables
         return pid_var, count_var
+    
+    def add_get_pid_transition(self, trans, guard, count = 1):
+        pids = []
+        pids_dict = {}
+        for i in range(1, count+1):
+            pid, c = self.add_get_pid(trans)
+            pids.append( (pid, c) )
+            pids_dict[ "_p{}".format(i) ] = pid
+            pids_dict[ "_c{}".format(i) ] = c
+        
+        t = Transition(trans, Expression(guard.format(**pids_dict)))
+        self.add_transition(t)
+        return pids
+        
         
     def add_spawn(self, trans, pid_variable, thread_count = 1):
         # create pids

@@ -30,5 +30,5 @@ module Properties version "0.1"
 
     IntegerExpression = PlaceBound(identifier place_name) | IntegerConstant(int value) | MultisetCardinality(Multiset multiset) | Sum(IntegerExpression* operands)
 
-    MultisetExpression = PlaceMarking(identifier place_name) | MultisetConstant(object* elements)
+    MultisetExpression = PlaceMarking(identifier place_name) | MultisetConstant(object* elements) | MultisetPythonExpression(str expr)
 }

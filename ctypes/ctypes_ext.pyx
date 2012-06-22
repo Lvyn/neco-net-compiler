@@ -237,7 +237,196 @@ cdef class MultiSet:
 
     cdef has_key(MultiSet self, object key):
         return self._data.has_key(key)
+
+
+cdef class Pid:
     
+    cdef int_place_type_t* data
+    
+    def __cinit__(Pid self):
+        self.data = int_place_type_new()
+            
+    cpdef copy_update(Pid self, Pid other):
+        cdef int size = int_place_type_size(other.data)
+        for i in range(0, size):
+            int_place_type_add(self.data, int_place_type_get(other.data, i))
+                               
+    cpdef Pid copy(Pid self):
+        cdef Pid pid = Pid()
+        pid.copy_update(self)
+        return pid
+    
+    cpdef append(Pid self, int frag):
+        int_place_type_add(self.data, frag)
+    
+    def __len__(Pid self):
+        return int_place_type_size(self.data)
+    
+    def __str__(Pid self):
+        cdef list l = []
+        cdef int val
+        cdef int_place_type_t* data = self.data
+        cdef int size = int_place_type_size(data)
+        
+        for i in range(0, size):
+            val = int_place_type_get(data, i)
+            l.append(val)
+        
+        return '.'.join([repr(e) for e in l])
+    
+    cpdef Pid subpid(self, begin, end):
+        cdef Pid pid = Pid()
+        cdef int_place_type_t* data = self.data
+        cdef int_place_type_t* other_data = pid.data
+        cdef int value
+        for i in range(begin, end):
+            value = int_place_type_get(data, i)
+            int_place_type_add(other_data, value)
+        return pid
+        
+    cpdef int at(Pid self, int i):
+        return int_place_type_get(self.data, i)
+    
+    cpdef Pid prefix(Pid self): 
+        cdef int value
+        cdef int_place_type_t* data = self.data
+        cdef int size = int_place_type_size(data)
+        cdef Pid pid = Pid()
+        for i in range(0, size-1):
+            value = int_place_type_get(data, i)
+            pid.append( value )
+        return pid
+    
+    cpdef Pid suffix(Pid self):
+        cdef int value
+        cdef int_place_type_t* data = self.data
+        cdef int size = int_place_type_size(data)
+        cdef Pid pid = Pid()
+        for i in range(1, size):
+            value = int_place_type_get(data, i)
+            pid.append( value )
+        return pid
+    
+    cpdef int ends_with(Pid self):
+        cdef int_place_type_t* data = self.data
+        cdef int size = int_place_type_size(data)
+        return int_place_type_get(data, size)
+    
+    def __hash__(Pid self):
+        cdef int_place_type_t* data = self.data
+        return int_place_type_hash(data)
+    
+    def __richcmp__(Pid self, Pid other, int op):
+        cdef int cmp = int_place_type_cmp(self.data, other.data)
+        if op == 0: # <
+            return cmp < 0
+        elif op == 1: # <=
+            return cmp <= 0
+        elif op == 2: # ==
+            return cmp == 0
+        elif op == 3: # !=
+            return cmp != 0
+        elif op == 4: # >
+            return cmp > 0
+        else: # op == 5: # >=
+            return cmp >= 0
+    
+    cpdef Pid next(Pid self, int pid_component):
+        cdef Pid p = self.copy()
+        p.append(pid_component + 1)
+        return p
+    
+    cpdef int parent(Pid self, Pid other):
+        cdef int_place_type_t* self_data  = self.data
+        cdef int_place_type_t* other_data = other.data
+        cdef int self_size  = int_place_type_size(self_data)
+        cdef int other_size = int_place_type_size(other_data)
+        cdef int i
+        cdef self_value
+        cdef other_value
+        
+        if self_size >= other_size:
+            return 0
+        
+        for i in range(0, self_size):
+            self_value  = int_place_type_get(self_data, i)
+            other_value = int_place_type_get(other_data, i)
+            if self_value != other_value:
+                return 0
+        return 1
+
+    cpdef int parent1(Pid self, Pid other):
+        cdef int_place_type_t* self_data  = self.data
+        cdef int_place_type_t* other_data = other.data
+        cdef int self_size  = int_place_type_size(self_data)
+        cdef int other_size = int_place_type_size(other_data)
+        cdef int i
+        cdef int self_value
+        cdef int other_value
+        
+        if (self_size + 1) != other_size:
+            return 0
+        
+        for i in range(0, self_size):
+            self_value  = int_place_type_get(self_data, i)
+            other_value = int_place_type_get(other_data, i)
+            if self_value != other_value:
+                return 0
+        return 1
+
+    cpdef int sibling(Pid self, Pid other):
+        cdef int_place_type_t* self_data  = self.data
+        cdef int_place_type_t* other_data = other.data
+        cdef int self_size  = int_place_type_size(self_data)
+        cdef int other_size = int_place_type_size(other_data)
+        cdef int i
+        cdef int self_value
+        cdef int other_value
+        cdef int max_i = self_size - 1
+        
+        # must have same size
+        if self_size != other_size:
+            return 0
+        
+        # equal prefixes
+        for i in range(0, max_i):
+            self_value  = int_place_type_get(self_data, i)
+            other_value = int_place_type_get(other_data, i)
+            if self_value != other_value:
+                return 0
+            
+        # sibling test
+        self_value  = int_place_type_get(self_data, max_i)
+        other_value = int_place_type_get(other_data, max_i)
+        return self_value < other_value
+    
+    cpdef int sibling1(Pid self, Pid other):
+        cdef int_place_type_t* self_data  = self.data
+        cdef int_place_type_t* other_data = other.data
+        cdef int self_size  = int_place_type_size(self_data)
+        cdef int other_size = int_place_type_size(other_data)
+        cdef int i
+        cdef int self_value
+        cdef int other_value
+        cdef int max_i = self_size - 1
+        
+        # must have same size
+        if self_size != other_size:
+            return 0
+        
+        # equal prefixes
+        for i in range(0, max_i):
+            self_value  = int_place_type_get(self_data, i)
+            other_value = int_place_type_get(other_data, i)
+            if self_value != other_value:
+                return 0
+            
+        # sibling test
+        self_value  = int_place_type_get(self_data, max_i)
+        other_value = int_place_type_get(other_data, max_i)
+        return (self_value + 1) == other_value
+        
+        
 cdef MultiSet int_place_type_to_multiset(ctypes_ext.int_place_type_t* pt):
     cdef MultiSet ms = MultiSet()
     cdef int index = 0
@@ -250,3 +439,5 @@ cdef MultiSet int_place_type_to_multiset(ctypes_ext.int_place_type_t* pt):
         
     print ms.__dump__()
     return ms 
+
+

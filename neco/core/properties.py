@@ -134,6 +134,8 @@ def formula_to_str(formula):
     elif formula.isMultisetConstant():
         ms_str = '[' + ', '.join(map(str, formula.elements)) + ']'
         return "MultisetConstant({})".format(ms_str)
+    elif formula.isMultisetPythonExpression():
+        return "MultisetPythonExpression({})".format(formula.expr)
     else:
         raise NotImplementedError('cannot handle {}'.format(formula.__class__))
 
@@ -246,6 +248,9 @@ def transform_formula(formula):
     elif formula.isPlaceBound():
         return properties_gen.MultisetCardinality(PlaceMarking(formula.place_name))
     
+    elif formula.isMultisetPythonExpression():
+        return formula
+        
     elif (formula.isIntegerComparison() or
           formula.isMultisetComparison()):
         left   = formula.left
@@ -330,6 +335,39 @@ def build_atom_map(formula, name_provider, name_atom_map):
 
 ### PARSER
 
+def merge_spaces(s):
+    """
+    >>> merge_spaces('toto')
+    'toto'
+    >>> merge_spaces('  toto    ')
+    'toto'
+    >>> merge_spaces('   t o t o    ')
+    't o t o'
+    >>> merge_spaces('   t     o     t     o    ')
+    't o t o'
+    
+    """
+    i = 0
+    new_str = ''
+    p_space = True
+    for i in range(0, len(s)):
+        if s[i] == ' ':
+            if p_space:
+                continue
+            else:
+                new_str += s[i]
+                p_space = True
+        else:
+            new_str += s[i]
+            p_space = False
+    if p_space:
+        return new_str[0:-1]
+    else:
+        return new_str
+            
+             
+
+
 #yappy.parser._DEBUG = 1
 class PropertyParser(Yappy):
     
@@ -349,7 +387,8 @@ class PropertyParser(Yappy):
                           (" formula -> bool_expr",               self.default_rule),
                           (" bool_expr -> int_expr CMP int_expr", self.integer_cmp_rule),
                           (" bool_expr -> ms_expr CMP ms_expr",   self.multiset_cmp_rule),
-                          #(" bool_expr -> LIVE ( ID )",           self.live_rule),
+                          (" bool_expr -> ms_py_expr CMP ms_expr",   self.multiset_cmp_rule),
+                          (" bool_expr -> ms_expr CMP ms_py_expr",   self.multiset_cmp_rule),
                           (" bool_expr -> LIVE ( INTEGER , ID )", self.live_rule),
                           (" bool_expr -> FIREABLE ( ID )",       self.fireable_rule),
                           (" bool_expr -> DEADLOCK",              self.deadlock_rule),
@@ -366,9 +405,11 @@ class PropertyParser(Yappy):
                           (" ms_elts -> INTEGER",                 lambda l, c : [ l[0] ]),
                           (" ms_elts -> DOT",                     lambda l, c : [ 'dot' ]),
                           (" ms_elts -> ID",                      lambda l, c : [ '"' + l[0]  + '"' ]),
+                          (" ms_py_expr -> PY_EXPR",              self.multiset_python_expression_rule)
                           ])
         
-        tokenize = [(r'"[a-zA-Z]+(\s*[a-zA-Z_0-9]+)*"|\'[a-zA-Z]+(\s*[a-zA-Z_0-9]+)*\'',  lambda x : ('ID', x[1:-1])), # protected ids
+        tokenize = [(r'<\[.*\]>', lambda x : ('PY_EXPR', x)),
+                    (r'"[a-zA-Z]+(\s*[a-zA-Z_0-9]+)*"|\'[a-zA-Z]+(\s*[a-zA-Z_0-9]+)*\'',  lambda x : ('ID', x[1:-1])), # protected ids
                     (r'\s', ""), # skip white spaces
                     (r'<=>|<->',        lambda x : ('EQUIV', x),    ('EQUIV', 50, 'left')),
                     (r'=>|->',          lambda x : ('IMPL', x),     ('IMPL',  40,  'left')),
@@ -598,19 +639,19 @@ class PropertyParser(Yappy):
     def multiset_rule(self, tokens, ctx):
         """
         >>> print ast.dump(PropertyParser().input('[] < [1]'))
-        MultisetComparison(operator=LT(), left=MultisetConstant(elements=[]), right=MultisetConstant(elements=[IntegerConstant(value='1')]))
+        MultisetComparison(operator=LT(), left=MultisetConstant(elements=[]), right=MultisetConstant(elements=['1']))
         >>> print ast.dump(PropertyParser().input('[] < [1, 1, 1]'))
-        MultisetComparison(operator=LT(), left=MultisetConstant(elements=[]), right=MultisetConstant(elements=[IntegerConstant(value='1'), IntegerConstant(value='1'), IntegerConstant(value='1')]))
+        MultisetComparison(operator=LT(), left=MultisetConstant(elements=[]), right=MultisetConstant(elements=['1', '1', '1']))
         >>> print ast.dump(PropertyParser().input('[] < [dot, 1, dot]'))
-        MultisetComparison(operator=LT(), left=MultisetConstant(elements=[]), right=MultisetConstant(elements=['DOT', IntegerConstant(value='1'), 'DOT']))
+        MultisetComparison(operator=LT(), left=MultisetConstant(elements=[]), right=MultisetConstant(elements=['dot', '1', 'dot']))
         """
         return MultisetConstant(tokens[1])
     
     def multiset_elts_seq_rule(self, tokens, ctx):
         return tokens[0] + tokens[2]
     
-    def py_expr_rule(self, tokens, ctx):
-        return tokens[0]
+    def multiset_python_expression_rule(self, tokens, ctx):
+        return MultisetPythonExpression(merge_spaces(tokens[0][2:-2]))
     
 #p = PropertyParser()
 #print "out: ", p.input("F [dot] < marking( place52 ) \\/ G card( marking( 'long place name' )) + 1 + 1 + 1 <= 5 U bound( p3 ) <= 4")
