@@ -36,6 +36,10 @@ net.pxd
 *.ps
 *.svg
 *.jpeg
+neco/asdl/properties.py
+neco/asdl/netir.py
+neco/asdl/cython.py
+neco/core/properties_gen.py
 syntax: regexp
 .*/.gone/.*
 .gone/.*
