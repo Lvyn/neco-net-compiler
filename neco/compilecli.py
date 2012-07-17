@@ -217,7 +217,11 @@ class Main(object):
         if args.optimize_flow:
             args.optimize = True
 
-        env_includes = os.environ['NECO_INCLUDE'].split(":")
+        try:
+            env_includes = os.environ['NECO_INCLUDE'].split(":")
+        except KeyError:
+            env_includes = []
+
         args.includes.extend(env_includes)
 
         # checks for conflicts in options
