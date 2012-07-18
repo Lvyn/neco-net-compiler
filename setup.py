@@ -73,6 +73,7 @@ if prefix:
     print
     print "[W] You are using a non standard prefix ({}) please add the following lines to your .bashrc file:".format(prefix)
     print
+    print "export PATH=$PATH:{}bin".format(prefix)
     print "export NECO_INCLUDE={}lib/python{}/site-packages/neco/ctypes".format(prefix, py_version)
     print "export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$NECO_INCLUDE"
     print
