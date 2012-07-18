@@ -1,3 +1,5 @@
+#!/usr/bin/python
+
 import doctest, sys, glob, os, os.path
 
 packages = [ 'neco',

@@ -29,6 +29,6 @@ symlinks:
 	$(CXX) $(CXXFLAGS) -o $@ -c $<
 
 clean:
-	rm *.o a.out $(EXEC)
+	rm -f *.o a.out $(EXEC)
 
 .PHONY: all $(SRC)
