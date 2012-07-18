@@ -13,27 +13,27 @@ from nets import *
 #    Tuple, Variable, MultiArc, Expression, Value, ArcAnnotation
 
 class Pid(object):
-    
+
     def __init__(self):
         """
-        
+
         >>> pid = Pid()
         >>> pid.data
         []
-        
+
         """
-        self.data = [] 
-    
+        self.data = []
+
     @classmethod
     def from_str(self, str_repr = None):
-        """ 
+        """
         >>> str(Pid.from_str('1.2.3'))
         '1.2.3'
         """
         pid = Pid()
         pid.data = [ int(s) for s in str_repr.split('.') ] if str_repr else []
         return pid
-    
+
     @classmethod
     def from_list(self, frag_list = None):
         """
@@ -43,7 +43,7 @@ class Pid(object):
         pid = Pid()
         pid.data = frag_list if frag_list else []
         return pid
-    
+
     def copy(self):
         """
         >>> p1 = Pid.from_str('1.1')
@@ -55,26 +55,26 @@ class Pid(object):
         p = Pid()
         p.data = [ x for x in self.data ]
         return p
-    
+
     def __iter__(self):
         return iter(self.data)
-    
+
     def __bool__(self):
         return self.data # False iff empty
 
     def __int__(self):
         assert(len(self.data) == 1)
         return self.data[0]
-        
+
     def __add__(self, frag):
         pid = self.copy()
         for e in frag.data:
             pid.data.append(int(e))
         return pid
-    
+
     def __len__(self):
         return len(self.data)
-    
+
     def __lt__(self, other):
         sl = len(self.data)
         ol = len(other.data)
@@ -89,10 +89,10 @@ class Pid(object):
                 else:
                     return False
             return True
-    
+
     def at(self, i):
         return self.data[i]
-    
+
     def subpid(self, begin = 0, end = None):
         """
         >>> pid = Pid.from_str('1.2.3.4')
@@ -110,18 +110,18 @@ class Pid(object):
         pid = self.copy()
         for _ in range(0, begin):
             pid.data.pop(0)
-            
+
         if end:
             if end > 0:
                 for _ in range(end, len(self.data)):
                     pid.data.pop(-1)
-            elif end < 0: 
+            elif end < 0:
                 max = len(self.data)
                 for _ in range(max + end, max):
                     pid.data.pop(-1)
         return pid
-        
-    
+
+
     def prefix(self):
         """
         >>> pid = Pid.from_str('1.2.3')
@@ -149,7 +149,7 @@ class Pid(object):
         3
         """
         return self.data[-1]
-        
+
     def __hash__(self):
         """
         >>> hash(Pid.from_str('1.2')) == hash(Pid.from_str('1.2'))
@@ -163,22 +163,22 @@ class Pid(object):
             mult += 82520L + i + i
             i += 1
         return h
-    
+
     def __eq__(self, other):
         """
         >>> Pid.from_str('1.1.1') == Pid.from_str('1.1.1')
         True
         """
         return self.data == other.data
-    
-    
+
+
     def __ne__(self, other):
         """
         >>> Pid.from_str('1.1.1') != Pid.from_str('1.1.2')
         True
         """
         return self.data != other.data
-    
+
     def next(self, pid_component):
         """
         >>> Pid.from_str('1').next('0') == Pid.from_str('1.1')
@@ -189,7 +189,7 @@ class Pid(object):
         p = self.copy()
         p.data.append(int(pid_component)+1)
         return p
-    
+
     def parent(self, other):
         """
         >>> p111, p1113, p11, p11124 = Pid.from_str('1.1.1'), Pid.from_str('1.1.1.3'), Pid.from_str('1.1'), Pid.from_str('1.1.1.2.4')
@@ -204,7 +204,7 @@ class Pid(object):
         """
         od = other.data
         sd = self.data
-        
+
         # child must be longer than parent
         if len(od) > len(sd):
             i = 0
@@ -231,7 +231,7 @@ class Pid(object):
         """
         od = other.data
         sd = self.data
-        
+
         # child must be longer than parent
         if len(od) == len(sd) + 1:
             i = 0
@@ -257,12 +257,12 @@ class Pid(object):
         False
         >>> p111.sibling(p115)
         True
-        
+
         """
         sd = self.data
         od = other.data
         length = len(sd)
-        # must have the same length 
+        # must have the same length
         if length == len(od):
             i = 0
             # prefixes must be equal
@@ -273,7 +273,7 @@ class Pid(object):
             return sd[length-1] < od[length-1]
         else:
             return False
-    
+
     def sibling1(self, other):
         """
         >>> p111, p1113, p112, p115 = Pid.from_str('1.1.1'), Pid.from_str('1.1.1.3'), Pid.from_str('1.1.2'), Pid.from_str('1.1.5')
@@ -291,7 +291,7 @@ class Pid(object):
         sd = self.data
         od = other.data
         length = len(sd)
-        # must have the same length 
+        # must have the same length
         if length == len(od):
             i = 0
             # prefixes must be equal
@@ -310,8 +310,8 @@ class Pid(object):
         >>> Pid.from_str('1.1.1') == eval(repr(Pid.from_str('1.1.1')))
         True
         """
-        return 'Pid.from_str(\'' + '.'.join([repr(e) for e in self.data]) + '\')'  
-    
+        return 'Pid.from_str(\'' + '.'.join([repr(e) for e in self.data]) + '\')'
+
     def __str__(self):
         """
         >>> str(Pid.from_str('1.1.1'))
@@ -326,14 +326,14 @@ class GeneratorMultiArc(ArcAnnotation):
     def __init__(self, pid, counter, new_pids, components):
         if len(components) == 0:
             raise ConstraintError("missing tuple components")
-        
+
         self.pid = pid
         self.counter = counter
         self.new_pids = new_pids
         self.components = components
-          
+
         self.input_allowed = False
-    
+
     def copy(self):
         return self.__class__(self.pid.copy(),
                               self.counter,
@@ -341,7 +341,7 @@ class GeneratorMultiArc(ArcAnnotation):
                               [ x.copy() for x in self.components ])
     def __iter__(self):
         return iter(self.components)
-    
+
     def __str__(self):
         """
         >>> cnt = Variable('c')
@@ -356,11 +356,11 @@ class GeneratorMultiArc(ArcAnnotation):
         else:
             str_list.append(str(self.components[0]))
             components = self.components[1:]
-        
+
         for pid_var, component in zip(self.new_pids, components):
             str_list.append('{} := next({}) : {}'.format(str(pid_var), str(pid), str(component)) )
         return '<' + ', '.join(str_list) + '>'
-    
+
     def __eq__(self, other):
         """
         >>> cnt = Variable('c')
@@ -386,25 +386,25 @@ class GeneratorMultiArc(ArcAnnotation):
                         return True
         # one of the conditions failed
         return False
-    
+
     def __repr__(self):
         """
         >>> cnt = Variable('c')
         >>> pid, pid1, pid2 = Variable('pid'), Variable('pid1'), Variable('pid2')
         >>> GeneratorMultiArc(pid, cnt, [pid1, pid2], [ Tuple([pid, Expression("c + 2")]), Tuple([pid1, Value(0)]), Tuple([pid2, Value(0)]) ])
         GeneratorMultiArc(Variable('pid'), Variable('c'), [Variable('pid1'), Variable('pid2')], [Tuple((Variable('pid'), Expression('c + 2'))), Tuple((Variable('pid1'), Value(0))), Tuple((Variable('pid2'), Value(0)))])
-               
+
         >>> cnt = Variable('c')
         >>> pid, pid1, pid2 = Variable('pid'), Variable('pid1'), Variable('pid2')
         >>> tmp = GeneratorMultiArc(pid, cnt, [pid1, pid2], [ Tuple([pid, Expression("c + 2")]), Tuple([pid1, Value(0)]), Tuple([pid2, Value(0)]) ])
         >>> eval(repr(tmp)) == tmp
         True
-        
+
         """
         return 'GeneratorMultiArc({}, {}, {}, {})'.format(repr(self.pid),
                                                       repr(self.counter),
                                                       repr(self.new_pids),
-                                                      repr(self.components))    
+                                                      repr(self.components))
 
     def vars(self):
         l = [ self.pid, self.counter ]
@@ -412,22 +412,24 @@ class GeneratorMultiArc(ArcAnnotation):
         for component in self.components:
             l.extend(component.vars())
         return l
-    
+
+# dynamicp process creation petri net
+
 class DPCPetriNet(PetriNet):
-    
+
     strict = True
-    
+
     def __init__(self, name):
         """
-        >>> ProcessPetriNet('net').place()
+        >>> DPCPetriNet('net').place()
         [Place('sgen', MultiSet([(Pid.from_str('1'), 0)]), CrossProduct(Instance(Pid), (Instance(int) & GreaterOrEqual(0))))]
-        
+
         """
         PetriNet.__init__(self, name)
         # add generator place
         initial_pid = Pid.from_str('1')
         generator_place = Place("sgen", [(initial_pid, 0)], CrossProduct(tPid, tNatural))
-        
+
         self._initial_pid = initial_pid
         self.name_provider = NameProvider()
         self._generator_place = generator_place
@@ -435,10 +437,10 @@ class DPCPetriNet(PetriNet):
         self.spawn_operations     = defaultdict(lambda : defaultdict(list))
         self.get_operations       = defaultdict(list)
         self.terminate_operations = defaultdict(set)
-   
+
     def initial_pid(self):
         return self._initial_pid
-    
+
     def add_get_pid(self, trans):
         pid_var, count_var = Variable('x'), Variable('x')
         # override names, begins with _ which is usually illegal
@@ -449,7 +451,7 @@ class DPCPetriNet(PetriNet):
         self.spawn_operations[trans][pid_var] # force output arc creation
         # return variables
         return pid_var, count_var
-    
+
     def add_get_pid_transition(self, trans, guard, count = 1):
         pids = []
         pids_dict = {}
@@ -458,12 +460,12 @@ class DPCPetriNet(PetriNet):
             pids.append( (pid, c) )
             pids_dict[ "_p{}".format(i) ] = pid
             pids_dict[ "_c{}".format(i) ] = c
-        
+
         t = Transition(trans, Expression(guard.format(**pids_dict)))
         self.add_transition(t)
         return pids
-        
-        
+
+
     def add_spawn(self, trans, pid_variable, thread_count = 1):
         # create pids
         pid_vars = []
@@ -472,14 +474,14 @@ class DPCPetriNet(PetriNet):
             var = Variable('tmp')
             var.name = self.name_provider.new()
             pid_vars.append( var )
-            
+
         # remember pids to create
         self.spawn_operations[trans][pid_variable].extend( pid_vars )
         return pid_vars
-    
+
     def add_terminate(self, trans, pid_var):
         self.terminate_operations[trans].add(pid_var)
-        
+
     def _get_counter_var(self, trans, pid_var):
         for p, c in self.get_operations[trans]:
             if p == pid_var:
@@ -487,7 +489,7 @@ class DPCPetriNet(PetriNet):
         print >> sys.stderr, ("counter for {} not found, user should specify a get"
                               " operation and use the returned variable to create new threads.")
         raise RuntimeError
-        
+
     def finalize_net(self):
         # add arcs
         for trans in self._trans:
@@ -499,7 +501,7 @@ class DPCPetriNet(PetriNet):
                     self.add_input(self._generator_place.name, trans, MultiArc(tuple_list))
                 else:
                     self.add_input(self._generator_place.name, trans, tuple_list[0])
-            
+
             # from transition to generator place.
             spawn_ops = self.spawn_operations[trans]
             for pid_var, new_pids in spawn_ops.iteritems():
@@ -515,7 +517,7 @@ class DPCPetriNet(PetriNet):
                     tuple_list = [ Tuple( [ pid_var, expr ]) ]
                 # add new thread coutners
                 tuple_list.extend([ Tuple([new_pid_var, Value(0)]) for new_pid_var in new_pids ])
-                
+
                 if not tuple_list:
                     continue
                 # add generator arc

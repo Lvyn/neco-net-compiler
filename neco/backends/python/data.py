@@ -389,10 +389,11 @@ def neco__generator_token_transformer(ms, new_pid_dict):
     >>> neco__generator_multiset_update_pid_tree(sgen, pid_tree)
     >>> new_pid_dict = neco__normalize_pid_tree(pid_tree)
     >>> new_pid_dict
-    {Pid.from_str('1'): Pid.from_str('1'), Pid.from_str('1.7'): Pid.from_str('1.3'), Pid.from_str('1.4.3'): Pid.from_str('1.1.1'), Pid.from_str('1.4'): Pid.from_str('1.1')}
+    {Pid.from_str('1'): Pid.from_str('1'), Pid.from_str('1.7'): Pid.from_str('1.3'), Pid.from_str('1.4.3'): Pid.from_str('1.1.1'),
+    Pid.from_str('1.4'): Pid.from_str('1.1')}
     >>> neco__generator_token_transformer(sgen, new_pid_dict)
-    multiset([(Pid.from_str('1'), 3), (Pid.from_str('1.1'), 1)])
-    
+    multiset([(Pid.from_str('1.1'), 0), (Pid.from_str('1'), 2)])
+
     """
     new_ms = multiset()
     for pid, n in ms:
