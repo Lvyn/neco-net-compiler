@@ -5,8 +5,8 @@ from C{cyast_gen.asdl}.
 
 """
 
-import cyast_gen 
-from cyast_gen import *
+import neco.asdl.cython as cyast_gen
+from neco.asdl.cython import *
 from neco.core.netir import CurrentBlockError
 
 

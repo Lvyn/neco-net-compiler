@@ -5,8 +5,8 @@ Serves as a proxy for netir_gen (automatically generated from asdl).
 
 import inspect, types
 from ast import NodeVisitor, NodeTransformer
-import netir_gen
-from netir_gen import * 
+import neco.asdl.netir as netir_gen
+from neco.asdl.netir import *
 
 class CurrentBlockError(Exception):
     """ Exception used in helpers, raised when a operation

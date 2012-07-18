@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from distutils.core import setup
-from snakes.lang.asdl import *
+from snakes.lang.asdl import compile_asdl
 
 from distutils.core import setup
 from distutils.extension import Extension
@@ -9,49 +9,30 @@ from Cython.Distutils import build_ext
 
 import sys
 
-def compile_asdl(infilename, outfilename):
-    infile = open(infilename, 'r')
-    outfile = open(outfilename, 'w')
-
-    scanner = asdl.ASDLScanner()
-    parser = asdl.ASDLParser()
-    tokens = scanner.tokenize(infile.read())
-    node = parser.parse(tokens)
-
-    outfile.write(("# this file has been automatically generated running:\n"
-                   "# %s\n# timestamp: %s\n\n") % (" ".join(sys.argv),
-                                                   datetime.datetime.now()))
-    outfile.write(CodeGen().python(node))
-    outfile.close()
-    infile.close()
-
-def gen_neco_asdl():
-    compile_asdl('neco/asdl/cython.asdl',     'neco/asdl/cython.py')
-    compile_asdl('neco/asdl/netir.asdl',      'neco/asdl/netir.py')
+def gen_asdl():
+    print "generating ASDL"
     compile_asdl('neco/asdl/properties.asdl', 'neco/asdl/properties.py')
+    compile_asdl('neco/asdl/netir.asdl',      'neco/asdl/netir.py')
+    compile_asdl('neco/asdl/cython.asdl',     'neco/asdl/cython.py')
 
-if ('build' in sys.argv) or ('install' in sys.argv):
-    gen_neco_asdl()
-
-if ('dev' in sys.argv):
-    gen_neco_asdl()
-    exit(0)
-
-print sys.argv
-
+std_paths = ['/usr', '/usr/', '/usr/local', '/usr/local/']
 def has_non_std_prefix():
-    def check_path(path):
-        return path not in ['/usr', '/usr/', '/usr/local', '/usr/local/']
-
     for i, opt in enumerate(sys.argv):
         if opt.find('--prefix') == 0:
             if len(opt) > 8 and opt[8] == '=':
                 path = opt[9:]
             else:
                 path = sys.argv[i+1]
-            if check_path(path):
+            if path not in std_paths:
                 return path
     return None
+
+if ('dev' in sys.argv):
+    gen_asdl()
+    exit(0)
+
+if ('build' in sys.argv) or ('install' in sys.argv):
+    gen_asdl()
 
 setup(name='Neco',
       version='0.1',
@@ -60,6 +41,7 @@ setup(name='Neco',
       author_email='lfronc@ibisc.univ-evry.fr',
       url='http://code.google.com/p/neco-net-compiler/',
       packages=['neco',
+                'neco.asdl',
                 'neco.core',
                 'neco.ctypes',
                 'neco.backends',

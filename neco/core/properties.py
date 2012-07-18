@@ -1,5 +1,5 @@
-import properties_gen
-from properties_gen import *
+import neco.asdl.properties as properties_gen
+from neco.asdl.properties import *
 import yappy.parser
 from yappy.parser import Yappy, grules
 import inspect, sys, copy

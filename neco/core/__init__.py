@@ -9,7 +9,7 @@ import netir, nettypes
 from info import *
 from itertools import izip_longest
 
-from neco.core.netir_gen import PyExpr
+from netir import PyExpr
 
 ################################################################################
 
