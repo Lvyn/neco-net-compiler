@@ -61,10 +61,10 @@ def compile_net(net, *arg, **kwargs):
     print "################################################################################"
     print "Compiling with " + backend + " backend."
     print "################################################################################"
-    print "optimisations:           {optimize!s:5}".format(optimize = config.get('optimize'))
-    print "Debug:                   {debug!s:5}".format(debug = config.get('debug'))
-    print "flow optimisations:      {pfe!s:5}".format(pfe=config.get('optimize_flow'))
-    print "Additional search paths: %s" % config.get('additional_search_paths')
+    print "optimisations:      {optimize!s:5}".format(optimize = config.get('optimize'))
+    print "Debug:              {debug!s:5}".format(debug = config.get('debug'))
+    print "flow optimisations: {pfe!s:5}".format(pfe=config.get('optimize_flow'))
+    print "search paths:       {}".format(config.get('search_paths'))
     print "################################################################################"
 
     # compiler.set_marking_type_by_name("StaticMarkingType")

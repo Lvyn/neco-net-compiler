@@ -16,10 +16,11 @@ _default_options_ = [
     ('optimize_flow', False),
     ('debug', False),
     ('dump_enabled', True),
-    ('additional_search_paths', ['.']),
+    ('search_paths', ['.']),
     ('trace_calls', False),
     ('imports', []),
-    ('model', [])
+    ('model', []),
+    ('pid_normalization', False)
 ]
 
 _dict_name_ = '/tmp/neco_{}_{}'.format(hash('neco'), os.getpid())

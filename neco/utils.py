@@ -135,7 +135,7 @@ def search_file(filename, paths):
         if exists(path):
             return abspath(path)
 
-    raise IOError('{} file not found, check additional search paths'.format(filename))
+    raise IOError('{} file not found, check search paths'.format(filename))
 #
 #
 #class Factory(object):

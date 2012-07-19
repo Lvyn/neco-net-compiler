@@ -20,7 +20,7 @@ def new_compiling_environment(word_set, marking_type):
     return nettypes.Env(word_set, marking_type, nettypes.MarkingSetType(marking_type))
 
 def compile_IR(env):
-    additional_search_paths = config.get('additional_search_paths')
+    search_paths = config.get('search_paths')
 
     for decl in env.net_info.declare:
         env.add_pyx_declaration(decl)
@@ -63,7 +63,7 @@ def compile_IR(env):
     else:
         file_name = "include.pyx"
 
-    path = search_file(file_name, additional_search_paths)
+    path = search_file(file_name, search_paths)
     include_pyx = open(path , "r")
 
     if config.get('profile'):
@@ -83,11 +83,11 @@ def compile_IR(env):
 
     f.write(env.ending_pyx_declarations)
 
-#    path = search_file("ctypes_ext.pxd", additional_search_paths)
+#    path = search_file("ctypes_ext.pxd", search_paths)
 #    #os.makedirs(base_dir + "neco/ctypes")
 #    shutil.copyfile(path, base_dir + "ctypes_ext.pxd")
 #
-#    path = search_file("ctypes.h", additional_search_paths)
+#    path = search_file("ctypes.h", search_paths)
 #    shutil.copyfile(path, base_dir + "ctypes.h")
 #
 #    f = open(base_dir + "ctypes_ext.pxd", "a")
@@ -97,16 +97,16 @@ def compile_IR(env):
     if config.get('debug'):
         print "********************************************************************************"
         print "running cython compiler"
-        print additional_search_paths
+        print search_paths
         print "********************************************************************************"
 
     setup(name=base_dir + "net.pyx",
           cmdclass={'build_ext': build_ext},
           ext_modules=[Extension("net", [base_dir + "net.pyx"],
-                                 include_dirs = additional_search_paths + [base_dir],
+                                 include_dirs = search_paths + [base_dir],
                                  extra_compile_args=[], # '-ggdb'],
                                  extra_link_args=['-lctypes'],
-                                 library_dirs = additional_search_paths + [base_dir])],
+                                 library_dirs = search_paths + [base_dir])],
           script_args=["build_ext", "--inplace"],
           options = { 'build': { 'build_base': 'build' } })
 

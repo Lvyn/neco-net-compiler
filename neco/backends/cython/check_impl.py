@@ -468,7 +468,7 @@ def produce_and_compile_pyx(checker_env, id_prop_map):
         Unparser(function_ast, f)
     f.close()
 
-    includes = config.get('additional_search_paths')
+    includes = config.get('search_paths')
     include_dirs = includes
     library_dirs = includes
 

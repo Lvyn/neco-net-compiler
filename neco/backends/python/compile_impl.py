@@ -64,6 +64,9 @@ def compile_IR(env):
     env.add_declaration("import StringIO")
     env.add_declaration("from time import time")
 
+    if config.get('pid_normalization'):
+        env.add_declaration("from neco.extsnakes import *")
+
     for mod in config.get('imports'):
         env.add_declaration('from {} import *'.format(mod))
 
