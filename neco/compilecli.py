@@ -245,7 +245,7 @@ class Main(object):
                    imports  = args.imports,
                    no_stats = args.no_stats,
                    optimize_flow = args.optimize_flow,
-                   additional_search_paths = args.includes,
+                   search_paths = args.includes,
                    trace_calls = False,
                    trace_file = trace,
                    pid_normalization = args.pid_normalization,

@@ -3,22 +3,10 @@
 from neco.utils import should_not_be_called
 import neco.utils as utils
 import neco.core.nettypes as coretypes
+import pyast as ast
 from pyast import Builder, E, A, stmt
 from neco.core.info import TypeInfo, VariableProvider, PlaceInfo
 import neco.config as config
-
-import pyast as ast
-
-GENERATOR_PLACE = 'sgen'
-
-neco_stubs = {
-    'object_place_type_update_pids'     : 'data.neco__multiset_update_pids',
-    'object_place_type_update_pid_tree' : 'data.neco__iterable_update_pid_tree',
-    'create_pid_tree'    : 'data.neco__create_pid_tree',
-    'normalize_pid_tree' : 'data.neco__normalize_pid_tree',
-    'generator_place_update_pids'     : 'data.neco__generator_token_transformer',
-    'generator_place_update_pid_tree' : 'data.neco__generator_multiset_update_pid_tree',
-}
 
 ################################################################################
 
@@ -143,14 +131,16 @@ class ObjectPlaceType(coretypes.ObjectPlaceType, PythonPlaceType):
                                            attr='__dump__'))
 
     def update_pids_stmt(self, env, marking_var, new_pid_dict_var):
-        stub_name = neco_stubs['object_place_type_update_pids']
+        from priv.mrkpidmethods import stubs
+        stub_name = stubs['object_place_type_update_pids']
         return ast.Assign(targets=[self.place_expr(env, marking_var)],
                           value=ast.Call(func=ast.Name(stub_name),
                                          args=[self.place_expr(self, marking_var),
                                                ast.Name(new_pid_dict_var.name)]))
     
     def update_pid_tree(self, env, marking_var, pid_tree_var):
-        stub_name = neco_stubs['object_place_type_update_pid_tree']
+        from priv.mrkpidmethods import stubs
+        stub_name = stubs['object_place_type_update_pid_tree']
         return stmt(ast.Call(func=ast.Name(stub_name),
                              args=[self.place_expr(self, marking_var),
                                    ast.Name(pid_tree_var.name)]))
@@ -166,6 +156,23 @@ class StaticMarkingType(coretypes.MarkingType):
                                        TypeInfo.register_type('set'))
         self.id_provider = utils.NameProvider()
         self._process_place_types = {}
+        
+        import priv.mrkmethods
+        import priv.mrkpidmethods
+
+        self.add_method_generator( priv.mrkmethods.InitGenerator() )
+        self.add_method_generator( priv.mrkmethods.CopyGenerator() )
+        self.add_method_generator( priv.mrkmethods.ReprGenerator() )
+        self.add_method_generator( priv.mrkmethods.DumpGenerator() )
+        
+        if config.get("pid_normalization"):
+            self.add_method_generator( priv.mrkpidmethods.EqGenerator() )
+            self.add_method_generator( priv.mrkpidmethods.HashGenerator() )
+            self.add_method_generator( priv.mrkpidmethods.UpdatePidsGenerator() )
+            self.add_method_generator( priv.mrkpidmethods.NormalizePidsGenerator() )
+        else:
+            self.add_method_generator( priv.mrkmethods.EqGenerator() )
+            self.add_method_generator( priv.mrkmethods.HashGenerator() )
 
     def __str__(self):
         s = []
@@ -174,7 +181,7 @@ class StaticMarkingType(coretypes.MarkingType):
             s.append('{} : {}'.format(name, place_type.__class__))
         s.append('End')
         return '\n'.join(s)
-    
+
     def gen_types(self):
         """ Build place types using C{select_type} predicate.
         """
@@ -215,7 +222,7 @@ class StaticMarkingType(coretypes.MarkingType):
 
         for place_info in self.places:
             place_name = place_info.name
-            
+
             if place_info.type.is_BlackToken:
                 place_type = BTPlaceType(place_info, marking_type = self)
             else:
@@ -229,205 +236,12 @@ class StaticMarkingType(coretypes.MarkingType):
     def new_marking_expr(self, env, *args):
         return E("Marking()")
 
-    def gen_init_method(self, env):
-        function = ast.FunctionDef(name='__init__',
-                                   args=A('self').param('alloc', default='True').ast())
-
-        if_block = ast.If(test=ast.Name(id='alloc'))
-
-        for name, place_type in self.place_types.iteritems():
-            if_block.body.append( ast.Assign(targets=[ast.Attribute(value=ast.Name(id='self'),
-                                                                    attr=self.id_provider.get(name))],
-                                             value=place_type.new_place_expr(env)) )
-        function.body = if_block
-        return function
-
-    def gen_update_pids(self, env):
-        vp = VariableProvider()
-        self_var = vp.new_variable(self.type, name='self')
-        new_pid_dict_var = vp.new_variable(self.type, name='new_pid_dict')
-
-        function = ast.FunctionDef(name='update_pids',
-                                   args=A(self_var.name).param(new_pid_dict_var.name).ast())
-            
-        body = []
-        for place_type in self.place_types.itervalues():
-            print place_type
-            if not place_type.allow_pids:
-                continue
-            body.append( place_type.update_pids_stmt(env, self_var, new_pid_dict_var) )
-        
-        if not body:
-            body = [ast.Pass()]
-        
-        function.body = body
-        return function
-    
-    def gen_normalize_pids(self, env):
-        vp = VariableProvider()
-        self_var = vp.new_variable(self.type, name='self')
-        tree_var = vp.new_variable(TypeInfo.AnyType,  name='tree')
-        pid_dict_var = vp.new_variable(TypeInfo.Dict, name='pid_dict')
-        
-        function = ast.FunctionDef(name='normalize_pids',
-                                   args=A(self_var.name).ast())
-        body = []
-        body.append(ast.Assign(targets=[ast.Name(id=tree_var.name)],
-                               value=ast.Call(func=ast.Name(neco_stubs['create_pid_tree']),
-                                              args=[])))
-        # build the tree
-        for name, place_type in self.place_types.iteritems():
-            if not place_type.allow_pids:
-                continue
-            
-            if name == GENERATOR_PLACE:
-                body.append(stmt(ast.Call(func=ast.Name(neco_stubs['generator_place_update_pid_tree']),
-                                          args=[ place_type.place_expr(env, self_var), ast.Name(id=tree_var.name) ] )))
-            else:
-                body.append(place_type.update_pid_tree(env, self_var, tree_var))
-        # normalize tree and get dict
-        body.append(ast.Assign(targets=[ast.Name(id=pid_dict_var.name)],
-                               value=ast.Call(func=ast.Name(neco_stubs['normalize_pid_tree']),
-                                              args=[ast.Name(tree_var.name)])))
-        # update tokens with new pids
-        for name, place_type in self.place_types.iteritems():
-            if not place_type.allow_pids:
-                continue
-            
-            if name == GENERATOR_PLACE:
-                body.append( ast.Assign(targets=[ place_type.place_expr(env, self_var) ],
-                                        value=ast.Call(func=ast.Name(neco_stubs['generator_place_update_pids']),
-                                                       args=[place_type.place_expr(env, self_var),
-                                                             ast.Name(pid_dict_var.name)]) ) )
-            else:
-                body.append( place_type.update_pids_stmt(env, self_var, pid_dict_var) )
-           
-        if not body:
-            body = [ast.Pass()]
-        
-        function.body = body
-        return function
-            
     def normalize_marking_call(self, env, marking_var):
         return stmt(ast.Call(func=ast.Attribute(value=ast.Name(id=marking_var.name),
                                            attr='normalize_pids'),
                              args = []))
 
-    def gen_copy_method(self, env):
-        vp = VariableProvider()
-        self_var = vp.new_variable(self.type, name='self')
-        marking_var = vp.new_variable(self.type)
-
-        function = ast.FunctionDef(name='copy',
-                                   args=A(self_var.name).param('alloc', default='True').ast())
-
-        tmp = [ ast.Assign(targets=[ast.Name(id=marking_var.name)],
-                           value=E('Marking(False)')) ]
-
-        for name, place_type in self.place_types.iteritems():
-            tmp.append( ast.Assign(targets=[ast.Attribute(value=ast.Name(id = marking_var.name),
-                                                          attr=self.id_provider.get(name))],
-                                   value=place_type.copy_expr(env, marking_var = self_var))
-                        )
-        tmp.append(ast.Return(ast.Name(id=marking_var.name)))
-        function.body = tmp
-        return function
-
-    def gen_eq_method(self, env):
-        other = 'other'
-        function = ast.FunctionDef(name='__eq__',
-                                   args=A('self').param(other).ast())
-        return_str = "return ("
-        for i, (name, place_type) in enumerate(self.place_types.iteritems()):
-            if name == GENERATOR_PLACE and config.get('pid_normalization'):
-                continue
-            
-            id_name = self.id_provider.get(name)
-            if i > 0:
-                return_str += " and "
-            return_str += "(self.%s == %s.%s)" % (id_name, other, id_name)
-        return_str += ")"
-
-        function.body = [ E(return_str) ]
-        return function
-
-    def gen_hash_method(self, env):
-        builder = Builder()
-        builder.begin_FunctionDef( name = '__hash__', args = A("self").ast() )
-        builder.emit( E('h = 0') )
-
-        for name, place_type in self.place_types.iteritems():
-            if name == GENERATOR_PLACE and config.get('pid_normalization'):
-                continue
-            
-            magic = hash(name)
-            builder.emit( E('h ^= hash(self.' + self.id_provider.get(name) + ') ^ ' + str(magic)) )
-
-        builder.emit_Return(E("h"))
-        builder.end_FunctionDef()
-        return builder.ast()
-
-    def free_marking_stmt(self, env, marking_var, *args):
-        pass
-
-    def gen_repr_method(self, env):
-        items = list(self.place_types.iteritems())
-        items.sort(lambda (n1, t1), (n2, t2) : cmp(n1, n2))
-
-        builder = Builder()
-        builder.begin_FunctionDef( name = "__repr__", args = A("self").ast() )
-
-        builder.emit( E('s = "hdict({"') )
-        for (i, (place_name, place_type)) in enumerate(items):
-            tmp = ',\n ' if i > 0 else ''
-            builder.emit(ast.AugAssign(target=ast.Name(id='s'),
-                                       op=ast.Add(),
-                                       value=ast.BinOp(left=ast.Str(s = tmp + "'" + place_name + "' : "),
-                                                       op=ast.Add(),
-                                                       right=E('repr(self.' + self.id_provider.get(place_name) + ')')
-                                                       )
-                                       )
-                         )
-        builder.emit( E('s += "})"') )
-        builder.emit_Return(E('s'))
-
-        builder.end_FunctionDef()
-        return builder.ast()
-
-    def gen_dump_method(self, env):
-        items = list(self.place_types.iteritems())
-        items.sort(lambda (n1, t1), (n2, t2) : cmp(n1, n2))
-
-        vp = VariableProvider()
-        self_var = vp.new_variable(self.type, name='self')
-        list_var = vp.new_variable()
-
-        builder = Builder()
-        builder.begin_FunctionDef( name = "__dump__", args = A(self_var.name).ast() )
-
-        builder.emit( E('%s = ["{"]' % list_var.name) )
-        for (i, (place_name, place_type)) in enumerate(items):
-            if place_type.is_ProcessPlace:
-                builder.emit( place_type.dump_expr(env, self_var, list_var) )
-            else:
-                builder.emit(stmt(ast.Call(func=E('{}.append'.format(list_var.name)),
-                                           args=[ ast.BinOp(left = ast.Str(s = repr(place_name) + " : "),
-                                                            op = ast.Add(),
-                                                            right = ast.BinOp(left = place_type.dump_expr(env, self_var),
-                                                                              op = ast.Add(),
-                                                                              right = ast.Str(', '))
-                                                            ) ]
-                                           )
-                                  )
-                             )
-
-        builder.emit(stmt(E('%s.append("}")' % list_var.name)))
-        builder.emit_Return(E('"\\n".join({})'.format(list_var.name)))
-
-        builder.end_FunctionDef()
-        return builder.ast()
-
-    def gen_api(self, env):
+    def generate_api(self, env):
         cls = ast.ClassDef('Marking', bases=[ast.Name(id='object')])
 
         elts = []
@@ -437,15 +251,7 @@ class StaticMarkingType(coretypes.MarkingType):
         slots = ast.Assign(targets = [ast.Name('__slots__')],
                            value = ast.Tuple(elts))
 
-        cls.body = [slots,
-                    self.gen_init_method(env),
-                    self.gen_repr_method(env),
-                    self.gen_eq_method(env),
-                    self.gen_hash_method(env),
-                    self.gen_copy_method(env),
-                    self.gen_dump_method(env),
-                    self.gen_update_pids(env),
-                    self.gen_normalize_pids(env)]
+        cls.body = [slots] + self.generate_methods(env)
         return cls
 
     def copy_marking_expr(self, env, marking_var, *args):

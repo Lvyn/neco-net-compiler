@@ -1,15 +1,22 @@
-import sys, StringIO, pickle
-import cyast, netir, nettypes
-from neco.utils import flatten_ast, IDProvider
-from neco.core.info import VariableProvider, TypeInfo
-from nettypes import type2str, register_cython_type
+from Cython.Distutils import build_ext
+from collections import defaultdict
 from cyast import Builder, E, Unparser, to_ast
+from distutils.core import setup
+from distutils.extension import Extension
 from neco import config
+from neco.core.info import VariableProvider, TypeInfo
+from neco.utils import flatten_ast, IDProvider, flatten_lists
+from snakes.nets import WordSet, dot
+import common
+import StringIO
+import cyast
 import neco.core as core
 import neco.core.info as info
-from snakes.nets import WordSet, dot
-from neco.utils import flatten_lists
-from collections import defaultdict
+import netir
+import nettypes
+import os
+import pickle
+import sys
 
 def operator_to_cyast(operator):
     if   operator.isLT():
@@ -30,10 +37,10 @@ def operator_to_cyast(operator):
 ################################################################################
 #
 ################################################################################
-class CheckerEnv(nettypes.Env):
+class CheckerEnv(common.CompilingEnvironment):
 
     def __init__(self, word_set, net_info, marking_type):
-        nettypes.Env.__init__(self, word_set, marking_type, None)
+        common.CompilingEnvironment.__init__(self, word_set, marking_type, None)
         self.net_info = net_info
         self.id_provider = IDProvider()
         self.check_functions = {}
@@ -131,9 +138,9 @@ def gen_InPlace_function(checker_env, function_name, place_name):
 
     builder.begin_FunctionCDef(name = function_name,
                                args = (cyast.A(marking_var.name,
-                                               type=type2str(marking_var.type))
+                                               type=checker_env.type2str(marking_var.type))
                                        .param(name=token_var.name,
-                                              type=type2str(token_var.type))),
+                                              type=checker_env.type2str(token_var.type))),
                                returns = cyast.Name("int"),
                                decl = [],
                                public=False, api=False)
@@ -430,10 +437,6 @@ class CheckerCompileVisitor(netir.CompilerVisitor):
                                              decl = decl) )
         return result
 
-from Cython.Distutils import build_ext
-from distutils.core import setup
-from distutils.extension import Extension
-import os
 
 def produce_and_compile_pyx(checker_env, id_prop_map):
     marking_type = checker_env.marking_type

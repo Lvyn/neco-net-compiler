@@ -74,7 +74,7 @@ def compile_IR(env):
 
     compiled_nodes = []
 
-    compiled_nodes.append(env.marking_type.gen_api(env))
+    compiled_nodes.append(env.marking_type.generate_api(env))
     compiler = netir.CompilerVisitor(env)
 
     for node in env.function_nodes():

@@ -82,6 +82,13 @@ class ObjectPlaceType(PlaceType):
 
 ################################################################################
 
+class MarkingTypeMethodGenerator(object):
+
+    def generate(self, env):
+        raise NotImplementedError
+
+################################################################################
+
 class MarkingType(object):
     """ Common base class for all marking types.
     """
@@ -96,7 +103,8 @@ class MarkingType(object):
 
         self._type = type
         self._contaner_type = container_type
-
+        self._method_generators = []
+        
         self.place_types = dict()
 
         self._places = set()
@@ -104,53 +112,23 @@ class MarkingType(object):
         self._one_safe_places = set()
 
         self._use_control_flow_elimination = config.get('optimize_flow')
-    
-    # def __getstate__(self):
-    #     d = { 'flow_control_places' : [],
-    #           'one_safe_places' : [],
-    #           'other_places' : [],
-    #           'place_types' : {} }
 
-    #     # place info structures
-    #     for place_info in self._flow_control_places:
-    #         d['flow_control_places'].append( place_info )
+    def add_method_generator(self, method_generator):
+        self._method_generators.append(method_generator)
 
-    #     for place_info in self._one_safe_places:
-    #         print place_info, place_info.__class__
-    #         d['one_safe_places'].append( place_info )
-
-    #     for place_info in self._places:
-    #         d['other_places'].append( place_info )
-
-    #     # place types
-    #     for key, place_type in self.place_types.iteritems():
-    #         d['place_types'][key] = place_type
-
-    #     return d
-
-    # def __setstate__(self, state):
-    #     self.place_types = dict()
-    #     self._places = set()
-    #     self._flow_control_places = set()
-    #     self._one_safe_places = set()
-
-    #     self._flow_control_places = set()
-    #     for place_info in state['flow_control_places']:
-    #         self._flow_control_places.add( place_info )
-
-    #     for place_info in state['one_safe_places']:
-    #         self._one_safe_places.add( place_info )
-
-    #     for place_info in state['other_places']:
-    #         self._places.add( place_info )
-
-    #     # place types
-    #     for key, place_type in state['place_types'].iteritems():
-    #         self.place_types[key] = place_type
+    @property
+    def method_generators(self):
+        return self._method_generators
 
     @property
     def use_control_flow_elimination(self):
         return self._use_control_flow_elimination
+
+    def generate_methods(self, env):
+        api = []
+        for method in self._method_generators:
+            api.append( method.generate(env) )
+        return api
 
     @property
     def type(self):
@@ -206,7 +184,7 @@ class MarkingType(object):
         pass
 
     @abstractmethod
-    def gen_api(self, *args):
+    def generate_api(self, *args):
         """ Produce all the structures and functions needed to manage the marking.
 
         @return: marking structure ast (backend specific).
@@ -220,20 +198,14 @@ class MarkingType(object):
         """
         pass
 
-    @abstractmethod
-    def free_marking_stmt(self, marking_name, *args):
-        """ Produce a \"free\" stmt for deleting a marking.
-        """
-        pass
-
-    @abstractmethod
-    def copy_marking_expr(self, marking_name, *args):
-        """ Produce a copy expression for the marking.
-
-        @return: function call
-        @rtype: implementation specific, see backends
-        """
-        pass
+#    @abstractmethod
+#    def copy_marking_expr(self, marking_name, *args):
+#        """ Produce a copy expression for the marking.
+#
+#        @return: function call
+#        @rtype: implementation specific, see backends
+#        """
+#        pass
 
     # @abstractmethod
     # def remove_token_stmt(self, token_name, marking_name, place_name, *args):

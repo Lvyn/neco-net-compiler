@@ -10,6 +10,7 @@ from Cython.Distutils import build_ext
 from distutils.core import setup
 from distutils.extension import Extension
 from neco.backends.cython import nettypes
+import common
 
 _backend_ = "cython"
 
@@ -17,7 +18,12 @@ def new_marking_type(name, *args, **kwargs):
     return nettypes.StaticMarkingType(*args, **kwargs)
 
 def new_compiling_environment(word_set, marking_type):
-    return nettypes.Env(word_set, marking_type, nettypes.MarkingSetType(marking_type))
+    env = common.CompilingEnvironment(word_set, marking_type, nettypes.MarkingSetType(marking_type))
+    # register this marking type as a cython
+    # class, will be used instead of object
+    env.register_cython_type(marking_type.type, "Marking")
+    return env
+
 
 def compile_IR(env):
     search_paths = config.get('search_paths')
@@ -35,7 +41,7 @@ def compile_IR(env):
 
     compiled_nodes = []
     # gen types
-    compiled_nodes.append(env.marking_type.gen_api(env))
+    compiled_nodes.append(env.marking_type.generate_api(env))
     compiler = netir.CompilerVisitor(env)
 
     base_dir = "build/"
