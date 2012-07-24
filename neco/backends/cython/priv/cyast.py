@@ -5,9 +5,12 @@ from C{cyast_gen.asdl}.
 
 """
 
-import neco.asdl.cython as cyast_gen
 from neco.asdl.cython import *
+from neco.backends.pythonic import extract_python_expr, check_arg, check_attrs
 from neco.core.netir import CurrentBlockError
+from neco.utils import flatten_lists
+import neco.asdl.cython as cyast_gen
+import neco.core.netir as coreir
 
 
 ################################################################################
@@ -15,7 +18,7 @@ from neco.core.netir import CurrentBlockError
 ################################################################################
 
 def Call(func, args=[], keywords=[], starargs=None, kwargs=None):
-    return ast.Call(func, args, keywords, starargs, kwargs)
+    return cyast_gen.Call(func, args, keywords, starargs, kwargs)
 
 def FunctionDef(name,
                 args=cyast_gen.arguments(args=[],
@@ -24,7 +27,7 @@ def FunctionDef(name,
                                    defaults=[]),
                 body=[],
                 decorator_list=[]):
-    return ast.FunctionDef(name, args, body, decorator_list)
+    return cyast_gen.FunctionDef(name, args, body, decorator_list)
 
 def FunctionDecl(name,
                  args=cyast_gen.arguments(args=[],
@@ -39,29 +42,28 @@ def FunctionDecl(name,
                                   decorator_list=[],
                                   **kwargs)
 
-def arguments(args=[], vararg=None, kwarg=None, defaults=[]):
-    return ast.arguments(args, vararg, kwarg, defaults)
+#def arguments(args=[], vararg=None, kwarg=None, defaults=[]):
+#    return ast.arguments(args, vararg, kwarg, defaults)
 
 def If(test, body=[], orelse=[]):
-    return ast.If(test, body, orelse)
+    return cyast_gen.If(test, body, orelse)
 
 def Tuple(elts=[]):
-    return ast.Tuple(elts=elts)
+    return cyast_gen.Tuple(elts=elts)
 
 def ClassDef(name, bases=[], body=[], decorator_list=[]):
-    return ast.ClassDef(name, bases, body, decorator_list)
+    return cyast_gen.ClassDef(name, bases, body, decorator_list)
 
 def Index(value):
-    return ast.Index(value=value)
+    return cyast_gen.Index(value=value)
 
 def Subscript(value, slice, ctx=cyast_gen.Load()):
-    return ast.Subscript(value=value, slice=slice)
+    return cyast_gen.Subscript(value=value, slice=slice)
 
 def List(elts, ctx=cyast_gen.Store()):
-    return ast.List(elts=elts, ctx=ctx)
+    return cyast_gen.List(elts=elts, ctx=ctx)
 
-################################################################################
-from neco.backends.pythonic import *
+#################################################################################
 
 class _to_ast_transformer(ast.NodeTransformer):
     def visit(self, node):
@@ -109,7 +111,7 @@ def node_from_args( ast_class ):
 def stmt(node):
     """ Transform a builder or a builder helper into a cython statement (ast).
     """
-    return ast.Expr( node )
+    return cyast_gen.Expr( node )
 
 def _extract_expr(expr):
     return Python2Cythyon().visit( extract_python_expr(cyast_gen._AST, expr) )
@@ -244,8 +246,8 @@ class Builder(coreir.BuilderBase):
         return cls.helper(_extract_expr(expr))
 
     @classmethod
-    def Comment(cls, str):
-        return cyast_gen.Comment(str)
+    def Comment(cls, string):
+        return cyast_gen.Comment(string)
 
     @classmethod
     def EqCompare(cls, left, right):
@@ -411,7 +413,7 @@ class Python2Cythyon(ast.NodeTransformer):
                                   decl = [] )
 
 
-################################################################################
+#################################################################################
 from neco.backends.python.unparse import Unparser as _Unparser
 
 class Unparser(_Unparser) :

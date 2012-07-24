@@ -1,21 +1,17 @@
 from Cython.Distutils import build_ext
 from collections import defaultdict
-from cyast import Builder, E, Unparser, to_ast
 from distutils.core import setup
 from distutils.extension import Extension
 from neco import config
+from neco.asdl.properties import Sum
 from neco.core.info import VariableProvider, TypeInfo
-from neco.utils import flatten_ast, IDProvider, flatten_lists
-from snakes.nets import WordSet, dot
-import common
-import StringIO
-import cyast
+from neco.utils import flatten_ast, IDProvider
+from priv import common, cyast
+from snakes.nets import WordSet
 import neco.core as core
 import neco.core.info as info
 import netir
-import nettypes
 import os
-import pickle
 import sys
 
 def operator_to_cyast(operator):
@@ -228,12 +224,12 @@ def build_multiset(elements):
     for e in elements:
             l[eval(e)] += 1
     
-    return E("ctypes_ext.MultiSet({!r})".format(dict(l)))
+    return cyast.E("ctypes_ext.MultiSet({!r})".format(dict(l)))
     
 def multiset_expr_from_place_name(checker_env, marking_var, place_name):        
     place_type  = checker_env.marking_type.get_place_type_by_name(place_name)
     multiset = place_type.multiset_expr(checker_env, marking_var)
-    if place_type.type != TypeInfo.MultiSet:
+    if place_type.type != TypeInfo.get('MultiSet'):
         print >> sys.stderr, "[W] using multiset fallback for {}, this may result in slow execution times".format(place_name)
     return multiset
     
@@ -246,7 +242,7 @@ def gen_multiset_comparison(checker_env, marking_var, cython_op, left, right):
         left_multiset = build_multiset(left.elements)
 
     elif left.isMultisetPythonExpression():
-        left_multiset = E(left.expr)
+        left_multiset = cyast.E(left.expr)
                 
     else:
         raise NotImplementedError
@@ -258,7 +254,7 @@ def gen_multiset_comparison(checker_env, marking_var, cython_op, left, right):
         right_multiset = build_multiset(right.elements)
         
     elif right.isMultisetPythonExpression():
-        right_multiset = E(right.expr)
+        right_multiset = cyast.E(right.expr)
                 
     else:
         raise NotImplementedError
@@ -337,7 +333,7 @@ def gen_check_function(checker_env, id, atom):
 
     function_name = "check_{}".format(id)
     builder.begin_FunctionCDef(name = function_name,
-                               args = cyast.A(marking_var.name, type=type2str(marking_var.type)),
+                               args = cyast.A(marking_var.name, type=checker_env.type2str(marking_var.type)),
                                returns = cyast.Name("int"),
                                decl = [],
                                public=False, api=False)
@@ -364,11 +360,11 @@ def gen_main_check_function(checker_env, id_prop_map):
     checker_env.push_variable_provider(variable_provider)
 
     marking_var = variable_provider.new_variable(type=checker_env.marking_type.type)
-    atom_var    = variable_provider.new_variable(type=TypeInfo.Int)
+    atom_var    = variable_provider.new_variable(type=TypeInfo.get('Int'))
 
     builder.begin_FunctionCDef(name = function_name,
-                               args = (cyast.A(marking_var.name, type=type2str(marking_var.type))
-                                       .param(atom_var.name, type=type2str(TypeInfo.Int))),
+                               args = (cyast.A(marking_var.name, type=checker_env.type2str(marking_var.type))
+                                       .param(atom_var.name, type=checker_env.type2str(TypeInfo.get('Int')))),
                                returns = cyast.Name("int"),
                                decl = [],
                                public=True, api=True)
@@ -388,14 +384,14 @@ def gen_main_check_function(checker_env, id_prop_map):
     for _ in id_prop_map:
         builder.end_If()
 
-    builder.emit(cyast.Print(dest=E('sys.stderr'),
+    builder.emit(cyast.Print(dest=cyast.E('sys.stderr'),
                              values=[cyast.Str(s='!W! invalid proposition identifier'),
                                      cyast.Name(atom_var.name)],
                              nl=True))
     builder.emit_Return(cyast.Num(n=0))
 
     builder.end_FunctionDef()
-    tree = to_ast(builder)
+    tree = cyast.to_ast(builder)
     checker_env.register_check_function(function_name, FunctionWrapper(function_name, tree))
     return tree
 
@@ -420,27 +416,27 @@ class CheckerCompileVisitor(netir.CompilerVisitor):
 
         inter_vars = node.transition_info.intermediary_variables
         for var in inter_vars:
-            if (not var.type.is_UserType) or netir.is_cython_type( var.type ):
+            if (not var.type.is_UserType) or self.env.is_cython_type( var.type ):
                 decl.add(cyast.CVar(name=var.name,
-                                    type=type2str(var.type))
+                                    type=self.env.type2str(var.type))
         )
 
         additionnal_decls = self.env.pop_cvar_env()
         for var in additionnal_decls:
             decl.add(var)
 
-        result = to_ast( Builder.FunctionDef(name = node.function_name,
-                                             args = (netir.A(node.arg_marking_var.name, type = type2str(node.arg_marking_var.type))),
-                                             body = stmts,
-                                             lang = cyast.CDef( public = False ),
-                                             returns = cyast.Name("int"),
-                                             decl = decl) )
+        result = cyast.to_ast( cyast.Builder.FunctionDef(name = node.function_name,
+                                                         args = (cyast.A(node.arg_marking_var.name, type = self.env.type2str(node.arg_marking_var.type))),
+                                                         body = stmts,
+                                                         lang = cyast.CDef( public = False ),
+                                                         returns = cyast.Name("int"),
+                                                         decl = decl) )
         return result
 
 
 def produce_and_compile_pyx(checker_env, id_prop_map):
     marking_type = checker_env.marking_type
-    register_cython_type(marking_type.type, 'net.Marking')
+    checker_env.register_cython_type(marking_type.type, 'net.Marking')
     TypeInfo.register_type('Marking')
 
     functions = []
@@ -466,9 +462,9 @@ def produce_and_compile_pyx(checker_env, id_prop_map):
     f.write("from snakes.nets import *\n")
     
     for function_ast in checker_env.is_fireable_functions():
-        Unparser(function_ast, f)
+        cyast.Unparser(function_ast, f)
     for function_ast in checker_env.functions():
-        Unparser(function_ast, f)
+        cyast.Unparser(function_ast, f)
     f.close()
 
     includes = config.get('search_paths')

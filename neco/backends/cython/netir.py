@@ -1,12 +1,11 @@
 """ Cython ast compiler. """
 
-from cyast import * # Builder, E, A, to_ast, stmt
-from neco.backends.cython.common import CVarSet
-from neco.core.info import *
+from neco.core.info import TypeInfo, ExpressionInfo
+from priv.common import CVarSet
 import StringIO
 import cPickle as cPickle
-import cyast
 import neco.core.netir as coreir
+import priv.cyast as cyast
 
 ################################################################################
 
@@ -33,7 +32,7 @@ class CompilerVisitor(coreir.CompilerVisitor):
                          orelse = [ self.compile(node.orelse) ] )
 
     def compile_Compare(self, node):
-        return Builder.Compare(left = self.compile(node.left),
+        return cyast.Builder.Compare(left = self.compile(node.left),
                                ops = [ self.compile(op) for op in node.ops ],
                                comparators = [ self.compile(comparator) for comparator in node.comparators ])
 
@@ -42,9 +41,9 @@ class CompilerVisitor(coreir.CompilerVisitor):
 
     def compile_CheckTuple(self, node):
         tuple_info = node.tuple_info
-        test = E( "isinstance({tuple_name}, tuple) and len({tuple_name}) == {length}"
+        test = cyast.E( "isinstance({tuple_name}, tuple) and len({tuple_name}) == {length}"
                   .format(tuple_name = node.tuple_var.name, length = repr(len(tuple_info))))
-        return Builder.If(test, body = self.compile(node.body))
+        return cyast.Builder.If(test, body = self.compile(node.body))
 
     def compile_CheckType(self, node):
         type_info = node.type
@@ -52,24 +51,24 @@ class CompilerVisitor(coreir.CompilerVisitor):
             return self.compile(node.body)
 
         test = cyast.Call(func=cyast.Name('isinstance'),
-                          args=[E(node.variable.name), E(self.env.type2str(type_info))])
+                          args=[cyast.E(node.variable.name), cyast.E(self.env.type2str(type_info))])
 
-        return Builder.If( test = test, body = self.compile(node.body) )
+        return cyast.Builder.If( test = test, body = self.compile(node.body) )
 
     def compile_Match(self, node):
         tuple_info = node.tuple_info
         seq = []
 
         component_names = [ token_info.data['local_variable'].name for token_info in tuple_info ]
-        seq.append( cyast.Assign(targets = [ cyast.Tuple([ E(name) for name in component_names ])],
+        seq.append( cyast.Assign(targets = [ cyast.Tuple([ cyast.E(name) for name in component_names ])],
                                  value = cyast.Name(tuple_info.data['local_variable'].name)) )
         cur = None
         for component in tuple_info.components:
             if component.is_Value:
                 #self.try_declare_cvar(component.data['local_variable'].name, component.type)
-                n = Builder.If( test = Builder.Compare( left = E(component.data['local_variable'].name),
+                n = cyast.Builder.If( test = cyast.Builder.Compare( left = cyast.E(component.data['local_variable'].name),
                                                         ops = [ cyast.Eq() ],
-                                                        comparators = [ E(repr(component.raw)) ] ), # TO DO unify value & pickle
+                                                        comparators = [ cyast.E(repr(component.raw)) ] ), # TO DO unify value & pickle
                                 orelse = [] )
                 if cur == None:
                     cur = n
@@ -102,7 +101,7 @@ class CompilerVisitor(coreir.CompilerVisitor):
         output = StringIO.StringIO()
         cPickle.dump(node.obj, output)
         pickle_str = output.getvalue()
-        return E("cPickle.load(StringIO.StringIO(" + repr(pickle_str) + "))")
+        return cyast.E("cPickle.load(StringIO.StringIO(" + repr(pickle_str) + "))")
 
     def compile_FlushIn(self, node):
         destination_place = self.env.marking_type.get_place_type_by_name(node.place_name)
@@ -118,7 +117,7 @@ class CompilerVisitor(coreir.CompilerVisitor):
     def compile_FlushOut(self, node):
         destination_place = self.env.marking_type.get_place_type_by_name( node.place_name )
         multiset = self.compile( node.token_expr )
-        var = self.env.new_variable()
+        #var = self.env.new_variable()
         return destination_place.add_items_stmt(env = self.env,
                                                 multiset = multiset,
                                                 marking_var = node.marking_var )
@@ -127,26 +126,26 @@ class CompilerVisitor(coreir.CompilerVisitor):
         elts = []
         for info in tuple_info:
             if info.is_Value:
-                elts.append( E(repr(info.raw)) )
+                elts.append( cyast.E(repr(info.raw)) )
             elif info.is_Variable:
                 elts.append( cyast.Name( id = info.name ) )
             elif info.is_Tuple:
                 elts.append( self.gen_tuple( info ) )
             elif info.is_Expression:
-                elts.append( E(info.raw) )
+                elts.append( cyast.E(info.raw) )
             else:
                 raise NotImplementedError, info.component.__class__
 
-        return Builder.Tuple( elts = elts )
+        return cyast.Builder.Tuple( elts = elts )
 
     def compile_TupleOut(self, node):
         tuple_info = node.tuple_info
-        tuple = self.gen_tuple(tuple_info)
+        generated_tuple = self.gen_tuple(tuple_info)
 
         place_type = self.env.marking_type.get_place_type_by_name(node.place_name)
         return place_type.add_token_stmt(env = self.env,
                                          token_expr = tuple_info,
-                                         compiled_token = tuple,
+                                         compiled_token = generated_tuple,
                                          marking_var = node.marking_var)
 
     def compile_NotEmpty(self, node):
@@ -168,9 +167,9 @@ class CompilerVisitor(coreir.CompilerVisitor):
             index_var = arc.data['index']
             size_var = self.env.variable_provider.new_variable()
 
-            self.env.try_declare_cvar(index_var.name, TypeInfo.Int)
+            self.env.try_declare_cvar(index_var.name, TypeInfo.get('Int'))
             self.env.try_declare_cvar(node.token_var.name, node.token_var.type)
-            self.env.try_declare_cvar(size_var.name, TypeInfo.Int)
+            self.env.try_declare_cvar(size_var.name, TypeInfo.get('Int'))
 
             place_size = place_type.get_size_expr(env = self.env,
                                                   marking_var = node.marking_var)
@@ -178,12 +177,12 @@ class CompilerVisitor(coreir.CompilerVisitor):
             get_token = place_type.get_token_expr( env = self.env,
                                                    index_expr = index_var,
                                                    marking_var = node.marking_var,
-                                                   compiled_index = Name(index_var.name) )
+                                                   compiled_index = cyast.Name(index_var.name) )
 
 
             return [ cyast.Assign(targets=[cyast.Name(size_var.name)],
                                   value=place_size),
-                     Builder.CFor(start=cyast.Num(0),
+                     cyast.Builder.CFor(start=cyast.Num(0),
                                   start_op=cyast.LtE(),
                                   target=cyast.Name(index_var.name),
                                   stop_op=cyast.Lt(),
@@ -195,7 +194,7 @@ class CompilerVisitor(coreir.CompilerVisitor):
         else:
             self.env.try_declare_cvar(node.token_var.name, node.token_var.type)
             place_type = marking_type.get_place_type_by_name(node.place_name)
-            return Builder.For( target = cyast.Name(node.token_var.name),
+            return cyast.Builder.For( target = cyast.Name(node.token_var.name),
                                 iter = place_type.iterable_expr( env = self.env,
                                                                  marking_var = node.marking_var),
                                 body = [ self.compile(node.body) ])
@@ -222,7 +221,7 @@ class CompilerVisitor(coreir.CompilerVisitor):
 
         inner = current
         if len(indices) > 1:
-            inner_base, inner = self.gen_different( indices )
+            _, inner = self.gen_different( indices )
             current.body.append( base )
 
         return base, inner
@@ -237,7 +236,7 @@ class CompilerVisitor(coreir.CompilerVisitor):
                 variable = sub_arc.data['local_variable']
                 index_var = sub_arc.data['index']
 
-                self.env.try_declare_cvar(index_var.name, TypeInfo.Int)
+                self.env.try_declare_cvar(index_var.name, TypeInfo.get('Int'))
                 self.env.try_declare_cvar(variable.name, place_type.token_type)
 
                 assign = cyast.Assign(targets=[cyast.Name(variable.name)],
@@ -265,7 +264,7 @@ class CompilerVisitor(coreir.CompilerVisitor):
                 init = cyast.Assign( targets =  [cyast.Name(index_var.name)],
                                      value = cyast.Num(0) )
 
-                self.env.try_declare_cvar(index_var.name, TypeInfo.Int)
+                self.env.try_declare_cvar(index_var.name, TypeInfo.get('Int'))
                 self.env.try_declare_cvar(variable.name, place_type.token_type)
 
                 enumeration = cyast.For( target = cyast.Name(variable.name),
@@ -294,22 +293,22 @@ class CompilerVisitor(coreir.CompilerVisitor):
         return base
 
     def compile_GuardCheck(self, node):
-        return Builder.If( test = self.compile(node.condition),
+        return cyast.Builder.If( test = self.compile(node.condition),
                            body = self.compile(node.body),
                            orelse = [] )
 
     def compile_PyExpr(self, node):
         assert isinstance(node.expr, ExpressionInfo)
-        return E(node.expr.raw)
+        return cyast.E(node.expr.raw)
 
     def compile_Name(self, node):
-        return E(node.name)
+        return cyast.E(node.name)
 
     def compile_FunctionCall(self, node):
-        return E(node.function_name).call([ self.compile(arg) for arg in node.arguments ])
+        return cyast.E(node.function_name).call([ self.compile(arg) for arg in node.arguments ])
 
     def compile_ProcedureCall(self, node):
-        return stmt(cyast.Call(func=cyast.Name(node.function_name),
+        return cyast.stmt(cyast.Call(func=cyast.Name(node.function_name),
                                args=[ self.compile(arg) for arg in node.arguments ])
                     )
 
@@ -321,7 +320,7 @@ class CompilerVisitor(coreir.CompilerVisitor):
                                                modified_places = node.mod )
 
     def compile_AddMarking(self, node):
-        return stmt( self.env.marking_set_type.add_marking_stmt(env = self.env,
+        return cyast.stmt( self.env.marking_set_type.add_marking_stmt(env = self.env,
                                                                 markingset_var = node.marking_set_var,
                                                                 marking_var = node.marking_var) )
 
@@ -359,24 +358,24 @@ class CompilerVisitor(coreir.CompilerVisitor):
         return place_type.token_expr(env=self.env,
                                      token=node.value)
 
-    def try_gen_type_decl(self, input):
-        if input.is_Variable:
-            variable = input.variable
-            place_info = input.place_info
-            type = self.env.marking_type.get_place_type_by_name(place_info.name).token_type
+    def try_gen_type_decl(self, input_arc):
+        if input_arc.is_Variable:
+            variable = input_arc.variable
+            place_info = input_arc.place_info
+            pi_type = self.env.marking_type.get_place_type_by_name(place_info.name).token_type
             
-            if (not type.is_UserType) or (self.env.is_cython_type(type)):
-                return CVarSet( [ cyast.CVar(name=variable.name, type=self.env.type2str(type)) ] )
+            if (not pi_type.is_UserType) or (self.env.is_cython_type(pi_type)):
+                return CVarSet( [ cyast.CVar(name=variable.name, type=self.env.type2str(pi_type)) ] )
 
-        elif input.is_Test:
+        elif input_arc.is_Test:
             # TO DO declare variables appearing in tests
             return CVarSet()
-            # inner = input.inner
-            # return CVarSet( [ self.try_gen_type_decl(input.inner) ] )
+            # inner = input_arc.inner
+            # return CVarSet( [ self.try_gen_type_decl(input_arc.inner) ] )
 
-        elif input.is_MultiArc:
+        elif input_arc.is_MultiArc:
             varset = CVarSet()
-            for arc in input.sub_arcs:
+            for arc in input_arc.sub_arcs:
                 varset.extend( self.try_gen_type_decl(arc) )
             return varset
 
@@ -391,9 +390,9 @@ class CompilerVisitor(coreir.CompilerVisitor):
         stmts = [ self.compile( node.body ) ]
 
         decl = CVarSet()
-        inputs = node.transition_info.inputs
-        for input in inputs:
-            decl.extend(self.try_gen_type_decl(input))
+        input_arcs = node.transition_info.inputs
+        for input_arc in input_arcs:
+            decl.extend(self.try_gen_type_decl(input_arc))
 
         inter_vars = node.transition_info.intermediary_variables
         for var in inter_vars:
@@ -406,8 +405,8 @@ class CompilerVisitor(coreir.CompilerVisitor):
         for var in additionnal_decls:
             decl.add(var)
 
-        result = to_ast( Builder.FunctionDef(name = node.function_name,
-                                             args = (A(node.arg_marking_set_var.name, type = self.env.type2str(node.arg_marking_set_var.type))
+        result = cyast.to_ast( cyast.Builder.FunctionDef(name = node.function_name,
+                                             args = (cyast.A(node.arg_marking_set_var.name, type = self.env.type2str(node.arg_marking_set_var.type))
                                                      .param(node.arg_marking_var.name, type = self.env.type2str(node.arg_marking_var.type))),
                                              body = stmts,
                                              lang = cyast.CDef( public = False ),
@@ -427,20 +426,20 @@ class CompilerVisitor(coreir.CompilerVisitor):
         for var in additionnal_decls:
             decl.add(var)
 
-        return Builder.FunctionDef( name = node.function_name,
-                                    args = (A(node.arg_marking_set_var.name, type = self.env.type2str(node.arg_marking_set_var.type))
+        return cyast.Builder.FunctionDef( name = node.function_name,
+                                    args = (cyast.A(node.arg_marking_set_var.name, type = self.env.type2str(node.arg_marking_set_var.type))
                                             .param(node.arg_marking_var.name, type = self.env.type2str(node.arg_marking_var.type))),
                                     body = stmts,
                                     lang = cyast.CDef( public = False ),
-                                    returns = E("void"),
+                                    returns = cyast.E("void"),
                                     decl = decl )
 
     def compile_Succs(self, node):
         body = []
         body.extend( self.compile( node.body ) )
-        body.append( E("return " + node.arg_marking_set_var.name) )
-        f1 = Builder.FunctionCDef(name=node.function_name,
-                                  args=A(node.arg_marking_var.name, self.env.type2str(node.arg_marking_var.type)),
+        body.append( cyast.E("return " + node.arg_marking_set_var.name) )
+        f1 = cyast.Builder.FunctionCDef(name=node.function_name,
+                                  args=cyast.A(node.arg_marking_var.name, self.env.type2str(node.arg_marking_var.type)),
                                   body=body,
                                   returns=cyast.Name("set"),
                                   decl=[ cyast.CVar(name=node.arg_marking_set_var.name,
@@ -448,21 +447,21 @@ class CompilerVisitor(coreir.CompilerVisitor):
                                                     init=self.env.marking_set_type.new_marking_set_expr(self.env)) ]
                                   )
 
-        body = [ E("l = ctypes_ext.neco_list_new()") ]
+        body = [ cyast.E("l = ctypes_ext.neco_list_new()") ]
 
-        body.append( cyast.For(target=to_ast(E("e")),
-                               iter=to_ast(E("succs(m)")),
-                               body=[ to_ast(stmt(E("ctypes_ext.__Pyx_INCREF(e)"))),
-                                      cyast.Expr( cyast.Call(func=to_ast(E("ctypes_ext.neco_list_push_front")),
-                                                             args=[to_ast(E("l")), cyast.Name("e")],
+        body.append( cyast.For(target=cyast.to_ast(cyast.E("e")),
+                               iter=cyast.to_ast(cyast.E("succs(m)")),
+                               body=[ cyast.to_ast(cyast.stmt(cyast.E("ctypes_ext.__Pyx_INCREF(e)"))),
+                                      cyast.Expr( cyast.Call(func=cyast.to_ast(cyast.E("ctypes_ext.neco_list_push_front")),
+                                                             args=[cyast.to_ast(cyast.E("l")), cyast.Name("e")],
                                                              keywords=[],
                                                              starargs=None,
                                                              kwargs=None) ) ] ) )
 
-        body.append( E("return l") )
+        body.append( cyast.E("return l") )
 
-        f2 = Builder.FunctionCDef(name="neco_succs",
-                                  args=A("m", type="Marking"),
+        f2 = cyast.Builder.FunctionCDef(name="neco_succs",
+                                  args=cyast.A("m", type="Marking"),
                                   body=body,
                                   returns=cyast.Name("ctypes_ext.neco_list_t*"),
                                   decl=[cyast.CVar(name="l", type="ctypes_ext.neco_list_t*"),
@@ -476,18 +475,18 @@ class CompilerVisitor(coreir.CompilerVisitor):
     def compile_Init(self, node):
         new_marking = cyast.Assign(targets=[cyast.Name(node.marking_var.name)],
                                    value=self.env.marking_type.new_marking_expr(self.env))
-        return_stmt = E( "return {}".format(node.marking_var.name))
+        return_stmt = cyast.E( "return {}".format(node.marking_var.name))
 
         stmts = [new_marking]
         stmts.extend( self.compile(node.body) )
         stmts.append( return_stmt )
 
-        f1 = Builder.FunctionDef( name = node.function_name,
+        f1 = cyast.Builder.FunctionDef( name = node.function_name,
                                   body = stmts,
                                   returns = cyast.Name("Marking"),
                                   decl = [ cyast.CVar( node.marking_var.name, self.env.type2str(node.marking_var.type) )])
 
-        f2 = Builder.FunctionCDef( name = "neco_init",
+        f2 = cyast.Builder.FunctionCDef( name = "neco_init",
                                    body = [ stmts ],
                                    returns = cyast.Name("Marking"),
                                    decl = [ cyast.CVar( node.marking_var.name, self.env.type2str(node.marking_var.type) )])

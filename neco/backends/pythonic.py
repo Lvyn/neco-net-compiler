@@ -1,8 +1,6 @@
 """ Helpers for Python based languages. """
 
-import neco.core.netir as coreir
 import ast
-from neco.utils import flatten_lists
 
 class _extractor(ast.NodeTransformer):
     """ Helper class for extracting expressions from abstract syntax trees

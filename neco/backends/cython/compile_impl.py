@@ -1,16 +1,15 @@
 """ Python backend plugin. """
 
-import shutil, imp, os
-import netir, cyast
-from cyast import Unparser
-from neco import config
-from neco.utils import flatten_ast, search_file
-
 from Cython.Distutils import build_ext
 from distutils.core import setup
 from distutils.extension import Extension
-from neco.backends.cython import nettypes
-import common
+from neco import config
+from neco.backends.cython import netir
+from neco.backends.cython.priv import common, cyast
+from neco.utils import flatten_ast, search_file
+import imp
+import nettypes
+import os
 
 _backend_ = "cython"
 
@@ -54,7 +53,7 @@ def compile_IR(env):
     f = open(base_dir + "net.pxd", "w")
     f.write("cimport neco.ctypes.ctypes_ext as ctypes_ext\n")
 
-    Unparser(env.marking_type.gen_pxd(env), f)
+    cyast.Unparser(env.marking_type.gen_pxd(env), f)
     f.close()
 
     for node in env.function_nodes():
@@ -85,20 +84,9 @@ def compile_IR(env):
     for line in include_pyx:
         f.write(line)
 
-    Unparser(module_ast, f)
+    cyast.Unparser(module_ast, f)
 
     f.write(env.ending_pyx_declarations)
-
-#    path = search_file("ctypes_ext.pxd", search_paths)
-#    #os.makedirs(base_dir + "neco/ctypes")
-#    shutil.copyfile(path, base_dir + "ctypes_ext.pxd")
-#
-#    path = search_file("ctypes.h", search_paths)
-#    shutil.copyfile(path, base_dir + "ctypes.h")
-#
-#    f = open(base_dir + "ctypes_ext.pxd", "a")
-#    f.write( env.pxd_declarations )
-#    f.close()
 
     if config.get('debug'):
         print "********************************************************************************"
