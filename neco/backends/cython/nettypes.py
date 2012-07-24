@@ -42,7 +42,7 @@ class StaticMarkingType(coretypes.MarkingType):
 
         # pack 1SBT places ?
         if self.packing_enabled:
-            name = self.id_provider.new(base = "_packed")
+            name = self.id_provider.new(base="_packed")
             pack = placetypes.PackedPlaceTypes(name, self)
             self.id_provider.set(pack, name)
             pack = pack
@@ -51,22 +51,22 @@ class StaticMarkingType(coretypes.MarkingType):
         self._pack = pack
         
         import priv.mrkmethods
-        self.add_method_generator( priv.mrkmethods.InitGenerator() )
-        self.add_method_generator( priv.mrkmethods.DeallocGenerator() )
-        self.add_method_generator( priv.mrkmethods.CopyGenerator() )
+        self.add_method_generator(priv.mrkmethods.InitGenerator())
+        self.add_method_generator(priv.mrkmethods.DeallocGenerator())
+        self.add_method_generator(priv.mrkmethods.CopyGenerator())
         #self.add_method_generator( priv.mrkmethods.ReprGenerator() )
-        self.add_method_generator( priv.mrkmethods.DumpExprGenerator() )        
-        self.add_method_generator( priv.mrkmethods.RichcmpGenerator() )
-        self.add_method_generator( priv.mrkmethods.HashGenerator() )
+        self.add_method_generator(priv.mrkmethods.DumpExprGenerator())        
+        self.add_method_generator(priv.mrkmethods.RichcmpGenerator())
+        self.add_method_generator(priv.mrkmethods.HashGenerator())
         
         self._C_function_generators = []
         
         import priv.mrkfunctions
-        self.add_C_function_generator( priv.mrkfunctions.CompareGenerator() )
+        self.add_C_function_generator(priv.mrkfunctions.CompareGenerator())
         #self.add_C_function_generator( priv.mrkfunctions.MarkedGenerator() )
-        self.add_C_function_generator( priv.mrkfunctions.DumpGenerator() )
-        self.add_C_function_generator( priv.mrkfunctions.HashGenerator() )
-        self.add_C_function_generator( priv.mrkfunctions.CopyGenerator() )
+        self.add_C_function_generator(priv.mrkfunctions.DumpGenerator())
+        self.add_C_function_generator(priv.mrkfunctions.HashGenerator())
+        self.add_C_function_generator(priv.mrkfunctions.CopyGenerator())
         
     def add_C_function_generator(self, generator):
         self._C_function_generators.append(generator)
@@ -78,9 +78,8 @@ class StaticMarkingType(coretypes.MarkingType):
     def generate_C_functions(self, env):
         functions = []
         for generator in self._C_function_generators:
-            functions.append( generator.generate(env) )
+            functions.append(generator.generate(env))
         return functions
-
 
     def get_process_place_type(self, process_name):
         return self._process_place_types[process_name]
@@ -88,17 +87,17 @@ class StaticMarkingType(coretypes.MarkingType):
     def __gen_one_safe_place_type(self, place_info):
         if place_info.type.is_BlackToken:
             # register a new place type
-            pt = placetypes.PackedBT1SPlaceType( place_info, self, pack = self._pack )
-            self._pack.add_place( place_info, bits = 1 )
+            pt = placetypes.PackedBT1SPlaceType(place_info, self, pack=self._pack)
+            self._pack.add_place(place_info, bits=1)
             self.place_types[place_info.name] = pt
         else: # 1s not BT
             new_id = self.id_provider.new('one_safe_')
-            dummy = PlaceInfo.Dummy( new_id, one_safe = True )
+            dummy = PlaceInfo.Dummy(new_id, one_safe=True)
             self.id_provider.set(dummy, new_id)
 
-            pt = placetypes.PackedBT1SPlaceType( dummy, self, pack = self._pack )
+            pt = placetypes.PackedBT1SPlaceType(dummy, self, pack=self._pack)
             pt.revelant = False
-            self._pack.add_place( dummy, bits = 1 )
+            self._pack.add_place(dummy, bits=1)
             # remember place type
             self.place_types[new_id] = pt
 
@@ -114,10 +113,10 @@ class StaticMarkingType(coretypes.MarkingType):
             flow_place_type = self._process_place_types[process_name] # throws KeyError
         except KeyError:
             # flow place type does not exist: create new place type
-            new_id = self.id_provider.new(base = 'flow_')
+            new_id = self.id_provider.new(base='flow_')
             dummy = PlaceInfo.Dummy(new_id,
-                                    flow_control = True,
-                                    process_name = place_info.process_name)
+                                    flow_control=True,
+                                    process_name=place_info.process_name)
             self.id_provider.set(dummy, new_id)
 
             flow_place_type = placetypes.FlowPlaceType(dummy, self)
@@ -134,7 +133,7 @@ class StaticMarkingType(coretypes.MarkingType):
             needed_bits = flow_place_type.needed_bits
 
             # pack flow place
-            self._pack.add_place(dummy, bits = needed_bits)
+            self._pack.add_place(dummy, bits=needed_bits)
             flow_place_type.pack = self._pack
 
         # flow_place_type and helpers exist
@@ -183,31 +182,31 @@ class StaticMarkingType(coretypes.MarkingType):
         ################################################################################
 
         if self._pack and self._pack.native_field_count() > 0: # at least one bit used
-            name = '{name}[{count}]'.format(name  = self.id_provider.get(self._pack),
-                                            count = self._pack.native_field_count())
-            cls.add_decl( cyast.CVar(name, type=env.type2str(self._pack.type)) )
+            name = '{name}[{count}]'.format(name=self.id_provider.get(self._pack),
+                                            count=self._pack.native_field_count())
+            cls.add_decl(cyast.CVar(name, type=env.type2str(self._pack.type)))
 
         for place_type in self.place_types.itervalues():
             if not place_type.is_packed and not place_type.is_helper:
                 cls.add_decl(cyast.CVar(name=self.id_provider.get(place_type),
                                         type=env.type2str(place_type.type)))
 
-        cls.add_method( cyast.FunctionDecl(name='copy',
-                                           args = cyast.to_ast(cyast.A("self", cyast.Name(env.type2str(self.type)))),
-                                           returns = cyast.Name(env.type2str(self.type)),
-                                           lang=cyast.CDef()) )
+        cls.add_method(cyast.FunctionDecl(name='copy',
+                                          args=cyast.to_ast(cyast.A("self", cyast.Name(env.type2str(self.type)))),
+                                          returns=cyast.Name(env.type2str(self.type)),
+                                          lang=cyast.CDef()))
 
         return cyast.to_ast(cls)
 
     def generate_api(self, env):
-        cls = cyast.Builder.ClassCDef(name = "Marking",
-                                      bases = [])
+        cls = cyast.Builder.ClassCDef(name="Marking",
+                                      bases=[])
 
         ################################################################################
         # methods
         ################################################################################
         for method in self.generate_methods(env):
-            cls.add_method( method )
+            cls.add_method(method)
 
         # cls.add_method( self.gen_init_method(env) )
         # cls.add_method( self.gen_dealloc_method(env) )
@@ -224,17 +223,17 @@ class StaticMarkingType(coretypes.MarkingType):
         attributes = set()
         for place_type in self.place_types.itervalues():
             if place_type.is_packed:
-                attributes.add("{attribute}[{offset}]".format(attribute = self.id_provider.get(self._pack),
-                                                              offset = self._pack.get_field_native_offset(place_type)))
+                attributes.add("{attribute}[{offset}]".format(attribute=self.id_provider.get(self._pack),
+                                                              offset=self._pack.get_field_native_offset(place_type)))
             else:
                 attributes.add(self.id_provider.get(place_type))
-        attribute_max = max( len(attr) for attr in attributes)
+        attribute_max = max(len(attr) for attr in attributes)
 
         comms = set([])
         for place_type in self.place_types.itervalues():
             if place_type.is_packed:
-                attr = "{attribute}[{offset}]".format(attribute = self.id_provider.get(self._pack),
-                                                      offset = self._pack.get_field_native_offset(place_type))
+                attr = "{attribute}[{offset}]".format(attribute=self.id_provider.get(self._pack),
+                                                      offset=self._pack.get_field_native_offset(place_type))
             else:
                 attr = self.id_provider.get(place_type)
             comms.add("{info} - packed: {packed:1} - attribute: {attribute:{attribute_max}} #"
@@ -269,7 +268,7 @@ class StaticMarkingType(coretypes.MarkingType):
         @type modified_places: C{}
         """
         nodes = []
-        nodes.append( cyast.E( dst_marking.name + " = Marking()" ) )
+        nodes.append(cyast.E(dst_marking.name + " = Marking()"))
 
         copy_packs = set()
         copy_places = set()
@@ -293,18 +292,18 @@ class StaticMarkingType(coretypes.MarkingType):
 
 
         if self._pack and self._pack.native_field_count() > 0:
-            nodes.append( self._pack.copy_expr(env, src_marking_var = src_marking, dst_marking_var = dst_marking) )
+            nodes.append(self._pack.copy_expr(env, src_marking_var=src_marking, dst_marking_var=dst_marking))
 
         for place_type in copy_places:
             if place_type.is_helper or place_type.is_packed:
                 pass
             else:
                 place_expr = self.gen_get_place(env,
-                                                place_name = place_type.info.name,
-                                                marking_var = dst_marking)
+                                                place_name=place_type.info.name,
+                                                marking_var=dst_marking)
 
                 nodes.append(cyast.Assign(targets=[place_expr],
-                                          value=place_type.copy_expr(env, marking_var = src_marking))
+                                          value=place_type.copy_expr(env, marking_var=src_marking))
                              )
 
 
@@ -313,10 +312,10 @@ class StaticMarkingType(coretypes.MarkingType):
                 pass
             else:
                 place_expr = self.gen_get_place(env,
-                                                place_name = place_type.info.name,
-                                                marking_var = dst_marking)
+                                                place_name=place_type.info.name,
+                                                marking_var=dst_marking)
                 nodes.append(cyast.Assign(targets=[place_expr],
-                                          value=place_type.light_copy_expr(env, marking_var = src_marking))
+                                          value=place_type.light_copy_expr(env, marking_var=src_marking))
                              )
 
         return cyast.to_ast(nodes)
@@ -344,7 +343,7 @@ class StaticMarkingType(coretypes.MarkingType):
 
     def gen_check_flow(self, env, marking_var, place_info, current_flow):
         place_type = self.get_place_type_by_name(place_info.name)
-        assert( isinstance(place_type, placetypes.FlowPlaceTypeHelper))
+        assert(isinstance(place_type, placetypes.FlowPlaceTypeHelper))
         return place_type.gen_check_flow(env=env,
                                          marking_var=marking_var,
                                          place_info=place_info,
@@ -352,7 +351,7 @@ class StaticMarkingType(coretypes.MarkingType):
 
     def gen_update_flow(self, env, marking_var, place_info):
         place_type = self.get_place_type_by_name(place_info.name)
-        assert( isinstance(place_type, placetypes.FlowPlaceTypeHelper))
+        assert(isinstance(place_type, placetypes.FlowPlaceTypeHelper))
         return place_type.gen_update_flow(env=env,
                                           marking_var=marking_var,
                                           place_info=place_info)
@@ -365,7 +364,7 @@ class StaticMarkingType(coretypes.MarkingType):
                 break
 
         if (witness == None):
-            raise RuntimeError("no witness for process {process}".format(process = process_name))
+            raise RuntimeError("no witness for process {process}".format(process=process_name))
         return witness.gen_read_flow(env, marking_var)
     
     def gen_place_comparison(self, env, marking_var, op, left_place_name, right_place_name):
@@ -373,7 +372,7 @@ class StaticMarkingType(coretypes.MarkingType):
         # 2 = le
         # 3 = eq
         # 4 = ne
-        left_type  = self.get_place_type_by_name(left_place_name)
+        left_type = self.get_place_type_by_name(left_place_name)
         right_type = self.get_place_type_by_name(right_place_name)
         
         if left_type.__class__ == right_type.__class__:

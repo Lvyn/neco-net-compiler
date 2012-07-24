@@ -3,7 +3,7 @@ from neco.extsnakes import Pid
 
 class SONode(object):
     
-    def __init__(self, pid = None):
+    def __init__(self, pid=None):
         self.pid = pid
         self.children = []
         self.active = False
@@ -92,7 +92,7 @@ class SONode(object):
             |-1-<active=T>
         """
         new_pids_map = {}
-        self._reduce_sibling_offsets(old_prefix = [], new_prefix = [], new_pids_map = new_pids_map)
+        self._reduce_sibling_offsets(old_prefix=[], new_prefix=[], new_pids_map=new_pids_map)
         return new_pids_map
     
     def _reduce_sibling_offsets(self, old_prefix, new_prefix, new_pids_map):
@@ -142,9 +142,9 @@ class SONode(object):
         _old_pid = Pid.from_list(old_prefix + [old_frag_1])
         _new_pid = Pid.from_list(new_prefix + [new_frag])
         new_pids_map[_old_pid] = _new_pid
-        child_1._reduce_sibling_offsets(old_prefix = old_prefix + [old_frag_1],
-                                       new_prefix = new_prefix + [new_frag],
-                                       new_pids_map = new_pids_map)
+        child_1._reduce_sibling_offsets(old_prefix=old_prefix + [old_frag_1],
+                                        new_prefix=new_prefix + [new_frag],
+                                        new_pids_map=new_pids_map)
         for child_2 in self.children[1:]:
             old_frag_2 = int(child_2.pid)
             difference = old_frag_2 - old_frag_1
@@ -158,9 +158,9 @@ class SONode(object):
             _old_pid = Pid.from_list(old_prefix + [old_frag_2])
             _new_pid = Pid.from_list(new_prefix + [new_frag])
             new_pids_map[_old_pid] = _new_pid
-            child_2._reduce_sibling_offsets(old_prefix = old_prefix + [old_frag_2],
-                                            new_prefix = new_prefix + [new_frag],
-                                            new_pids_map = new_pids_map)
+            child_2._reduce_sibling_offsets(old_prefix=old_prefix + [old_frag_2],
+                                            new_prefix=new_prefix + [new_frag],
+                                            new_pids_map=new_pids_map)
             
             child_1 = child_2
             old_frag_1 = old_frag_2

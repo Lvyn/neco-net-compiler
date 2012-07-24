@@ -6,23 +6,23 @@ The loading of the module will raise a runtime error
 if loaded with wrong python version.
 """
 
-import subprocess, re, sys
-if (2, 7, 0) <= sys.version_info < (3,0,0) :
-    VERSION=(2,7)
+from neco import compile_net, g_logo
+from neco.utils import fatal_error
+from snakes.pnml import loads
+from time import time
+import argparse
+import imp
+import os
+import random
+import neco.config as config
+import sys
+if (2, 7, 0) <= sys.version_info < (3, 0, 0) :
+    VERSION = (2, 7)
 else:
     raise RuntimeError("unsupported python version")
 
-import argparse
-import imp, cProfile, pstats, os, random
-from time import time
 
-from snakes.pnml import loads
 
-import neco.config as config
-from neco.utils import fatal_error
-from neco import compile_net, g_logo
-
-import backends
 
 g_produced_files = ["*.pyc",
                     "net.so",
@@ -38,7 +38,7 @@ g_produced_files = ["*.pyc",
                     "ctypes_ext.pxd",
                     "trace"]
 
-def produce_pnml_file(abcd_file, pnml_file = None):
+def produce_pnml_file(abcd_file, pnml_file=None):
     """ Compile an abcd file to pnml.
     """
     random.seed(time())
@@ -56,7 +56,7 @@ def produce_pnml_file(abcd_file, pnml_file = None):
     main(['--pnml={}'.format(out_pnml), abcd_file])
     return out_pnml
 
-def load_pnml_file(pnml_file, remove = False):
+def load_pnml_file(pnml_file, remove=False):
     """ Load a model from a pnml file.
     """
     print "loading pnml file"
@@ -112,7 +112,7 @@ class Main(object):
         parser.add_argument('--pnml', dest='pnml', default=None, metavar='FILE', type=str,
                             help='ABCD file to be compiled ( or produced if used with --abcd )')
 
-        parser.add_argument('--module', '-m',  default=None, dest='module',  metavar='MODULE',  type=str,
+        parser.add_argument('--module', '-m', default=None, dest='module', metavar='MODULE', type=str,
                             help='Python module containing the Petri net to be compiled')
 
         parser.add_argument('--netvar', '-v', default='net', dest='netvar', metavar='VARIABLE', type=str,
@@ -142,64 +142,12 @@ class Main(object):
         parser.add_argument('--no-stats', default=False, dest='no_stats', action='store_true',
                             help='disable dynamic stats (transitions/sec, etc.)')
 
-        parser.add_argument('--clean', default=False, dest='clean', action='store_true',
-                            help='clean produced files')
-
         if cli_args:
             args = parser.parse_args(cli_args)
         else:
             args = parser.parse_args()
 
         # retrieve arguments
-        
-        if args.clean:
-            skip = False
-            
-            # expand globs
-            new_files = []
-            to_remove = []
-            import glob
-            for f in g_produced_files:
-                if f[0] == '*':
-                    files = glob.glob(f)
-            exit(0)
-            for f in g_produced_files:
-                try:
-                    handler = open(base_dir + f)
-                except IOError:
-                    continue
-                
-                if handler:                        
-                    handler.close()
-                    if skip:
-                        print "removing {}".format(f)
-                        os.remove(f)
-                    else:
-                        while(True):
-                            got = raw_input("remove '{}'? (y/n/a) : ".format(f)).upper()
-                            if got in ['Y', 'YES']:
-                                try:
-                                    print "removing {}".format(f)
-                                    os.remove(f)
-                                except OSError:
-                                    print >> sys.stderr, "Error while removing {}".format(f)
-                                break
-                            elif got in ['N', 'NO']:
-                                break
-                            elif got in ['A', 'ALL']:
-                                try:
-                                    print "removing {}".format(f)   
-                                    os.remove(f)
-                                except OSError:
-                                    print >> sys.stderr, "Error while removing {}".format(f)
-                                skip = True
-                                break
-                            else:
-                                print >> sys.stderr, "please use y(es), n(o), or a(ll)."
-                                continue
-                            
-            exit(0)
-
         abcd = args.abcd
         pnml = args.pnml
         module = args.module
@@ -238,18 +186,18 @@ class Main(object):
             model_file = pnml
 
         # setup config
-        config.set( # debug    = cli_argument_parser.debug(),
-                   optimize = args.optimize,
-                   backend  = args.language,
-                   profile  = args.profile,
-                   imports  = args.imports,
-                   no_stats = args.no_stats,
-                   optimize_flow = args.optimize_flow,
-                   search_paths = args.includes,
-                   trace_calls = False,
-                   trace_file = trace,
-                   pid_normalization = args.pid_normalization,
-                   model = model_file)
+        config.set(# debug    = cli_argument_parser.debug(),
+                   optimize=args.optimize,
+                   backend=args.language,
+                   profile=args.profile,
+                   imports=args.imports,
+                   no_stats=args.no_stats,
+                   optimize_flow=args.optimize_flow,
+                   search_paths=args.includes,
+                   trace_calls=False,
+                   trace_file=trace,
+                   pid_normalization=args.pid_normalization,
+                   model=model_file)
             
             
         # retrieve the Petri net from abcd file (produces a pnml file)
@@ -287,7 +235,7 @@ class Main(object):
             except OSError: pass # ignore errors
 
         start = time()
-        compiled_net = compile_net(net = self.petri_net)
+        compiled_net = compile_net(net=self.petri_net)
         end = time()
 
         if not compiled_net:

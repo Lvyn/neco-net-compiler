@@ -57,10 +57,10 @@ def compile_IR(env):
     f.close()
 
     for node in env.function_nodes():
-        compiled_nodes.append( compiler.compile(node) )
-    compiled_nodes = flatten_ast( compiled_nodes )
+        compiled_nodes.append(compiler.compile(node))
+    compiled_nodes = flatten_ast(compiled_nodes)
 
-    module_ast = cyast.Module(body = compiled_nodes)
+    module_ast = cyast.Module(body=compiled_nodes)
 
     f = open(base_dir + "net.pyx", "w")
     if config.get('no_stats'):
@@ -97,12 +97,12 @@ def compile_IR(env):
     setup(name=base_dir + "net.pyx",
           cmdclass={'build_ext': build_ext},
           ext_modules=[Extension("net", [base_dir + "net.pyx"],
-                                 include_dirs = search_paths + [base_dir],
+                                 include_dirs=search_paths + [base_dir],
                                  extra_compile_args=[], # '-ggdb'],
                                  extra_link_args=['-lctypes'],
-                                 library_dirs = search_paths + [base_dir])],
+                                 library_dirs=search_paths + [base_dir])],
           script_args=["build_ext", "--inplace"],
-          options = { 'build': { 'build_base': 'build' } })
+          options={ 'build': { 'build_base': 'build' } })
 
     if config.get('debug'):
         print "********************************************************************************"

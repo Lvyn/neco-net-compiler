@@ -5,7 +5,7 @@ from neco.core.info import TypeInfo
 
 def _str_list_to_endlstr(lst):
     lst.append("")
-    ret = "\n".join( lst )
+    ret = "\n".join(lst)
     lst.pop(-1)
     return ret
 
@@ -41,7 +41,7 @@ TypeInfo.register_type("UnsignedChar")
 
 class CVars(object):
 
-    def __init__(self, env, initial = None):
+    def __init__(self, env, initial=None):
         self.env = env
         self._cvars = initial if initial else set([])
 
@@ -60,14 +60,14 @@ class CVars(object):
                 break
         if tmp:
             self._cvars.remove(tmp)
-            self._cvars.add( (name, typ) )
+            self._cvars.add((name, typ))
 
     def declare(self, name, typ):
         self._cvars.add((name, typ))
 
     def __iter__(self):
         for n, t in self._cvars:
-            yield CVar( name=n, type=self.env.type2str(t) )
+            yield CVar(name=n, type=self.env.type2str(t))
         raise StopIteration
 
     def __str__(self):
@@ -164,7 +164,7 @@ class CompilingEnvironment(core.CompilingEnvironment):
 
     ################################################################################
 
-    def add_pxd_declaration(self, decl, unique = False):
+    def add_pxd_declaration(self, decl, unique=False):
         if unique and decl in self._pxd_declarations:
             return
         self._pxd_declarations.append(to_ast(decl))
@@ -177,7 +177,7 @@ class CompilingEnvironment(core.CompilingEnvironment):
     ################################################################################
 
     def add_successor_function(self, function_name, process):
-        self._successor_functions.append( (function_name, process) )
+        self._successor_functions.append((function_name, process))
 
     def try_declare_cvar(self, variable_name, new_type):
         """
@@ -240,7 +240,7 @@ class CompilingEnvironment(core.CompilingEnvironment):
 
 class CVarSet(object):
 
-    def __init__(self, iterable = []):
+    def __init__(self, iterable=[]):
         """ Initialize the set.
 
         @param iterable: iterable object containing initial elements.

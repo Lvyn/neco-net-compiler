@@ -14,7 +14,7 @@ class multiset(hdict):
     """
     """
 
-    def __init__(self, initial_data = []):
+    def __init__(self, initial_data=[]):
         """ builds a brand new multiset from some initial data
 
         @param initial_data: list of elements (eventually with repetitions
@@ -372,7 +372,7 @@ def neco__multiset_update_pids(ms, new_pid_dict):
     new_ms = multiset()
     for tok, count in ms.iteritems():
         if isinstance(tok, Pid):
-            new_tok = Pid.from_list( new_pid_dict[tok].data )
+            new_tok = Pid.from_list(new_pid_dict[tok].data)
         elif isinstance(tok, tuple):
             new_tok = neco__tuple_update_pids(tok, new_pid_dict)
         else:
@@ -397,9 +397,9 @@ def neco__generator_token_transformer(ms, new_pid_dict):
     """
     new_ms = multiset()
     for pid, n in ms:
-        new_pid = Pid.from_list( new_pid_dict[pid].data )
-        new_n   = Pid.from_list( new_pid_dict[ pid.next(n) ].data ).ends_with() - 1
-        new_ms.add( (new_pid, new_n) )
+        new_pid = Pid.from_list(new_pid_dict[pid].data)
+        new_n = Pid.from_list(new_pid_dict[ pid.next(n) ].data).ends_with() - 1
+        new_ms.add((new_pid, new_n))
     return new_ms
 
 from process import PidTree

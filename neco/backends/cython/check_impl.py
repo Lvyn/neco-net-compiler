@@ -70,12 +70,12 @@ class CheckerEnv(common.CompilingEnvironment):
             function_ir = generator()
             
             visitor = CheckerCompileVisitor(self)
-            function_ast = visitor.compile( function_ir )        
+            function_ast = visitor.compile(function_ir)        
 
             function = FunctionWrapper(function_name, function_ast)
             self._is_fireable_functions[transition_name] = function
 
-        return function.call( [ cyast.Name(marking_var.name) ] )
+        return function.call([ cyast.Name(marking_var.name) ])
 
     def gen_multiset_card_expression(self, marking_var, multiset):
         
@@ -104,15 +104,15 @@ class FunctionWrapper(object):
         @type function_ast: C{AST}
         """
         self._function_name = function_name
-        self._function_ast  = function_ast
+        self._function_ast = function_ast
 
     def ast(self):
         return self._function_ast
 
     def call(self, args):
         self._function_name
-        return cyast.Call(func = cyast.Name(self._function_name),
-                          args = args)
+        return cyast.Call(func=cyast.Name(self._function_name),
+                          args=args)
 
 
 ################################################################################
@@ -132,29 +132,29 @@ def gen_InPlace_function(checker_env, function_name, place_name):
     token_var = variable_provider.new_variable(type=place_type.token_type)
     #check_var = variable_provider.new_variable(type=TypeInfo.Int)
 
-    builder.begin_FunctionCDef(name = function_name,
-                               args = (cyast.A(marking_var.name,
-                                               type=checker_env.type2str(marking_var.type))
-                                       .param(name=token_var.name,
-                                              type=checker_env.type2str(token_var.type))),
-                               returns = cyast.Name("int"),
-                               decl = [],
+    builder.begin_FunctionCDef(name=function_name,
+                               args=(cyast.A(marking_var.name,
+                                             type=checker_env.type2str(marking_var.type))
+                                     .param(name=token_var.name,
+                                            type=checker_env.type2str(token_var.type))),
+                               returns=cyast.Name("int"),
+                               decl=[],
                                public=False, api=False)
 
     main_body = []
 
     loop_var = variable_provider.new_variable(type=place_type.token_type)
     inner_body = cyast.If(cyast.Compare(cyast.Name(token_var.name),
-                                        [cyast.Eq()],
-                                        [cyast.Name(loop_var.name)]),
-                          [ cyast.Return( cyast.Num(1) ) ])
+                                        [ cyast.Eq() ],
+                                        [ cyast.Name(loop_var.name) ]),
+                          [ cyast.Return(cyast.Num(1)) ])
     node = place_type.enumerate_tokens(checker_env,
                                        loop_var,
                                        marking_var,
                                        body=inner_body)
 
-    main_body.append( node )
-    main_body.append( cyast.Return(value=cyast.Num(0)) )
+    main_body.append(node)
+    main_body.append(cyast.Return(value=cyast.Num(0)))
 
     for stmt in main_body:
         builder.emit(stmt)
@@ -178,21 +178,21 @@ class IsFireableGenerator(core.SuccTGenerator):
         self.env = checker_env
 
         # this helper will create new variables and take care of shared instances
-        helper = info.SharedVariableHelper( transition.shared_input_variables(),
-                                            WordSet(transition.variables().keys()) )
+        helper = info.SharedVariableHelper(transition.shared_input_variables(),
+                                           WordSet(transition.variables().keys()))
         self.variable_helper = helper
 
         if config.get('optimize'):
             self.transition.order_inputs()
 
         # function arguments
-        self.arg_marking_var = helper.new_variable(type = self.marking_type.type)
+        self.arg_marking_var = helper.new_variable(type=self.marking_type.type)
 
         # create function
-        self.builder.begin_function_IsFireable( function_name     = self.function_name,
-                                                arg_marking_var   = self.arg_marking_var,
-                                                transition_info   = self.transition,
-                                                variable_provider = helper )
+        self.builder.begin_function_IsFireable(function_name=self.function_name,
+                                               arg_marking_var=self.arg_marking_var,
+                                               transition_info=self.transition,
+                                               variable_provider=helper)
         
     def __call__(self):
         trans = self.transition
@@ -203,9 +203,9 @@ class IsFireableGenerator(core.SuccTGenerator):
         guard = info.ExpressionInfo(trans.trans.guard._str)
         try:
             if eval(guard.raw) != True:
-                builder.begin_GuardCheck( condition = core.netir.PyExpr(guard) )
+                builder.begin_GuardCheck(condition=core.netir.PyExpr(guard))
         except:
-            builder.begin_GuardCheck( condition = core.netir.PyExpr(guard) )
+            builder.begin_GuardCheck(condition=core.netir.PyExpr(guard))
         
         # guard valid
         success = info.ExpressionInfo("True")
@@ -227,7 +227,7 @@ def build_multiset(elements):
     return cyast.E("ctypes_ext.MultiSet({!r})".format(dict(l)))
     
 def multiset_expr_from_place_name(checker_env, marking_var, place_name):        
-    place_type  = checker_env.marking_type.get_place_type_by_name(place_name)
+    place_type = checker_env.marking_type.get_place_type_by_name(place_name)
     multiset = place_type.multiset_expr(checker_env, marking_var)
     if place_type.type != TypeInfo.get('MultiSet'):
         print >> sys.stderr, "[W] using multiset fallback for {}, this may result in slow execution times".format(place_name)
@@ -261,16 +261,16 @@ def gen_multiset_comparison(checker_env, marking_var, cython_op, left, right):
     
     return cyast.Compare(left=left_multiset,
                          ops=[cython_op],
-                         comparators=[right_multiset] )
+                         comparators=[right_multiset])
         
 def gen_check_expression(checker_env, marking_var, formula):
     if formula.isIntegerComparison():
         operator = operator_to_cyast(formula.operator)
-        left = gen_check_expression( checker_env, marking_var, formula.left )
-        right = gen_check_expression( checker_env, marking_var, formula.right )
+        left = gen_check_expression(checker_env, marking_var, formula.left)
+        right = gen_check_expression(checker_env, marking_var, formula.right)
         return cyast.Compare(left=left,
                              ops=[operator],
-                             comparators=[right] )
+                             comparators=[right])
         
     elif formula.isMultisetComparison():
         operator = operator_to_cyast(formula.operator)
@@ -291,22 +291,22 @@ def gen_check_expression(checker_env, marking_var, formula):
         head = operands[0]
         tail = operands[1:]
         
-        left  = gen_check_expression(checker_env, marking_var, head)
+        left = gen_check_expression(checker_env, marking_var, head)
         if len(tail) > 1:
             right = gen_check_expression(checker_env, marking_var, Sum(tail))
         else:
             right = gen_check_expression(checker_env, marking_var, tail[0])
         
         
-        return cyast.BinOp(left = left,
-                           op = cyast.Add(),
-                           right = right)
+        return cyast.BinOp(left=left,
+                           op=cyast.Add(),
+                           right=right)
     
     elif formula.isDeadlock():
         pass # nothing to do just add option -d DEAD to neco-spot
     
     elif formula.isFireable():
-        return checker_env.is_fireable_expression(marking_var,                                                  
+        return checker_env.is_fireable_expression(marking_var,
                                                   formula.transition_name)
 
     elif formula.isMultisetCard():
@@ -332,16 +332,16 @@ def gen_check_function(checker_env, identifier, atom):
     marking_var = variable_provider.new_variable(type=marking_type.type)
 
     function_name = "check_{}".format(identifier)
-    builder.begin_FunctionCDef(name = function_name,
-                               args = cyast.A(marking_var.name, type=checker_env.type2str(marking_var.type)),
-                               returns = cyast.Name("int"),
-                               decl = [],
+    builder.begin_FunctionCDef(name=function_name,
+                               args=cyast.A(marking_var.name, type=checker_env.type2str(marking_var.type)),
+                               returns=cyast.Name("int"),
+                               decl=[],
                                public=False, api=False)
 
     formula = atom.formula
-    builder.emit( cyast.Return( gen_check_expression(checker_env,
-                                                     marking_var,
-                                                     formula) ) )
+    builder.emit(cyast.Return(gen_check_expression(checker_env,
+                                                   marking_var,
+                                                   formula)))
 
     builder.end_FunctionDef()
     tree = cyast.to_ast(builder)
@@ -360,24 +360,24 @@ def gen_main_check_function(checker_env, id_prop_map):
     checker_env.push_variable_provider(variable_provider)
 
     marking_var = variable_provider.new_variable(type=checker_env.marking_type.type)
-    atom_var    = variable_provider.new_variable(type=TypeInfo.get('Int'))
+    atom_var = variable_provider.new_variable(type=TypeInfo.get('Int'))
 
-    builder.begin_FunctionCDef(name = function_name,
-                               args = (cyast.A(marking_var.name, type=checker_env.type2str(marking_var.type))
-                                       .param(atom_var.name, type=checker_env.type2str(TypeInfo.get('Int')))),
-                               returns = cyast.Name("int"),
-                               decl = [],
+    builder.begin_FunctionCDef(name=function_name,
+                               args=(cyast.A(marking_var.name, type=checker_env.type2str(marking_var.type))
+                                     .param(atom_var.name, type=checker_env.type2str(TypeInfo.get('Int')))),
+                               returns=cyast.Name("int"),
+                               decl=[],
                                public=True, api=True)
 
     for (i, (ident, _)) in enumerate(id_prop_map.iteritems()):
         if i == 0:
-            builder.begin_If( test = cyast.Compare( left = cyast.Name(atom_var.name),
-                                                    ops = [ cyast.Eq() ],
-                                                    comparators = [ cyast.Num(ident) ] ) )
+            builder.begin_If(test=cyast.Compare(left=cyast.Name(atom_var.name),
+                                                ops=[ cyast.Eq() ],
+                                                comparators=[ cyast.Num(ident) ]))
         else:
-            builder.begin_Elif( test = cyast.Compare( left = cyast.Name(atom_var.name),
-                                                    ops = [ cyast.Eq() ],
-                                                    comparators = [ cyast.Num(ident) ] ) )
+            builder.begin_Elif(test=cyast.Compare(left=cyast.Name(atom_var.name),
+                                                  ops=[ cyast.Eq() ],
+                                                  comparators=[ cyast.Num(ident) ]))
 
         builder.emit_Return(checker_env.get_check_function("check_{}".format(ident)).call([cyast.Name(marking_var.name)]))
 
@@ -407,7 +407,7 @@ class CheckerCompileVisitor(netir.CompilerVisitor):
 
         self.var_helper = node.transition_info.variable_helper
 
-        stmts = [ self.compile( node.body ) ]
+        stmts = [ self.compile(node.body) ]
 
         decl = netir.CVarSet()
         input_arcs = node.transition_info.inputs
@@ -416,7 +416,7 @@ class CheckerCompileVisitor(netir.CompilerVisitor):
 
         inter_vars = node.transition_info.intermediary_variables
         for var in inter_vars:
-            if (not var.type.is_UserType) or self.env.is_cython_type( var.type ):
+            if (not var.type.is_UserType) or self.env.is_cython_type(var.type):
                 decl.add(cyast.CVar(name=var.name,
                                     type=self.env.type2str(var.type))
         )
@@ -425,12 +425,12 @@ class CheckerCompileVisitor(netir.CompilerVisitor):
         for var in additionnal_decls:
             decl.add(var)
 
-        result = cyast.to_ast( cyast.Builder.FunctionDef(name = node.function_name,
-                                                         args = (cyast.A(node.arg_marking_var.name, type = self.env.type2str(node.arg_marking_var.type))),
-                                                         body = stmts,
-                                                         lang = cyast.CDef( public = False ),
-                                                         returns = cyast.Name("int"),
-                                                         decl = decl) )
+        result = cyast.to_ast(cyast.Builder.FunctionDef(name=node.function_name,
+                                                        args=(cyast.A(node.arg_marking_var.name, type=self.env.type2str(node.arg_marking_var.type))),
+                                                        body=stmts,
+                                                        lang=cyast.CDef(public=False),
+                                                        returns=cyast.Name("int"),
+                                                        decl=decl))
         return result
 
 
@@ -477,10 +477,10 @@ def produce_and_compile_pyx(checker_env, id_prop_map):
     setup(name=base_dir + "checker.pyx",
           cmdclass={'build_ext': build_ext},
           ext_modules=[Extension("checker", [base_dir + "checker.pyx"],
-                                 include_dirs = include_dirs + [base_dir],
-                                 extra_compile_args = [],
-                                 extra_link_args = ['-lctypes'],
-                                 library_dirs = library_dirs + [base_dir])],
+                                 include_dirs=include_dirs + [base_dir],
+                                 extra_compile_args=[],
+                                 extra_link_args=['-lctypes'],
+                                 library_dirs=library_dirs + [base_dir])],
           script_args=["build_ext", "--inplace"],
-          options = { 'build': { 'build_base': 'build' } })
+          options={ 'build': { 'build_base': 'build' } })
 

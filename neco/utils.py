@@ -1,13 +1,12 @@
 """ Utility classes and functions. """
 
-import types, sys, re, ast
+import sys, ast
 from os.path import exists, abspath
 from functools import wraps
 from abc import abstractmethod, ABCMeta
 from snakes.nets import WordSet
-from collections import defaultdict
 
-def flatten_lists( l ):
+def flatten_lists(l):
     """ Make a list of lists flat.
 
     >>> l = [1, 2, 3]
@@ -30,7 +29,7 @@ def flatten_lists( l ):
     """
     new_list = []
     for elt in l:
-        if isinstance( elt, list ):
+        if isinstance(elt, list):
             elt = flatten_lists(elt)
             for e in elt:
                 new_list.append(e)
@@ -276,7 +275,7 @@ class StringIDProvider(object):
         self.assoc = {}
 
     def _next(self, obj):
-        return self._escape(self.wordset.fresh(True, base = str(obj)))
+        return self._escape(self.wordset.fresh(True, base=str(obj)))
 
     def _escape(self, str):
         res = ""
@@ -335,7 +334,7 @@ class StringIDProvider(object):
         self.assoc = {}
 
     def _next(self, obj):
-        return self._escape(self.wordset.fresh(True, base = str(obj)))
+        return self._escape(self.wordset.fresh(True, base=str(obj)))
 
     def _escape(self, str):
         res = ""
@@ -395,7 +394,7 @@ class NameProvider(object):
         self.assoc = {}
 
     def _next(self, obj, base):
-        self.id+=1
+        self.id += 1
         if base != "":
             return self._escape("_n{}_{}".format(self.id, base))
         else:
@@ -423,13 +422,13 @@ class NameProvider(object):
     def to_string(self, obj):
         return "\"" + self.get(obj) + "\""
 
-    def new(self, base = ""):
+    def new(self, base=""):
         return self._next(None, base)
 
     def set(self, obj, id):
         self.assoc[obj] = id
 
-    def get(self, obj, base = ""):
+    def get(self, obj, base=""):
         """ get an identifier for an object.
 
         >>> provider = IDProvider()
@@ -512,14 +511,14 @@ class multidict(dict):
             self[key].append(elt)
 
 
-def _extract_dict(d, key_fun = lambda x: x, value_fun = lambda x : x):
-    return [ "{key}: {value}".format(key = key_fun(key), value = value_fun(value))
+def _extract_dict(d, key_fun=lambda x: x, value_fun=lambda x : x):
+    return [ "{key}: {value}".format(key=key_fun(key), value=value_fun(value))
              for key, value in sorted(d.iteritems()) ]
 
 class bidict(object):
     """ Bidirectional dictionary. """
 
-    def __init__(self, data = {}):
+    def __init__(self, data={}):
         """ build a bidirectional dictionary from a dictionnary
 
         @param data: initial elements
@@ -691,18 +690,18 @@ def indent(n):
 
 
 class EnumValue(object):
-   #__slots__ = ('__value')
-   def __init__(self, name, value):
-       self.__name = name
-       self.__value = value
-   Value = property(lambda self: self.__value)
-   #EnumType = property(lambda self: EnumType)
-   def __hash__(self):        return hash(self.__value)
-   def __cmp__(self, other):
-       return cmp(self.__value, other.__value)
-   def __invert__(self):      return constants[maximum - self.__value]
-   def __nonzero__(self):     return bool(self.__value)
-   def __repr__(self):        return str(self.__name)
+    #__slots__ = ('__value')
+    def __init__(self, name, value):
+        self.__name = name
+        self.__value = value
+    Value = property(lambda self: self.__value)
+    #EnumType = property(lambda self: EnumType)
+    def __hash__(self):        return hash(self.__value)
+    def __cmp__(self, other):
+        return cmp(self.__value, other.__value)
+    def __invert__(self):      return constants[maximum - self.__value]
+    def __nonzero__(self):     return bool(self.__value)
+    def __repr__(self):        return str(self.__name)
 
 class EnumClass(object):
     #__slots__ = ('names', 'constants')
@@ -722,30 +721,30 @@ class EnumClass(object):
     def __str__(self):         return 'enum ' + str(self.constants)
 
 def Enum(*names):
-   """ Enumerations.
+    """ Enumerations.
 
-   --- Days of week ---
-   >>> Days = Enum('Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su')
-   >>> print Days
-   enum (Mo, Tu, We, Th, Fr, Sa, Su)
-   >>> print (Days.Mo, Days.Fr)
-   (Mo, Fr)
-   >>> print Days.Mo < Days.Fr
-   True
-   >>> print list(Days)
-   [Mo, Tu, We, Th, Fr, Sa, Su]
+    --- Days of week ---
+    >>> Days = Enum('Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su')
+    >>> print Days
+    enum (Mo, Tu, We, Th, Fr, Sa, Su)
+    >>> print (Days.Mo, Days.Fr)
+    (Mo, Fr)
+    >>> print Days.Mo < Days.Fr
+    True
+    >>> print list(Days)
+    [Mo, Tu, We, Th, Fr, Sa, Su]
 
-   >>> for each in Days:
-   ...     print 'Day:', each
-   Day: Mo
-   Day: Tu
-   Day: We
-   Day: Th
-   Day: Fr
-   Day: Sa
-   Day: Su
-   """
-   return EnumClass(names)
+    >>> for each in Days:
+    ...     print 'Day:', each
+    Day: Mo
+    Day: Tu
+    Day: We
+    Day: Th
+    Day: Fr
+    Day: Sa
+    Day: Su
+    """
+    return EnumClass(names)
 
 ################################################################################
 
@@ -788,7 +787,7 @@ class Matcher(object):
 
 ################################################################################
 
-def fatal_error(msg, ret=-1):
+def fatal_error(msg, ret= -1):
     """ Helper function for handling fatal errors.
 
     this function will put C{msg} in C{sys.stderr} and exit the program
@@ -806,4 +805,3 @@ def reverse_map(a_b_map):
 ################################################################################
 # EOF
 ################################################################################
-

@@ -7,8 +7,8 @@ if loaded with wrong python version.
 """
 
 import sys
-if (2, 7, 0) <= sys.version_info < (3,0,0) :
-    VERSION=(2,7)
+if (2, 7, 0) <= sys.version_info < (3, 0, 0) :
+    VERSION = (2, 7)
 else:
     raise RuntimeError("unsupported python version")
 
@@ -21,7 +21,7 @@ import cPickle as pickle
 from neco import compile_checker
 import core.xmlproperties
 
-def exclusive(elts, acc = False):
+def exclusive(elts, acc=False):
     try:
         e = bool(elts.pop())
     except IndexError:
@@ -81,10 +81,10 @@ class Main(object):
         trace = pickle.load(trace_fd)
         model_file = trace['model']
         i = model_file.rfind('.')
-        ext = model_file[i+1:]
+        ext = model_file[i + 1:]
         name = model_file[:i]
         
-        model, abcd, pnml = (None,)*3
+        model, abcd, pnml = (None,) * 3
         if ext == 'py':
             model = name
         elif ext == 'abcd':
@@ -121,12 +121,12 @@ class Main(object):
         
         # setup config
         config.set(#debug = cli_argument_parser.debug(),
-                   profile = profile,
-                   backend = 'cython', # force cython
-                   formula = formula,
-                   trace_calls = False,
-                   additional_search_paths = args.includes,
-                   trace_file = trace_file)
+                   profile=profile,
+                   backend='cython', # force cython
+                   formula=formula,
+                   trace_calls=False,
+                   additional_search_paths=args.includes,
+                   trace_file=trace_file)
 
         compile_checker(formula, net)
 

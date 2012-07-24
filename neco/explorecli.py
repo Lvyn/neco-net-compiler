@@ -6,20 +6,21 @@ The loading of the module will raise a runtime error
 if loaded with wrong python version.
 """
 
-import subprocess, re, sys
-if (2, 7, 0) <= sys.version_info < (3,0,0) :
-    VERSION=(2,7)
+import sys
+if (2, 7, 0) <= sys.version_info < (3, 0, 0) :
+    VERSION = (2, 7)
 else:
     raise RuntimeError("unsupported python version")
 
-import argparse
-import neco.config as config
-from neco.utils import fatal_error
-from neco import compile_net, g_logo
-import imp, cProfile, pstats, os, bz2, gzip
 from time import time
-
-from snakes.pnml import loads
+import argparse
+import bz2
+import gzip
+import imp
+import os
+from neco import g_logo
+from neco.utils import fatal_error
+import neco.config as config
 
 def try_open_file(file_name):
     """ Helper function to open files with compression support (bz2, gz).
@@ -28,7 +29,7 @@ def try_open_file(file_name):
         std_map = { 'stdout' : sys.stdout, 'stderr' : sys.stderr }
         out_file = std_map[file_name]
     except KeyError:
-        basename, extension = os.path.splitext(file_name)
+        _, extension = os.path.splitext(file_name)
         if extension == '.bz2':
             print "bz2 compression enabled for file {}".format(file_name)
             out_file = bz2.BZ2File(file_name, 'w', 2048, compresslevel=6)
@@ -81,9 +82,9 @@ class Main(object):
 
         # setup config
         config.set(#debug    = cli_argument_parser.debug(),
-                   print_mcc = args.print_mcc,
-                   profile  = profile,
-                   trace_calls = False)
+                   print_mcc=args.print_mcc,
+                   profile=profile,
+                   trace_calls=False)
 
         if not args.print_mcc:
             print "{} uses python {}".format(progname, sys.version)
@@ -168,7 +169,7 @@ class Main(object):
     def explore_graph(self):
         """ Build reachability graph. """
         # select output stream
-        map_file   = try_open_file(self.map_file)
+        map_file = try_open_file(self.map_file)
         graph_file = try_open_file(self.graph_file)
 
         net = self.compiled_net

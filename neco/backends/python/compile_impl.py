@@ -40,11 +40,11 @@ class Env(CompilingEnvironment):
         nodes = []
         for decl in self._declarations:
             stmt = pyast.E(decl)
-            nodes.append( stmt )
+            nodes.append(stmt)
 
         for module in self._imports:
-            nodes.append( ast.Import( names = [ ast.alias( name = module,
-                                                           asname = None ) ] ) )
+            nodes.append(ast.Import(names=[ ast.alias(name=module,
+                                                           asname=None) ]))
         return nodes
 
 
@@ -84,7 +84,7 @@ def compile_IR(env):
     
     compiled_nodes = env.gen_imports() + compiled_nodes
     
-    module_ast = ast.Module(body = compiled_nodes)
+    module_ast = ast.Module(body=compiled_nodes)
     module_ast = ast.fix_missing_locations(module_ast)
 
     f = open("net.py", "w")
