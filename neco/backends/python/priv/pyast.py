@@ -4,11 +4,11 @@ This module provides all contents from C{ast} module.
 
 """
 
-import ast
 from ast import *
-
+from neco.backends.pythonic import extract_python_expr, check_arg, check_attrs
+import ast
 import neco.core.netir as coreir
-from neco.backends.pythonic import *
+
 
 def Name(id):
     return ast.Name(id=id)
@@ -222,10 +222,6 @@ class Builder(coreir.BuilderBase):
 
     def emit_Return(self, value):
         self.emit( ast.Return( value ) )
-
-    def emit_DebugMessage(self, msg):
-        self.emit( ast.DebugMessage( message = msg) )
-
 
     class arguments_helper(object):
         def __init__(self):

@@ -1,6 +1,4 @@
 
-from collections import defaultdict
-from neco.backends.python.data import multiset
 from neco.extsnakes import Pid
 
 class SONode(object):

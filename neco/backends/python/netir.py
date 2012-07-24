@@ -1,18 +1,16 @@
 """ Python AST compiler. """
 
-import cPickle as cPickle
-import StringIO
-import neco.config as config
-import neco.core.netir as coreir
-from neco.core.info import *
+from neco.core.info import ExpressionInfo
 from nettypes import type2str
-from pyast import *
-import pyast as ast
+from priv import pyast
+import StringIO
+import cPickle as cPickle
+import neco.core.netir as coreir
 
 ################################################################################
 
 class CompilerVisitor(coreir.CompilerVisitor):
-    """ Python ast compiler visitor class. """
+    """ Python pyast compiler visitor class. """
 
     backend = "python"
 
@@ -20,8 +18,8 @@ class CompilerVisitor(coreir.CompilerVisitor):
         self.env = env
 
     def compile_Print(self, node):
-        return ast.Print(dest = None,
-                         values = [ ast.Str( s = node.message ) ],
+        return pyast.Print(dest = None,
+                         values = [ pyast.Str( s = node.message ) ],
                          nl = True)
 
     def compile(self, node):
@@ -31,44 +29,44 @@ class CompilerVisitor(coreir.CompilerVisitor):
         return []
 
     def compile_If(self, node):
-        return ast.If( test = self.compile(node.condition),
+        return pyast.If( test = self.compile(node.condition),
                        body = self.compile(node.body),
                        orelse = self.compile(node.orelse) )
 
     def compile_Compare(self, node):
-        return ast.Compare( left = self.compile(node.left),
+        return pyast.Compare( left = self.compile(node.left),
                             ops = [ self.compile(op) for op in node.ops ],
                             comparators = [ self.compile(comparator) for comparator in node.comparators ] )
 
     def compile_EQ(self, node):
-        return ast.Eq()
+        return pyast.Eq()
 
     def compile_CheckTuple(self, node):
         tuple_info = node.tuple_info
-        test = E( "isinstance(" + node.tuple_var.name +  ", tuple) and len(" + node.tuple_var.name + ") == " + repr(len(tuple_info)) )
-        return ast.If( test = test, body = self.compile(node.body) )
+        test = pyast.E( "isinstance(" + node.tuple_var.name +  ", tuple) and len(" + node.tuple_var.name + ") == " + repr(len(tuple_info)) )
+        return pyast.If( test = test, body = self.compile(node.body) )
 
     def compile_CheckType(self, node):
         type_info = node.type
         if type_info.is_AnyType:
             return self.compile(node.body)
 
-        test = E("isinstance(" + node.variable.name + ", " + type2str(node.type) + ")")
-        return ast.If( test = test, body = self.compile(node.body) )
+        test = pyast.E("isinstance(" + node.variable.name + ", " + type2str(node.type) + ")")
+        return pyast.If( test = test, body = self.compile(node.body) )
 
     def compile_Match(self, node):
         tuple_info = node.tuple_info
         seq = []
 
         component_names = [ token_info.data['local_variable'].name for token_info in tuple_info ]
-        seq.append( ast.Assign(targets = [ ast.Tuple([ E(name) for name in component_names ])],
-                                 value = ast.Name(tuple_info.data['local_variable'].name)) )
+        seq.append( pyast.Assign(targets = [ pyast.Tuple([ pyast.E(name) for name in component_names ])],
+                                 value = pyast.Name(tuple_info.data['local_variable'].name)) )
         cur = None
         for component in tuple_info.components:
             if component.is_Value:
-                n = Builder.If( test = Builder.Compare( left = E(component.data['local_variable'].name),
-                                                        ops = [ ast.Eq() ],
-                                                        comparators = [ E(repr(component.raw)) ] ), # TO DO unify value & pickle
+                n = pyast.Builder.If( test = pyast.Builder.Compare( left = pyast.E(component.data['local_variable'].name),
+                                                        ops = [ pyast.Eq() ],
+                                                        comparators = [ pyast.E(repr(component.raw)) ] ), # TO DO unify value & pickle
                                 orelse = [] )
                 if cur == None:
                     cur = n
@@ -86,13 +84,13 @@ class CompilerVisitor(coreir.CompilerVisitor):
 
         # tuple_info = node.tuple_info
         # seq = []
-        # seq.append( ast.Assign(targets=[ast.Tuple(elts=[ ast.Name(id=n) for n in tuple_info.base() ])],
-        #                        value=ast.Name(id=tuple_info.name)) )
+        # seq.append( pyast.Assign(targets=[pyast.Tuple(elts=[ pyast.Name(id=n) for n in tuple_info.base() ])],
+        #                        value=pyast.Name(id=tuple_info.name)) )
         # cur = None
         # for component in tuple_info.components:
         #     if component.is_Value:
-        #         n = ast.If(test=ast.Compare(left=ast.Name(id=component.name),
-        #                                     ops=[ast.Eq()],
+        #         n = pyast.If(test=pyast.Compare(left=pyast.Name(id=component.name),
+        #                                     ops=[pyast.Eq()],
         #                                     comparators=[E(repr(component.raw))]
         #                                     )
         #                    )
@@ -111,7 +109,7 @@ class CompilerVisitor(coreir.CompilerVisitor):
         # return seq
 
     def compile_Assign(self, node):
-        return ast.Assign(targets=[ast.Name(id=node.variable.name)],
+        return pyast.Assign(targets=[pyast.Name(id=node.variable.name)],
                           value=self.compile(node.expr))
 
     def compile_Value(self, node):
@@ -122,12 +120,12 @@ class CompilerVisitor(coreir.CompilerVisitor):
         output = StringIO.StringIO()
         cPickle.dump(node.obj, output)
         pickle_str = output.getvalue()
-        return E("cPickle.load(StringIO.StringIO(" + repr(pickle_str) + "))")
+        return pyast.E("cPickle.load(StringIO.StringIO(" + repr(pickle_str) + "))")
 
     def compile_FlushIn(self, node):
         destination_place = self.env.marking_type.get_place_type_by_name(node.place_name)
         place_expr = destination_place.place_expr(self.env, node.marking_var)
-        return [ ast.Assign(targets=[ast.Name(id=node.token_var.name)],
+        return [ pyast.Assign(targets=[pyast.Name(id=node.token_var.name)],
                             value=place_expr),
                  destination_place.clear_stmt(self.env, node.marking_var) ]
 
@@ -142,19 +140,19 @@ class CompilerVisitor(coreir.CompilerVisitor):
         elts = []
         for info in tuple_info:
             if info.is_Value:
-                elts.append( E(repr(info.raw)) )
+                elts.append( pyast.E(repr(info.raw)) )
 
             elif info.is_Variable:
-                elts.append( E(info.name) )
+                elts.append( pyast.E(info.name) )
 
             elif info.is_Tuple:
                 elts.append( self.gen_tuple( info ) )
             elif info.is_Expression:
-                elts.append( E(info.raw) )
+                elts.append( pyast.E(info.raw) )
             else:
                 raise NotImplementedError, info.component.__class__
 
-        return ast.Tuple(elts)
+        return pyast.Tuple(elts)
 
     def compile_TupleOut(self, node):
         tuple_info = node.tuple_info
@@ -174,7 +172,7 @@ class CompilerVisitor(coreir.CompilerVisitor):
         if hasattr(place_type, 'enumerate'):
             return place_type.enumerate(self.env, node.marking_var, node.token_var, self.compile(node.body))
         else:    
-            return ast.For(target = E(node.token_var.name),
+            return pyast.For(target = pyast.E(node.token_var.name),
                            iter = place_type.iterable_expr(env = self.env,
                                                            marking_var = node.marking_var),
                            body = [ self.compile(node.body) ])
@@ -187,9 +185,9 @@ class CompilerVisitor(coreir.CompilerVisitor):
 
         first_index = indices.pop()
         for index in indices:
-            check = ast.If( test = ast.Compare( left = ast.Name(first_index),
-                                                  ops = [ ast.NotEq() ],
-                                                  comparators = [ ast.Name(index) ]),
+            check = pyast.If( test = pyast.Compare( left = pyast.Name(first_index),
+                                                  ops = [ pyast.NotEq() ],
+                                                  comparators = [ pyast.Name(index) ]),
                               body = [],
                               orelse = [])
             if not base:
@@ -202,7 +200,7 @@ class CompilerVisitor(coreir.CompilerVisitor):
         inner = current
         if len(indices) > 1:
             inner_base, inner = self.gen_different( indices )
-            current.body.append( first )
+            current.body.append( base )
 
         return base, inner
 
@@ -216,13 +214,13 @@ class CompilerVisitor(coreir.CompilerVisitor):
                 variable = sub_arc.data['local_variable']
                 index = sub_arc.data['index']
 
-                assign = ast.Assign(targets=[ast.Name(variable)],
+                assign = pyast.Assign(targets=[pyast.Name(variable)],
                                       value=place_type.get_token_expr(self.env,
                                                                       node.marking_var,
-                                                                      ast.Name(index)))
-                enumeration = ast.For( target = ast.Name(index),
-                                         iter = ast.Call(func=ast.Name('range'),
-                                                         args=[ast.Num(0), place_type.get_size_expr(self.env,
+                                                                      pyast.Name(index)))
+                enumeration = pyast.For( target = pyast.Name(index),
+                                         iter = pyast.Call(func=pyast.Name('range'),
+                                                         args=[pyast.Num(0), place_type.get_size_expr(self.env,
                                                                                                     node.marking_var)]),
                                        body = [ assign ] )
                 if base == None:
@@ -237,15 +235,15 @@ class CompilerVisitor(coreir.CompilerVisitor):
             for sub_arc in node.multiarc.sub_arcs:
                 variable = sub_arc.data['local_variable']
                 index = sub_arc.data['index']
-                init = ast.Assign( targets =  [ast.Name(index.name)],
-                                   value = ast.Num(0) )
+                init = pyast.Assign( targets =  [pyast.Name(index.name)],
+                                   value = pyast.Num(0) )
 
-                enumeration = ast.For( target = ast.Name(variable.name),
+                enumeration = pyast.For( target = pyast.Name(variable.name),
                                        iter = place_type.iterable_expr( env = self.env,
                                                                         marking_var = node.marking_var),
-                                       body = [ ast.AugAssign( target = ast.Name(index.name),
-                                                               op = ast.Add(),
-                                                               value = ast.Num(1) ) ] )
+                                       body = [ pyast.AugAssign( target = pyast.Name(index.name),
+                                                               op = pyast.Add(),
+                                                               value = pyast.Num(1) ) ] )
                 if base == None:
                     current = [ init, enumeration ]
                     base = [ init, enumeration ]
@@ -267,26 +265,26 @@ class CompilerVisitor(coreir.CompilerVisitor):
 
 
     def compile_GuardCheck(self, node):
-        return ast.If( test = self.compile(node.condition),
+        return pyast.If( test = self.compile(node.condition),
                            body = self.compile(node.body) )
 
     def compile_PyExpr(self, node):
         assert isinstance(node.expr, ExpressionInfo)
-        return E(node.expr.raw)
+        return pyast.E(node.expr.raw)
 
     def compile_Name(self, node):
-        return E(node.name)
+        return pyast.E(node.name)
 
     def compile_FunctionCall(self, node):
-        return E(node.function_name).call([ self.compile(arg) for arg in node.arguments ])
+        return pyast.E(node.function_name).call([ self.compile(arg) for arg in node.arguments ])
 
     def compile_ProcedureCall(self, node):
-        return stmt( ast.Call(func=ast.Name(id=node.function_name),
-                              args=[ self.compile(arg) for arg in node.arguments ]) )
+        return pyast.stmt( pyast.Call(func=pyast.Name(id=node.function_name),
+                                      args=[ self.compile(arg) for arg in node.arguments ]) )
 
     def compile_MarkingCopy(self, node):
         nodes = []
-        nodes.append( E( node.dst.name + " = Marking()" ) )
+        nodes.append( pyast.E( node.dst.name + " = Marking()" ) )
 
         names = {}
         for info in node.mod:
@@ -296,12 +294,12 @@ class CompilerVisitor(coreir.CompilerVisitor):
             dst_place_expr = place_type.place_expr(self.env, marking_var = node.dst)
             src_place_expr = place_type.place_expr(self.env, marking_var = node.src)
             if names.has_key( place ):
-                nodes.append( ast.Assign(targets=[dst_place_expr],
+                nodes.append( pyast.Assign(targets=[dst_place_expr],
                                          value=place_type.copy_expr(self.env, node.src)
                                          )
                               )
             else:
-                nodes.append( ast.Assign(targets=[dst_place_expr],
+                nodes.append( pyast.Assign(targets=[dst_place_expr],
                                          value=src_place_expr
                                          )
                               )
@@ -338,42 +336,42 @@ class CompilerVisitor(coreir.CompilerVisitor):
     def compile_SuccT(self, node):
         self.env.push_variable_provider(node.variable_provider)
         stmts = [ self.compile( node.body ),
-                  E('return ' + node.arg_marking_set_var.name) ]
-        result = ast.FunctionDef(name = node.function_name,
-                                 args = ast.arguments(args=[ast.Name(id=node.arg_marking_set_var.name),
-                                                            ast.Name(id=node.arg_marking_var.name)]),
+                  pyast.E('return ' + node.arg_marking_set_var.name) ]
+        result = pyast.FunctionDef(name = node.function_name,
+                                 args = pyast.arguments(args=[pyast.Name(id=node.arg_marking_set_var.name),
+                                                            pyast.Name(id=node.arg_marking_var.name)]),
                                  body = stmts)
         self.env.pop_variable_provider()
         return result
 
     def compile_SuccP(self, node):
         stmts = [ self.compile( node.body ),
-                  E('return ' + node.arg_marking_set_var.name) ]
-        return ast.FunctionDef(name = node.function_name,
-                               args = ast.arguments(args=[ast.Name(id=node.arg_marking_set_var.name),
-                                                          ast.Name(id=node.arg_marking_var.name)]),
+                  pyast.E('return ' + node.arg_marking_set_var.name) ]
+        return pyast.FunctionDef(name = node.function_name,
+                               args = pyast.arguments(args=[pyast.Name(id=node.arg_marking_set_var.name),
+                                                          pyast.Name(id=node.arg_marking_var.name)]),
                                body = stmts)
 
     def compile_Succs(self, node):
-        body = [ ast.Assign(targets=[ast.Name(id=node.arg_marking_set_var.name)],
+        body = [ pyast.Assign(targets=[pyast.Name(id=node.arg_marking_set_var.name)],
                             value=self.env.marking_set_type.new_marking_set_expr(self.env)) ]
 
         body.extend( self.compile(node.body) )
-        body.append( ast.Return(ast.Name(id=node.arg_marking_set_var.name)) )
-        return ast.FunctionDef( name = node.function_name,
-                                args = ast.arguments(args=[ast.Name(id=node.arg_marking_var.name)]),
+        body.append( pyast.Return(pyast.Name(id=node.arg_marking_set_var.name)) )
+        return pyast.FunctionDef( name = node.function_name,
+                                args = pyast.arguments(args=[pyast.Name(id=node.arg_marking_var.name)]),
                                 body = body )
 
     def compile_Init(self, node):
-        new_marking = ast.Assign(targets=[ast.Name(id=node.marking_var.name)],
+        new_marking = pyast.Assign(targets=[pyast.Name(id=node.marking_var.name)],
                                  value=self.env.marking_type.new_marking_expr(self.env))
-        return_stmt = ast.Return(ast.Name(id=node.marking_var.name))
+        return_stmt = pyast.Return(pyast.Name(id=node.marking_var.name))
 
         stmts = [new_marking]
         stmts.extend( self.compile(node.body) )
         stmts.append( return_stmt )
 
-        return ast.FunctionDef( name = node.function_name,
+        return pyast.FunctionDef( name = node.function_name,
                                 body = stmts )
 
     ################################################################################
@@ -384,7 +382,7 @@ class CompilerVisitor(coreir.CompilerVisitor):
         return self.env.marking_type.gen_check_flow(env = self.env,
                                                     marking_var = node.marking_var,
                                                     place_info = node.place_info,
-                                                    current_flow = ast.Name(node.current_flow.name))
+                                                    current_flow = pyast.Name(node.current_flow.name))
 
     def compile_ReadFlow(self, node):
         return self.env.marking_type.gen_read_flow(env=self.env,

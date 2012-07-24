@@ -320,7 +320,7 @@ def gen_check_expression(checker_env, marking_var, formula):
 ################################################################################
 #
 ################################################################################
-def gen_check_function(checker_env, id, atom):
+def gen_check_function(checker_env, identifier, atom):
 
     marking_type = checker_env.marking_type
     
@@ -331,7 +331,7 @@ def gen_check_function(checker_env, id, atom):
     builder = cyast.Builder()
     marking_var = variable_provider.new_variable(type=marking_type.type)
 
-    function_name = "check_{}".format(id)
+    function_name = "check_{}".format(identifier)
     builder.begin_FunctionCDef(name = function_name,
                                args = cyast.A(marking_var.name, type=checker_env.type2str(marking_var.type)),
                                returns = cyast.Name("int"),
@@ -369,7 +369,7 @@ def gen_main_check_function(checker_env, id_prop_map):
                                decl = [],
                                public=True, api=True)
 
-    for (i, (ident, prop)) in enumerate(id_prop_map.iteritems()):
+    for (i, (ident, _)) in enumerate(id_prop_map.iteritems()):
         if i == 0:
             builder.begin_If( test = cyast.Compare( left = cyast.Name(atom_var.name),
                                                     ops = [ cyast.Eq() ],
@@ -410,9 +410,9 @@ class CheckerCompileVisitor(netir.CompilerVisitor):
         stmts = [ self.compile( node.body ) ]
 
         decl = netir.CVarSet()
-        inputs = node.transition_info.inputs
-        for input in inputs:
-            decl.extend(self.try_gen_type_decl(input))
+        input_arcs = node.transition_info.inputs
+        for input_arc in input_arcs:
+            decl.extend(self.try_gen_type_decl(input_arc))
 
         inter_vars = node.transition_info.intermediary_variables
         for var in inter_vars:
@@ -439,14 +439,14 @@ def produce_and_compile_pyx(checker_env, id_prop_map):
     checker_env.register_cython_type(marking_type.type, 'net.Marking')
     TypeInfo.register_type('Marking')
 
-    functions = []
-    for id, prop in id_prop_map.iteritems():
-        gen_check_function(checker_env, id, prop) # updates env
-
-    gen_main_check_function(checker_env, id_prop_map) # updates env
-
-    checker_module = cyast.Module(body=functions)
-    
+#    functions = []
+#    for identifier, prop in id_prop_map.iteritems():
+#        gen_check_function(checker_env, identifier, prop) # updates env
+#
+#    gen_main_check_function(checker_env, id_prop_map) # updates env
+#
+#    checker_module = cyast.Module(body=functions)
+#    
     base_dir = "build/"
     try:
         os.mkdir(base_dir)

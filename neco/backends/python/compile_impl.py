@@ -1,9 +1,11 @@
-import ast, imp
-import neco.config as config
-import netir, nettypes
-from unparse import Unparser
 from neco.core import CompilingEnvironment
-from pyast import E
+from priv import pyast
+from unparse import Unparser
+import ast
+import imp
+import neco.config as config
+import netir
+import nettypes
 
 class Env(CompilingEnvironment):
     """ Compiling environment used for co1mpiling with the python backend. """
@@ -37,7 +39,7 @@ class Env(CompilingEnvironment):
     def gen_imports(self):
         nodes = []
         for decl in self._declarations:
-            stmt = E(decl)
+            stmt = pyast.E(decl)
             nodes.append( stmt )
 
         for module in self._imports:
