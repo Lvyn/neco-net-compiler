@@ -40,6 +40,16 @@ neco/asdl/properties.py
 neco/asdl/netir.py
 neco/asdl/cython.py
 neco/core/properties_gen.py
+bin/necospotcli
+bin/neco-spot
+.pydevproject
+.project
+build/*
+YappyTab
+neco-spot/ctypes.h
+*.err
+*.old
+*.tmp
 syntax: regexp
 .*/.gone/.*
 .gone/.*
