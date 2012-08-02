@@ -6,20 +6,20 @@ import neco.config as config
 import neco.core.nettypes as coretypes
 import neco.utils as utils
 
+import priv.mrkmethods
+import priv.mrkfunctions
+        
 ################################################################################
 
 def place_type_from_info(place_info, marking):
+    """ Returns a PlaceType object based on PlaceInfo type information. """
+    
     pi_type = place_info.type
-    if pi_type.is_Int:
-        return placetypes.IntPlaceType(place_info, marking_type=marking)
-    elif pi_type.is_Bool:
-        return placetypes.ObjectPlaceType(place_info, marking_type=marking)
-    elif pi_type.is_String:
-        return placetypes.ObjectPlaceType(place_info, marking_type=marking)
-    elif pi_type.is_BlackToken:
-        return placetypes.BTPlaceType(place_info, marking_type=marking)
-    elif pi_type.is_UserType:
-        return placetypes.ObjectPlaceType(place_info, marking_type=marking)
+    if   pi_type.is_Int:        return placetypes.IntPlaceType(place_info, marking_type=marking)
+    elif pi_type.is_Bool:       return placetypes.ObjectPlaceType(place_info, marking_type=marking)
+    elif pi_type.is_String:     return placetypes.ObjectPlaceType(place_info, marking_type=marking)
+    elif pi_type.is_BlackToken: return placetypes.BTPlaceType(place_info, marking_type=marking)
+    elif pi_type.is_UserType:   return placetypes.ObjectPlaceType(place_info, marking_type=marking)
     else:
         return placetypes.ObjectPlaceType(place_info, marking_type=marking)
 
@@ -50,20 +50,16 @@ class StaticMarkingType(coretypes.MarkingType):
             pack = None
         self._pack = pack
         
-        import priv.mrkmethods
         self.add_method_generator(priv.mrkmethods.InitGenerator())
         self.add_method_generator(priv.mrkmethods.DeallocGenerator())
         self.add_method_generator(priv.mrkmethods.CopyGenerator())
-        #self.add_method_generator( priv.mrkmethods.ReprGenerator() )
         self.add_method_generator(priv.mrkmethods.DumpExprGenerator())        
         self.add_method_generator(priv.mrkmethods.RichcmpGenerator())
         self.add_method_generator(priv.mrkmethods.HashGenerator())
         
         self._C_function_generators = []
         
-        import priv.mrkfunctions
         self.add_C_function_generator(priv.mrkfunctions.CompareGenerator())
-        #self.add_C_function_generator( priv.mrkfunctions.MarkedGenerator() )
         self.add_C_function_generator(priv.mrkfunctions.DumpGenerator())
         self.add_C_function_generator(priv.mrkfunctions.HashGenerator())
         self.add_C_function_generator(priv.mrkfunctions.CopyGenerator())

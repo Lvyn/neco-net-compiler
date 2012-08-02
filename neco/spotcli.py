@@ -7,7 +7,7 @@ if loaded with wrong python version.
 """
 
 import sys
-if (2, 7, 0) <= sys.version_info < (3, 0, 0) :
+if (2, 7, 0) <= sys.version_info < (2, 8, 0) :
     VERSION = (2, 7)
 else:
     raise RuntimeError("unsupported python version")
