@@ -1,5 +1,5 @@
 from common import NecoTypeError, from_neco_lib
-from maskbitfield import MaskBitfield
+from lowlevel import Mask
 from neco.core.info import TypeInfo
 from neco.core.nettypes import provides_by_index_access, \
     provides_by_index_deletion
@@ -7,7 +7,7 @@ from neco.utils import should_not_be_called, todo
 import cyast
 import math
 import neco.core.nettypes as coretypes
-from fields import Mask
+
 
 def packed_place(cls):
     """ Decorator for packed places.
