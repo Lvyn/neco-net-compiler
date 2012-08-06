@@ -97,7 +97,7 @@ class CompilingEnvironment(core.CompilingEnvironment):
         self._registered_cython_types = dict()
 
         # register types
-        self.register_cython_type(TypeInfo.get('Bool'), 'bool')
+        self.register_cython_type(TypeInfo.get('Bool'), 'short')
         self.register_cython_type(TypeInfo.get('Char'), 'char')
         self.register_cython_type(TypeInfo.get('Int'), 'int')
         self.register_cython_type(TypeInfo.get('Short'), 'short')

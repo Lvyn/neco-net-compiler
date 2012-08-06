@@ -107,9 +107,10 @@ class CompilerVisitor(coreir.CompilerVisitor):
     def compile_FlushIn(self, node):
         destination_place = self.env.marking_type.get_place_type_by_name(node.place_name)
         return [cyast.Assign(targets=[cyast.Name(node.token_var.name)],
-                             value=self.env.marking_type.gen_get_place(env=self.env,
-                                                                       marking_var=node.marking_var,
-                                                                       place_name=node.place_name)
+                             value=destination_place.attribute_expr(self.env, node.marking_var)
+#                             self.env.marking_type.gen_get_place(env=self.env,
+#                                                                       marking_var=node.marking_var,
+#                                                                       place_name=node.place_name)
                              ),
                 destination_place.clear_stmt(env=self.env,
                                              marking_var=node.marking_var)
@@ -410,8 +411,8 @@ class CompilerVisitor(coreir.CompilerVisitor):
                                              args=(cyast.A(node.arg_marking_set_var.name, type=self.env.type2str(node.arg_marking_set_var.type))
                                                    .param(node.arg_marking_var.name, type=self.env.type2str(node.arg_marking_var.type))),
                                              body=stmts,
-                                             lang=cyast.CDef(public=False),
-                                             returns=cyast.Name("void"),
+                                             lang=cyast.CpDef(public=True),
+                                             returns=cyast.Name(""),
                                              decl=decl))
         return result
 

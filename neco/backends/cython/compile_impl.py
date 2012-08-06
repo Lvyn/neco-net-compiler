@@ -53,7 +53,7 @@ def compile_IR(env):
     f = open(base_dir + "net.pxd", "w")
     f.write("cimport neco.ctypes.ctypes_ext as ctypes_ext\n")
 
-    cyast.Unparser(env.marking_type.gen_pxd(env), f)
+    cyast.Unparser(env.marking_type.generate_pxd(env), f)
     f.close()
 
     for node in env.function_nodes():
@@ -98,7 +98,7 @@ def compile_IR(env):
           cmdclass={'build_ext': build_ext},
           ext_modules=[Extension("net", [base_dir + "net.pyx"],
                                  include_dirs=search_paths + [base_dir],
-                                 extra_compile_args=[], # '-ggdb'],
+                                 extra_compile_args=['-ggdb'],
                                  extra_link_args=['-lctypes'],
                                  library_dirs=search_paths + [base_dir])],
           script_args=["build_ext", "--inplace"],

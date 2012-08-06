@@ -36,18 +36,26 @@ class InitGenerator(MarkingTypeMethodGenerator):
 
         builder.begin_If( cyast.Name('alloc') )
 
-        if marking_type._pack and marking_type._pack.native_field_count() > 0:
-            builder.emit( marking_type._pack.gen_initialise(env, self_var) )
-
-        # init places
+        initialized = set()
+        # packed
+        if marking_type.pool.packed_bits() > 0:
+            (attr_name, _, count) = marking_type.pool.packed_attribute()
+            initialized.add(attr_name)
+            for index in range(0, count):
+                builder.emit(cyast.E("{object}.{attribute}[{index!s}] = 0".format(object=self_var.name,
+                                                                                 attribute=attr_name,
+                                                                                 index=index)))
+        
+        # init other places
         for place_type in marking_type.place_types.itervalues():
-            if place_type.is_packed or place_type.is_helper:
-                pass
-            else:
-                attr = marking_type.id_provider.get(place_type)
-                builder.emit(cyast.Assign(targets=[cyast.Attribute(cyast.Name('self'),
-                                                                   attr=attr)],
-                                          value=place_type.new_place_expr(env)))
+            attr_name = place_type.get_attribute_name()
+            if attr_name in initialized:
+                continue
+            ################################################################################
+            # assumes that packed types will always be initialized to 0 !!!
+            ################################################################################
+            builder.emit(place_type.new_place_stmt(env, self_var))
+            builder.emit(builder.Comment("{}".format(place_type.info.name)))
         builder.end_If()
         builder.end_FunctionDef()
         return cyast.to_ast(builder)
@@ -56,7 +64,7 @@ class CopyGenerator(MarkingTypeMethodGenerator):
     
     def generate(self, env):
         marking_type = env.marking_type
-        
+
         builder = cyast.Builder()
         vp = VariableProvider()
         self_var = vp.new_variable(type=marking_type.type, name='self')
@@ -70,18 +78,37 @@ class CopyGenerator(MarkingTypeMethodGenerator):
 
         builder.emit( cyast.E('m = Marking()') )
 
-        # copy packs
-        if marking_type._pack and marking_type._pack.native_field_count() > 0:
-            builder.emit( marking_type._pack.copy_expr(env, src_marking_var = self_var, dst_marking_var = marking_var) )
 
-        # copy places
+        copied = set()
+        # copy packed
+        print marking_type.pool.packed_bits()
+        if marking_type.pool.packed_bits() > 0:
+            attr_name, _, count = marking_type.pool.packed_attribute()
+            print attr_name
+            copied.add(attr_name)
+            for i in range(count):
+                target_expr = cyast.E('{object}.{attribute}[{index!s}]'.format(object=marking_var.name,
+                                                                               attribute=attr_name,
+                                                                               index=i))
+                value_expr = cyast.E('{object}.{attribute}[{index!s}]'.format(object=self_var.name,
+                                                                               attribute=attr_name,
+                                                                               index=i))
+
+                builder.emit( cyast.Assign(targets=[target_expr],
+                                           value=value_expr) )
+
+        # copy modified attributes
         for place_type in marking_type.place_types.itervalues():
-            if place_type.is_packed or place_type.is_helper:
-                pass
-            else:
-                builder.emit(cyast.Assign(targets=[cyast.E('m.{place}'.format(place = marking_type.id_provider.get(place_type)))],
-                                          value=place_type.copy_expr(env = env, marking_var = self_var))
-                             )
+            attr_name = place_type.get_attribute_name()
+            if attr_name in copied:
+                continue
+            print attr_name
+            target_expr = cyast.E('{object}.{attribute}'.format(object=marking_var.name,
+                                                                attribute=attr_name))
+
+            builder.emit(place_type.copy_stmt(env, marking_var, self_var))
+
+
         builder.emit_Return(cyast.E("m"))
         builder.end_FunctionDef()
         return cyast.to_ast(builder)
@@ -127,40 +154,47 @@ class HashGenerator(MarkingTypeMethodGenerator):
         mult = 0xBADBEEF
         i = 0
 
-        if marking_type._pack and marking_type._pack.native_field_count() > 0:
-            for index in range(0, marking_type._pack.native_field_count()):
-                native_field = marking_type._pack.get_native_field(self_var, index)
+        hashed = set()
+        if marking_type.pool.packed_bits() > 0:
+            attr_name, _, count = marking_type.pool.packed_attribute()
+            hashed.add(attr_name)
+            attr = "{}.{}".format(self_var.name, attr_name)
+            
+            for index in range(0, count):
+                attr_expr = cyast.E('{!s}[{!s}]'.format(attr, index))
                 builder.emit( cyast.Assign(targets=[cyast.Name('h')],
                                            value=cyast.BinOp(left = cyast.BinOp(left=cyast.Name('h'),
                                                                                 op=cyast.BitXor(),
-                                                                                right=native_field),
+                                                                                right=attr_expr ),
                                                              op = cyast.Mult(),
                                                              right = cyast.Num(mult) ) ) )
-                #E('h').assign(E('h').xor(native_field).mult(E(mult))) )
                 mult = (mult + (82520L + i + i)) % sys.maxint
                 i += 1
 
         for place_type in marking_type.place_types.itervalues():
-            if place_type.is_packed or place_type.is_helper:
-                pass
-            else:
-                if place_type.type.is_Int or place_type.type.is_Short or place_type.type.is_Char:
-                    native_place = marking_type.id_provider.get(place_type)
-                    builder.emit(cyast.E('h = (h ^ self.{place_name}) * {mult}'.format(place_name=native_place,
-                                                                                 mult=mult))
-                                 )
-                else:
-                    place_hash = place_type.hash_expr(env, marking_var = self_var)
-                    builder.emit(cyast.Assign(targets=[cyast.Name('h')],
-                                              value=cyast.BinOp(left=cyast.BinOp(left=cyast.Name('h'),
-                                                                                 op=cyast.BitXor(),
-                                                                                 right=place_hash),
-                                                                op=cyast.Mult(),
-                                                                right=cyast.Num(mult))
-                                              )
-                                 )
-                mult = (mult + (82521 * i + i)) % sys.maxint
-                i += 1
+#            if place_type.is_packed or place_type.is_helper:
+#                pass
+#            else:
+#                if place_type.type.is_Int or place_type.type.is_Short or place_type.type.is_Char:
+#                    native_place = marking_type.id_provider.get(place_type)
+#                    builder.emit(cyast.E('h = (h ^ self.{place_name}) * {mult}'.format(place_name=native_place,
+#                                                                                 mult=mult))
+#                                 )
+#                else:
+            if place_type.get_attribute_name() in hashed:
+                continue
+            
+            place_hash = place_type.hash_expr(env, marking_var = self_var)
+            builder.emit(cyast.Assign(targets=[cyast.Name('h')],
+                                      value=cyast.BinOp(left=cyast.BinOp(left=cyast.Name('h'),
+                                                                         op=cyast.BitXor(),
+                                                                         right=place_hash),
+                                                        op=cyast.Mult(),
+                                                        right=cyast.Num(mult))
+                                      )
+                         )
+            mult = (mult + (82521 * i + i)) % sys.maxint
+            i += 1
 
         builder.emit_Return(cyast.E("h"))
         builder.end_FunctionDef()

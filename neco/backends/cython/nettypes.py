@@ -8,6 +8,7 @@ import neco.utils as utils
 
 import priv.mrkmethods
 import priv.mrkfunctions
+from neco.backends.cython.priv.fields import MemoryPool
         
 ################################################################################
 
@@ -40,30 +41,22 @@ class StaticMarkingType(coretypes.MarkingType):
         else:
             self.packing_enabled = False
 
-        # pack 1SBT places ?
-        if self.packing_enabled:
-            name = self.id_provider.new(base="_packed")
-            pack = placetypes.PackedPlaceTypes(name, self)
-            self.id_provider.set(pack, name)
-            pack = pack
-        else:
-            pack = None
-        self._pack = pack
-        
+        self.pool = MemoryPool(self.id_provider.new(base="_packed"))
+
         self.add_method_generator(priv.mrkmethods.InitGenerator())
         self.add_method_generator(priv.mrkmethods.DeallocGenerator())
         self.add_method_generator(priv.mrkmethods.CopyGenerator())
-        self.add_method_generator(priv.mrkmethods.DumpExprGenerator())        
+        self.add_method_generator(priv.mrkmethods.DumpExprGenerator())
         self.add_method_generator(priv.mrkmethods.RichcmpGenerator())
         self.add_method_generator(priv.mrkmethods.HashGenerator())
-        
+
         self._C_function_generators = []
-        
+
         self.add_C_function_generator(priv.mrkfunctions.CompareGenerator())
         self.add_C_function_generator(priv.mrkfunctions.DumpGenerator())
         self.add_C_function_generator(priv.mrkfunctions.HashGenerator())
         self.add_C_function_generator(priv.mrkfunctions.CopyGenerator())
-        
+
     def add_C_function_generator(self, generator):
         self._C_function_generators.append(generator)
         
@@ -82,72 +75,56 @@ class StaticMarkingType(coretypes.MarkingType):
 
     def __gen_one_safe_place_type(self, place_info):
         if place_info.type.is_BlackToken:
-            # register a new place type
-            pt = placetypes.PackedBT1SPlaceType(place_info, self, pack=self._pack)
-            self._pack.add_place(place_info, bits=1)
-            self.place_types[place_info.name] = pt
+            if not config.get('optimize'):
+                pt = placetypes.BTPlaceType(place_info, self)
+                self.place_types[place_info.name] = pt
+            else:
+                # register a new place type
+                pt = placetypes.PackedBT1SPlaceType(place_info, self)
+                self.place_types[place_info.name] = pt
         else: # 1s not BT
             new_id = self.id_provider.new('one_safe_')
-            dummy = PlaceInfo.Dummy(new_id, one_safe=True)
-            self.id_provider.set(dummy, new_id)
+            #dummy = PlaceInfo.Dummy(new_id, one_safe=True)
+            #self.id_provider.set(dummy, new_id)
 
-            pt = placetypes.PackedBT1SPlaceType(dummy, self, pack=self._pack)
-            pt.revelant = False
-            self._pack.add_place(dummy, bits=1)
+            #pt = placetypes.PackedBT1SPlaceType(dummy, self, pack=self._pack)
+            #pt.revelant = False
+            #self._pack.add_place(dummy, bits=1)
             # remember place type
-            self.place_types[new_id] = pt
+            #self.place_types[new_id] = pt
 
             # create the place
-            place_type = placetypes.OneSafePlaceType(place_info, self, pt)
+            place_type = placetypes.OneSafePlaceType(place_info, self)
             # remember place type
             self.place_types[place_info.name] = place_type
 
 
     def __gen_flow_control_place_type(self, place_info):
-        process_name = place_info.process_name
+        process_name = place_info.process_name        
         try:
-            flow_place_type = self._process_place_types[process_name] # throws KeyError
+            flow_place_type = self._process_place_types[process_name]
         except KeyError:
-            # flow place type does not exist: create new place type
-            new_id = self.id_provider.new(base='flow_')
-            dummy = PlaceInfo.Dummy(new_id,
-                                    flow_control=True,
-                                    process_name=place_info.process_name)
+            # create a dummy place info object
+            new_id = self.id_provider.new()
+            dummy = PlaceInfo.Dummy(new_id, flow_control=True, process_name=place_info.process_name)
             self.id_provider.set(dummy, new_id)
 
+            # create flow place using dummy
             flow_place_type = placetypes.FlowPlaceType(dummy, self)
+
+            # register place
             self.place_types[new_id] = flow_place_type
             self._process_place_types[process_name] = flow_place_type
 
-            # add all flow control places to flow place and create helpers
-            # this is needed to allocate place in self._pack
-            flow_place_type.add_helper(place_info)
-            for info in self.flow_control_places:
-                if info.process_name == process_name:
-                    flow_place_type.add_helper(info)
-            # get size to allocate
-            needed_bits = flow_place_type.needed_bits
-
-            # pack flow place
-            self._pack.add_place(dummy, bits=needed_bits)
-            flow_place_type.pack = self._pack
-
         # flow_place_type and helpers exist
-        self.place_types[place_info.name] = flow_place_type.get_helper(place_info)
+        self.place_types[place_info.name] = flow_place_type.add_place(place_info)
 
     def gen_types(self):
-        if self.packing_enabled:
-            for place_info in self.flow_control_places:
-                self.__gen_flow_control_place_type(place_info)
-            for place_info in self.one_safe_places:
-                self.__gen_one_safe_place_type(place_info)
-
-        else:
-            for place_info in self.flow_control_places:
-                self.place_types[place_info.name] = place_type_from_info(place_info, self)
-            for place_info in self.one_safe_places:
-                self.place_types[place_info.name] = place_type_from_info(place_info, self)
-
+        #if self.packing_enabled:
+        for place_info in self.flow_control_places:
+            self.__gen_flow_control_place_type(place_info)
+        for place_info in self.one_safe_places:
+            self.__gen_one_safe_place_type(place_info)
         for place_info in self.places:
             self.place_types[place_info.name] = place_type_from_info(place_info, self)
 
@@ -168,7 +145,7 @@ class StaticMarkingType(coretypes.MarkingType):
                           args=[cyast.Name('alloc')],
                           keywords=[cyast.Name('True')])
 
-    def gen_pxd(self, env):
+    def generate_pxd(self, env):
         cls = cyast.Builder.PublicClassCDef(name="Marking",
                                             bases=[cyast.E("object")],
                                             spec=cyast.type_name_spec(o="Marking", t="MarkingType"))
@@ -177,15 +154,12 @@ class StaticMarkingType(coretypes.MarkingType):
         # attributes
         ################################################################################
 
-        if self._pack and self._pack.native_field_count() > 0: # at least one bit used
-            name = '{name}[{count}]'.format(name=self.id_provider.get(self._pack),
-                                            count=self._pack.native_field_count())
-            cls.add_decl(cyast.CVar(name, type=env.type2str(self._pack.type)))
-
-        for place_type in self.place_types.itervalues():
-            if not place_type.is_packed and not place_type.is_helper:
-                cls.add_decl(cyast.CVar(name=self.id_provider.get(place_type),
-                                        type=env.type2str(place_type.type)))
+        if self.pool.packed_bits() > 0:
+            (attr_name, attr_type, count) = self.pool.packed_attribute()
+            cls.add_decl(cyast.CVar(attr_name + '[' + str(count) + ']', type=env.type2str(attr_type)))  
+        
+        for attr_name, attr_type in self.pool.normal_attributes():
+            cls.add_decl(cyast.CVar(name=attr_name, type=env.type2str(attr_type)))
 
         cls.add_method(cyast.FunctionDecl(name='copy',
                                           args=cyast.to_ast(cyast.A("self", cyast.Name(env.type2str(self.type)))),
@@ -215,35 +189,35 @@ class StaticMarkingType(coretypes.MarkingType):
         ################################################################################
         # comments
         ################################################################################
-
-        attributes = set()
-        for place_type in self.place_types.itervalues():
-            if place_type.is_packed:
-                attributes.add("{attribute}[{offset}]".format(attribute=self.id_provider.get(self._pack),
-                                                              offset=self._pack.get_field_native_offset(place_type)))
-            else:
-                attributes.add(self.id_provider.get(place_type))
-        attribute_max = max(len(attr) for attr in attributes)
-
-        comms = set([])
-        for place_type in self.place_types.itervalues():
-            if place_type.is_packed:
-                attr = "{attribute}[{offset}]".format(attribute=self.id_provider.get(self._pack),
-                                                      offset=self._pack.get_field_native_offset(place_type))
-            else:
-                attr = self.id_provider.get(place_type)
-            comms.add("{info} - packed: {packed:1} - attribute: {attribute:{attribute_max}} #"
-                         .format(info=place_type.info,
-                                 packed=place_type.is_packed,
-                                 attribute=attr,
-                                 attribute_max=attribute_max))
-        max_length = max(len(x) - 2 for x in comms)
-        comms = list(comms)
-        comms.insert(0, "{text:*^{max_length}} #".format(text=' Marking Structure ', max_length=max_length))
-        comms.append("{text:*^{max_length}} #".format(text='*', max_length=max_length))
-
-        comms_ast = [ cyast.NComment(comm) for comm in comms ]
-        cls.add_decl(comms_ast)
+#
+#        attributes = set()
+#        for place_type in self.place_types.itervalues():
+#            if place_type.is_packed:
+#                attributes.add("{attribute}[{offset}]".format(attribute=self.id_provider.get(self._pack),
+#                                                              offset=self._pack.get_field_native_offset(place_type)))
+#            else:
+#                attributes.add(self.id_provider.get(place_type))
+#        attribute_max = max(len(attr) for attr in attributes)
+#
+#        comms = set([])
+#        for place_type in self.place_types.itervalues():
+#            if place_type.is_packed:
+#                attr = "{attribute}[{offset}]".format(attribute=self.id_provider.get(self._pack),
+#                                                      offset=self._pack.get_field_native_offset(place_type))
+#            else:
+#                attr = self.id_provider.get(place_type)
+#            comms.add("{info} - packed: {packed:1} - attribute: {attribute:{attribute_max}} #"
+#                         .format(info=place_type.info,
+#                                 packed=place_type.is_packed,
+#                                 attribute=attr,
+#                                 attribute_max=attribute_max))
+#        max_length = max(len(x) - 2 for x in comms)
+#        comms = list(comms)
+#        comms.insert(0, "{text:*^{max_length}} #".format(text=' Marking Structure ', max_length=max_length))
+#        comms.append("{text:*^{max_length}} #".format(text='*', max_length=max_length))
+#
+#        comms_ast = [ cyast.NComment(comm) for comm in comms ]
+#        cls.add_decl(comms_ast)
 
         ################################################################################
         # C api
@@ -266,53 +240,54 @@ class StaticMarkingType(coretypes.MarkingType):
         nodes = []
         nodes.append(cyast.E(dst_marking.name + " = Marking()"))
 
-        copy_packs = set()
-        copy_places = set()
-        assign_packs = set()
-        assign_places = set()
+        copy_attributes   = set()
+        assign_attributes = set()
 
         for place_type in self.place_types.itervalues():
             if place_type.info in modified_places:
-                if place_type.is_packed:
-                    copy_packs.add(place_type.pack)
-                else:
-                    copy_places.add(place_type)
+                copy_attributes.add(place_type.get_attribute_name())
             else:
-                if place_type.is_packed:
-                    assign_packs.add(place_type.pack)
-                else:
-                    assign_places.add(place_type)
+                assign_attributes.add(place_type.get_attribute_name())
 
         # a place in copy from a pack forces the copy of the whole pack
-        assign_packs = assign_packs - copy_packs
+        assign_attributes = assign_attributes - copy_attributes
 
+        copied = set()
+        # copy packed
+        if self.pool.packed_bits() > 0:
+            attr_name, _, count = self.pool.packed_attribute()
+            copied.add(attr_name)
+            for i in range(count):
+                target_expr = cyast.E('{object}.{attribute}[{index!s}]'.format(object=dst_marking.name,
+                                                                             attribute=attr_name,
+                                                                             index=i))
+                value_expr = cyast.E('{object}.{attribute}[{index!s}]'.format(object=src_marking.name,
+                                                                             attribute=attr_name,
+                                                                             index=i))
+                nodes.append(cyast.Assign(targets=[target_expr], value=value_expr))
 
-        if self._pack and self._pack.native_field_count() > 0:
-            nodes.append(self._pack.copy_expr(env, src_marking_var=src_marking, dst_marking_var=dst_marking))
+        # copy modified attributes
+        for place_type in self.place_types.itervalues():
+            attr_name = place_type.get_attribute_name()
+            if attr_name in copied:
+                continue
 
-        for place_type in copy_places:
-            if place_type.is_helper or place_type.is_packed:
-                pass
-            else:
-                place_expr = self.gen_get_place(env,
-                                                place_name=place_type.info.name,
-                                                marking_var=dst_marking)
+#            target_expr = cyast.E('{object}.{attribute}'.format(object=dst_marking.name,
+#                                                                attribute=attr_name))
 
-                nodes.append(cyast.Assign(targets=[place_expr],
-                                          value=place_type.copy_expr(env, marking_var=src_marking))
-                             )
-
-
-        for place_type in assign_places:
-            if place_type.is_helper or place_type.is_packed:
-                pass
-            else:
-                place_expr = self.gen_get_place(env,
-                                                place_name=place_type.info.name,
-                                                marking_var=dst_marking)
-                nodes.append(cyast.Assign(targets=[place_expr],
-                                          value=place_type.light_copy_expr(env, marking_var=src_marking))
-                             )
+            if attr_name in copy_attributes:
+                nodes.append( place_type.copy_stmt(env, dst_marking, src_marking) )
+                nodes.append( cyast.Comment(place_type.info.name))
+#                nodes.append(cyast.Assign(targets=[target_expr],
+#                                          value=place_type.copy_expr(env, marking_var=src_marking))
+#                             )
+            elif attr_name in assign_attributes:
+                nodes.append( place_type.light_copy_stmt(env, dst_marking, src_marking) )
+                nodes.append( cyast.Comment(place_type.info.name))
+#                nodes.append(cyast.Assign(targets=[target_expr],
+#                                          value=place_type.light_copy_expr(env, marking_var=src_marking))
+#                                 )
+            copied.add(attr_name)
 
         return cyast.to_ast(nodes)
 
@@ -321,14 +296,19 @@ class StaticMarkingType(coretypes.MarkingType):
                                                attr='copy')
                           )
 
-    def gen_get_place(self, env, marking_var, place_name):
-        place_type = self.get_place_type_by_name(place_name)
-
-        if place_type.is_packed:
-            return place_type.pack.gen_get_place(env, marking_var, place_type)
-        else:
-            return cyast.Attribute(value=cyast.Name(marking_var.name),
-                                   attr=self.id_provider.get(place_type))
+#    def gen_get_place(self, env, marking_var, place_name):
+#        place_type = self.get_place_type_by_name(place_name)        
+#        chunk = place_type.chunk
+#        if chunk.packed:
+#            return  
+#        
+#        marking_var.name
+#
+#        if place_type.is_packed:
+#            return place_type.pack.gen_get_place(env, marking_var, place_type)
+#        else:
+#            return cyast.Attribute(value=cyast.Name(marking_var.name),
+#                                   attr=self.id_provider.get(place_type))
 
     def gen_get_pack(self, env, marking_var, pack):
         return cyast.E(marking_var.name).attr(self.id_provider.get(pack))

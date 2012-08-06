@@ -607,9 +607,9 @@ class SuccTGenerator(object):
 
         elif output.is_Variable:
             variable = output.variable
-            # if not (output_impl_type.is_AnyType or (variable.type == output_impl_type)):
-            #     builder.begin_CheckType( variable = variable,
-            #                              type = output_impl_type )
+            if not (output_impl_type.is_AnyType or (variable.type == output_impl_type)):
+                builder.begin_CheckType( variable = variable,
+                                         type = output_impl_type )
 
             computed_productions[output].append(netir.Name( variable.name ))
 
