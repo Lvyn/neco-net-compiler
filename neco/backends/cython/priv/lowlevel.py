@@ -1,11 +1,35 @@
-""" Module handling bitfields as simple masks.
-"""
+'''
+Created on 2 august 2012
+
+@author: Lukasz Fronc
+'''
+from neco.core.info import TypeInfo
+
+def bits_sizeof(cython_type):
+    '''
+        \todo use module struct 
+    '''
+    if cython_type.is_Int:
+        return 32
+    elif cython_type.is_Char:
+        return 8
+    elif cython_type.is_Bool:
+        return 1
+    raise NotImplementedError
+
+def bytes_sizeof(cython_type):
+    if cython_type.is_Int:
+        return 4
+    elif cython_type.is_Bool:
+        return 1
+    else:
+        return 0
 
 class Mask(object):
     """ Class representing bit masks.
     """
 
-    def __init__(self, value = [0, 0, 0, 0, 0, 0, 0, 0]):
+    def __init__(self, value=[0, 0, 0, 0, 0, 0, 0, 0]):
         """ New mask.
 
         >>> Mask()
@@ -17,7 +41,7 @@ class Mask(object):
         ValueError:...
 
         @param value: initial mask (list of 0 and 1 values)
-        @type value: C{list<int>}
+        @type_info value: C{list<int>}
         """
         for b in value:
             if b not in [0, 1]:
@@ -49,7 +73,7 @@ class Mask(object):
         """
         tmp = Mask([ 0 for _ in range(0, size)])
         for i in range(0, size):
-            tmp._mask[size-1-i] = int((integer >> i) & 0x1)
+            tmp._mask[size - 1 - i] = int((integer >> i) & 0x1)
         return tmp
 
     @classmethod
@@ -61,7 +85,7 @@ class Mask(object):
 
         @param offset: position of first 1 bit.
         @type offset: C{int}
-        @param bits: how many 1 bits ?
+        @param bits: how many bits ?
         @type bits: C{int}
         @param width: mask size.
         @type width: C{int}
@@ -107,7 +131,7 @@ class Mask(object):
         @return: integer corresponding to mask.
         @rtype: C{int}
         """
-        mask2 = [ 2**i for i,x in enumerate(reversed(self._mask)) if x > 0 ]
+        mask2 = [ 2 ** i for i, x in enumerate(reversed(self._mask)) if x > 0 ]
         return sum(mask2)
 
     def __int__(self):
@@ -142,7 +166,7 @@ class Mask(object):
         ValueError:...
         >>> m.set_bit(4, 1)
         Traceback (most recent call last):
-        IndexError
+        IndexError:...
 
         @param num: bit to be set.
         @type num: C{int}
@@ -152,7 +176,7 @@ class Mask(object):
         if not value in [ 0, 1 ]:
             raise ValueError("bits must be 0 or 1.")
         if not (0 <= num < self._width):
-            raise IndexError()
+            raise IndexError(num)
         self._mask[self._width - 1 - num] = value
 
 
@@ -171,7 +195,8 @@ class Mask(object):
         ValueError:...
         >>> m[4] = 1
         Traceback (most recent call last):
-        IndexError
+            ...
+        IndexError: 4
 
         @param key: bit to be set.
         @type key: C{key}
@@ -202,7 +227,7 @@ class Mask(object):
         return self._mask[self._width - 1 - num]
 
     def __getitem__(self, key):
-        """ Get bit using subscript syntax.
+        """ get_param bit using subscript syntax.
 
         >>> m = Mask([0, 1, 0, 1, 1])
         >>> m[0], m[1], m[2], m[3], m[4]
@@ -310,6 +335,19 @@ class Mask(object):
         @rtype: C{Mask}
         """
         return Mask([ int(b1 == 0) for b1 in self._mask ])
+    
+    def lshift(self, value):
+        l = self._mask + value * [0]
+        # do not pop !
+#        for _ in range(0, value):
+#            l.pop(0)
+        return Mask(l)
+
+    def rshift(self, value):
+        l = value * [0] + self._mask
+        for _ in range(0, value):
+            l.pop(-1)
+        return Mask(l)
 
     def __and__(self, other):
         """
@@ -339,232 +377,140 @@ class Mask(object):
         """
         return self.bit_not()
 
-class Field(object):
-    """ Helper class for bit fields. """
+    def __lshift__(self, value):
+        return self.lshift(value)
+        
+    def __rshift__(self, value):
+        return self.rshift(value)
 
-    def __init__(self, name, bits, offset):
-        """ New Field.
+    
+class MemoryChunk(object):
+    '''
+    '''
+    def __init__(self, mgr, name, cython_type, packed=False):
+        ''' 
+        '''
+        self.name = name
+        self.chunk_manager = mgr
+        self.cython_type = cython_type
+        self.packed = packed
+        self.bits = bits_sizeof(cython_type) if packed else 0
+        self.bytes = bytes_sizeof(cython_type) 
+        
+    def get_attribute_name(self):
+        if self.packed:
+            return self.chunk_manager.packed_name
+        else:
+            return self.name
 
-        >>> f = Field('toto', 3, 5)
-        >>> f.name, f.bits, f.offset
-        ('toto', 3, 5)
-
-        @param name: field name
-        @type name: C{str}
-        @param bits: number of bits used for the field.
-        @type bits: C{int}
-        @param offset: offset value in parent bitfield.
-        @type offset: C{int}
-        """
-        self._name = name
-        self._bits = bits
-        self._offset = offset
-
-    @property
-    def name(self):
-        """ Field name. """
-        return self._name
-
-    @property
-    def bits(self):
-        """ Number of used bits for the field. """
-        return self._bits
-
-    @property
     def offset(self):
-        """ Offset value in parent bitfield. """
-        return self._offset
+        return self.chunk_manager.get_offset(self)
+    
+    def mask(self):
+        (_, bit_offset) = self.offset()
+        (_, chunk_type, _) = self.chunk_manager.packed_attribute()
+        return Mask.build_mask(bit_offset, self.bits, bits_sizeof(chunk_type))
+        
+    
+class ChunkManager(object):
+    '''
+    Manages memory space reserved to the object, bitfield like.
+    '''
 
-class MaskBitfield(object):
-    """ Class used to represent bitfields with masks.
-    """
+    def __init__(self, reserved_packed_name):
+        '''
+        Constructor
+        '''
+        self.packed_name = reserved_packed_name
+        self.named_chunks = {}
+        self.packed_chunks = [] # simple list holding packed memory chunks
+        self.normal_chunks = [] # simple list holding memory chunks
 
-    def __init__(self, native_width=8):
-        """ New MaskBitfield.
+    def new_chunk(self, name, cython_type, packed=False):
+        '''
+        '''
+        chunk = MemoryChunk(self, name, cython_type, packed)
+        if name in self.named_chunks:
+            raise RuntimeError 
+        
+        self.named_chunks[name] = chunk
+        if packed: 
+            self.packed_chunks.append(chunk)
+        else:
+            self.normal_chunks.append(chunk)
+        return chunk
+    
+    def get_chunk(self, name):
+        return self.named_chunks[name]
+    
+    def get_offset(self, chunk):
+        assert(chunk.packed)
+        bits = 0
+        for c in self.packed_chunks:
+            if c == chunk:
+                return (bits / 8, bits % 8)
+            bits += c.bits
+        raise KeyError
 
-        @param native_width: bit size of the underlying native type (ex. 8 for
-        a char if the bit field is represented with chars.)
-        @type native_width: C{int}
+    def packed_bits(self):
         """
-        self._bits = 0
-        self._fields_list = []
-        self._fields = {}
-        self._native_width = native_width
-
-    @property
-    def native_width(self):
-        """ Size of the underlying native type. """
-        return self._native_width
-
-    def dump_structure(self):
-        """ Get a string representing bitfield structure.
-
-        >>> bf = MaskBitfield(native_width=8)
-        >>> bf.add_field('f1', 3)
-        >>> bf.add_field('f2', 3)
-        >>> bf.add_field('f3', 3)
-        >>> bf.add_field('f4', 3)
-        >>> print bf.dump_structure()
-        bitfield nw:8 ub:14
-        fields:
-          0: name=f1 bits=3 offset=0
-          1: name=f2 bits=3 offset=3
-          2: name=dummy6 bits=2 offset=6
-          3: name=f3 bits=3 offset=8
-          4: name=f4 bits=3 offset=11
-
-        @return: bitfield structure string representation.
-        @rtype: C{str}
+        >>> chunk_manager = ChunkManager('reserved_name')
+        >>> _ = chunk_manager.new_chunk('p1', TypeInfo.Bool, True)
+        >>> _ = chunk_manager.new_chunk('p2', TypeInfo.Bool, True)
+        >>> _ = chunk_manager.new_chunk('p3', TypeInfo.Bool, True)
+        >>> chunk_manager.packed_bits()
+        3
         """
-        l = []
-        l.append("bitfield nw:{nw} ub:{ub}\nfields:"
-                 .format(nw=self._native_width,
-                         ub=self._bits))
-        for i, field in enumerate(self._fields_list):
-            l.append("{num:3}: name={name} bits={bits} offset={offset}"
-                     .format(num=i,
-                             name=field.name,
-                             bits=field.bits,
-                             offset=field.offset))
-        return "\n".join(l)
-
-    def add_field(self, name, bits):
-        """ Add a field.
-
-        @param name: field name.
-        @type name: C{str}
-        @param bits: field width.
-        @type bits: C{int}
+        return sum(map((lambda x : x.bits), self.packed_chunks))
+    
+    def packed_bytes(self):
         """
-        assert( not self._fields.has_key(name) )
-
-        if (bits > self._native_width):
-            raise ValueError("You should use a bigger native type (native width={nw})."
-                             .format(nw = self._native_width))
-
-        if (self._bits % self._native_width) + bits > self._native_width:
-            dummy_width = self._native_width - (self._bits % self._native_width)
-            self.add_field('dummy{offset}'.format(offset=self._bits), dummy_width)
-
-        field = Field(name, bits, self._bits)
-        self._fields_list.append(field)
-        self._fields[name] = field
-        self._bits += bits
-
-    def native_field_count(self):
-        """ Count of needed native fields to represent the bitfield.
-
-        >>> bf = MaskBitfield(native_width=8)
-        >>> bf.native_field_count()
-        0
-        >>> bf.add_field('f1', 3)
-        >>> bf.native_field_count()
+        >>> chunk_manager = ChunkManager('reserved_name')
+        >>> _ = chunk_manager.new_chunk('p1', TypeInfo.Bool, True)
+        >>> _ = chunk_manager.new_chunk('p2', TypeInfo.Bool, True)
+        >>> _ = chunk_manager.new_chunk('p3', TypeInfo.Bool, True)
+        >>> chunk_manager.packed_bytes()
         1
-        >>> bf.add_field('f2', 3)
-        >>> bf.native_field_count()
-        1
-        >>> bf.add_field('f3', 2)
-        >>> bf.native_field_count()
-        1
-        >>> bf.add_field('f4', 3)
-        >>> bf.native_field_count()
-        2
-        >>> bf.add_field('f5', 3)
-        >>> bf.native_field_count()
-        2
-
-        @return: Count of needed native fields.
-        @rtype: C{int}
         """
-        n = self._bits / self._native_width
-        if (self._bits % self._native_width) != 0:
-            n+=1
-        return n
+        bits = self.packed_bits()
+        if bits % 8 == 0:
+            return bits / 8
+        else:
+            return bits / 8 + 1
 
-    def get_fields(self):
-        """ Get a list of fields in bitfield.
+    def dump(self):
+        '''
+        Print human readable chunk_manager representation.
+        >>> chunk_manager = ChunkManager('reserved_name')
+        >>> _ = chunk_manager.new_chunk('p1', TypeInfo.Bool, True)
+        >>> _ = chunk_manager.new_chunk('p2', TypeInfo.Int,  False)
+        >>> _ = chunk_manager.new_chunk('p3', TypeInfo.Bool, True)
+        >>> _ = chunk_manager.new_chunk('p4', TypeInfo.Bool, True)
+        >>> _ = chunk_manager.new_chunk('p5', TypeInfo.Int, False)
+        >>> chunk_manager.dump()
+        '[ 1@p1 1@p3 1@p4 : 1 ][ 4@p2 ][ 4@p5 ]'
 
-        @return: list of fields.
-        @rtype: C{list<Field>}
-        """
-        return self._fields_list
+        '''
+        result = ['[']
+        for chunk in self.packed_chunks:
+            result.append(' {}@{}'.format(chunk.bits, chunk.name))
 
-    def get_field_native_offset(self, field_name):
-        """ Get the offset of native component (number of native field
-        holding the field).
+        result.append(' : {}'.format(self.packed_bytes()))
 
-        >>> bf = MaskBitfield(native_width=8)
-        >>> bf.add_field('f1', 3)
-        >>> bf.add_field('f2', 3)
-        >>> bf.add_field('f3', 3)
-        >>> bf.add_field('f4', 3)
-        >>> bf.get_field_native_offset('f1')
-        0
-        >>> bf.get_field_native_offset('f3')
-        1
+        for chunk in self.normal_chunks:
+            result.append(' ][ {}@{}'.format(chunk.bytes, chunk.name))
+        result.append(' ]')
+        return ''.join(result)
 
-        @param field_name: bitfield field name.
-        @type field_name: C{str}
-        @return: native offset.
-        @rtype: C{int}
-        """
-        field = self._fields[field_name]
-        return field.offset / self._native_width
+    def packed_attribute(self):
+        return (self.packed_name, TypeInfo.get_param('Char'), self.packed_bytes())
 
-    def get_field_compatible_mask(self, field_name, integer):
-        """ Convert an integer value to mask compatible with a field.
+    def normal_attributes(self):
+        for chunk in self.normal_chunks:
+            yield (chunk.name, chunk.cython_type)
 
-        >>> bf = MaskBitfield(native_width=8)
-        >>> bf.add_field('f1', 3)
-        >>> bf.add_field('f2', 3)
-        >>> bf.add_field('f3', 3)
-        >>> bf.add_field('f4', 3)
-        >>> m = bf.get_field_compatible_mask('f1', 5)
-        >>> m, int(m)
-        (Mask(value=[0, 0, 0, 0, 0, 1, 0, 1]), 5)
-        >>> m = bf.get_field_compatible_mask('f2', 5)
-        >>> m, int(m)
-        (Mask(value=[0, 0, 1, 0, 1, 0, 0, 0]), 40)
-
-        @param field_name: name of the field to be compatible with.
-        @type field_name: C{str}
-        @param integer: integer value to be converted.
-        @type integer: C{int}
-        @return: resulting mask.
-        @rtype: C{mask}
-        """
-        field = self._fields[field_name]
-        mask_offset = field.offset % self._native_width
-        return Mask.from_int( integer << mask_offset, self._native_width )
-
-    def get_field_mask(self, field_name):
-        """ Get the mask needed to extract a field.
-
-        >>> bf = MaskBitfield(native_width=8)
-        >>> bf.add_field('f1', 3)
-        >>> bf.add_field('f2', 3)
-        >>> bf.add_field('f3', 3)
-        >>> bf.add_field('f4', 3)
-        >>> bf.get_field_mask('f1')
-        Mask(value=[1, 1, 1, 1, 1, 0, 0, 0])
-        >>> bf.get_field_mask('f2')
-        Mask(value=[1, 1, 0, 0, 0, 1, 1, 1])
-        >>> bf.get_field_mask('f3')
-        Mask(value=[1, 1, 1, 1, 1, 0, 0, 0])
-        >>> bf.get_field_mask('f4')
-        Mask(value=[1, 1, 0, 0, 0, 1, 1, 1])
-
-        @param field_name: field corresponding to requested mask.
-        @type field_name: C{str}
-        @return: a mask.
-        @rtype: C{Mask}
-        """
-        field = self._fields[field_name]
-        mask_offset = field.offset % self._native_width
-        max_int = 2**field.bits - 1
-        return ~Mask.from_int( max_int << mask_offset, self._native_width )
-
-################################################################################
-# EOF
-################################################################################
-
+if __name__ == '__main__':
+    import doctest
+    doctest.testmod(optionflags=doctest.NORMALIZE_WHITESPACE |
+                                doctest.REPORT_ONLY_FIRST_FAILURE |
+                                doctest.ELLIPSIS)

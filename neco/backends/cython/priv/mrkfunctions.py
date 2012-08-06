@@ -42,8 +42,8 @@ class CompareGenerator(MarkingTypeMethodGenerator):
 
         compared = set()
         tests = []
-        if marking_type.pool.packed_bits() > 0:
-            attr, _, count = marking_type.pool.packed_attribute()
+        if marking_type.chunk_manager.packed_bits() > 0:
+            attr, _, count = marking_type.chunk_manager.packed_attribute()
             compared.add(attr)
             for index in range(0, count):
                 left = cyast.E("{object}.{attribute}[{index}]".format(object=left_marking_var.name,

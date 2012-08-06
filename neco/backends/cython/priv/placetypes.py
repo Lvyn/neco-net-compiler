@@ -156,7 +156,7 @@ class ObjectPlaceType(coretypes.ObjectPlaceType, CythonPlaceType):
                                            type = TypeInfo.get('MultiSet'),
                                            token_type = place_info.type)
 
-        self.chunk = marking_type.pool.new_chunk(marking_type.id_provider.get(self),
+        self.chunk = marking_type.chunk_manager.new_chunk(marking_type.id_provider.get(self),
                                                  TypeInfo.get('MultiSet'))
 
     def new_place_stmt(self, env, marking_var):
@@ -260,7 +260,7 @@ class IntPlaceType(coretypes.PlaceType, CythonPlaceType):
                                      type = TypeInfo.get('IntPlace'),
                                      token_type = place_info.type)
 
-        self.chunk = marking_type.pool.new_chunk(marking_type.id_provider.get(self),
+        self.chunk = marking_type.chunk_manager.new_chunk(marking_type.id_provider.get(self),
                                                  TypeInfo.get('IntPlace'))
 
     def attribute_expr(self, env, marking_var):
@@ -458,9 +458,9 @@ class OneSafePlaceType(coretypes.OneSafePlaceType, CythonPlaceType):
                                           marking_type,
                                           place_info.type,
                                           place_info.type)
-        self.helper_chunk = marking_type.pool.new_chunk(marking_type.id_provider.new(),
+        self.helper_chunk = marking_type.chunk_manager.new_chunk(marking_type.id_provider.new(),
                                                         TypeInfo.Bool)
-        self.chunk = marking_type.pool.new_chunk(marking_type.id_provider.get(self),
+        self.chunk = marking_type.chunk_manager.new_chunk(marking_type.id_provider.get(self),
                                                  place_info.type)
         self.info = place_info
         self.marking_type = marking_type
@@ -636,7 +636,7 @@ class BTPlaceType(coretypes.BTPlaceType, CythonPlaceType):
                                        marking_type=marking_type,
                                        type=TypeInfo.get('Short'),
                                        token_type=TypeInfo.get('Short'))
-        self.chunk = marking_type.pool.new_chunk(marking_type.id_provider.get(self),
+        self.chunk = marking_type.chunk_manager.new_chunk(marking_type.id_provider.get(self),
                                                  TypeInfo.get('Short'))
         self.info = place_info
         self.marking_type = marking_type
@@ -745,7 +745,7 @@ class BTPlaceType(coretypes.BTPlaceType, CythonPlaceType):
 #    """
 #
 #    def __init__(self, place_info, marking_type):
-#        self.chunk = marking_type.pool.new_chunk(marking_type.id_provider.get(self),
+#        self.chunk = marking_type.chunk_manager.new_chunk(marking_type.id_provider.get(self),
 #                                                 type=TypeInfo.get('Short'))
 #        self.info = place_info
 #        self.marking_type = marking_type
@@ -862,8 +862,8 @@ class PackedBT1SPlaceType(coretypes.PlaceType, CythonPlaceType):
         @param place_info: place info structure
         @type place_info: C{PlaceInfo}
         """
-        self.pool = marking_type.pool
-        self.chunk = marking_type.pool.new_chunk(marking_type.id_provider.get(self),
+        self.chunk_manager = marking_type.chunk_manager
+        self.chunk = marking_type.chunk_manager.new_chunk(marking_type.id_provider.get(self),
                                                  TypeInfo.get('Bool'),
                                                  packed=True)
         self.info = place_info
@@ -876,7 +876,7 @@ class PackedBT1SPlaceType(coretypes.PlaceType, CythonPlaceType):
     
     
     def get_attribute_name(self):
-        name, _, _ = self.pool.packed_attribute()
+        name, _, _ = self.chunk_manager.packed_attribute()
         return name
     
     def new_place_expr(self, env):
@@ -897,7 +897,7 @@ class PackedBT1SPlaceType(coretypes.PlaceType, CythonPlaceType):
                                                                               attribute=attr,
                                                                               byte_offset=byte_offset,
                                                                               mask=mask))
-#        return self.pool.generate_remove_bits_stmt(env, marking_var, self.chunk, 1)
+#        return self.chunk_manager.generate_remove_bits_stmt(env, marking_var, self.chunk, 1)
 
     def add_token_stmt(self, env, token_expr, compiled_token, marking_var):
         # one safe: should be empty, just set bit
@@ -908,7 +908,7 @@ class PackedBT1SPlaceType(coretypes.PlaceType, CythonPlaceType):
                                                                               attribute=attr,
                                                                               byte_offset=byte_offset,
                                                                               mask=mask))
-#        return self.pool.generate_set_bits_stmt(env, marking_var, self.chunk, 1)
+#        return self.chunk_manager.generate_set_bits_stmt(env, marking_var, self.chunk, 1)
 
     @should_not_be_called
     def copy_expr(self, env, marking_var):
@@ -970,7 +970,7 @@ class FlowPlaceType(coretypes.PlaceType, CythonPlaceType):
                                      token_type=TypeInfo.get('UnsignedInt'))
 
         # this chunk will be updated when adding places
-        self.chunk = marking_type.pool.new_chunk(marking_type.id_provider.get(self),
+        self.chunk = marking_type.chunk_manager.new_chunk(marking_type.id_provider.get(self),
                                                  TypeInfo.get('Bool'),
                                                  packed=True)
     @property

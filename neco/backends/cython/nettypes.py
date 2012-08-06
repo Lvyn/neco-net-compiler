@@ -2,13 +2,13 @@
 
 from neco.core.info import TypeInfo, PlaceInfo
 from priv import cyast, placetypes
+from priv.lowlevel import ChunkManager
 import neco.config as config
 import neco.core.nettypes as coretypes
 import neco.utils as utils
-
-import priv.mrkmethods
 import priv.mrkfunctions
-from neco.backends.cython.priv.fields import MemoryPool
+import priv.mrkmethods
+
         
 ################################################################################
 
@@ -41,7 +41,7 @@ class StaticMarkingType(coretypes.MarkingType):
         else:
             self.packing_enabled = False
 
-        self.pool = MemoryPool(self.id_provider.new(base="_packed"))
+        self.chunk_manager = ChunkManager(self.id_provider.new(base="_packed"))
 
         self.add_method_generator(priv.mrkmethods.InitGenerator())
         self.add_method_generator(priv.mrkmethods.DeallocGenerator())
@@ -154,11 +154,11 @@ class StaticMarkingType(coretypes.MarkingType):
         # attributes
         ################################################################################
 
-        if self.pool.packed_bits() > 0:
-            (attr_name, attr_type, count) = self.pool.packed_attribute()
+        if self.chunk_manager.packed_bits() > 0:
+            (attr_name, attr_type, count) = self.chunk_manager.packed_attribute()
             cls.add_decl(cyast.CVar(attr_name + '[' + str(count) + ']', type=env.type2str(attr_type)))  
         
-        for attr_name, attr_type in self.pool.normal_attributes():
+        for attr_name, attr_type in self.chunk_manager.normal_attributes():
             cls.add_decl(cyast.CVar(name=attr_name, type=env.type2str(attr_type)))
 
         cls.add_method(cyast.FunctionDecl(name='copy',
@@ -254,8 +254,8 @@ class StaticMarkingType(coretypes.MarkingType):
 
         copied = set()
         # copy packed
-        if self.pool.packed_bits() > 0:
-            attr_name, _, count = self.pool.packed_attribute()
+        if self.chunk_manager.packed_bits() > 0:
+            attr_name, _, count = self.chunk_manager.packed_attribute()
             copied.add(attr_name)
             for i in range(count):
                 target_expr = cyast.E('{object}.{attribute}[{index!s}]'.format(object=dst_marking.name,

@@ -38,8 +38,8 @@ class InitGenerator(MarkingTypeMethodGenerator):
 
         initialized = set()
         # packed
-        if marking_type.pool.packed_bits() > 0:
-            (attr_name, _, count) = marking_type.pool.packed_attribute()
+        if marking_type.chunk_manager.packed_bits() > 0:
+            (attr_name, _, count) = marking_type.chunk_manager.packed_attribute()
             initialized.add(attr_name)
             for index in range(0, count):
                 builder.emit(cyast.E("{object}.{attribute}[{index!s}] = 0".format(object=self_var.name,
@@ -81,9 +81,9 @@ class CopyGenerator(MarkingTypeMethodGenerator):
 
         copied = set()
         # copy packed
-        print marking_type.pool.packed_bits()
-        if marking_type.pool.packed_bits() > 0:
-            attr_name, _, count = marking_type.pool.packed_attribute()
+        print marking_type.chunk_manager.packed_bits()
+        if marking_type.chunk_manager.packed_bits() > 0:
+            attr_name, _, count = marking_type.chunk_manager.packed_attribute()
             print attr_name
             copied.add(attr_name)
             for i in range(count):
@@ -155,8 +155,8 @@ class HashGenerator(MarkingTypeMethodGenerator):
         i = 0
 
         hashed = set()
-        if marking_type.pool.packed_bits() > 0:
-            attr_name, _, count = marking_type.pool.packed_attribute()
+        if marking_type.chunk_manager.packed_bits() > 0:
+            attr_name, _, count = marking_type.chunk_manager.packed_attribute()
             hashed.add(attr_name)
             attr = "{}.{}".format(self_var.name, attr_name)
             
