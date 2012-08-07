@@ -1,9 +1,9 @@
 #ifndef _CTYPES_H_
 #define _CTYPES_H_
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+//#ifdef __cplusplus
+//extern "C" {
+//#endif
 
 #include <stdio.h>
 #include <memory.h>
@@ -17,11 +17,11 @@ extern "C" {
 // int place type
 /////////////////////////////////////////////////////
 
-inline int int_cmp(const void* a, const void* b) {
+static inline int int_cmp(const void* a, const void* b) {
     return *(int*)a - *(int*)b;
 }
 
-inline unsigned int int_hash(int a) {
+static inline unsigned int int_hash(int a) {
     unsigned int hash = a;
     hash = hash ^ (hash>>4);
     hash = (hash^0xdeadbeef) + (hash<<5);
@@ -48,7 +48,7 @@ int_place_type_t* int_place_type_new(void);
 
 void int_place_type_init(int_place_type_t* pt);
 
-inline void int_place_type_free(int_place_type_t* pt) {
+static inline void int_place_type_free(int_place_type_t* pt) {
     pt->refs--;
     if (pt->refs == 0) {
 	free(pt->data);
@@ -58,25 +58,25 @@ inline void int_place_type_free(int_place_type_t* pt) {
 
 int_place_type_t* int_place_type_copy(int_place_type_t* orig);
 
-inline int_place_type_t* int_place_type_light_copy(int_place_type_t* orig) {
+static inline int_place_type_t* int_place_type_light_copy(int_place_type_t* orig) {
     orig->refs++;
     return orig;
 }
 
 #include <assert.h>
-inline void int_place_type_clean(int_place_type_t* pt) {
+static inline void int_place_type_clean(int_place_type_t* pt) {
     assert(0);
     pt->size = 0;
 }
 
-inline int int_place_type_not_empty(int_place_type_t* pt) {
+static inline int int_place_type_not_empty(int_place_type_t* pt) {
     return pt->size > 0;
 }
 void int_delete_place_type(int_place_type_t* pt);
 
 void int_place_type_add(int_place_type_t* pt, int value);
 
-inline void int_place_type_rem_by_index(int_place_type_t* pt, int index) {
+static inline void int_place_type_rem_by_index(int_place_type_t* pt, int index) {
     int i;
     pt->size--;
     for (i = index; i < pt->size; i++)
@@ -85,11 +85,11 @@ inline void int_place_type_rem_by_index(int_place_type_t* pt, int index) {
 
 void int_place_type_rem_by_value(int_place_type_t* pt, int value);
 
-inline int int_place_type_get(int_place_type_t* pt, int index) {
+static inline int int_place_type_get(int_place_type_t* pt, int index) {
     return pt->data[index];
 }
 
-inline int int_place_type_size(int_place_type_t* pt) {
+static inline int int_place_type_size(int_place_type_t* pt) {
     return pt->size;
 }
 
@@ -97,19 +97,19 @@ void int_place_type_update(int_place_type_t* left, int_place_type_t* right);
 
 //////////////////////////////////////////////////
 
-inline void structure_copy(void* dst, void* src, int n) {
+static inline void structure_copy(void* dst, void* src, int n) {
     memcpy(dst, src, n);
 }
 
-inline int structure_cmp(void* dst, void* src, int n) {
+static inline int structure_cmp(void* dst, void* src, int n) {
     return strncmp((char*)dst, (char*)src, n) == 0;
 }
 
-inline int structure_to_int(void* dst, int i) {
+static inline int structure_to_int(void* dst, int i) {
     return ((int *)dst)[i];
 }
 
-inline int structure_to_char(void* dst, int i) {
+static inline int structure_to_char(void* dst, int i) {
     return ((char *)dst)[i];
 }
 
@@ -147,8 +147,8 @@ void neco_list_delete(neco_list_t* list, deletion_callback del);
 //     return node->next;
 // }
 
-#ifdef __cplusplus
-} // extern "C"
-#endif
+//#ifdef __cplusplus
+//} // extern "C"
+//#endif
 
 #endif /* _CTYPES_H_ */

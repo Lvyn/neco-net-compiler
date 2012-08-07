@@ -574,7 +574,8 @@ class OneSafePlaceType(coretypes.OneSafePlaceType, CythonPlaceType):
     def token_expr(self, env, token):
         return cyast.E(repr(token))
 
-    def light_copy_expr(self, env, marking_var):
+    def light_copy_stmt(self, env, dst_marking_var, src_marking_var):
+        
         return self.place_expr(env, marking_var)
 
     def copy_stmt(self, env, dst_marking_var, src_marking_var):

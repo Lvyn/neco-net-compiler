@@ -94,12 +94,14 @@ def compile_IR(env):
         print search_paths
         print "********************************************************************************"
 
+
+    ctypes_source = search_file("ctypes.c", search_paths)
     setup(name=base_dir + "net.pyx",
           cmdclass={'build_ext': build_ext},
-          ext_modules=[Extension("net", [base_dir + "net.pyx"],
+          ext_modules=[Extension("net", [base_dir + "net.pyx", ctypes_source ],
                                  include_dirs=search_paths + [base_dir],
-                                 extra_compile_args=['-ggdb'],
-                                 extra_link_args=['-lctypes'],
+                                 #extra_compile_args=['-ggdb'],
+                                 #extra_link_args=['-lctypes'],
                                  library_dirs=search_paths + [base_dir])],
           script_args=["build_ext", "--inplace"],
           options={ 'build': { 'build_base': 'build' } })
