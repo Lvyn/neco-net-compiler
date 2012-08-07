@@ -7,8 +7,6 @@ from distutils.extension import Extension
 from snakes.lang.asdl import compile_asdl
 import sys
 
-
-
 def gen_asdl():
     print "generating ASDL"
     compile_asdl('neco/asdl/properties.asdl', 'neco/asdl/properties.py')

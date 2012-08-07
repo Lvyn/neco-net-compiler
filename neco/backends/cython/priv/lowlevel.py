@@ -503,7 +503,7 @@ class ChunkManager(object):
         return ''.join(result)
 
     def packed_attribute(self):
-        return (self.packed_name, TypeInfo.get_param('Char'), self.packed_bytes())
+        return (self.packed_name, TypeInfo.get('Char'), self.packed_bytes())
 
     def normal_attributes(self):
         for chunk in self.normal_chunks:
