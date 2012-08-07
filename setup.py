@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 
-from distutils.core import setup
-from snakes.lang.asdl import compile_asdl
-
-from distutils.core import setup
-from distutils.extension import Extension
 from Cython.Distutils import build_ext
-
+from distutils.command.install_lib import install_lib
+from distutils.core import setup, setup
+from distutils.extension import Extension
+from snakes.lang.asdl import compile_asdl
 import sys
+
+
 
 def gen_asdl():
     print "generating ASDL"
@@ -54,9 +54,9 @@ setup(name='Neco',
                                      'ctypes_ext.pxd',
                                      'ctypes.h'] },
       cmdclass={'build_ext':build_ext},
-      ext_modules=[Extension('neco.ctypes.libctypes', ['neco/ctypes/ctypes.c']),
+      ext_modules=[Extension('neco.ctypes.libctypes',  ['neco/ctypes/ctypes.c']),
                    Extension("neco.ctypes.ctypes_ext", ["neco/ctypes/ctypes_ext.pyx"],
-                             extra_link_args=["-lctypes", "-L./build/lib/neco/ctypes/"])],
+                             libraries=["ctypes"], library_dirs=["./build/lib/neco/ctypes"])],
       license='LGPL',
       scripts=['bin/neco-check',
                'bin/neco-compile',
