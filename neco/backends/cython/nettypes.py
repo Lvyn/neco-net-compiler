@@ -82,7 +82,7 @@ class StaticMarkingType(coretypes.MarkingType):
             return
         else: # optimize
             if place_info.type.is_BlackToken:
-                self.place_types[place_info.name] = placetypes.PackedBT1SPlaceType(place_info, self)
+                self.place_types[place_info.name] = placetypes.BTPlaceType(place_info, self)
             else: # 1s not BT
                 #self.place_types[place_info.name] = placetypes.ObjectPlaceType(place_info, self)
                 self.place_types[place_info.name] = placetypes.OneSafePlaceType(place_info, self)

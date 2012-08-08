@@ -106,23 +106,9 @@ class CythonPlaceType(object):
     _revelant_ = True # should be dumped
     _helper_ = False
     _checking_need_helper_ = True
-    
+
     def get_attribute_name(self):
         return self.chunk.get_attribute_name()
-
-#    def place_expr(self, env, marking_var):
-#        """ Get an ast builder corresponding to place access.
-#
-#        @param env: compiling environment.
-#        @type env: C{neco.backends.cython.utils.Env}
-#        @param marking_name: marking structure name.
-#        @type marking_name: C{str}
-#        @return: an ast builder.
-#        @rtype: C{neco.backends.cython.astutils.Builder._cyast_builder}
-#        """
-#        return env.marking_type.gen_get_place(env = env,
-#                                              marking_var = marking_var,
-#                                              place_name = self.info.name)
 
     @property
     def is_packed(self):
@@ -496,9 +482,13 @@ class OneSafePlaceType(coretypes.OneSafePlaceType, CythonPlaceType):
                              comparators=[right])
 
     def compare_expr(self, env, left_marking_var, right_marking_var):
-        bytes_offset, _ = self.helper_chunk.offset()
-        left_helper = "{}.{}[{}]".format(left_marking_var.name, self.helper_chunk.get_attribute_name(), bytes_offset)
-        right_helper = "{}.{}[{}]".format(right_marking_var.name, self.helper_chunk.get_attribute_name(), bytes_offset)
+        if self.helper_chunk.packed:
+            bytes_offset, _ = self.helper_chunk.offset()
+            left_helper = "{}.{}[{}]".format(left_marking_var.name, self.helper_chunk.get_attribute_name(), bytes_offset)
+            right_helper = "{}.{}[{}]".format(right_marking_var.name, self.helper_chunk.get_attribute_name(), bytes_offset)
+        else:
+            left_helper = "{}.{}".format(left_marking_var.name, self.helper_chunk.get_attribute_name())
+            right_helper = "{}.{}".format(right_marking_var.name, self.helper_chunk.get_attribute_name())
         left = "{}.{}".format(left_marking_var.name, self.chunk.get_attribute_name())
         right = "{}.{}".format(right_marking_var.name, self.chunk.get_attribute_name())
         typ = self.info.type
@@ -522,25 +512,6 @@ class OneSafePlaceType(coretypes.OneSafePlaceType, CythonPlaceType):
                                                                                        lh=left_helper,
                                                                                        rh=right_helper)
         return cyast.E(expr)
-#        helper_compare_expr = cyast.IfExp(test=cyast.UnaryOp(operand=cyast.BinOp(left=left_helper_expr,
-#                                                                       op=cyast.BitAnd(),
-#                                                                       right=right_helper_expr),
-#                                                           op=cyast.Not()),
-#                                        body=cyast.Num(0),
-#                                        orelse=cyast.IfExp(cyast.BinOp(left=cyast.UnaryOp(operand=left_helper_expr,
-#                                                                                          op=cyast.Not()),
-#                                                                       op=cyast.BitAnd(),
-#                                                                       right=right_helper_expr),
-#                                                           body=cyast.Num(-1),
-#                                                           orelse=cyast.Num(1))
-#                                        )
-#
-#        return cyast.IfExp(test=cyast.BinOp(left=left_helper_expr,
-#                                            op=cyast.BitAnd(),
-#                                            right=right_helper_expr),
-#                           body=token_compare_expr,
-#                           orelse=helper_compare_expr)
-
 
     def not_empty_expr(self, env, marking_var):
         if self.helper_chunk.packed:
@@ -583,12 +554,14 @@ class OneSafePlaceType(coretypes.OneSafePlaceType, CythonPlaceType):
                                                                                          byte_offset=byte_offset,
                                                                                          mask=mask))
         else:
-            helper_expr = cyast.E("{}.{} = 1".format(marking_var.name, self.helper_chunk.get_attribute_name())),
+            helper_expr = cyast.E("{}.{} = 1".format(marking_var.name, self.helper_chunk.get_attribute_name()))
 
+        assign = cyast.Assign(targets=[cyast.E("{}.{}".format(marking_var.name, 
+                                                              self.chunk.get_attribute_name()))],
+                              value=compiled_token)
         return [helper_expr,
-                cyast.Comment(self.helper_chunk.hint),
-                cyast.Assign(targets=[cyast.E("{}.{}".format(marking_var.name, self.chunk.get_attribute_name()))],
-                             value=compiled_token),
+                cyast.Comment(self.helper_chunk.hint), 
+                assign,
                 cyast.Comment(self.chunk.hint)]
 
 
@@ -651,25 +624,6 @@ class OneSafePlaceType(coretypes.OneSafePlaceType, CythonPlaceType):
             helper_expr = "{}.{}".format(marking_var.name, self.helper_chunk.get_attribute_name())
         
         return cyast.E("'[' + dump({}) + ']' if {} else []".format(place_expr, helper_expr))
-#        return cyast.IfExp(test=helper_expr,
-#                           body=cyast.BinOp(left=cyast.Str('['),
-#                                            op=cyast.Add(),
-#                                            right=cyast.BinOp(left=cyast.Call(func=cyast.Name('dump'),
-#                                                                                  args=[place_expr]),
-#                                                                op=cyast.Add(),
-#                                                                right=cyast.Str(']')
-#                                                                )
-#                                            ),
-#                           orelse=cyast.Str('[]'))
-
-#    def enumerate_tokens(self, checker_env, loop_var, marking_var, body):
-#        helper_expr = self.existence_helper_place_type.place_expr(checker_env, marking_var)
-#        place_expr = self.place_expr(checker_env, marking_var)
-#        return cyast.If(test=helper_expr,
-#                        body=[cyast.Assign(targets=[cyast.Name(loop_var.name)],
-#                                           value=place_expr),
-#                              body],
-#                        orelse=[])
 
     def enumerate(self, env, marking_var, token_var, compiled_body):
         getnode = cyast.E("{} = {}.{}".format(token_var.name, marking_var.name, self.chunk.get_attribute_name()))
@@ -691,15 +645,25 @@ class BTPlaceType(coretypes.BTPlaceType, CythonPlaceType):
                                        marking_type=marking_type,
                                        type=TypeInfo.get('Short'),
                                        token_type=TypeInfo.get('Short'))
+
+        if config.get('bit_packing'):
+            cython_type = TypeInfo.get('Bool')
+            packed=True
+        else:
+            cython_type = TypeInfo.get('Short')
+            packed=False
+
         self.chunk = marking_type.chunk_manager.new_chunk(marking_type.id_provider.get(self),
-                                                 TypeInfo.get('Short'))
+                                                          cython_type,
+                                                          packed=packed)
+
         self.chunk.hint = "{} - {!s}".format(place_info.name, place_info.type)
         self.info = place_info
         self.marking_type = marking_type
 
     def delete_stmt(self, env, marking_var):
         return []
-    
+
     def attribute_expr(self, env, marking_var):
         return cyast.E('{}.{}'.format(marking_var.name, self.chunk.get_attribute_name()))
 
@@ -724,47 +688,87 @@ class BTPlaceType(coretypes.BTPlaceType, CythonPlaceType):
                             value=cyast.Num(0))
 
     def not_empty_expr(self, env, marking_var):
-        return cyast.E('{}.{}'.format(marking_var.name, self.chunk.get_attribute_name()))
+        if self.chunk.packed:
+            attr_name = self.chunk.get_attribute_name()
+            bytes_offset, _ = self.chunk.offset()
+            mask = int(self.chunk.mask())
+            return cyast.E('{object}.{attribute}[{index}] & {mask}'.format(object=marking_var.name,
+                                                                           attribute=attr_name,
+                                                                           index=bytes_offset,
+                                                                           mask=mask))
+        else:
+            return cyast.E('{}.{}'.format(marking_var.name, self.chunk.get_attribute_name()))
 
     def dump_expr(self, env, marking_var):
-        place_expr = cyast.E('{}.{}'.format(marking_var.name, self.chunk.get_attribute_name()))
-        
-        return cyast.BinOp(left=cyast.Str('['),
-                           op=cyast.Add(),
-                           right=cyast.BinOp(left=cyast.Call(func=cyast.E("', '.join"),
+        if self.chunk.packed:
+            return cyast.IfExp(test=self.not_empty_expr(env, marking_var),
+                               body=cyast.Str('[dot]'),
+                               orelse=cyast.Str('[]'))
+        else:
+            place_expr = cyast.E('{}.{}'.format(marking_var.name, self.chunk.get_attribute_name()))
+            return cyast.BinOp(left=cyast.Str('['),
+                               op=cyast.Add(),
+                               right=cyast.BinOp(left=cyast.Call(func=cyast.E("', '.join"),
                                                                  args=[cyast.BinOp(left=cyast.List([cyast.Str('dot')]),
                                                                                    op=cyast.Mult(),
                                                                                    right=place_expr)]),
-                                               op=cyast.Add(),
-                                               right=cyast.Str(']')
-                                               )
-                           )
+                                                 op=cyast.Add(),
+                                                 right=cyast.Str(']')))
 
     def iterable_expr(self, env, marking_var):
-        place_expr = cyast.E('{}.{}'.format(marking_var.name, self.chunk.get_attribute_name()))
-        return cyast.Call(func=cyast.Name('range'),
-                          args=[ cyast.Num(0), place_expr ])
+        if self.chunk.packed:
+            raise NotImplementedError
+        else:
+            place_expr = cyast.E('{}.{}'.format(marking_var.name, self.chunk.get_attribute_name()))
+            return cyast.Call(func=cyast.Name('range'),
+                              args=[ cyast.Num(0), place_expr ])
 
     def remove_token_stmt(self, env, token_expr, compiled_token, marking_var):
-        place_expr = cyast.E('{}.{}'.format(marking_var.name, self.chunk.get_attribute_name()))
-        return cyast.AugAssign(target=place_expr,
-                               op=cyast.Sub(),
-                               value=cyast.Num(1))
+        if self.chunk.packed:
+            # 1 bit only, should be 1, just reset it
+            mask = int(self.chunk.mask())
+            attr = self.chunk.get_attribute_name()
+            byte_offset, _ = self.chunk.offset()
+            return cyast.E('{object}.{attribute}[{byte_offset}] ^= {mask}'.format(object=marking_var.name,
+                                                                                  attribute=attr,
+                                                                                  byte_offset=byte_offset,
+                                                                                  mask=mask))
+
+        else:
+            place_expr = cyast.E('{}.{}'.format(marking_var.name, self.chunk.get_attribute_name()))
+            return cyast.AugAssign(target=place_expr,
+                                   op=cyast.Sub(),
+                                   value=cyast.Num(1))
 
     def add_token_stmt(self, env, token_expr, compiled_token, marking_var):
-        place_expr = cyast.E('{}.{}'.format(marking_var.name, self.chunk.get_attribute_name()))
-        return cyast.AugAssign(target=place_expr,
-                               op=cyast.Add(),
-                               value=cyast.Num(1))
+        if self.chunk.packed:
+            # 1 bit only, should be 1, just reset it
+            mask = int(self.chunk.mask())
+            attr = self.chunk.get_attribute_name()
+            byte_offset, _ = self.chunk.offset()
+            return cyast.E('{object}.{attribute}[{byte_offset}] ^= {mask}'.format(object=marking_var.name,
+                                                                                  attribute=attr,
+                                                                                  byte_offset=byte_offset,
+                                                                                  mask=mask))
+        else:
+            place_expr = cyast.E('{}.{}'.format(marking_var.name, self.chunk.get_attribute_name()))
+            return cyast.AugAssign(target=place_expr,
+                                   op=cyast.Add(),
+                                   value=cyast.Num(1))
 
     def copy_stmt(self, env, dst_marking_var, src_marking_var):
-        attr_name = self.chunk.get_attribute_name()
-        return cyast.E('{}.{} = {}.{}'.format(dst_marking_var.name, attr_name,
-                                              src_marking_var.name, attr_name))
+        if self.chunk.packed:
+            raise NotImplementedError
+        else:
+            attr_name = self.chunk.get_attribute_name()
+            return cyast.E('{}.{} = {}.{}'.format(dst_marking_var.name, attr_name,
+                                                  src_marking_var.name, attr_name))
 
     def light_copy_stmt(self, env, dst_marking_var, src_marking_var):
-        return self.copy_stmt(env, dst_marking_var, src_marking_var)
-        #return cyast.E('{}.{}'.format(marking_var.name, self.chunk.get_attribute_name()))
+        if self.chunk.packed:
+            raise NotImplementedError
+        else:
+            return self.copy_stmt(env, dst_marking_var, src_marking_var)
 
     def token_expr(self, env, token):
         return cyast.E("dot")
@@ -775,237 +779,27 @@ class BTPlaceType(coretypes.BTPlaceType, CythonPlaceType):
                                            value=cyast.E("dot")),
                               body],
                         orelse=[])
-        
+
     def card_expr(self, env, marking_var):
         return cyast.E('{}.{}'.format(marking_var.name, self.chunk.get_attribute_name()))
-    
+
     def multiset_expr(self, env, marking_var):
         return cyast.Call(func=cyast.E(env.type2str(TypeInfo.get('MultiSet'))),
                           args=[ cyast.Dict([cyast.E('dot')], [cyast.E('{}.{}'.format(marking_var.name,
                                                                                       self.chunk.get_attribute_name()))])])    
 
     def enumerate(self, env, marking_var, token_var, compiled_body):
-        place_expr = cyast.E('{}.{}'.format(marking_var.name, self.chunk.get_attribute_name()))
-        ifnode = cyast.Builder.If(test=cyast.Builder.Compare(left=place_expr,
-                                                               ops=[ cyast.Gt() ],
-                                                               comparators=[ cyast.Num(n=0) ]),
-                                  body=[ compiled_body ])
-        return [ ifnode ]
-
-################################################################################
-#
-#class BTOneSafePlaceType(coretypes.BTOneSafePlaceType, CythonPlaceType):
-#    """ Python one safe black token place type.
-#
-#    Using this place type without the BTOneSafeTokenEnumerator may introduce inconsistency.
-#    """
-#
-#    def __init__(self, place_info, marking_type):
-#        self.chunk = marking_type.chunk_manager.new_chunk(marking_type.id_provider.get(self),
-#                                                 type=TypeInfo.get('Short'))
-#        self.info = place_info
-#        self.marking_type = marking_type
-#
-#    def new_place_expr(self, env):
-#        return cyast.E("0")
-#
-#    @should_not_be_called
-#    def iterable_expr(self, env, marking_var): pass
-#
-#    def remove_token_stmt( self, env, token_expr, compiled_token, marking_var):
-#        return "{}.{} = 0"
-#        place_expr = self.place_expr(env, marking_var)
-#        return cyast.E(place_expr).assign("0")
-#
-#    def add_token_stmt(self, env, token_expr, compiled_token, marking_var):
-#        place_expr = self.place_expr(env, marking_var)
-#        return cyast.Builder.LValue(place_expr).assign("1")
-#
-#    def copy_expr(self, env, marking_var):
-#        return self.place_expr(env, marking_var)
-#
-#    def token_expr(self, env, token):
-#        return cyast.E("dot")
-#
-#    def enumerate(self, env, marking_var, token_var, compiled_body):
-#        place_type = env.marking_type.get_place_type_by_name(self.info.name)
-#        ifnode = cyast.Builder.If(test = place_type.place_expr(env = env,
-#                                                               marking_var = marking_var),
-#                            body = compiled_body )
-#        return [ ifnode ]
-
-################################################################################
-
-class BT1SPack(object):
-    """ Class used to pack BlackToken one bound places. """
-
-    MAX_LENGTH = 8
-
-    def __init__(self, marking_type):
-        """
-        """
-        self.marking_type = marking_type
-        self.packed = []
-
-    @property
-    def is_full(self):
-        return len(self.packed) >= BT1SPack.MAX_LENGTH
-
-    @property
-    def type(self):
-        return TypeInfo.Char
-
-    @property
-    def token_type(self):
-        return TypeInfo.Char
-
-    def pack_expr(self, env, marking_var):
-        return env.marking_type.gen_get_pack(env=env,
-                                             marking_var=marking_var,
-                                             pack=self)
-
-    def gen_init_value(self, env):
-        return cyast.E("0x0")
-
-    def gen_get_place(self, env, marking_var, place_type):
-        offset = self._offset_of(place_type)
-        return cyast.E(self.marking_type.gen_get_pack(env, marking_var, self)).add(cyast.E(repr(offset)))
-
-    def push(self, place_type):
-        """ Add a place type to the pack
-
-        Added places will be encoded within a unique class attribute.
-
-        @param place_type: type to be pushed
-        @type place_type: C{PackedBT1SPlaceType}
-        """
-        assert isinstance(place_type, PackedBT1SPlaceType)
-        assert len(self.packed) <= BT1SPack.MAX_LENGTH
-
-        self.packed.append(place_type)
-        place_type.pack = self
-
-    def _offset_of(self, place_type):
-        return 1 << self.packed.index(place_type)
-
-    def remove(self, env, place_type, marking_var):
-        offset = self._offset_of(place_type)
-        mask = (offset) # forces to 8 bits
-
-        pack_expr = self.pack_expr(env, marking_var)
-        return cyast.E(pack_expr).xor_assign(cyast.E(mask))
-
-
-    def add(self, env, place_type, marking_var):
-        offset = self._offset_of(place_type)
-
-        mask = offset
-        pack_expr = self.pack_expr(env, marking_var)
-        return cyast.E(pack_expr).or_assign(cyast.E(mask))
-
-    def copy_expr(self, env, marking_var):
-        return env.marking_type.gen_get_pack(env=env,
-                                             marking_var=marking_var,
-                                             pack=self)
-
-class PackedBT1SPlaceType(coretypes.PlaceType, CythonPlaceType):
-    """ BlackToken place types that have been packed.
-    """
-
-    def __init__(self, place_info, marking_type):
-        """ new place type
-
-        @param place_info: place info structure
-        @type place_info: C{PlaceInfo}
-        """
-        self.chunk_manager = marking_type.chunk_manager
-        self.chunk = marking_type.chunk_manager.new_chunk(marking_type.id_provider.get(self),
-                                                 TypeInfo.get('Bool'),
-                                                 packed=True)
-        self.info = place_info
-        self.marking_type = marking_type
-        coretypes.PlaceType.__init__(self,
-                                     place_info=place_info,
-                                     marking_type=marking_type,
-                                     type=TypeInfo.get('Bool'),
-                                     token_type=TypeInfo.Bool)
-    
-    
-    def get_attribute_name(self):
-        name, _, _ = self.chunk_manager.packed_attribute()
-        return name
-    
-    def new_place_expr(self, env):
-        return cyast.E('0')
-    
-    def delete_stmt(self, env, marking_var):
-        return []
-    
-    @should_not_be_called
-    def iterable_expr(self, env, marking_var): pass
-
-    def remove_token_stmt(self, env, token_expr, compiled_token, marking_var):
-        # 1 bit only, should be 1, just reset it
-        mask = int(self.chunk.mask())
-        attr = self.chunk.get_attribute_name()
-        byte_offset, _ = self.chunk.offset()
-        return cyast.E('{object}.{attribute}[{byte_offset}] ^= {mask}'.format(object=marking_var.name,
-                                                                              attribute=attr,
-                                                                              byte_offset=byte_offset,
-                                                                              mask=mask))
-#        return self.chunk_manager.generate_remove_bits_stmt(env, marking_var, self.chunk, 1)
-
-    def add_token_stmt(self, env, token_expr, compiled_token, marking_var):
-        # one safe: should be empty, just set bit
-        mask = int(self.chunk.mask())
-        attr = self.chunk.get_attribute_name()
-        byte_offset, _ = self.chunk.offset()
-        return cyast.E('{object}.{attribute}[{byte_offset}] |= {mask}'.format(object=marking_var.name,
-                                                                              attribute=attr,
-                                                                              byte_offset=byte_offset,
-                                                                              mask=mask))
-#        return self.chunk_manager.generate_set_bits_stmt(env, marking_var, self.chunk, 1)
-
-    @should_not_be_called
-    def copy_expr(self, env, marking_var):
-        pass
-        #return self.pack.copy_expr(env, marking_var)
-
-    def token_expr(self, env, token):
-        return cyast.E(0x1)
-
-    def dump_expr(self, env, marking_var):
-        return cyast.IfExp(test=self.not_empty_expr(env, marking_var),
-                           body=cyast.Str('[dot]'),
-                           orelse=cyast.Str('[]'))
-
-    def not_empty_expr(self, env, marking_var):
-        attr_name = self.chunk.get_attribute_name()
-        bytes_offset, _ = self.chunk.offset()
-        mask = int(self.chunk.mask())
-        return cyast.E('{object}.{attribute}[{index}] & {mask}'.format(object=marking_var.name,
-                                                                       attribute=attr_name,
-                                                                       index=bytes_offset,
-                                                                       mask=mask))
-
-    def check_helper_expr(self, env, marking_var):
-        return cyast.Call(func=cyast.E("BtPlaceTypeHelper"),
-                          args=[cyast.IfExp(test=self.gen_get_place(env, marking_var),
-                                            body=cyast.Num(1),
-                                            orelse=cyast.Num(0))])
-
-    def enumerate_tokens(self, checker_env, loop_var, marking_var, body):
-        return [ cyast.Assign(targets=[cyast.Name(loop_var.name)],
-                              value=cyast.IfExp(test=self.gen_get_place(checker_env, marking_var),
-                                                  body=cyast.E('dot'),
-                                                  orelse=cyast.E('None'))),
-                 body ]
-
-    def enumerate(self, env, marking_var, token_var, compiled_body):
-        ifnode = cyast.Builder.If(test=self.not_empty_expr(env=env, marking_var=marking_var),
-                                  body=[ compiled_body ])
-        return [ ifnode ]
-
+        if self.chunk.packed:
+            ifnode = cyast.Builder.If(test=self.not_empty_expr(env=env, marking_var=marking_var),
+                                      body=[ compiled_body ])
+            return [ ifnode ]
+        else:
+            place_expr = cyast.E('{}.{}'.format(marking_var.name, self.chunk.get_attribute_name()))
+            ifnode = cyast.Builder.If(test=cyast.Builder.Compare(left=place_expr,
+                                                                 ops=[ cyast.Gt() ],
+                                                                 comparators=[ cyast.Num(n=0) ]),
+                                      body=[ compiled_body ])
+            return [ ifnode ]
 
 ################################################################################
 #
