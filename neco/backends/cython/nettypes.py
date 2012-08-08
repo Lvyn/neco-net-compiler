@@ -14,7 +14,9 @@ import priv.mrkmethods
 
 def place_type_from_info(place_info, marking):
     """ Returns a PlaceType object based on PlaceInfo type information. """
-    
+
+    return placetypes.ObjectPlaceType(place_info, marking_type=marking)
+
     pi_type = place_info.type
     if   pi_type.is_Int:        return placetypes.IntPlaceType(place_info, marking_type=marking)
     elif pi_type.is_Bool:       return placetypes.ObjectPlaceType(place_info, marking_type=marking)
@@ -74,29 +76,20 @@ class StaticMarkingType(coretypes.MarkingType):
         return self._process_place_types[process_name]
 
     def __gen_one_safe_place_type(self, place_info):
-        if place_info.type.is_BlackToken:
-            if not config.get('optimize'):
-                pt = placetypes.BTPlaceType(place_info, self)
-                self.place_types[place_info.name] = pt
+        if not config.get('optimize'):
+            if place_info.type.is_BlackToken:
+                self.place_types[place_info.name] = placetypes.BTPlaceType(place_info, self)
             else:
-                # register a new place type
-                pt = placetypes.PackedBT1SPlaceType(place_info, self)
-                self.place_types[place_info.name] = pt
-        else: # 1s not BT
-            new_id = self.id_provider.new('one_safe_')
-            #dummy = PlaceInfo.Dummy(new_id, one_safe=True)
-            #self.id_provider.set(dummy, new_id)
-
-            #pt = placetypes.PackedBT1SPlaceType(dummy, self, pack=self._pack)
-            #pt.revelant = False
-            #self._pack.add_place(dummy, bits=1)
-            # remember place type
-            #self.place_types[new_id] = pt
-
-            # create the place
-            place_type = placetypes.OneSafePlaceType(place_info, self)
-            # remember place type
-            self.place_types[place_info.name] = place_type
+                self.place_types[place_info.name] = placetypes.ObjectPlaceType(place_info, self)
+            return
+        else: # optimize
+            if place_info.type.is_BlackToken:
+                self.place_types[place_info.name] = placetypes.PackedBT1SPlaceType(place_info, self)
+            else: # 1s not BT
+                #self.place_types[place_info.name] = placetypes.ObjectPlaceType(place_info, self)
+                self.place_types[place_info.name] = placetypes.OneSafePlaceType(place_info, self)
+                
+            return
 
 
     def __gen_flow_control_place_type(self, place_info):
@@ -158,8 +151,18 @@ class StaticMarkingType(coretypes.MarkingType):
             (attr_name, attr_type, count) = self.chunk_manager.packed_attribute()
             cls.add_decl(cyast.CVar(attr_name + '[' + str(count) + ']', type=env.type2str(attr_type)))  
         
-        for attr_name, attr_type in self.chunk_manager.normal_attributes():
+        #chunk_place_map = { place.chunk.get_attribute_name() : place for place in self.place_types.values() }
+        #chunk_place_map += { place.helper_chunk.get_attribute_name() : place for place in self.place_types.values() if hasattr(place, 'helper_chunk') }
+
+        #print [ (a, b) for a, b in self.chunk_manager.normal_attributes() ]
+        #print sorted(chunk_place_map.keys())
+        for chunk in self.chunk_manager.normal_chunks:
+            attr_name = chunk.get_attribute_name()
+            attr_type = chunk.get_cython_type()
+            
             cls.add_decl(cyast.CVar(name=attr_name, type=env.type2str(attr_type)))
+            #   place = chunk_place_map[attr_name]
+            cls.add_decl(cyast.Comment("{}".format(chunk.hint)))
 
         cls.add_method(cyast.FunctionDecl(name='copy',
                                           args=cyast.to_ast(cyast.A("self", cyast.Name(env.type2str(self.type)))),
@@ -240,7 +243,7 @@ class StaticMarkingType(coretypes.MarkingType):
         nodes = []
         nodes.append(cyast.E(dst_marking.name + " = Marking()"))
 
-        copy_attributes   = set()
+        copy_attributes = set()
         assign_attributes = set()
 
         for place_type in self.place_types.itervalues():
@@ -276,17 +279,14 @@ class StaticMarkingType(coretypes.MarkingType):
 #                                                                attribute=attr_name))
 
             if attr_name in copy_attributes:
-                nodes.append( place_type.copy_stmt(env, dst_marking, src_marking) )
-                nodes.append( cyast.Comment(place_type.info.name))
+                nodes.append(place_type.copy_stmt(env, dst_marking, src_marking))
+                nodes.append(cyast.Comment('copy: {} {!s}'.format(place_type.info.name, place_type.info.type)))
 #                nodes.append(cyast.Assign(targets=[target_expr],
 #                                          value=place_type.copy_expr(env, marking_var=src_marking))
 #                             )
             elif attr_name in assign_attributes:
-                nodes.append( place_type.light_copy_stmt(env, dst_marking, src_marking) )
-                nodes.append( cyast.Comment(place_type.info.name))
-#                nodes.append(cyast.Assign(targets=[target_expr],
-#                                          value=place_type.light_copy_expr(env, marking_var=src_marking))
-#                                 )
+                nodes.append(place_type.light_copy_stmt(env, dst_marking, src_marking))
+                nodes.append(cyast.Comment('assign: {} {!s}'.format(place_type.info.name, place_type.info.type)))
             copied.add(attr_name)
 
         return cyast.to_ast(nodes)

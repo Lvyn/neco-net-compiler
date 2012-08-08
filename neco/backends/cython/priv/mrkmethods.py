@@ -45,7 +45,7 @@ class InitGenerator(MarkingTypeMethodGenerator):
                 builder.emit(cyast.E("{object}.{attribute}[{index!s}] = 0".format(object=self_var.name,
                                                                                  attribute=attr_name,
                                                                                  index=index)))
-        
+
         # init other places
         for place_type in marking_type.place_types.itervalues():
             attr_name = place_type.get_attribute_name()
@@ -55,7 +55,7 @@ class InitGenerator(MarkingTypeMethodGenerator):
             # assumes that packed types will always be initialized to 0 !!!
             ################################################################################
             builder.emit(place_type.new_place_stmt(env, self_var))
-            builder.emit(builder.Comment("{}".format(place_type.info.name)))
+            builder.emit(builder.Comment("{} - 1s: {} - {}".format(place_type.info.name, place_type.one_safe(), place_type.info.type)))
         builder.end_If()
         builder.end_FunctionDef()
         return cyast.to_ast(builder)

@@ -395,8 +395,12 @@ class MemoryChunk(object):
         self.cython_type = cython_type
         self.packed = packed
         self.bits = bits_sizeof(cython_type) if packed else 0
-        self.bytes = bytes_sizeof(cython_type) 
+        self.bytes = bytes_sizeof(cython_type)
+        self.hint = "no hint" 
         
+    def get_cython_type(self):
+        return self.cython_type
+    
     def get_attribute_name(self):
         if self.packed:
             return self.chunk_manager.packed_name
