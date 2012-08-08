@@ -7,7 +7,7 @@ from neco.utils import should_not_be_called, todo
 import cyast
 import math
 import neco.core.nettypes as coretypes
-
+from neco import config
 
 def packed_place(cls):
     """ Decorator for packed places.
@@ -454,7 +454,8 @@ class OneSafePlaceType(coretypes.OneSafePlaceType, CythonPlaceType):
                                           place_info.type,
                                           place_info.type)
         self.helper_chunk = marking_type.chunk_manager.new_chunk(marking_type.id_provider.new(),
-                                                                 TypeInfo.get('Short'))
+                                                                 TypeInfo.get('Bool'),
+                                                                 packed=config.get('bit_packing'))
         self.chunk = marking_type.chunk_manager.new_chunk(marking_type.id_provider.get(self),
                                                           place_info.type)
         
@@ -467,7 +468,7 @@ class OneSafePlaceType(coretypes.OneSafePlaceType, CythonPlaceType):
     def new_place_stmt(self, env, marking_var):
         helper = self.helper_chunk
         if helper.packed:
-            raise NotImplementedError
+            return []
         else:
             # set helper to false and return ast
             return cyast.E("{}.{} = 0".format(marking_var.name, helper.get_attribute_name()))
@@ -478,11 +479,16 @@ class OneSafePlaceType(coretypes.OneSafePlaceType, CythonPlaceType):
     def hash_expr(self, env, marking_var):
         hash = "hash({}.{})".format(marking_var.name, self.chunk.get_attribute_name())
         if self.helper_chunk.packed:
-            raise NotImplementedError
+            mask = int(self.helper_chunk.mask())
+            bytes_offset, _ = self.helper_chunk.offset()
+            test = "{}.{}[{}] & {}".format(marking_var.name,
+                                           self.helper_chunk.get_attribute_name(),
+                                           bytes_offset,
+                                           mask)
         else:
-            helper = "{}.{}".format(marking_var.name, self.helper_chunk.get_attribute_name())
+            test = "{}.{}".format(marking_var.name, self.helper_chunk.get_attribute_name())
  
-        return cyast.E("{hash} if {help} else 1".format(hash=hash, help=helper))
+        return cyast.E("{hash} if {test} else 1".format(hash=hash, test=test))
 
     def eq_expr(self, env, left, right):
         return cyast.Compare(left=left,
@@ -490,9 +496,10 @@ class OneSafePlaceType(coretypes.OneSafePlaceType, CythonPlaceType):
                              comparators=[right])
 
     def compare_expr(self, env, left_marking_var, right_marking_var):
-        left_helper  = "{}.{}".format(left_marking_var.name,  self.helper_chunk.get_attribute_name())
-        right_helper = "{}.{}".format(right_marking_var.name, self.helper_chunk.get_attribute_name())
-        left  = "{}.{}".format(left_marking_var.name, self.chunk.get_attribute_name())
+        bytes_offset, _ = self.helper_chunk.offset()
+        left_helper = "{}.{}[{}]".format(left_marking_var.name, self.helper_chunk.get_attribute_name(), bytes_offset)
+        right_helper = "{}.{}[{}]".format(right_marking_var.name, self.helper_chunk.get_attribute_name(), bytes_offset)
+        left = "{}.{}".format(left_marking_var.name, self.chunk.get_attribute_name())
         right = "{}.{}".format(right_marking_var.name, self.chunk.get_attribute_name())
         typ = self.info.type
         
@@ -501,11 +508,19 @@ class OneSafePlaceType(coretypes.OneSafePlaceType, CythonPlaceType):
         elif typ.is_UserType or typ.is_AnyType:
             token_compare = "{}({}, {})".format(from_neco_lib("__neco_compare__"), left, right)
         else:
-            raise NotImplemented
+            raise NotImplementedError
 
-        expr = "{tc} if {lh} > 0 and {rh} > 0 else (1 if {lh} > 0 and ({rh}) == 0 else -1)".format(tc=token_compare,
-                                                                                     lh=left_helper,
-                                                                                     rh=right_helper)
+
+        if self.helper_chunk.packed:
+            mask = int(self.helper_chunk.mask())
+            expr = "{tc} if {lh} & {mask} and {rh} & {mask} else (1 if {lh} & {mask} else -1)".format(tc=token_compare,
+                                                                                                      lh=left_helper,
+                                                                                                      rh=right_helper,
+                                                                                                      mask=mask)
+        else:
+            expr = "{tc} if {lh} > 0 and {rh} > 0 else (1 if {lh} > 0 else -1)".format(tc=token_compare,
+                                                                                       lh=left_helper,
+                                                                                       rh=right_helper)
         return cyast.E(expr)
 #        helper_compare_expr = cyast.IfExp(test=cyast.UnaryOp(operand=cyast.BinOp(left=left_helper_expr,
 #                                                                       op=cyast.BitAnd(),
@@ -529,7 +544,13 @@ class OneSafePlaceType(coretypes.OneSafePlaceType, CythonPlaceType):
 
     def not_empty_expr(self, env, marking_var):
         if self.helper_chunk.packed:
-            raise NotImplementedError
+            mask = int(self.helper_chunk.mask())
+            attr = self.helper_chunk.get_attribute_name()
+            byte_offset, _ = self.helper_chunk.offset()
+            return cyast.E('{object}.{attribute}[{byte_offset}] & {mask}'.format(object=marking_var.name,
+                                                                                  attribute=attr,
+                                                                                  byte_offset=byte_offset,
+                                                                                  mask=mask))
         else:
             return cyast.E("{}.{} > 0".format(marking_var.name, self.helper_chunk.get_attribute_name()))
 
@@ -539,16 +560,32 @@ class OneSafePlaceType(coretypes.OneSafePlaceType, CythonPlaceType):
     def remove_token_stmt(self, env, token_expr, compiled_token, marking_var):
         # one safe place, if we remove something it cannot be empty
         if self.helper_chunk.packed:
-            raise NotImplementedError
+            # must be full before remove
+            mask = int(self.helper_chunk.mask())
+            attr = self.helper_chunk.get_attribute_name()
+            byte_offset, _ = self.helper_chunk.offset()
+            return cyast.E('{object}.{attribute}[{byte_offset}] ^= {mask}'.format(object=marking_var.name,
+                                                                                  attribute=attr,
+                                                                                  byte_offset=byte_offset,
+                                                                                  mask=mask))
 
         return [ cyast.E("{}.{} = 0".format(marking_var.name, self.helper_chunk.get_attribute_name())),
                  cyast.Comment('remove : ' + self.helper_chunk.hint) ]
 
     def add_token_stmt(self, env, token_expr, compiled_token, marking_var):
         if self.helper_chunk.packed:
-            raise NotImplementedError
+            # must be empty before add
+            mask = int(self.helper_chunk.mask())
+            attr = self.helper_chunk.get_attribute_name()
+            byte_offset, _ = self.helper_chunk.offset()
+            helper_expr = cyast.E('{object}.{attribute}[{byte_offset}] |= {mask}'.format(object=marking_var.name,
+                                                                                         attribute=attr,
+                                                                                         byte_offset=byte_offset,
+                                                                                         mask=mask))
+        else:
+            helper_expr = cyast.E("{}.{} = 1".format(marking_var.name, self.helper_chunk.get_attribute_name())),
 
-        return [cyast.E("{}.{} = 1".format(marking_var.name, self.helper_chunk.get_attribute_name())),
+        return [helper_expr,
                 cyast.Comment(self.helper_chunk.hint),
                 cyast.Assign(targets=[cyast.E("{}.{}".format(marking_var.name, self.chunk.get_attribute_name()))],
                              value=compiled_token),
@@ -568,6 +605,7 @@ class OneSafePlaceType(coretypes.OneSafePlaceType, CythonPlaceType):
         # do not assign helper if packed
         if self.helper_chunk.packed:
             assign_helper = []
+            comment_helper = []
         else:
             assign_helper = cyast.E("{}.{} = {}.{}".format(dst, helper_attr, src, helper_attr))
             comment_helper = cyast.Comment(self.helper_chunk.hint)
@@ -577,49 +615,62 @@ class OneSafePlaceType(coretypes.OneSafePlaceType, CythonPlaceType):
         return [ assign_helper, comment_helper, copy_data, comment_data ]
  
     def copy_stmt(self, env, dst_marking_var, src_marking_var):
-        if self.helper_chunk.packed:
-            raise NotImplementedError
-        else:
-            helper_attr = self.helper_chunk.get_attribute_name()
-            attr = self.chunk.get_attribute_name()
+        helper_attr = self.helper_chunk.get_attribute_name()
+        attr = self.chunk.get_attribute_name()
 
-            dst = dst_marking_var.name
-            src = src_marking_var.name
+        dst = dst_marking_var.name
+        src = src_marking_var.name
+        
+        if self.helper_chunk.packed:
+            assign_helper = []
+            comment_helper = []
+        else:
             assign_helper = cyast.E("{}.{} = {}.{}".format(dst, helper_attr, src, helper_attr))
             comment_helper = cyast.Comment(self.helper_chunk.hint)
 
-            if self.info.type in [ TypeInfo.get('BlackToken'),
-                                   TypeInfo.get('Int') ]:
-                copy_data = cyast.E("{}.{} = {}.{}".format(dst, attr, dst, attr))
-            else:
-                copy_data = cyast.E("{}.{} = {}.{}.copy()".format(dst, attr, dst, attr))
-            comment_data = cyast.Comment(self.chunk.hint)
+        if self.info.type in [ TypeInfo.get('BlackToken'),
+                               TypeInfo.get('Int') ]:
+            copy_data = cyast.E("{}.{} = {}.{}".format(dst, attr, dst, attr))
+        else:
+            copy_data = cyast.E("{}.{} = {}.{}.copy()".format(dst, attr, dst, attr))
+        comment_data = cyast.Comment(self.chunk.hint)
 
-            return [ assign_helper, comment_helper, copy_data, comment_data ]
+        return [ assign_helper, comment_helper, copy_data, comment_data ]
 
     def dump_expr(self, env, marking_var):
-        helper_expr = cyast.E("{}.{}".format(marking_var.name, self.helper_chunk.get_attribute_name()))
-        place_expr = cyast.E("{}.{}".format(marking_var.name, self.chunk.get_attribute_name()))
-        return cyast.IfExp(test=helper_expr,
-                           body=cyast.BinOp(left=cyast.Str('['),
-                                            op=cyast.Add(),
-                                            right=cyast.BinOp(left=cyast.Call(func=cyast.Name('dump'),
-                                                                                  args=[place_expr]),
-                                                                op=cyast.Add(),
-                                                                right=cyast.Str(']')
-                                                                )
-                                            ),
-                           orelse=cyast.Str('[]'))
-
-    def enumerate_tokens(self, checker_env, loop_var, marking_var, body):
-        helper_expr = self.existence_helper_place_type.place_expr(checker_env, marking_var)
-        place_expr = self.place_expr(checker_env, marking_var)
-        return cyast.If(test=helper_expr,
-                        body=[cyast.Assign(targets=[cyast.Name(loop_var.name)],
-                                           value=place_expr),
-                              body],
-                        orelse=[])
+        place_expr = "{}.{}".format(marking_var.name, self.chunk.get_attribute_name())
         
+        if self.helper_chunk.packed:
+            mask = int(self.helper_chunk.mask())
+            bytes_offset, _ = self.helper_chunk.offset()
+            helper_expr = "{}.{}[{}] & {}".format(marking_var.name,
+                                              self.helper_chunk.get_attribute_name(),
+                                              bytes_offset,
+                                              mask)
+        else:
+            helper_expr = "{}.{}".format(marking_var.name, self.helper_chunk.get_attribute_name())
+        
+        return cyast.E("'[' + dump({}) + ']' if {} else []".format(place_expr, helper_expr))
+#        return cyast.IfExp(test=helper_expr,
+#                           body=cyast.BinOp(left=cyast.Str('['),
+#                                            op=cyast.Add(),
+#                                            right=cyast.BinOp(left=cyast.Call(func=cyast.Name('dump'),
+#                                                                                  args=[place_expr]),
+#                                                                op=cyast.Add(),
+#                                                                right=cyast.Str(']')
+#                                                                )
+#                                            ),
+#                           orelse=cyast.Str('[]'))
+
+#    def enumerate_tokens(self, checker_env, loop_var, marking_var, body):
+#        helper_expr = self.existence_helper_place_type.place_expr(checker_env, marking_var)
+#        place_expr = self.place_expr(checker_env, marking_var)
+#        return cyast.If(test=helper_expr,
+#                        body=[cyast.Assign(targets=[cyast.Name(loop_var.name)],
+#                                           value=place_expr),
+#                              body],
+#                        orelse=[])
+
     def enumerate(self, env, marking_var, token_var, compiled_body):
         getnode = cyast.E("{} = {}.{}".format(token_var.name, marking_var.name, self.chunk.get_attribute_name()))
         ifnode = cyast.Builder.If(test=self.not_empty_expr(env, marking_var=marking_var),

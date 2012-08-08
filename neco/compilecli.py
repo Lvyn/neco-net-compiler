@@ -121,6 +121,9 @@ class Main(object):
         parser.add_argument('--optimize', '-O', default=False, dest='optimize', action='store_true',
                             help='enable optimisations')
 
+        parser.add_argument('--optimize-pack', '-Op', default=False, dest='bit_packing', action='store_true',
+                            help='enable bit packing')
+
         parser.add_argument('--optimize-flow', '-Of', default=False, dest='optimize_flow', action='store_true',
                             help='enable flow control optimisations')
 
@@ -188,6 +191,7 @@ class Main(object):
         # setup config
         config.set(# debug    = cli_argument_parser.debug(),
                    optimize=args.optimize,
+                   bit_packing=args.bit_packing,
                    backend=args.language,
                    profile=args.profile,
                    imports=args.imports,

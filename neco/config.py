@@ -14,6 +14,7 @@ _default_options_ = [
     ('profile', False),
     ('optimize', False),
     ('optimize_flow', False),
+    ('bit_packing', False),
     ('debug', False),
     ('dump_enabled', True),
     ('search_paths', ['.']),

@@ -15,8 +15,6 @@ import priv.mrkmethods
 def place_type_from_info(place_info, marking):
     """ Returns a PlaceType object based on PlaceInfo type information. """
 
-    return placetypes.ObjectPlaceType(place_info, marking_type=marking)
-
     pi_type = place_info.type
     if   pi_type.is_Int:        return placetypes.IntPlaceType(place_info, marking_type=marking)
     elif pi_type.is_Bool:       return placetypes.ObjectPlaceType(place_info, marking_type=marking)
@@ -38,7 +36,7 @@ class StaticMarkingType(coretypes.MarkingType):
         self.id_provider = utils.NameProvider() # used to produce attribute names
         self._process_place_types = {}
 
-        if config.get('optimize'):
+        if config.get('bit_packing'):
             self.packing_enabled = True
         else:
             self.packing_enabled = False
