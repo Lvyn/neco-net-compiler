@@ -6,15 +6,13 @@ The loading of the module will raise a runtime error
 if loaded with wrong python version.
 """
 
-from neco import compile_net, g_logo
+from neco import compile_net, g_logo, produce_pnml_file, load_pnml_file, \
+    load_snakes_net
 from neco.utils import fatal_error
-from snakes.pnml import loads
 from time import time
 import argparse
-import imp
-import os
-import random
 import neco.config as config
+import os
 import sys
 if (2, 7, 0) <= sys.version_info < (3, 0, 0) :
     VERSION = (2, 7)
@@ -37,53 +35,6 @@ g_produced_files = ["*.pyc",
                     "ctypes.h",
                     "ctypes_ext.pxd",
                     "trace"]
-
-def produce_pnml_file(abcd_file, pnml_file=None):
-    """ Compile an abcd file to pnml.
-    """
-    random.seed(time())
-    out_pnml = pnml_file if pnml_file != None else "/tmp/model{}.pnml".format(random.random())
-    if os.path.exists(out_pnml):
-        print >> sys.stderr, "ERROR: {} file already exists".format(out_pnml)
-        exit(-1)
-
-    from snakes.utils.abcd.main import main
-    if pnml_file:
-        print "generating {} file from {}".format(out_pnml, abcd_file)
-    else:
-        print "generating pnml file from {}".format(abcd_file)
-
-    main(['--pnml={}'.format(out_pnml), abcd_file])
-    return out_pnml
-
-def load_pnml_file(pnml_file, remove=False):
-    """ Load a model from a pnml file.
-    """
-    print "loading pnml file"
-    net = loads(pnml_file)
-    if remove:
-        print "deleting pnml file"
-        os.remove(pnml_file)
-    return net
-
-def load_snakes_net(module_name, net_var_name):
-    """ Load a model from a python module.
-    """
-    try:
-        fp, pathname, description = imp.find_module(module_name)
-    except ImportError as e:
-        fatal_error(str(e))
-
-    module = imp.load_module(module_name, fp, pathname, description)
-    fp.close()
-
-    try:
-        # return the net from the module
-        return getattr(module, net_var_name)
-    except AttributeError:
-        fatal_error('No variable named {varname} in module {module}'.format(varname=net_var_name,
-                                                                            module=module_name))
-
 class Main(object):
 
     _instance_ = None # unique instance

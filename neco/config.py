@@ -19,6 +19,7 @@ _default_options_ = [
     ('dump_enabled', True),
     ('search_paths', ['.']),
     ('trace_calls', False),
+    ('trace_file', 'trace'),
     ('imports', []),
     ('model', []),
     ('pid_normalization', False)
