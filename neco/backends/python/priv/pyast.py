@@ -13,33 +13,49 @@ import neco.core.netir as coreir
 def Name(id):
     return ast.Name(id=id)
 
-def Call(func, args=[], keywords=[], starargs=None, kwargs=None):
-    return ast.Call(func, args, keywords, starargs, kwargs)
+def Call(func, args=None, keywords=None, starargs=None, kwargs=None):
+    return ast.Call(func,
+                    args if args else [],
+                    keywords if keywords else [],
+                    starargs,
+                    kwargs)
 
 def FunctionDef(name,
-                args=ast.arguments(args=[],
-                                   vararg=None,
-                                   kwarg=None,
-                                   defaults=[]),
-                body=[],
-                decorator_list=[]):
-    return ast.FunctionDef(name, args, body, decorator_list)
+                args=None,
+                body=None,
+                decorator_list=None):
+    
+    if not args:
+        args = ast.arguments(args=[],
+                             vararg=None, 
+                             kwarg=None,
+                             defaults=[])
+    return ast.FunctionDef(name=name,
+                           args=args,
+                           body=body if body else [],
+                           decorator_list=decorator_list if decorator_list else [])
 
-def arguments(args=[], vararg=None, kwarg=None, defaults=[]):
-    return ast.arguments(args, vararg, kwarg, defaults)
+def arguments(args=None, vararg=None, kwarg=None, defaults=None):
+    return ast.arguments(args=args if args else [],
+                         vararg=vararg,
+                         kwarg=kwarg,
+                         defaults=defaults if defaults else [])
 
-def If(test, body=[], orelse=[]):
-    return ast.If(test, body, orelse)
+def If(test, body=None, orelse=None):
+    return ast.If(test,
+                  body if body else [], orelse if orelse else [])
 
-def Tuple(elts=[]):
-    return ast.Tuple(elts=elts)
+def Tuple(elts=None):
+    return ast.Tuple(elts=elts if elts else [])
 
-def ClassDef(name, bases=[], body=[], decorator_list=[]):
-    return ast.ClassDef(name, bases, body, decorator_list)
+def ClassDef(name, bases=None, body=None, decorator_list=None):
+    return ast.ClassDef(name,
+                        bases if bases else [],
+                        body if body else [],
+                        decorator_list if decorator_list else [])
 
 def List(elts):
     return ast.List(elts=elts)
-
 
 ################################################################################
 
@@ -139,9 +155,9 @@ class Builder(coreir.BuilderBase):
         def body(self, e):
             self.node.body = e
 
-        def call(self, args = []):
+        def call(self, args = None):
             self.node = ast.Call( func = self.node,
-                                  args = args,
+                                  args = args if args else [],
                                   keywords = [],
                                   starargs = None,
                                   kwargs = None )
@@ -244,10 +260,10 @@ class Builder(coreir.BuilderBase):
         return cls.arguments_helper()
 
     class class_def_helper(object):
-        def __init__(self, name, bases, body = []):
+        def __init__(self, name, bases, body = None):
             self.node = ast.ClassDef(name  = name,
                                      bases = bases,
-                                     body = body)
+                                     body = body if body else [])
 
         def add_method(self, method):
             self.node.body.append(method)
@@ -259,8 +275,10 @@ class Builder(coreir.BuilderBase):
             return self.node
 
     @classmethod
-    def ClassDef(cls, name, bases = [], body = []):
-        return cls.class_def_helper(name, bases, body)
+    def ClassDef(cls, name, bases = None, body = None):
+        return cls.class_def_helper(name,
+                                    bases if bases else [],
+                                    body if body else [])
 
     @classmethod
     def For(cls, *args, **kwargs):

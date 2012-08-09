@@ -144,10 +144,11 @@ class ObjectPlaceType(coretypes.ObjectPlaceType, PythonPlaceType):
 class StaticMarkingType(coretypes.MarkingType):
     """ Python marking type implementation, places as class attributes. """
 
-    def __init__(self):
+    def __init__(self, config):
         coretypes.MarkingType.__init__(self,
                                        TypeInfo.register_type('Marking'),
                                        TypeInfo.register_type('set'))
+        self.config = config
         self.id_provider = utils.NameProvider()
         self._process_place_types = {}
 
@@ -156,7 +157,7 @@ class StaticMarkingType(coretypes.MarkingType):
         self.add_method_generator(priv.mrkmethods.ReprGenerator())
         self.add_method_generator(priv.mrkmethods.DumpGenerator())
         
-        if config.get("pid_normalization"):
+        if self.config.normalize_pids:
             self.add_method_generator(priv.mrkpidmethods.EqGenerator())
             self.add_method_generator(priv.mrkpidmethods.HashGenerator())
             self.add_method_generator(priv.mrkpidmethods.UpdatePidsGenerator())
@@ -186,11 +187,11 @@ class StaticMarkingType(coretypes.MarkingType):
             self._process_place_types[place_info.process_name] = place_type
 
     def __create_one_safe_place_type(self, place_info):
-        if config.get('optimize'):
+        if self.optimize:
             if place_info.type.is_BlackToken:
-                return BTOneSafePlaceType(place_info, marking_type=self)
+                return BTOneSafePlaceType(place_info, marking_type=self, packed=self.bit_packing)
             else:
-                return OneSafePlaceType(place_info, marking_type=self)
+                return OneSafePlaceType(place_info, marking_type=self, packed=self.bit_packing)
         else:
             return ObjectPlaceType(place_info, marking_type=self)
 
@@ -234,9 +235,12 @@ class StaticMarkingType(coretypes.MarkingType):
         cls = pyast.ClassDef('Marking', bases=[pyast.Name(id='object')])
 
         elts = []
+        names = []
         for name, _ in self.place_types.iteritems():
-            elts.append(pyast.Str(self.id_provider.get(name)))
-
+            identifier = self.id_provider.get(name)
+            elts.append(pyast.Str(identifier))
+            names.append(name + ' ' + identifier)
+        
         slots = pyast.Assign(targets=[pyast.Name('__slots__')],
                              value=pyast.Tuple(elts))
 

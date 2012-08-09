@@ -48,13 +48,13 @@ class Env(CompilingEnvironment):
         return nodes
 
 
-def new_marking_type(name, *args, **kwargs):
-    return nettypes.StaticMarkingType(*args, **kwargs)
+def new_marking_type(name, config):
+    return nettypes.StaticMarkingType(config)
 
 def new_compiling_environment(word_set, marking_type):
     return Env(word_set, marking_type)
 
-def compile_IR(env):
+def compile_IR(env, config):
     
     for decl in env.net_info.declare:
         env.add_declaration(decl)
@@ -66,10 +66,10 @@ def compile_IR(env):
     env.add_declaration("import StringIO")
     env.add_declaration("from time import time")
 
-    if config.get('pid_normalization'):
+    if config.normalize_pids:
         env.add_declaration("from neco.extsnakes import *")
 
-    for mod in config.get('imports'):
+    for mod in config.imports:
         env.add_declaration('from {} import *'.format(mod))
 
     #env.add_declaration("from dolev_yao import *")
@@ -87,7 +87,8 @@ def compile_IR(env):
     module_ast = ast.Module(body=compiled_nodes)
     module_ast = ast.fix_missing_locations(module_ast)
 
-    f = open("net.py", "w")
+    module_name = config.out_module
+    f = open(module_name + '.py', "w")
     Unparser(module_ast, f)
 
     f.write("""
@@ -188,8 +189,8 @@ def state_space_graph():
 """)
     f.close()
 
-    fp, pathname, description = imp.find_module("net")
-    mod = imp.load_module("net", fp, pathname, description)
+    fp, pathname, description = imp.find_module(module_name)
+    mod = imp.load_module(module_name, fp, pathname, description)
 
     if fp: fp.close() # Since we may exit via an exception, close fp explicitly.
 

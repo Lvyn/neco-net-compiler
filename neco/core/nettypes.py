@@ -110,8 +110,9 @@ class MarkingType(object):
         self._places = set()
         self._flow_control_places = set()
         self._one_safe_places = set()
-
-        self._use_control_flow_elimination = config.get('optimize_flow')
+        
+        self._optimize = False
+        self._control_flow_elimination = False
 
     def add_method_generator(self, method_generator):
         self._method_generators.append(method_generator)
@@ -120,9 +121,19 @@ class MarkingType(object):
     def method_generators(self):
         return self._method_generators
 
+    def set_control_flow_elimination(self, enabled):
+        self._control_flow_elimination = enabled
+        
     @property
-    def use_control_flow_elimination(self):
-        return self._use_control_flow_elimination
+    def control_flow_elimination(self):
+        return self._control_flow_elimination
+
+    def set_optimize(self, enabled):
+        self._optimize = enabled
+        
+    @property
+    def optimize(self):
+        return self._optimize
 
     def generate_methods(self, env):
         api = []
@@ -169,7 +180,7 @@ class MarkingType(object):
         places will be addeed to C{self.places}.
 
         """
-        if self.use_control_flow_elimination and place_info.flow_control:
+        if self.control_flow_elimination and place_info.flow_control:
             self._flow_control_places.add( place_info )
         elif place_info.one_safe:
             self._one_safe_places.add( place_info )
@@ -197,28 +208,6 @@ class MarkingType(object):
         """ Build an expression producing a new marking.
         """
         pass
-
-#    @abstractmethod
-#    def copy_marking_expr(self, marking_name, *args):
-#        """ Produce a copy expression for the marking.
-#
-#        @return: function call
-#        @rtype: implementation specific, see backends
-#        """
-#        pass
-
-    # @abstractmethod
-    # def remove_token_stmt(self, token_name, marking_name, place_name, *args):
-    #     """ Produce a remove token statement for the representation.
-    #     """
-    #     pass
-
-    # @abstractmethod
-    # def add_token_stmt(self, token_name, marking_name, place_name, *args):
-    #     """ Produce a add token statement for the representation.
-    #     """
-    #     pass
-
 
 ################################################################################
 

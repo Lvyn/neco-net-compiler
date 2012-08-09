@@ -270,11 +270,11 @@ class CompilerVisitor(coreir.CompilerVisitor):
                 self.env.try_declare_cvar(variable.name, place_type.token_type)
 
                 enumeration = cyast.For(target=cyast.Name(variable.name),
-                                         iter=place_type.iterable_expr(env=self.env,
-                                                                       marking_var=node.marking_var),
-                                         body=[ cyast.AugAssign(target=cyast.Name(index_var.name),
-                                                                op=cyast.Add(),
-                                                                value=cyast.Num(1)) ])
+                                        iter=place_type.iterable_expr(env=self.env,
+                                                                      marking_var=node.marking_var),
+                                        body=[ cyast.AugAssign(target=cyast.Name(index_var.name),
+                                                               op=cyast.Add(),
+                                                               value=cyast.Num(1)) ])
                 if base == None:
                     current = [ init, enumeration ]
                     base = [ init, enumeration ]

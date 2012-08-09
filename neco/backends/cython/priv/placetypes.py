@@ -433,7 +433,7 @@ class OneSafePlaceType(coretypes.OneSafePlaceType, CythonPlaceType):
     the emptiness test and one for the contained data.
     """
 
-    def __init__(self, place_info, marking_type):
+    def __init__(self, place_info, marking_type, bit_packing):
         coretypes.OneSafePlaceType.__init__(self,
                                           place_info,
                                           marking_type,
@@ -441,7 +441,7 @@ class OneSafePlaceType(coretypes.OneSafePlaceType, CythonPlaceType):
                                           place_info.type)
         self.helper_chunk = marking_type.chunk_manager.new_chunk(marking_type.id_provider.new(),
                                                                  TypeInfo.get('Bool'),
-                                                                 packed=config.get('bit_packing'))
+                                                                 packed=bit_packing)
         self.chunk = marking_type.chunk_manager.new_chunk(marking_type.id_provider.get(self),
                                                           place_info.type)
         
@@ -612,7 +612,7 @@ class OneSafePlaceType(coretypes.OneSafePlaceType, CythonPlaceType):
 
     def dump_expr(self, env, marking_var):
         place_expr = "{}.{}".format(marking_var.name, self.chunk.get_attribute_name())
-        
+
         if self.helper_chunk.packed:
             mask = int(self.helper_chunk.mask())
             bytes_offset, _ = self.helper_chunk.offset()
@@ -623,7 +623,7 @@ class OneSafePlaceType(coretypes.OneSafePlaceType, CythonPlaceType):
         else:
             helper_expr = "{}.{}".format(marking_var.name, self.helper_chunk.get_attribute_name())
         
-        return cyast.E("'[' + dump({}) + ']' if {} else []".format(place_expr, helper_expr))
+        return cyast.E("'[' + dump({}) + ']' if {} else '[]'".format(place_expr, helper_expr))
 
     def enumerate(self, env, marking_var, token_var, compiled_body):
         getnode = cyast.E("{} = {}.{}".format(token_var.name, marking_var.name, self.chunk.get_attribute_name()))
@@ -639,14 +639,14 @@ class BTPlaceType(coretypes.BTPlaceType, CythonPlaceType):
     @attention: Using this place type without the BTTokenEnumerator may introduce inconsistency.
     """
 
-    def __init__(self, place_info, marking_type):
+    def __init__(self, place_info, marking_type, packed):
         coretypes.BTPlaceType.__init__(self,
                                        place_info=place_info,
                                        marking_type=marking_type,
                                        type=TypeInfo.get('Short'),
                                        token_type=TypeInfo.get('Short'))
 
-        if config.get('bit_packing'):
+        if packed:
             cython_type = TypeInfo.get('Bool')
             packed=True
         else:

@@ -87,7 +87,8 @@ class ProcessSuccGenerator(object):
     """
 
     def __init__(self, env, net_info, process_info,
-                 function_name, marking_type):
+                 function_name, marking_type,
+                 config):
         """
         Function that handles the production of processor specific successor
         functions.
@@ -98,6 +99,7 @@ class ProcessSuccGenerator(object):
         @param function_name: name of produced function.
         @param marking_type: used marking type
         """
+        self.config = config
         self._env = env
         self._net_info = net_info
         self._process_info = process_info
@@ -123,7 +125,7 @@ class ProcessSuccGenerator(object):
         arg_marking_set_var = self._arg_marking_set_var
         process_info    = self._process_info
 
-        if not config.get('optimize_flow'):
+        if not self.config.optimize_flow:
             return
 
         builder = self._builder
@@ -173,7 +175,7 @@ class SuccTGenerator(object):
     This class is used for building a transition specific succ function.
     """
 
-    def __init__(self, env, net_info, builder, transition, function_name, marking_type):
+    def __init__(self, env, net_info, builder, transition, function_name, marking_type, config):
         """ Builds the transition specific succ function generator.
 
         @param builder: builder structure for easier ast construction
@@ -190,7 +192,7 @@ class SuccTGenerator(object):
         self.transition = transition
         self.function_name = function_name
         self.marking_type = marking_type
-        self.ignore_flow = self.ignore_flow = config.get('optimize_flow')
+        self.config = config
         self.env = env
 
         # this helper will create new variables and take care of shared instances
@@ -198,7 +200,7 @@ class SuccTGenerator(object):
                                        WordSet(transition.variables().keys()) )
         self.variable_helper = helper
 
-        if config.get('optimize'):
+        if self.config.optimize:
             self.transition.order_inputs()
 
         # function arguments
@@ -261,12 +263,12 @@ class SuccTGenerator(object):
             place_type = self.marking_type.get_place_type_by_name(place.name)
             place_type.disable_by_index_deletion()
 
-        if config.get('optimize'):
+        if self.config.optimize:
             trans.order_inputs()
 
         # loop over inputs
         for input in trans.inputs:
-            if self.ignore_flow and input.place_info.flow_control:
+            if self.config.optimize_flow and input.place_info.flow_control:
                 continue
 
             builder.emit_Comment("Enumerate {input} - place: {place}".format(input=input, place=input.place_name))
@@ -555,7 +557,7 @@ class SuccTGenerator(object):
         trans = self.transition
         builder = self.builder
 
-        if self.ignore_flow and output.place_info.flow_control:
+        if self.config.optimize_flow and output.place_info.flow_control:
             return
 
         output_impl_type = self.marking_type.get_place_type_by_name( output.place_info.name ).token_type
@@ -643,7 +645,7 @@ class SuccTGenerator(object):
         builder = self.builder
 
         builder.emit_Comment(message="Produce {output_arc} - place: {place}".format(output_arc=output_arc, place=output_arc.place_name))
-        if self.ignore_flow and output_arc.place_info.flow_control:
+        if self.config.optimize_flow and output_arc.place_info.flow_control:
             new_flow = [ place for place in trans.post if place.flow_control ]
             assert(len(new_flow) == 1)
             builder.emit_UpdateFlow( marking_var = new_marking_var,
@@ -742,8 +744,8 @@ class SuccTGenerator(object):
         helper = self.variable_helper
         builder = self.builder
 
-        if config.get('trace_calls'):
-            builder.emit_Print("calling " + self.function_name)
+#        if self._trace_calls:
+#            builder.emit_Print("calling " + self.function_name)
 
         # for loops
         self.gen_enumerators()
@@ -774,8 +776,8 @@ class SuccTGenerator(object):
         except:
             builder.begin_GuardCheck( condition = netir.PyExpr(guard) )
 
-        if config.get('trace_calls'):
-            builder.emit_Print("  guard valid in " + self.function_name)
+#        if self.trace_calls:
+#            builder.emit_Print("  guard valid in " + self.function_name)
 
         computed_productions = defaultdict(list)
         for output in trans.outputs:
@@ -792,7 +794,7 @@ class SuccTGenerator(object):
         for arc in trans.inputs:
             builder.emit_Comment(message = "Consume {arc} - place: {place}".format(arc=arc, place=arc.place_name))
 
-            if self.ignore_flow and arc.place_info.flow_control:
+            if self.config.optimize_flow and arc.place_info.flow_control:
                 continue
             elif arc.is_Variable:
                 builder.emit_RemToken( marking_var = new_marking_var,
@@ -849,7 +851,7 @@ class SuccTGenerator(object):
             self.gen_produce(output_arc)
         
         # add pid normalization step if needed
-        if ( config.get('pid_normalization') ):
+        if self.config.normalize_pids:
             builder.emit_NormalizeMarking( marking_var = new_marking_var )
         
         # add marking to set
@@ -858,8 +860,8 @@ class SuccTGenerator(object):
         # end function
         builder.end_all_blocks()
         builder.end_function()
-        if config.get('debug'):
-            print self.transition.variable_informations()
+#        if config.get('debug'):
+#            print self.transition.variable_informations()
 
         return builder.ast()
 
@@ -871,7 +873,7 @@ class Compiler(object):
     This class is used to produce a library from a snake.nets.PetriNet.
     """
 
-    def __init__(self, net, backend):
+    def __init__(self, net, backend, config):
         """ Initialise the compiler from a Petri net.
 
         builds the basic info structure from the snakes petri net representation
@@ -880,16 +882,17 @@ class Compiler(object):
         @type net: C{snakes.nets.PetriNet}
         """
         
-        self.backend = backend
-        
-        self.dump_enabled = config.get("dump_enabled")
-        self.debug = config.get("debug")
-
-        self.ignore_flow = config.get('optimize_flow')
-        
+        self.config = config
+        self.backend = backend        
+#        self.dump_enabled = config.dump_enabled
+#        self.debug = config.debug
+#        self.optimize_flow = config.optimize_flow
+#        self.optimize = config.optimize
+#        self.normalize_pids = config.pid_normalization
+#        
         self.net_info = NetInfo(net)
         self.markingtype_class = "StaticMarkingType"
-        self.marking_type = backend.new_marking_type(self.markingtype_class)
+        self.marking_type = backend.new_marking_type(self.markingtype_class, self.config)
 
         self.optimisations = []
         
@@ -900,7 +903,7 @@ class Compiler(object):
 
     def rebuild_marking_type(self):
         """ Rebuild the marking type. (places will be rebuild) """
-        if self.dump_enabled:
+        if self.config.dump_enabled:
             print self.marking_type
             
         # add place types to the marking type
@@ -908,7 +911,7 @@ class Compiler(object):
             self.marking_type.add( place_info ) # will not create duplicates
 
         self.marking_type.gen_types()
-        if self.dump_enabled:
+        if self.config.dump_enabled:
             print self.marking_type
 
     def add_optimisation(self, opt):
@@ -942,7 +945,7 @@ class Compiler(object):
         list = []
         for i,t in enumerate(self.net_info.transitions):
             function_name = "succs_%d" % i # TO DO use name + escape
-            if self.dump_enabled:
+            if self.config.dump_enabled:
                 print function_name + " <=> " + t.name
             assert( function_name not in env.global_names )
             env.global_names.add(function_name)
@@ -952,7 +955,8 @@ class Compiler(object):
                                  netir.Builder(),
                                  t,
                                  function_name,
-                                 self.marking_type)
+                                 self.marking_type,
+                                 config=self.config)
             list.append( gen() )
 
         return list
@@ -962,14 +966,15 @@ class Compiler(object):
         function abstract representation nodes.
         """
         list = []
-        if config.get('optimize_flow'):
+        if self.config.optimize_flow:
             for i, process in enumerate(self.net_info.process_info):
                 function_name = "succP_%d" % i # process.name
                 gen = ProcessSuccGenerator(self.env,
                                            self.net_info,
                                            process,
                                            function_name,
-                                           self.marking_type)
+                                           self.marking_type,
+                                           self.config)
                 list.append( gen() )
         return list
 
@@ -990,7 +995,7 @@ class Compiler(object):
         markingset_node  = netir.Name(arg_marking_set_var.name)
         marking_arg_node = netir.Name(arg_marking_var.name)
 
-        if self.ignore_flow:
+        if self.config.optimize_flow:
             for function_name in self.env.process_succ_functions:
                 builder.emit_ProcedureCall( function_name = function_name,
                                             arguments = [ markingset_node,
@@ -1019,7 +1024,7 @@ class Compiler(object):
         for place_info in self.net_info.places:
             if len(place_info.tokens) > 0:
                 # add tokens
-                if self.ignore_flow and place_info.flow_control:
+                if self.config.optimize_flow and place_info.flow_control:
                     builder.emit_UpdateFlow(marking_var = marking_var,
                                             place_info = place_info);
                     continue
@@ -1063,16 +1068,16 @@ class Compiler(object):
     def produce_compilation_trace(self, compilation_trace_name):
         trace_file = open(compilation_trace_name, 'wb')
         trace_object = { "marking_type" : self.marking_type,
-                         "optimize" : config.get("optimize"),
-                         "model" : config.get("model") }
+                         "optimize" : self.config.optimize,
+                         "model" : self.config.model }
         pickle.dump(trace_object, trace_file, -1)
         trace_file.close()
         
     def run(self):
         self.gen_netir()
         self.optimize_netir()
-        net = self.backend.compile_IR(self.env)
-        self.produce_compilation_trace(config.get('trace_file'))
+        net = self.backend.compile_IR(self.env, self.config)
+        self.produce_compilation_trace(self.config.trace_file)
         return net
 
 ################################################################################

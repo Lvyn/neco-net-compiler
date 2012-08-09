@@ -81,10 +81,8 @@ class Main(object):
         graph = args.graph
 
         # setup config
-        config.set(#debug    = cli_argument_parser.debug(),
-                   print_mcc=args.print_mcc,
-                   profile=profile,
-                   trace_calls=False)
+        self.print_mcc = args.print_mcc
+        self.profile=profile,
 
         if not args.print_mcc:
             print "{} uses python {}".format(progname, sys.version)
@@ -141,7 +139,7 @@ class Main(object):
         start = time()
         ss = net.state_space()
         end = time()
-        if config.get('print_mcc'):
+        if self.print_mcc:
             print len(ss)
         else:
             print "exploration time: ", end - start

@@ -55,26 +55,28 @@ def get_backends():
             bends[module._backend_] = module
     return bends
 
-def compile_net(net, *arg, **kwargs):
+def compile_net(net, config):
     """ Compile Petri net C{net} into a Python module.
 
     The compiler and compilation options are these from C{config} module.
     The produced module is loaded and can be used for state space exploration.
     """
     backends = get_backends()
-    backend = config.get('backend')
+    backend = config.backend
     try:
-        compiler = core.Compiler(net, backend=backends[backend].compile_impl)
+        compiler = core.Compiler(net,
+                                 backend=backends[backend].compile_impl,
+                                 config=config)
     except KeyError as e:
         raise UnknownBackend(e)
 
     print "################################################################################"
-    print "Compiling with " + backend + " backend."
+    print "Compiling {!s} with {!s} backend".format(config.model, backend)
     print "################################################################################"
-    print "optimisations:      {optimize!s:5}".format(optimize = config.get('optimize'))
-    print "Debug:              {debug!s:5}".format(debug = config.get('debug'))
-    print "flow optimisations: {pfe!s:5}".format(pfe=config.get('optimize_flow'))
-    print "search paths:       {}".format(config.get('search_paths'))
+    print "optimisations:      {optimize!s:5}".format(optimize = config.optimize)
+    print "Debug:              {debug!s:5}".format(debug = config.debug)
+    print "flow optimisations: {pfe!s:5}".format(pfe=config.optimize_flow)
+    print "search paths:       {}".format(config.search_paths)
     print "################################################################################"
 
     # compiler.set_marking_type_by_name("StaticMarkingType")

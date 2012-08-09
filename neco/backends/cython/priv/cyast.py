@@ -17,25 +17,34 @@ import neco.core.netir as coreir
 # Node wrappers.
 ################################################################################
 
-def Call(func, args=[], keywords=[], starargs=None, kwargs=None):
-    return cyast_gen.Call(func, args, keywords, starargs, kwargs)
+def Call(func, args=None, keywords=None, starargs=None, kwargs=None):
+    return cyast_gen.Call(func,
+                          args if args else [],
+                          keywords if keywords else [],
+                          starargs,
+                          kwargs)
 
-def FunctionDef(name,
-                args=cyast_gen.arguments(args=[],
-                                         vararg=None,
-                                         kwarg=None,
-                                         defaults=[]),
-                body=[],
-                decorator_list=[]):
-    return cyast_gen.FunctionDef(name, args, body, decorator_list)
+def FunctionDef(name, args=None, body=None, decorator_list=None):
+    if not args:
+        args = cyast_gen.arguments(args=[],
+                                   vararg=None,
+                                   kwarg=None,
+                                   defaults=[]),
+    return cyast_gen.FunctionDef(name,
+                                 args,
+                                 body if body else [],
+                                 decorator_list if decorator_list else [])
 
 def FunctionDecl(name,
-                 args=cyast_gen.arguments(args=[],
-                                          vararg=None,
-                                          kwarg=None,
-                                          defaults=[]),
+                 args=None,
                  returns=None,
                  **kwargs):
+    if not args:
+        args = cyast_gen.arguments(args=[],
+                                   vararg=None,
+                                   kwarg=None,
+                                   defaults=[])
+        
     return cyast_gen.FunctionDecl(name=name,
                                   args=args,
                                   returns=returns,
@@ -45,22 +54,31 @@ def FunctionDecl(name,
 #def arguments(args=[], vararg=None, kwarg=None, defaults=[]):
 #    return ast.arguments(args, vararg, kwarg, defaults)
 
-def If(test, body=[], orelse=[]):
-    return cyast_gen.If(test, body, orelse)
+def If(test, body=None, orelse=None):
+    return cyast_gen.If(test,
+                        body if body else [],
+                        orelse if orelse else [])
 
-def Tuple(elts=[]):
-    return cyast_gen.Tuple(elts=elts)
+def Tuple(elts=None):
+    return cyast_gen.Tuple(elts=elts if elts else [])
 
-def ClassDef(name, bases=[], body=[], decorator_list=[]):
-    return cyast_gen.ClassDef(name, bases, body, decorator_list)
+def ClassDef(name, bases=None, body=None, decorator_list=None):
+    return cyast_gen.ClassDef(name,
+                              bases=bases if bases else [],
+                              body=body if body else [],
+                              decorator_list=decorator_list if decorator_list else [])
 
 def Index(value):
     return cyast_gen.Index(value=value)
 
-def Subscript(value, slice, ctx=cyast_gen.Load()):
+def Subscript(value, slice, ctx=None): #@ReservedAssignment
+    if not ctx:
+        ctx = cyast_gen.Load()
     return cyast_gen.Subscript(value=value, slice=slice)
 
-def List(elts, ctx=cyast_gen.Store()):
+def List(elts, ctx=None):
+    if not ctx:
+        ctx = cyast_gen.Store()
     return cyast_gen.List(elts=elts, ctx=ctx)
 
 #################################################################################
@@ -175,8 +193,8 @@ class Builder(coreir.BuilderBase):
         def body(self, e):
             self.node.body = to_ast(e)
 
-        def call(self, args=[]):
-            args = to_ast(args)
+        def call(self, args=None):
+            args = to_ast(args if args else [])
             self.node = cyast_gen.Call(func=to_ast(self.node), args=args, keywords=[], starargs=None, kwargs=None)
             return self
 
@@ -360,16 +378,22 @@ class Builder(coreir.BuilderBase):
             return self.node
 
     @classmethod
-    def ClassDef(cls, name, bases=[]):
-        return cls.class_def_helper(name, bases, cyast_gen.Def())
+    def ClassDef(cls, name, bases=None):
+        return cls.class_def_helper(name,
+                                    bases if bases else None,
+                                    cyast_gen.Def())
 
     @classmethod
-    def PublicClassCDef(cls, name, bases=[], **kwargs):
-        return cls.class_def_helper(name, bases, cyast_gen.CDef(public=True), **kwargs)
+    def PublicClassCDef(cls, name, bases=None, **kwargs):
+        return cls.class_def_helper(name,
+                                    bases if bases else [],
+                                    cyast_gen.CDef(public=True), **kwargs)
 
     @classmethod
-    def ClassCDef(cls, name, bases=[], **kwargs):
-        return cls.class_def_helper(name, bases, cyast_gen.CDef(public=False), **kwargs)
+    def ClassCDef(cls, name, bases=None, **kwargs):
+        return cls.class_def_helper(name,
+                                    bases if bases else [],
+                                    cyast_gen.CDef(public=False), **kwargs)
 
     @classmethod
     def Compare(self, left, ops, comparators):

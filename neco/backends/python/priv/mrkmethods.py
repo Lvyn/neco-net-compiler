@@ -1,5 +1,6 @@
 from neco.core.info import VariableProvider
 from neco.core.nettypes import MarkingTypeMethodGenerator
+import ast
 import pyast
 
 class InitGenerator(MarkingTypeMethodGenerator):
@@ -14,8 +15,9 @@ class InitGenerator(MarkingTypeMethodGenerator):
 
         for name, place_type in marking_type.place_types.iteritems():
             if_block.body.append( pyast.Assign(targets=[pyast.Attribute(value=pyast.Name(id='self'),
-                                                                    attr=marking_type.id_provider.get(name))],
-                                             value=place_type.new_place_expr(env)) )
+                                                                        attr=marking_type.id_provider.get(name))],
+                                                        value=place_type.new_place_expr(env)) )
+        
         function.body = if_block
         return function
 

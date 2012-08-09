@@ -11,7 +11,7 @@ from neco import compile_net, g_logo, produce_pnml_file, load_pnml_file, \
 from neco.utils import fatal_error
 from time import time
 import argparse
-import neco.config as config
+from neco.config import Config
 import os
 import sys
 if (2, 7, 0) <= sys.version_info < (3, 0, 0) :
@@ -140,21 +140,20 @@ class Main(object):
             model_file = pnml
 
         # setup config
-        config.set(# debug    = cli_argument_parser.debug(),
-                   optimize=args.optimize,
-                   bit_packing=args.bit_packing,
-                   backend=args.language,
-                   profile=args.profile,
-                   imports=args.imports,
-                   no_stats=args.no_stats,
-                   optimize_flow=args.optimize_flow,
-                   search_paths=args.includes,
-                   trace_calls=False,
-                   trace_file=trace,
-                   pid_normalization=args.pid_normalization,
-                   model=model_file)
-            
-            
+        self.config = Config()
+        self.config.set_options(optimize=args.optimize,
+                                bit_packing=args.bit_packing,
+                                backend=args.language,
+                                profile=args.profile,
+                                imports=args.imports,
+                                no_stats=args.no_stats,
+                                optimize_flow=args.optimize_flow,
+                                search_paths=args.includes,
+                                trace_calls=False,
+                                trace_file=trace,
+                                pid_normalization=args.pid_normalization,
+                                model=model_file)
+
         # retrieve the Petri net from abcd file (produces a pnml file)
         remove_pnml = not pnml
         if abcd:
@@ -190,7 +189,7 @@ class Main(object):
             except OSError: pass # ignore errors
 
         start = time()
-        compiled_net = compile_net(net=self.petri_net)
+        compiled_net = compile_net(net=self.petri_net, config=self.config)
         end = time()
 
         if not compiled_net:

@@ -12,22 +12,10 @@ import priv.mrkmethods
         
 ################################################################################
 
-def place_type_from_info(place_info, marking):
-    """ Returns a PlaceType object based on PlaceInfo type information. """
-
-    pi_type = place_info.type
-    if   pi_type.is_Int:        return placetypes.IntPlaceType(place_info, marking_type=marking)
-    elif pi_type.is_Bool:       return placetypes.ObjectPlaceType(place_info, marking_type=marking)
-    elif pi_type.is_String:     return placetypes.ObjectPlaceType(place_info, marking_type=marking)
-    elif pi_type.is_BlackToken: return placetypes.BTPlaceType(place_info, marking_type=marking)
-    elif pi_type.is_UserType:   return placetypes.ObjectPlaceType(place_info, marking_type=marking)
-    else:
-        return placetypes.ObjectPlaceType(place_info, marking_type=marking)
-
 class StaticMarkingType(coretypes.MarkingType):
     """ Python static marking type implementation, i.e., places as class attributes. . """
 
-    def __init__(self):
+    def __init__(self, config):
         coretypes.MarkingType.__init__(self,
                                        TypeInfo.register_type("Marking"),
                                        TypeInfo.register_type("MarkingSet"))
@@ -36,11 +24,8 @@ class StaticMarkingType(coretypes.MarkingType):
         self.id_provider = utils.NameProvider() # used to produce attribute names
         self._process_place_types = {}
 
-        if config.get('bit_packing'):
-            self.packing_enabled = True
-        else:
-            self.packing_enabled = False
-
+        #self.packing_enabled = config.bit_packing
+        self.config = config
         self.chunk_manager = ChunkManager(self.id_provider.new(base="_packed"))
 
         self.add_method_generator(priv.mrkmethods.InitGenerator())
@@ -73,20 +58,30 @@ class StaticMarkingType(coretypes.MarkingType):
     def get_process_place_type(self, process_name):
         return self._process_place_types[process_name]
 
+    def place_type_from_info(self, place_info):
+        """ Returns a PlaceType object based on PlaceInfo type information. """
+    
+        pi_type = place_info.type
+        if   pi_type.is_Int:        return placetypes.IntPlaceType(place_info, marking_type=self)
+        elif pi_type.is_Bool:       return placetypes.ObjectPlaceType(place_info, marking_type=self)
+        elif pi_type.is_String:     return placetypes.ObjectPlaceType(place_info, marking_type=self)
+        elif pi_type.is_BlackToken: return placetypes.BTPlaceType(place_info, marking_type=self, packed=False)
+        elif pi_type.is_UserType:   return placetypes.ObjectPlaceType(place_info, marking_type=self)
+        else:
+            return placetypes.ObjectPlaceType(place_info, marking_type=self)
+
     def __gen_one_safe_place_type(self, place_info):
-        if not config.get('optimize'):
+        if not self.config.optimize:
             if place_info.type.is_BlackToken:
-                self.place_types[place_info.name] = placetypes.BTPlaceType(place_info, self)
+                self.place_types[place_info.name] = placetypes.BTPlaceType(place_info, self, self.config.bit_packing)
             else:
                 self.place_types[place_info.name] = placetypes.ObjectPlaceType(place_info, self)
             return
         else: # optimize
             if place_info.type.is_BlackToken:
-                self.place_types[place_info.name] = placetypes.BTPlaceType(place_info, self)
+                self.place_types[place_info.name] = placetypes.BTPlaceType(place_info, self, self.config.bit_packing)
             else: # 1s not BT
-                #self.place_types[place_info.name] = placetypes.ObjectPlaceType(place_info, self)
-                self.place_types[place_info.name] = placetypes.OneSafePlaceType(place_info, self)
-                
+                self.place_types[place_info.name] = placetypes.OneSafePlaceType(place_info, self, self.config.bit_packing)
             return
 
 
@@ -117,7 +112,7 @@ class StaticMarkingType(coretypes.MarkingType):
         for place_info in self.one_safe_places:
             self.__gen_one_safe_place_type(place_info)
         for place_info in self.places:
-            self.place_types[place_info.name] = place_type_from_info(place_info, self)
+            self.place_types[place_info.name] = self.place_type_from_info(place_info)
 
     def __str__(self):
         """ Dump the marking structure. """
