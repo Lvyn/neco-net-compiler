@@ -60,7 +60,7 @@ class Main(object):
                                          argument_default=argparse.SUPPRESS,
                                          formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-        parser.add_argument('--dump', '-d', default=None, dest='dump', metavar='DUMPFILE', type_info=str,
+        parser.add_argument('--dump', '-d', default=None, dest='dump', metavar='DUMPFILE', type=str,
                             help='dump markings to file (supports bz2 and gz compression)')
 
         parser.add_argument('--graph', '-g', default=None, dest='graph', nargs=2, metavar=('MAPFILE',

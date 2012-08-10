@@ -10,13 +10,14 @@ class InitGenerator(MarkingTypeMethodGenerator):
         function = pyast.FunctionDef(name='__init__',
                                    args=pyast.A('self').param('alloc', default='True').ast())
 
+        vp = VariableProvider()
+        self_var = vp.new_variable(marking_type.type, name='self')
+
         if_block = pyast.If(test=pyast.Name(id='alloc'))
 
-        for name, place_type in marking_type.place_types.iteritems():
-            if_block.body.append( pyast.Assign(targets=[pyast.Attribute(value=pyast.Name(id='self'),
-                                                                        attr=marking_type.id_provider.get(name))],
-                                                        value=place_type.new_place_expr(env)) )
-        
+        for place_type in marking_type.place_types.values():
+            if_block.body.append( place_type.new_place_stmt(env, self_var) )
+
         function.body = if_block
         return function
 
@@ -24,7 +25,7 @@ class CopyGenerator(MarkingTypeMethodGenerator):
 
     def generate(self, env):
         marking_type = env.marking_type
-        
+
         vp = VariableProvider()
         self_var = vp.new_variable(marking_type.type, name='self')
         marking_var = vp.new_variable(marking_type.type)
@@ -35,11 +36,9 @@ class CopyGenerator(MarkingTypeMethodGenerator):
         tmp = [ pyast.Assign(targets=[pyast.Name(id=marking_var.name)],
                            value=pyast.E('Marking(False)')) ]
 
-        for name, place_type in marking_type.place_types.iteritems():
-            tmp.append( pyast.Assign(targets=[pyast.Attribute(value=pyast.Name(id = marking_var.name),
-                                                          attr=marking_type.id_provider.get(name))],
-                                   value=place_type.copy_expr(env, marking_var = self_var))
-                        )
+        for place_type in marking_type.place_types.values():
+            tmp.append( place_type.copy_stmt(env, self_var, marking_var) )
+
         tmp.append(pyast.Return(pyast.Name(id=marking_var.name)))
         function.body = tmp
         return function
@@ -48,33 +47,40 @@ class EqGenerator(MarkingTypeMethodGenerator):
     
     def generate(self, env):
         marking_type = env.marking_type
-        
-        other = 'other'
-        function = pyast.FunctionDef(name='__eq__',
-                                   args=pyast.A('self').param(other).ast())
+
+        vp = VariableProvider()
+        self_var = vp.new_variable(marking_type.type, 'self')
+        other_var = vp.new_variable(marking_type.type, 'other')
+
+        function = pyast.FunctionDef(name='__eq__', args=pyast.A(self_var.name).param(other_var.name).ast())
+
         return_str = "return ("
-        for i, (name, _) in enumerate(marking_type.place_types.iteritems()):
-            id_name = marking_type.id_provider.get(name)
+        for i, place_type in enumerate(marking_type.place_types.values()):
             if i > 0:
                 return_str += " and "
-            return_str += "(self.%s == %s.%s)" % (id_name, other, id_name)
+            field = place_type.field
+            return_str += "({} == {})".format(field.access_from(self_var),
+                                              field.access_from(other_var))
         return_str += ")"
 
         function.body = [ pyast.E(return_str) ]
         return function
 
 class HashGenerator(MarkingTypeMethodGenerator):
-    
+
     def generate(self, env):
         marking_type = env.marking_type
-        
+
+        vp = VariableProvider()
+        self_var = vp.new_variable(marking_type.type, 'self')
+
         builder = pyast.Builder()
-        builder.begin_FunctionDef( name = '__hash__', args = pyast.A("self").ast() )
+        builder.begin_FunctionDef( name = '__hash__', args = pyast.A(self_var.name).ast() )
         builder.emit( pyast.E('h = 0') )
 
-        for (name, _) in marking_type.place_types.iteritems():
+        for (name, place_type) in marking_type.place_types.iteritems():
             magic = hash(name)
-            builder.emit( pyast.E('h ^= hash(self.' + marking_type.id_provider.get(name) + ') ^ ' + str(magic)) )
+            builder.emit( pyast.E('h ^= hash(' +  place_type.field.access_from(self_var) + ') ^ ' + str(magic)) )
 
         builder.emit_Return(pyast.E("h"))
         builder.end_FunctionDef()

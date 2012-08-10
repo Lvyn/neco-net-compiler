@@ -124,10 +124,9 @@ class CompilerVisitor(coreir.CompilerVisitor):
 
     def compile_FlushIn(self, node):
         destination_place = self.env.marking_type.get_place_type_by_name(node.place_name)
-        place_expr = destination_place.place_expr(self.env, node.marking_var)
-        return [ pyast.Assign(targets=[pyast.Name(id=node.token_var.name)],
-                            value=place_expr),
-                 destination_place.clear_stmt(self.env, node.marking_var) ]
+        assign_expr = destination_place.assign_multiset_stmt(self.env, node.token_var, node.marking_var)
+        return [assign_expr,
+                destination_place.clear_stmt(self.env, node.marking_var) ]
 
     def compile_FlushOut(self, node):
         destination_place = self.env.marking_type.get_place_type_by_name(node.place_name)
@@ -291,18 +290,20 @@ class CompilerVisitor(coreir.CompilerVisitor):
             names[info.name] = info
 
         for (place, place_type) in self.env.marking_type.place_types.iteritems():
-            dst_place_expr = place_type.place_expr(self.env, marking_var = node.dst)
-            src_place_expr = place_type.place_expr(self.env, marking_var = node.src)
+#            dst_place_expr = place_type.place_expr(self.env, marking_var = node.dst)
+#            src_place_expr = place_type.place_expr(self.env, marking_var = node.src)
             if names.has_key( place ):
-                nodes.append( pyast.Assign(targets=[dst_place_expr],
-                                         value=place_type.copy_expr(self.env, node.src)
-                                         )
-                              )
+                nodes.append( place_type.copy_stmt(self.env, node.dst, node.src) )
+#                nodes.append( pyast.Assign(targets=[dst_place_expr],
+#                                         value=place_type.copy_expr(self.env, node.src)
+#                                         )
+#                              )
             else:
-                nodes.append( pyast.Assign(targets=[dst_place_expr],
-                                         value=src_place_expr
-                                         )
-                              )
+                nodes.append( place_type.copy_stmt(self.env, node.dst, node.src) )
+#                nodes.append( pyast.Assign(targets=[dst_place_expr],
+#                                         value=src_place_expr
+#                                         )
+#                              )
         return nodes
 
     def compile_AddMarking(self, node):

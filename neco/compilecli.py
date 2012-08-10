@@ -57,16 +57,16 @@ class Main(object):
         parser.add_argument('--lang', '-l', default='python', dest='language', choices=['python', 'cython'],
                             help='set target language')
 
-        parser.add_argument('--abcd', dest='abcd', default=None, metavar='FILE', type_info=string,
+        parser.add_argument('--abcd', dest='abcd', default=None, metavar='FILE', type=str,
                             help='ABCD file to be compiled')
 
-        parser.add_argument('--pnml', dest='pnml', default=None, metavar='FILE', type_info=string,
+        parser.add_argument('--pnml', dest='pnml', default=None, metavar='FILE', type=str,
                             help='ABCD file to be compiled ( or produced if used with --abcd )')
 
-        parser.add_argument('--module', '-m', default=None, dest='module', metavar='MODULE', type_info=string,
+        parser.add_argument('--module', '-m', default=None, dest='module', metavar='MODULE', type=str,
                             help='Python module containing the Petri net to be compiled')
 
-        parser.add_argument('--netvar', '-v', default='net', dest='netvar', metavar='VARIABLE', type_info=string,
+        parser.add_argument('--netvar', '-v', default='net', dest='netvar', metavar='VARIABLE', type=str,
                             help='Variable holding the Petri net')
 
         parser.add_argument('--optimize', '-O', default=False, dest='optimize', action='store_true',
@@ -87,7 +87,7 @@ class Main(object):
         parser.add_argument('--include', '-I', default=[], dest='includes', action='append',
                             help='additional include paths (cython)')
 
-        parser.add_argument('--trace', '-t', default='trace', dest='trace', metavar='TRACEFILE', type_info=string,
+        parser.add_argument('--trace', '-t', default='trace', dest='trace', metavar='TRACEFILE', type=str,
                             help='additional include paths (cython)')
 
         parser.add_argument('--pid-normalization', default=False, dest='pid_normalization', action='store_true',
