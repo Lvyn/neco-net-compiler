@@ -3,7 +3,6 @@
 from neco.core.info import TypeInfo, PlaceInfo
 from neco.utils import should_not_be_called
 from priv import pyast
-import neco.config as config
 import neco.core.nettypes as coretypes
 import neco.utils as utils
 import priv.mrkmethods
@@ -65,7 +64,7 @@ class ObjectPlaceType(coretypes.ObjectPlaceType, PythonPlaceType):
         coretypes.ObjectPlaceType.__init__(self,
                                            place_info=place_info,
                                            marking_type=marking_type,
-                                           type=TypeInfo.get('MultiSet'),
+                                           type_info=TypeInfo.get('MultiSet'),
                                            token_type=place_info.type)
         
     def new_place_expr(self, env):
@@ -308,7 +307,7 @@ class OneSafePlaceType(coretypes.OneSafePlaceType, PythonPlaceType):
         coretypes.OneSafePlaceType.__init__(self,
                                             place_info=place_info,
                                             marking_type=marking_type,
-                                            type=TypeInfo.get('AnyType'),
+                                            type_info=TypeInfo.get('AnyType'),
                                             token_type=TypeInfo.get('AnyType'))
 
     def new_place_expr(self, env):
@@ -376,14 +375,14 @@ class BTPlaceType(coretypes.BTPlaceType, PythonPlaceType):
     def __init__(self, place_info, marking_type):
         """
         @param place_info:
-        @type place_info: C{}
+        @type_info place_info: C{}
         @param marking_type:
-        @type marking_type: C{}
+        @type_info marking_type: C{}
         """
         coretypes.BTPlaceType.__init__(self,
                                        place_info=place_info,
                                        marking_type=marking_type,
-                                       type=TypeInfo.get('Int'),
+                                       type_info=TypeInfo.get('Int'),
                                        token_type=TypeInfo.get('Int'))
 
     def new_place_expr(self, env):
@@ -448,7 +447,7 @@ class BTOneSafePlaceType(coretypes.BTOneSafePlaceType, PythonPlaceType):
         coretypes.BTOneSafePlaceType.__init__(self,
                                               place_info=place_info,
                                               marking_type=marking_type,
-                                              type=TypeInfo.get('Bool'),
+                                              type_info=TypeInfo.get('Bool'),
                                               token_type=TypeInfo.get('BlackToken'))
 
     def new_place_expr(self, env):
@@ -498,16 +497,16 @@ class FlowPlaceType(coretypes.PlaceType, PythonPlaceType):
         """ Build a new place.
 
         @param place_info:
-        @type place_info: C{}
+        @type_info place_info: C{}
         @param marking_type:
-        @type marking_type: C{}
+        @type_info marking_type: C{}
         """
         self._counter = 0
         self._places = {}
         coretypes.PlaceType.__init__(self,
                                      place_info=place_info,
                                      marking_type=marking_type,
-                                     type=TypeInfo.get('Int'),
+                                     type_info=TypeInfo.get('Int'),
                                      token_type=TypeInfo.get('Int'))
 
     @property

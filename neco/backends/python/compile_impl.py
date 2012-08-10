@@ -3,7 +3,6 @@ from priv import pyast
 from unparse import Unparser
 import ast
 import imp
-import neco.config as config
 import netir
 import nettypes
 

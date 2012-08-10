@@ -4,13 +4,13 @@ This module provides all contents from C{ast} module.
 
 """
 
-from ast import *
+from ast import * #@UnusedWildImport
 from neco.backends.pythonic import extract_python_expr, check_arg, check_attrs
 import ast
 import neco.core.netir as coreir
 
 
-def Name(id):
+def Name(id): #@ReservedAssignment
     return ast.Name(id=id)
 
 def Call(func, args=None, keywords=None, starargs=None, kwargs=None):

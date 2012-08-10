@@ -1,8 +1,8 @@
 "Usage: unparse.py <path to source file>"
-import sys
 import _ast
 import cStringIO
 import os
+import sys
 
 def interleave(inter, f, seq):
     """Call f on each item in seq, calling inter() in between.
@@ -22,10 +22,10 @@ class Unparser:
     output source code for the abstract syntax; original formatting
     is disregarged. """
 
-    def __init__(self, tree, file = sys.stdout):
+    def __init__(self, tree, out_file = sys.stdout):
         """Unparser(tree, file=sys.stdout) -> None.
          Print the source for tree to file."""
-        self.f = file
+        self.f = out_file
         self._indent = 0
         self.dispatch(tree)
         self.f.flush()

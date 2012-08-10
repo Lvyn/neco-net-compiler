@@ -156,10 +156,10 @@ class CompilerVisitor(coreir.CompilerVisitor):
 
     def compile_TupleOut(self, node):
         tuple_info = node.tuple_info
-        tuple = self.gen_tuple(tuple_info)
+        compiled_tuple = self.gen_tuple(tuple_info)
         place_type = self.env.marking_type.get_place_type_by_name(node.place_name)
         return place_type.add_token_stmt(env = self.env,
-                                         compiled_token = tuple,
+                                         compiled_token = compiled_tuple,
                                          marking_var = node.marking_var)
 
     def compile_NotEmpty(self, node):
@@ -199,7 +199,7 @@ class CompilerVisitor(coreir.CompilerVisitor):
 
         inner = current
         if len(indices) > 1:
-            inner_base, inner = self.gen_different( indices )
+            _, inner = self.gen_different( indices )
             current.body.append( base )
 
         return base, inner

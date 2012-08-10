@@ -1,6 +1,7 @@
 import properties
+import re
+import sys
 import xml.dom.minidom as dom
-import sys, re
 
 PROPERTY_SET_NAME = "property-set"
 PROPERTY_NAME = "property"
@@ -421,9 +422,9 @@ def parse_formula(elt):
         name = parse_node_name(elt.childNodes[0])
         return properties.PlaceBound(name)
 
-    elif elt.nodeName == MULTISET_CARDINALITY:
-        subformulas = parse_subformulas(elt, 1)
-        return properties.MultisetCard( subformulas[0] )
+#    elif elt.nodeName == MULTISET_CARDINALITY:
+#        subformulas = parse_subformulas(elt, 1)
+#        return properties.MultisetCard( subformulas[0] )
 
     elif elt.nodeName == PLACE_MARKING:
         if len(elt.childNodes) != 1:
@@ -437,8 +438,8 @@ def parse_formula(elt):
         return properties.IntegerConstant(value)
 
     elif elt.nodeName == MULTISET_CONSTANT:
-        tuple = parse_subformulas(elt, 1)
-        return properties.MultisetConstant(tuple)
+        sub_formulas = parse_subformulas(elt, 1)
+        return properties.MultisetConstant(sub_formulas)
 
     elif elt.nodeName == IS_LIVE:
         return parse_is_live(elt)

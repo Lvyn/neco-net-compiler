@@ -3,10 +3,9 @@
 Serves as a proxy for netir_gen (automatically generated from asdl).
 """
 
-import inspect, types
-from ast import NodeVisitor, NodeTransformer
+import inspect
 import neco.asdl.netir as netir_gen
-from neco.asdl.netir import *
+from neco.asdl.netir import * #@UnusedWildImport
 
 class CurrentBlockError(Exception):
     """ Exception used in helpers, raised when a operation
@@ -36,8 +35,8 @@ class CompilerVisitor(object):
     def cannot_compile(self, node):
         """Called if no explicit compile function exists for a node."""
         class CannotCompile(Exception):
-            def __init__(self, str):
-                self._str = str
+            def __init__(self, string):
+                self._str = string
             def __str__(self):
                 return self._str
         raise CannotCompile(self.backend + " backend cannot compile %s" % node.__class__.__name__)
@@ -85,17 +84,6 @@ def __caller__(function, cls):
         return function(self, cls(*args, **kw))
     return f
 
-def begin_base_block(self, node):
-    """ Begin a base block.
-
-    Begins a base block, a function for instance.
-
-    @param node: ast node class
-    @type node: C{Node}
-    """
-    self._current = node
-    self._current_scope = node.body
-
 class BuilderBase(object):
     """ Utility class for building AST
     """
@@ -112,7 +100,7 @@ class BuilderBase(object):
             """
 
             @param node:
-            @type node: C{}
+            @type_info node: C{}
             """
             self._node = node
 
@@ -171,7 +159,6 @@ class BuilderBase(object):
         assert (self._current == None)
         return self._nodes
 
-
     def end_block(self):
         """ End a block. """
         node, current_scope = self._parents.pop(-1)
@@ -190,7 +177,6 @@ class BuilderBase(object):
 
     def end_all_blocks(self):
         """ End all blocks. """
-        l = len(self._parents)
         for _ in range(0, len(self._parents)):
             (node, current_scope) = self._parents.pop(-1)
             self._current = node

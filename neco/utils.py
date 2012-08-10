@@ -1,10 +1,11 @@
 """ Utility classes and functions. """
 
-import sys, ast
-from os.path import exists, abspath
-from functools import wraps
 from abc import abstractmethod, ABCMeta
+from functools import wraps
+from os.path import exists, abspath
 from snakes.nets import WordSet
+import sys
+import ast
 
 def flatten_lists(l):
     """ Make a list of lists flat.
@@ -257,8 +258,8 @@ class IDProvider(object):
         @rtype: C{int}
         """
         if (not self.assoc.has_key(obj)):
-            id = self.next
-            self.assoc[obj] = id
+            identifier = self.next
+            self.assoc[obj] = identifier
             self.next += 1;
             return id
 
@@ -277,7 +278,7 @@ class StringIDProvider(object):
     def _next(self, obj):
         return self._escape(self.wordset.fresh(True, base=str(obj)))
 
-    def _escape(self, str):
+    def _escape(self, string):
         res = ""
         d = { '.' : 'A',
               ' ' : 'B',
@@ -287,66 +288,7 @@ class StringIDProvider(object):
               '=' : 'G',
               '#' : 'H',
               '\'' : 'I' }
-        for c in str:
-            try:
-                c = d[c]
-            except:
-                pass
-            finally:
-                res += c
-        return res
-
-    def to_string(self, obj):
-        return "\"" + self.get(obj) + "\""
-
-    def get(self, obj):
-        """ get an identifier for an object.
-
-        >>> provider = IDProvider()
-        >>> id1 = provider.get("toto")
-        >>> id2 = provider.get("tata")
-        >>> id1 != id2
-        True
-        >>> id3 = provider.get("toto")
-        >>> id1 == id3
-        True
-
-        @param obj: object
-        @type obj: C{object}
-        @return: object identifier
-        @rtype: C{int}
-        """
-        try:
-            return self.assoc[obj]
-        except KeyError:
-            new = self._next(obj)
-            self.assoc[obj] = new
-            return new
-
-class StringIDProvider(object):
-    """ simple class that provides unique identifiers for objects.
-    """
-
-    def __init__(self):
-        """ initlalise the provider
-        """
-        self.wordset = WordSet()
-        self.assoc = {}
-
-    def _next(self, obj):
-        return self._escape(self.wordset.fresh(True, base=str(obj)))
-
-    def _escape(self, str):
-        res = ""
-        d = { '.' : 'A',
-              ' ' : 'B',
-              '(' : 'C',
-              ')' : 'D',
-              ',' : 'E',
-              '=' : 'G',
-              '#' : 'H',
-              '\'' : 'I' }
-        for c in str:
+        for c in string:
             try:
                 c = d[c]
             except:
@@ -400,7 +342,7 @@ class NameProvider(object):
         else:
             return self._escape("_n{}".format(self.id))
 
-    def _escape(self, str):
+    def _escape(self, string):
         res = ""
         d = { '.' : 'A',
               ' ' : 'B',
@@ -410,7 +352,7 @@ class NameProvider(object):
               '=' : 'G',
               '#' : 'H',
               '\'' : 'I' }
-        for c in str:
+        for c in string:
             try:
                 c = d[c]
             except:
@@ -425,8 +367,8 @@ class NameProvider(object):
     def new(self, base=""):
         return self._next(None, base)
 
-    def set(self, obj, id):
-        self.assoc[obj] = id
+    def set(self, obj, identifier):
+        self.assoc[obj] = identifier
 
     def get(self, obj, base=""):
         """ get an identifier for an object.
@@ -699,7 +641,6 @@ class EnumValue(object):
     def __hash__(self):        return hash(self.__value)
     def __cmp__(self, other):
         return cmp(self.__value, other.__value)
-    def __invert__(self):      return constants[maximum - self.__value]
     def __nonzero__(self):     return bool(self.__value)
     def __repr__(self):        return str(self.__name)
 
@@ -779,8 +720,8 @@ class Matcher(object):
     def no_match_found(self, node):
         """Called if no explicit match function exists."""
         class NoMatchFound(Exception):
-            def __init__(self, str):
-                self._str = str
+            def __init__(self, string):
+                self._str = string
             def __str__(self):
                 return self._str
         raise NoMatchFound("No match found for {}".format(node.__class__.__name__))

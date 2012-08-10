@@ -2,7 +2,6 @@ from Cython.Distutils import build_ext
 from collections import defaultdict
 from distutils.core import setup
 from distutils.extension import Extension
-from neco import config
 from neco.asdl.properties import Sum
 from neco.core.info import VariableProvider, TypeInfo
 from neco.utils import flatten_ast, IDProvider
@@ -99,9 +98,9 @@ class FunctionWrapper(object):
         """ Initialize the wrapper.
 
         @param function_name:
-        @type function_name: C{str}
+        @type_info function_name: C{string}
         @param function_ast:
-        @type function_ast: C{AST}
+        @type_info function_ast: C{AST}
         """
         self._function_name = function_name
         self._function_ast = function_ast
@@ -166,7 +165,6 @@ def gen_InPlace_function(checker_env, function_name, place_name):
 class IsFireableGenerator(core.SuccTGenerator):
     
     def __init__(self, checker_env, transition, function_name):
-        
         # DO NOT CALL BASE CLASS __init__ !
         
         self.net_info = checker_env.net_info
@@ -174,7 +172,8 @@ class IsFireableGenerator(core.SuccTGenerator):
         self.transition = transition
         self.function_name = function_name
         self.marking_type = checker_env.marking_type
-        self.ignore_flow = config.get('optimize_flow')
+        config = self.marking_type.config
+        self.ignore_flow = config.optimize_flow
         self.env = checker_env
 
         # this helper will create new variables and take care of shared instances
@@ -182,11 +181,11 @@ class IsFireableGenerator(core.SuccTGenerator):
                                            WordSet(transition.variables().keys()))
         self.variable_helper = helper
 
-        if config.get('optimize'):
+        if config.optimize:
             self.transition.order_inputs()
 
         # function arguments
-        self.arg_marking_var = helper.new_variable(type=self.marking_type.type)
+        self.arg_marking_var = helper.new_variable(type_info=self.marking_type.type)
 
         # create function
         self.builder.begin_function_IsFireable(function_name=self.function_name,
@@ -410,7 +409,7 @@ class CheckerCompileVisitor(netir.CompilerVisitor):
         stmts = [ self.compile(node.body) ]
 
         decl = netir.CVarSet()
-        input_arcs = node.transition_info.inputs
+        input_arcs = node.transition_info.input_arcs
         for input_arc in input_arcs:
             decl.extend(self.try_gen_type_decl(input_arc))
 
@@ -434,7 +433,7 @@ class CheckerCompileVisitor(netir.CompilerVisitor):
         return result
 
 
-def produce_and_compile_pyx(checker_env, id_prop_map):
+def produce_and_compile_pyx(checker_env, id_prop_map, config):
     marking_type = checker_env.marking_type
     checker_env.register_cython_type(marking_type.type, 'net.Marking')
     TypeInfo.register_type('Marking')
@@ -467,7 +466,7 @@ def produce_and_compile_pyx(checker_env, id_prop_map):
         cyast.Unparser(function_ast, f)
     f.close()
 
-    includes = config.get('search_paths')
+    includes = config.search_paths
     include_dirs = includes
     library_dirs = includes
 

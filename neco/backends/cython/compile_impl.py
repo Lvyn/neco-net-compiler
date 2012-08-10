@@ -3,15 +3,12 @@
 from Cython.Distutils import build_ext
 from distutils.core import setup
 from distutils.extension import Extension
-from neco import config
 from neco.backends.cython import netir
 from neco.backends.cython.priv import common, cyast
 from neco.utils import flatten_ast, search_file
 import imp
 import nettypes
 import os
-import sys
-import time
 
 _backend_ = "cython"
 

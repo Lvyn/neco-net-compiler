@@ -1,7 +1,5 @@
 #!/usr/bin/python
-import glob, re, os, argparse, subprocess
-from collections import defaultdict
-from snakes.nets import *
+import sys
 
 FATAL_ERROR = 2
 FAILED = 1

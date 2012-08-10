@@ -1,6 +1,5 @@
 from neco.core.info import VariableProvider
 from neco.core.nettypes import MarkingTypeMethodGenerator
-import ast
 import pyast
 
 class InitGenerator(MarkingTypeMethodGenerator):
@@ -54,7 +53,7 @@ class EqGenerator(MarkingTypeMethodGenerator):
         function = pyast.FunctionDef(name='__eq__',
                                    args=pyast.A('self').param(other).ast())
         return_str = "return ("
-        for i, (name, place_type) in enumerate(marking_type.place_types.iteritems()):
+        for i, (name, _) in enumerate(marking_type.place_types.iteritems()):
             id_name = marking_type.id_provider.get(name)
             if i > 0:
                 return_str += " and "
@@ -73,7 +72,7 @@ class HashGenerator(MarkingTypeMethodGenerator):
         builder.begin_FunctionDef( name = '__hash__', args = pyast.A("self").ast() )
         builder.emit( pyast.E('h = 0') )
 
-        for name, place_type in marking_type.place_types.iteritems():
+        for (name, _) in marking_type.place_types.iteritems():
             magic = hash(name)
             builder.emit( pyast.E('h ^= hash(self.' + marking_type.id_provider.get(name) + ') ^ ' + str(magic)) )
 
@@ -93,7 +92,7 @@ class ReprGenerator(MarkingTypeMethodGenerator):
         builder.begin_FunctionDef( name = "__repr__", args = pyast.A("self").ast() )
 
         builder.emit( pyast.E('s = "hdict({"') )
-        for (i, (place_name, place_type)) in enumerate(items):
+        for (i, (place_name, _)) in enumerate(items):
             tmp = ',\n ' if i > 0 else ''
             builder.emit(pyast.AugAssign(target=pyast.Name(id='s'),
                                        op=pyast.Add(),
@@ -125,7 +124,7 @@ class DumpGenerator(MarkingTypeMethodGenerator):
         builder.begin_FunctionDef( name = "__dump__", args = pyast.A(self_var.name).ast() )
 
         builder.emit( pyast.E('%s = ["{"]' % list_var.name) )
-        for (i, (place_name, place_type)) in enumerate(items):
+        for (place_name, place_type) in items:
             if place_type.is_ProcessPlace:
                 builder.emit( place_type.dump_expr(env, self_var, list_var) )
             else:

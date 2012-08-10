@@ -5,7 +5,8 @@ from C{cyast_gen.asdl}.
 
 """
 
-from neco.asdl.cython import *
+from neco.asdl.cython import * #@UnusedWildImport
+from neco.backends.python.unparse import Unparser as _Unparser
 from neco.backends.pythonic import extract_python_expr, check_arg, check_attrs
 from neco.core.netir import CurrentBlockError
 from neco.utils import flatten_lists
@@ -144,7 +145,7 @@ def E(expr):
     """
     return _extract_expr(expr)
 
-def A(param=None, type=None):
+def A(param=None, type=None): #@ReservedAssignment
     """ Argument construction helper.
 
     @param param: optional first argument.
@@ -246,7 +247,7 @@ class Builder(coreir.BuilderBase):
         def __init__(self):
             self.node = cyast_gen.arguments(args=[], vararg=None, kwargs=None, defaults=[])
 
-        def param(self, name, default=None, type=None):
+        def param(self, name, default=None, type=None): #@ReservedAssignment
             annot = to_ast(E(type)) if type else None
             self.node.args.append(cyast_gen.arg(arg=name, annotation=annot))
             if default != None:
@@ -400,14 +401,14 @@ class Builder(coreir.BuilderBase):
         return E(cyast_gen.Compare(left=to_ast(left), ops=ops, comparators=to_ast(comparators)))
 
     @classmethod
-    def PublicCVar(cls, name, type=None, init=None):
+    def PublicCVar(cls, name, type=None, init=None): #@ReservedAssignment
         return E(cyast_gen.CVar(name=name,
                                 type=type,
                                 public=True,
                                 init=to_ast(init)))
 
     @classmethod
-    def CVar(cls, name, type=None, init=None):
+    def CVar(cls, name, type=None, init=None): #@ReservedAssignment
         return E(cyast_gen.CVar(name=name,
                                 type=type,
                                 public=False,
@@ -438,7 +439,6 @@ class Python2Cythyon(ast.NodeTransformer):
 
 
 #################################################################################
-from neco.backends.python.unparse import Unparser as _Unparser
 
 class Unparser(_Unparser) :
     def _FunctionDecl (self, tree) :

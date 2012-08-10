@@ -3,7 +3,6 @@
 from neco.core.info import TypeInfo, PlaceInfo
 from priv import cyast, placetypes
 from priv.lowlevel import ChunkManager
-import neco.config as config
 import neco.core.nettypes as coretypes
 import neco.utils as utils
 import priv.mrkfunctions

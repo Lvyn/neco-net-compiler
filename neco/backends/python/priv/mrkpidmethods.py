@@ -1,6 +1,5 @@
 from neco.core.info import VariableProvider, TypeInfo
 from neco.core.nettypes import MarkingTypeMethodGenerator
-import neco.config as config
 import pyast
 
 GENERATOR_PLACE = 'sgen'
@@ -46,8 +45,8 @@ class NormalizePidsGenerator(MarkingTypeMethodGenerator):
         
         vp = VariableProvider()
         self_var = vp.new_variable(marking_type.type, name='self')
-        tree_var = vp.new_variable(TypeInfo.AnyType,  name='tree')
-        pid_dict_var = vp.new_variable(TypeInfo.Dict, name='pid_dict')
+        tree_var = vp.new_variable(TypeInfo.get('AnyType'),  name='tree')
+        pid_dict_var = vp.new_variable(TypeInfo.get('Dict'), name='pid_dict')
         
         function = pyast.FunctionDef(name='normalize_pids',
                                    args=pyast.A(self_var.name).ast())
@@ -92,13 +91,14 @@ class EqGenerator(MarkingTypeMethodGenerator):
     
     def generate(self, env):
         marking_type = env.marking_type
+        config = marking_type.config
         
         other = 'other'
         function = pyast.FunctionDef(name='__eq__',
                                    args=pyast.A('self').param(other).ast())
         return_str = "return ("
-        for i, (name, place_type) in enumerate(marking_type.place_types.iteritems()):
-            if name == GENERATOR_PLACE and config.get('pid_normalization'):
+        for i, (name, _) in enumerate(marking_type.place_types.iteritems()):
+            if name == GENERATOR_PLACE and config.pid_normalization:
                 continue
             
             id_name = marking_type.id_provider.get(name)
@@ -114,13 +114,14 @@ class HashGenerator(MarkingTypeMethodGenerator):
     
     def generate(self, env):
         marking_type = env.marking_type
+        config = marking_type.config
         
         builder = pyast.Builder()
         builder.begin_FunctionDef( name = '__hash__', args = pyast.A("self").ast() )
         builder.emit( pyast.E('h = 0') )
 
-        for name, place_type in marking_type.place_types.iteritems():
-            if name == GENERATOR_PLACE and config.get('pid_normalization'):
+        for name, _ in marking_type.place_types.iteritems():
+            if name == GENERATOR_PLACE and config.pid_normalization:
                 continue
             
             magic = hash(name)

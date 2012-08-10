@@ -1,11 +1,7 @@
 """ Module providing type structures.
 """
 
-import types
 from abc import abstractmethod, ABCMeta
-import snakes.nets as nets
-from neco import utils, config
-from info import TypeInfo
 
 ################################################################################
 
@@ -26,12 +22,12 @@ class PlaceType(object):
     _by_index_access_   = False
     _by_index_deletion_ = False
 
-    def __init__(self, place_info, marking_type, type, token_type):
-        """ Initialise the place type.
+    def __init__(self, place_info, marking_type, type_info, token_type):
+        """ Initialise the place type_info.
         """
         self.info = place_info
         self.marking_type = marking_type
-        self._type = type
+        self._type = type_info
         self._token_type = token_type
 
         self._by_index_access   = self.__class__._by_index_access_
@@ -73,11 +69,11 @@ class ObjectPlaceType(PlaceType):
     """ Fallback place type.
     """
 
-    def __init__(self, place_info, marking_type, type, token_type):
+    def __init__(self, place_info, marking_type, type_info, token_type):
         PlaceType.__init__(self,
                            place_info = place_info,
                            marking_type = marking_type,
-                           type = type,
+                           type_info = type_info,
                            token_type = token_type)
 
 ################################################################################
@@ -94,14 +90,14 @@ class MarkingType(object):
     """
     __metaclass__ = ABCMeta
 
-    def __init__(self, type, container_type):
-        """ Create a new marking type providing a type name.
+    def __init__(self, type_info, container_type):
+        """ Create a new marking type_info providing a type_info name.
 
-        @param type_name: marking structure type name.
-        @type type_name: C{str}
+        @param type_name: marking structure type_info name.
+        @type_info type_name: C{string}
         """
 
-        self._type = type
+        self._type = type_info
         self._contaner_type = container_type
         self._method_generators = []
         
@@ -221,7 +217,7 @@ class MarkingSetType(object):
         """ Initialise marking set structure
 
         @param marking_type: marking set type.
-        @type marking_type: C{str}
+        @type marking_type: C{string}
         """
         self.marking_type = marking_type
 
@@ -243,11 +239,11 @@ class OneSafePlaceType(PlaceType):
     """ Base class for one safe place types.
     """
 
-    def __init__(self, place_info, marking_type, type, token_type):
+    def __init__(self, place_info, marking_type, type_info, token_type):
         PlaceType.__init__(self,
                            place_info = place_info,
                            marking_type = marking_type,
-                           type = type,
+                           type_info = type_info,
                            token_type = token_type)
 
 ################################################################################
@@ -256,11 +252,11 @@ class BTPlaceType(PlaceType):
     """ Base class for black token place types.
     """
 
-    def __init__(self, place_info, marking_type, type, token_type):
+    def __init__(self, place_info, marking_type, type_info, token_type):
         PlaceType.__init__(self,
                            place_info = place_info,
                            marking_type = marking_type,
-                           type = type,
+                           type_info = type_info,
                            token_type = token_type)
 
 ################################################################################
@@ -269,11 +265,11 @@ class BTOneSafePlaceType(PlaceType):
     """ Base class for one safe black token place types.
     """
 
-    def __init__(self, place_info, marking_type, type, token_type):
+    def __init__(self, place_info, marking_type, type_info, token_type):
         PlaceType.__init__(self,
                            place_info = place_info,
                            marking_type = marking_type,
-                           type = type,
+                           type_info = type_info,
                            token_type = token_type)
 
 

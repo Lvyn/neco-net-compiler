@@ -3,11 +3,13 @@
 from collections import defaultdict
 from neco.utils import NameProvider
 from snakes import ConstraintError
+from snakes.nets import ArcAnnotation, PetriNet, Place, Variable, Transition, \
+    Expression, Tuple, MultiArc, Value
+from snakes.typing import Instance, CrossProduct, tNatural
 import snakes.plugins
 import sys
 
 snakes.plugins.load("gv", "snakes.nets", "nets")
-from nets import *
 
 #from nets import PetriNet, Place, Transition, Instance, CrossProduct, tNatural, \
 #    Tuple, Variable, MultiArc, Expression, Value, ArcAnnotation
@@ -116,8 +118,8 @@ class Pid(object):
                 for _ in range(end, len(self.data)):
                     pid.data.pop(-1)
             elif end < 0:
-                max = len(self.data)
-                for _ in range(max + end, max):
+                length = len(self.data)
+                for _ in range(length + end, length):
                     pid.data.pop(-1)
         return pid
 
@@ -319,7 +321,7 @@ class Pid(object):
         """
         return '.'.join([repr(e) for e in self.data])
 
-tPid = Instance(Pid)
+tPid = Instance(Pid) 
 
 class GeneratorMultiArc(ArcAnnotation):
 

@@ -7,7 +7,6 @@ from neco.utils import should_not_be_called, todo
 import cyast
 import math
 import neco.core.nettypes as coretypes
-from neco import config
 
 def packed_place(cls):
     """ Decorator for packed places.
@@ -139,7 +138,7 @@ class ObjectPlaceType(coretypes.ObjectPlaceType, CythonPlaceType):
         coretypes.ObjectPlaceType.__init__(self,
                                            place_info=place_info,
                                            marking_type=marking_type,
-                                           type=TypeInfo.get('MultiSet'),
+                                           type_info=TypeInfo.get('MultiSet'),
                                            token_type=place_info.type)
 
         self.chunk = marking_type.chunk_manager.new_chunk(marking_type.id_provider.get(self),
@@ -244,7 +243,7 @@ class IntPlaceType(coretypes.PlaceType, CythonPlaceType):
         coretypes.PlaceType.__init__(self,
                                      place_info=place_info,
                                      marking_type=marking_type,
-                                     type=TypeInfo.get('IntPlace'),
+                                     type_info=TypeInfo.get('IntPlace'),
                                      token_type=place_info.type)
 
         self.chunk = marking_type.chunk_manager.new_chunk(marking_type.id_provider.get(self),
@@ -463,7 +462,7 @@ class OneSafePlaceType(coretypes.OneSafePlaceType, CythonPlaceType):
         return []
 
     def hash_expr(self, env, marking_var):
-        hash = "hash({}.{})".format(marking_var.name, self.chunk.get_attribute_name())
+        h = "hash({}.{})".format(marking_var.name, self.chunk.get_attribute_name())
         if self.helper_chunk.packed:
             mask = int(self.helper_chunk.mask())
             bytes_offset, _ = self.helper_chunk.offset()
@@ -474,7 +473,7 @@ class OneSafePlaceType(coretypes.OneSafePlaceType, CythonPlaceType):
         else:
             test = "{}.{}".format(marking_var.name, self.helper_chunk.get_attribute_name())
  
-        return cyast.E("{hash} if {test} else 1".format(hash=hash, test=test))
+        return cyast.E("{hash} if {test} else 1".format(hash=h, test=test))
 
     def eq_expr(self, env, left, right):
         return cyast.Compare(left=left,
@@ -556,11 +555,11 @@ class OneSafePlaceType(coretypes.OneSafePlaceType, CythonPlaceType):
         else:
             helper_expr = cyast.E("{}.{} = 1".format(marking_var.name, self.helper_chunk.get_attribute_name()))
 
-        assign = cyast.Assign(targets=[cyast.E("{}.{}".format(marking_var.name, 
+        assign = cyast.Assign(targets=[cyast.E("{}.{}".format(marking_var.name,
                                                               self.chunk.get_attribute_name()))],
                               value=compiled_token)
         return [helper_expr,
-                cyast.Comment(self.helper_chunk.hint), 
+                cyast.Comment(self.helper_chunk.hint),
                 assign,
                 cyast.Comment(self.chunk.hint)]
 
@@ -643,15 +642,15 @@ class BTPlaceType(coretypes.BTPlaceType, CythonPlaceType):
         coretypes.BTPlaceType.__init__(self,
                                        place_info=place_info,
                                        marking_type=marking_type,
-                                       type=TypeInfo.get('Short'),
+                                       type_info=TypeInfo.get('Short'),
                                        token_type=TypeInfo.get('Short'))
 
         if packed:
             cython_type = TypeInfo.get('Bool')
-            packed=True
+            packed = True
         else:
             cython_type = TypeInfo.get('Short')
-            packed=False
+            packed = False
 
         self.chunk = marking_type.chunk_manager.new_chunk(marking_type.id_provider.get(self),
                                                           cython_type,
@@ -816,7 +815,7 @@ class FlowPlaceType(coretypes.PlaceType, CythonPlaceType):
         coretypes.PlaceType.__init__(self,
                                      place_info=place_info,
                                      marking_type=marking_type,
-                                     type=TypeInfo.get('UnsignedInt'),
+                                     type_info=TypeInfo.get('UnsignedInt'),
                                      token_type=TypeInfo.get('UnsignedInt'))
 
         # this chunk will be updated when adding places
@@ -914,16 +913,10 @@ class FlowPlaceType(coretypes.PlaceType, CythonPlaceType):
                                                   value=value_mask,
                                                   chunk_mask=chunk_mask)),
                 comment ]
-#        
-#        return [ self.pack.gen_set(env = env,
-#                                   marking_var = marking_var,
-#                                   place_type = self,
-#                                   integer = self._places[place_info.name]) ]
 
     def gen_read_flow(self, env, marking_var, place_info):
         
-        value = self._places[place_info.name]
-        byte_offset, bit_offset = self.chunk.offset()
+        byte_offset, _ = self.chunk.offset()
         mask = int(self.chunk.mask())
         attr_name = self.chunk.get_attribute_name()
         return cyast.E("{}.{}[{}] & {}".format(marking_var.name,
@@ -931,9 +924,6 @@ class FlowPlaceType(coretypes.PlaceType, CythonPlaceType):
                                                  byte_offset,
                                                  mask))
         
-#        return self.pack.gen_get_place(env = env,
-#                                       marking_var = marking_var,
-#                                       place_type = self)
 
     def dump_expr(self, env, marking_var, place_info):                
         byte_offset, bit_offset = self.chunk.offset()
@@ -983,8 +973,8 @@ class FlowPlaceTypeHelper(coretypes.PlaceType, CythonPlaceType):
         coretypes.PlaceType.__init__(self,
                                      place_info=place_info,
                                      marking_type=marking_type,
-                                     type=TypeInfo.UnsignedInt,
-                                     token_type=TypeInfo.UnsignedInt)
+                                     type_info=TypeInfo.get('UnsignedInt'),
+                                     token_type=TypeInfo.get('UnsignedInt'))
 
     def get_attribute_name(self):
         return self.flow_place_type.chunk.get_attribute_name()
@@ -1013,8 +1003,8 @@ class FlowPlaceTypeHelper(coretypes.PlaceType, CythonPlaceType):
     def gen_check_flow(self, env, marking_var, place_info, current_flow):
         return self.flow_place_type.gen_check_flow(env, marking_var, place_info, current_flow)
 
-        mask = int(self.pack.field_compatible_mask(self.info, next_flow))
-        return cyast.Builder.EqCompare(current_flow, cyast.E(mask))
+#        mask = int(self.pack.field_compatible_mask(self.info, next_flow))
+#        return cyast.Builder.EqCompare(current_flow, cyast.E(mask))
 
     def gen_update_flow(self, env, marking_var, place_info):
         """ Get an ast representing the flow update.
@@ -1036,143 +1026,143 @@ class FlowPlaceTypeHelper(coretypes.PlaceType, CythonPlaceType):
         return self.flow_place_type.enumerate_tokens(checker_env, loop_var, marking_var, body, self.info)
 
 ################################################################################
-
-@not_revelant
-class PackedPlaceTypes(object):
-    def __init__(self, name, marking_type):
-        self.name = name
-        self.marking_type = marking_type
-        self._bitfield = MaskBitfield(native_width=8)
-
-    @property
-    def type(self):
-        return TypeInfo.UnsignedChar
-
-    def _id_from_place_info(self, place_info):
-        if place_info.flow_control:
-            return self.marking_type.id_provider.get(place_info) + "_f"
-        elif place_info.one_safe:
-            return self.marking_type.id_provider.get(place_info) + "_1s"
-        else:
-            return self.marking_type.id_provider.get(place_info)
-
-    def native_field_count(self):
-        return self._bitfield.native_field_count()
-
-    def get_native_field(self, marking_var, index):
-        return cyast.Subscript(cyast.Attribute(cyast.Name(marking_var.name),
-                                               attr=self.name),
-                               slice=cyast.Index(cyast.Num(index)))
-
-
-    def get_field_native_offset(self, place_type):
-        return self._bitfield.get_field_native_offset(self._id_from_place_info(place_type.info))
-
-    def add_place(self, place_info, bits):
-        self._bitfield.add_field(self._id_from_place_info(place_info), bits)
-
-    def get_fields(self):
-        for field in self._bitfield.get_fields():
-            yield field
-
-    def field_compatible_mask(self, place_info, integer):
-        return self._bitfield.get_field_compatible_mask(self._id_from_place_info(place_info), integer)
-
-
-    def gen_initialise(self, env, marking_var):
-        l = []
-        for index in range(0, self.native_field_count()):
-            l.append(cyast.Assign(targets=[cyast.Subscript(value=cyast.Attribute(value=cyast.Name(marking_var.name),
-                                                                                  attr=self.name),
-                                                            slice=cyast.Index(cyast.Num(index)))],
-                                   value=cyast.Num(0)))
-        return cyast.to_ast(l)
-
-    def gen_get_place(self, env, marking_var, place_type):
-        place_info = place_type.info
-        offset = self._bitfield.get_field_native_offset(self._id_from_place_info(place_info))
-        mask = int(~self._bitfield.get_field_mask(self._id_from_place_info(place_info)))
-        return cyast.BinOp(left=cyast.Subscript(cyast.Attribute(cyast.Name(marking_var.name),
-                                                                attr=self.name),
-                                                slice=cyast.Index(cyast.Num(offset))),
-                           op=cyast.BitAnd(),
-                           right=cyast.E(mask))
-
-    def gen_remove_bit(self, env, marking_var, place_type):
-        field_name = self._id_from_place_info(place_type.info)
-        value = int(self._bitfield.get_field_compatible_mask(field_name, 1))
-        offset = self._bitfield.get_field_native_offset(field_name)
-        e = cyast.AugAssign(target=cyast.Subscript(value=cyast.Attribute(value=cyast.Name(marking_var.name),
-                                                                         attr=self.name),
-                                                   slice=cyast.Index(cyast.Num(offset))),
-                            op=cyast.BitXor(),
-                            value=cyast.Num(value))
-        # e = E(marking_name).attr(self.name).subscript(index=offset).xor_assign(E(value))
-        comment = cyast.Comment("vmask:{vmask:#0{anw}b} - place:{place}".format(vmask=value,
-                                                                                anw=(self._bitfield.native_width + 2),
-                                                                                place=place_type.info.name))
-        return [ e, comment ]
-
-    def gen_set_bit(self, env, marking_var, place_type):
-        field_name = self._id_from_place_info(place_type.info)
-        value = int(self._bitfield.get_field_compatible_mask(field_name, 1))
-        offset = self._bitfield.get_field_native_offset(field_name)
-        e = cyast.AugAssign(target=cyast.Subscript(value=cyast.Attribute(value=cyast.Name(marking_var.name),
-                                                                         attr=self.name),
-                                                   slice=cyast.Index(cyast.Num(offset))),
-                            op=cyast.BitOr(),
-                            value=cyast.Num(value))
-        #e = E(marking_name).attr(self.name).subscript(index=str(offset)).or_assign(E(value))
-        comment = cyast.Builder.Comment("vmask:{vmask:#0{anw}b} - place:{place}".format(vmask=value, anw=(self._bitfield.native_width + 2), place=place_type.info.name))
-        return [ e, comment ]
-
-    def gen_set(self, env, marking_var, place_type, integer):
-        field = self._id_from_place_info(place_type.info)
-        mask = int(self._bitfield.get_field_mask(field))
-        vmask = int(self._bitfield.get_field_compatible_mask(field, integer))
-        offset = self._bitfield.get_field_native_offset(field)
-        #right  = E(marking_name).attr(self.name).subscript(index=str(offset)).bit_and(E(mask)).bit_or(E(vmask))
-        right = cyast.BinOp(left=cyast.BinOp(left=cyast.Subscript(value=cyast.Attribute(value=cyast.Name(marking_var.name),
-                                                                                         attr=self.name),
-                                                                   slice=cyast.Index(cyast.Num(offset))),
-                                              op=cyast.BitAnd(),
-                                              right=cyast.E(mask)),
-                             op=cyast.BitOr(),
-                             right=cyast.E(vmask))
-
-        #e = E(marking_name).attr(self.name).subscript(index=str(offset)).assign(right)
-        e = cyast.Assign(targets=[cyast.Subscript(value=cyast.Attribute(cyast.Name(marking_var.name),
-                                                                        attr=self.name),
-                                                  slice=cyast.Index(cyast.Num(offset)))],
-                         value=right)
-        comment = cyast.Builder.Comment("mask: {mask:#0{anw}b} vmask:{vmask:#0{anw}b} - place:{place}"
-                                        .format(mask=mask, vmask=vmask, anw=(self._bitfield.native_width + 2), place=place_type.info.name))
-        return [ e, comment ]
-
-    def copy_expr(self, env, src_marking_var, dst_marking_var):
-        l = []
-        for index in range(0, self.native_field_count()):
-            right = cyast.Subscript(value=cyast.Attribute(value=cyast.Name(src_marking_var.name),
-                                                          attr=self.name),
-                                    slice=cyast.Index(cyast.Num(index)))
-            left = cyast.Subscript(value=cyast.Attribute(value=cyast.Name(dst_marking_var.name),
-                                                         attr=self.name),
-                                   slice=cyast.Index(cyast.Num(index)))
-            l.append(cyast.Assign(targets=[left],
-                                   value=right))
-        return l
-
-
-    def gen_tests(self, left_marking_var, right_marking_var):
-        """
-        """
-        tests = []
-        for index in range(0, self.native_field_count()):
-            left = cyast.Subscript(value=cyast.Attribute(value=cyast.Name(left_marking_var.name),
-                                                         attr=self.name),
-                                   slice=cyast.Index(cyast.Num(index)))
-            right = cyast.Subscript(value=cyast.Attribute(value=cyast.Name(right_marking_var.name),
-                                                          attr=self.name),
-                                    slice=cyast.Index(cyast.Num(index)))
-            tests.append((left, right,))
-        return tests
+#
+#@not_revelant
+#class PackedPlaceTypes(object):
+#    def __init__(self, name, marking_type):
+#        self.name = name
+#        self.marking_type = marking_type
+#        self._bitfield = MaskBitfield(native_width=8)
+#
+#    @property
+#    def type(self):
+#        return TypeInfo.UnsignedChar
+#
+#    def _id_from_place_info(self, place_info):
+#        if place_info.flow_control:
+#            return self.marking_type.id_provider.get(place_info) + "_f"
+#        elif place_info.one_safe:
+#            return self.marking_type.id_provider.get(place_info) + "_1s"
+#        else:
+#            return self.marking_type.id_provider.get(place_info)
+#
+#    def native_field_count(self):
+#        return self._bitfield.native_field_count()
+#
+#    def get_native_field(self, marking_var, index):
+#        return cyast.Subscript(cyast.Attribute(cyast.Name(marking_var.name),
+#                                               attr=self.name),
+#                               slice=cyast.Index(cyast.Num(index)))
+#
+#
+#    def get_field_native_offset(self, place_type):
+#        return self._bitfield.get_field_native_offset(self._id_from_place_info(place_type.info))
+#
+#    def add_place(self, place_info, bits):
+#        self._bitfield.add_field(self._id_from_place_info(place_info), bits)
+#
+#    def get_fields(self):
+#        for field in self._bitfield.get_fields():
+#            yield field
+#
+#    def field_compatible_mask(self, place_info, integer):
+#        return self._bitfield.get_field_compatible_mask(self._id_from_place_info(place_info), integer)
+#
+#
+#    def gen_initialise(self, env, marking_var):
+#        l = []
+#        for index in range(0, self.native_field_count()):
+#            l.append(cyast.Assign(targets=[cyast.Subscript(value=cyast.Attribute(value=cyast.Name(marking_var.name),
+#                                                                                  attr=self.name),
+#                                                            slice=cyast.Index(cyast.Num(index)))],
+#                                   value=cyast.Num(0)))
+#        return cyast.to_ast(l)
+#
+#    def gen_get_place(self, env, marking_var, place_type):
+#        place_info = place_type.info
+#        offset = self._bitfield.get_field_native_offset(self._id_from_place_info(place_info))
+#        mask = int(~self._bitfield.get_field_mask(self._id_from_place_info(place_info)))
+#        return cyast.BinOp(left=cyast.Subscript(cyast.Attribute(cyast.Name(marking_var.name),
+#                                                                attr=self.name),
+#                                                slice=cyast.Index(cyast.Num(offset))),
+#                           op=cyast.BitAnd(),
+#                           right=cyast.E(mask))
+#
+#    def gen_remove_bit(self, env, marking_var, place_type):
+#        field_name = self._id_from_place_info(place_type.info)
+#        value = int(self._bitfield.get_field_compatible_mask(field_name, 1))
+#        offset = self._bitfield.get_field_native_offset(field_name)
+#        e = cyast.AugAssign(target=cyast.Subscript(value=cyast.Attribute(value=cyast.Name(marking_var.name),
+#                                                                         attr=self.name),
+#                                                   slice=cyast.Index(cyast.Num(offset))),
+#                            op=cyast.BitXor(),
+#                            value=cyast.Num(value))
+#        # e = E(marking_name).attr(self.name).subscript(index=offset).xor_assign(E(value))
+#        comment = cyast.Comment("vmask:{vmask:#0{anw}b} - place:{place}".format(vmask=value,
+#                                                                                anw=(self._bitfield.native_width + 2),
+#                                                                                place=place_type.info.name))
+#        return [ e, comment ]
+#
+#    def gen_set_bit(self, env, marking_var, place_type):
+#        field_name = self._id_from_place_info(place_type.info)
+#        value = int(self._bitfield.get_field_compatible_mask(field_name, 1))
+#        offset = self._bitfield.get_field_native_offset(field_name)
+#        e = cyast.AugAssign(target=cyast.Subscript(value=cyast.Attribute(value=cyast.Name(marking_var.name),
+#                                                                         attr=self.name),
+#                                                   slice=cyast.Index(cyast.Num(offset))),
+#                            op=cyast.BitOr(),
+#                            value=cyast.Num(value))
+#        #e = E(marking_name).attr(self.name).subscript(index=str(offset)).or_assign(E(value))
+#        comment = cyast.Builder.Comment("vmask:{vmask:#0{anw}b} - place:{place}".format(vmask=value, anw=(self._bitfield.native_width + 2), place=place_type.info.name))
+#        return [ e, comment ]
+#
+#    def gen_set(self, env, marking_var, place_type, integer):
+#        field = self._id_from_place_info(place_type.info)
+#        mask = int(self._bitfield.get_field_mask(field))
+#        vmask = int(self._bitfield.get_field_compatible_mask(field, integer))
+#        offset = self._bitfield.get_field_native_offset(field)
+#        #right  = E(marking_name).attr(self.name).subscript(index=str(offset)).bit_and(E(mask)).bit_or(E(vmask))
+#        right = cyast.BinOp(left=cyast.BinOp(left=cyast.Subscript(value=cyast.Attribute(value=cyast.Name(marking_var.name),
+#                                                                                         attr=self.name),
+#                                                                   slice=cyast.Index(cyast.Num(offset))),
+#                                              op=cyast.BitAnd(),
+#                                              right=cyast.E(mask)),
+#                             op=cyast.BitOr(),
+#                             right=cyast.E(vmask))
+#
+#        #e = E(marking_name).attr(self.name).subscript(index=str(offset)).assign(right)
+#        e = cyast.Assign(targets=[cyast.Subscript(value=cyast.Attribute(cyast.Name(marking_var.name),
+#                                                                        attr=self.name),
+#                                                  slice=cyast.Index(cyast.Num(offset)))],
+#                         value=right)
+#        comment = cyast.Builder.Comment("mask: {mask:#0{anw}b} vmask:{vmask:#0{anw}b} - place:{place}"
+#                                        .format(mask=mask, vmask=vmask, anw=(self._bitfield.native_width + 2), place=place_type.info.name))
+#        return [ e, comment ]
+#
+#    def copy_expr(self, env, src_marking_var, dst_marking_var):
+#        l = []
+#        for index in range(0, self.native_field_count()):
+#            right = cyast.Subscript(value=cyast.Attribute(value=cyast.Name(src_marking_var.name),
+#                                                          attr=self.name),
+#                                    slice=cyast.Index(cyast.Num(index)))
+#            left = cyast.Subscript(value=cyast.Attribute(value=cyast.Name(dst_marking_var.name),
+#                                                         attr=self.name),
+#                                   slice=cyast.Index(cyast.Num(index)))
+#            l.append(cyast.Assign(targets=[left],
+#                                   value=right))
+#        return l
+#
+#
+#    def gen_tests(self, left_marking_var, right_marking_var):
+#        """
+#        """
+#        tests = []
+#        for index in range(0, self.native_field_count()):
+#            left = cyast.Subscript(value=cyast.Attribute(value=cyast.Name(left_marking_var.name),
+#                                                         attr=self.name),
+#                                   slice=cyast.Index(cyast.Num(index)))
+#            right = cyast.Subscript(value=cyast.Attribute(value=cyast.Name(right_marking_var.name),
+#                                                          attr=self.name),
+#                                    slice=cyast.Index(cyast.Num(index)))
+#            tests.append((left, right,))
+#        return tests

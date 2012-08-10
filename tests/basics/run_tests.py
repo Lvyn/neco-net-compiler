@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 from StringIO import StringIO
-from glob import glob, iglob
+from glob import glob
 from snakes.nets import dot # @UnusedImport needed to rebuild markings
 import compare
 import neco
@@ -50,7 +50,7 @@ class Entry:
 class TestBackend(unittest.TestCase):
     """ Base class for backend testing. """
     
-    def __init__(self,  methodName='runTest'):
+    def __init__(self, methodName='runTest'):
         unittest.TestCase.__init__(self, methodName)
         for attr in self.__class__.__dict__.keys():
             if attr.startswith('test_'):
@@ -69,13 +69,13 @@ class TestBackend(unittest.TestCase):
 class PythonBackend(TestBackend):
     """ Class that will contain Python backend tests. """
     
-    def __init__(self,  methodName='runTest'):
+    def __init__(self, methodName='runTest'):
         TestBackend.__init__(self, methodName)
         
 class CythonBackend(TestBackend):
     """ Class that will contain Cython backend tests. """
     
-    def __init__(self,  methodName='runTest'):
+    def __init__(self, methodName='runTest'):
         TestBackend.__init__(self, methodName)
 
 class NecoTestCase(object):
@@ -86,9 +86,9 @@ class NecoTestCase(object):
         self.test = None
         self.config = config
         if entry.ext == '.py':
-            self.load=self.load_net
+            self.load = self.load_net
         else:
-            self.load=self.load_abcd
+            self.load = self.load_abcd
  
 
     def __call__(self):
@@ -224,4 +224,4 @@ if __name__ == '__main__':
         exit(0)
         
         #os.remove(path)
-    unittest.main(verbosity = 2)
+    unittest.main(verbosity=2)

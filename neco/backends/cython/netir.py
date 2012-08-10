@@ -392,7 +392,7 @@ class CompilerVisitor(coreir.CompilerVisitor):
         stmts = [ self.compile(node.body) ]
 
         decl = CVarSet()
-        input_arcs = node.transition_info.inputs
+        input_arcs = node.transition_info.input_arcs
         for input_arc in input_arcs:
             decl.extend(self.try_gen_type_decl(input_arc))
 

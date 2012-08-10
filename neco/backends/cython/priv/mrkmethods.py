@@ -67,8 +67,8 @@ class CopyGenerator(MarkingTypeMethodGenerator):
 
         builder = cyast.Builder()
         vp = VariableProvider()
-        self_var = vp.new_variable(type=marking_type.type, name='self')
-        marking_var = vp.new_variable(type=marking_type.type, name='m')
+        self_var = vp.new_variable(variable_type=marking_type.type, name='self')
+        marking_var = vp.new_variable(variable_type=marking_type.type, name='m')
 
         builder.begin_FunctionCDef( name = "copy",
                                     args = cyast.A(self_var.name),
@@ -214,7 +214,7 @@ def StrGenerator(MarkingTypeMethodGenerator):
 
         builder.begin_FunctionDef( name = "__str__",
                                    args = cyast.A(self_var.name, type=env.type2str(marking_type.type)))
-        visited = set()
+
         builder.emit(cyast.E('s = ""'))
         first = True
         for (place_name, place_type) in items:
@@ -288,7 +288,7 @@ class DumpExprGenerator(MarkingTypeMethodGenerator):
                                   args=cyast.A('self'))
 
         builder.emit(cyast.E('s = ["{"]'))
-        for (i, (place_name, place_type)) in enumerate(items):
+        for (place_name, place_type) in items:
             if place_type.is_revelant:
                 builder.emit(cyast.stmt(cyast.Call(func = cyast.E('s.append'),
                                                    args = [ cyast.BinOp(left=cyast.Str(s=repr(place_name) + " : "),

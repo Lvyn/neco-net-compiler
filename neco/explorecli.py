@@ -6,21 +6,20 @@ The loading of the module will raise a runtime error
 if loaded with wrong python version.
 """
 
-import sys
-if (2, 7, 0) <= sys.version_info < (3, 0, 0) :
-    VERSION = (2, 7)
-else:
-    raise RuntimeError("unsupported python version")
-
+from neco import g_logo
+from neco.utils import fatal_error
 from time import time
 import argparse
 import bz2
 import gzip
 import imp
 import os
-from neco import g_logo
-from neco.utils import fatal_error
-import neco.config as config
+import sys
+if (2, 7, 0) <= sys.version_info < (3, 0, 0) :
+    VERSION = (2, 7)
+else:
+    raise RuntimeError("unsupported python version")
+
 
 def try_open_file(file_name):
     """ Helper function to open files with compression support (bz2, gz).
@@ -61,7 +60,7 @@ class Main(object):
                                          argument_default=argparse.SUPPRESS,
                                          formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-        parser.add_argument('--dump', '-d', default=None, dest='dump', metavar='DUMPFILE', type=str,
+        parser.add_argument('--dump', '-d', default=None, dest='dump', metavar='DUMPFILE', type_info=str,
                             help='dump markings to file (supports bz2 and gz compression)')
 
         parser.add_argument('--graph', '-g', default=None, dest='graph', nargs=2, metavar=('MAPFILE',
@@ -173,7 +172,7 @@ class Main(object):
         net = self.compiled_net
 
         start = time()
-        graph, map = net.state_space_graph()
+        graph, _ = net.state_space_graph()
         end = time()
         print "exploration time: ", end - start
         print "len visited = %d" % (len(map.keys()))

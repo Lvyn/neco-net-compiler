@@ -1,15 +1,14 @@
 """ Petri net info structures. """
-
-import inspect
-import types
-# from snakes.nets import *
-# import snakes.typing as type
-from neco.extsnakes import *
 from collections import defaultdict
-import snakes.plugins.status as status
-from abc import *
-from neco.utils import multidict, TypeMatch, Enum, RegDict
-import neco.config as config
+from abc import ABCMeta, abstractmethod
+from neco.core import netir
+from neco.extsnakes import Pid
+from neco.utils import Enum, TypeMatch, RegDict
+from snakes.nets import BlackToken, dot, Place
+from snakes.plugins import status
+from snakes.typing import Instance, tNatural, CrossProduct, tAll
+import sys
+
 
 TypeKind = Enum('AnyType', 'TupleType', 'UserType')
 
@@ -17,17 +16,17 @@ class TypeInfo(object):
     """ Class representing and providing types.
     """
 
-    def __init__(self, kind = TypeKind.AnyType, subtypes = [], type_name = ""):
-        """ build a new type.
+    def __init__(self, kind=TypeKind.AnyType, subtypes=[], type_name=""):
+        """ build a new type_info.
 
-        @param kind: type kind
-        @type kind: C{TypeKind}
+        @param kind: type_info kind
+        @type_info kind: C{TypeKind}
 
         @param subtypes: (available if kind is TypeKind.TupleType) list of subtypes.
-        @type subtypes: C{list<TypeInfo>}
+        @type_info subtypes: C{list<TypeInfo>}
 
-        @param type_name: (available if kind is TypeKind.UserType) type name.
-        @type type_name: C{str}
+        @param type_name: (available if kind is TypeKind.UserType) type_info name.
+        @type_info type_name: C{string}
         """
         self._kind = kind
 
@@ -53,7 +52,7 @@ class TypeInfo(object):
         @return new user type.
         @rtype: C{TypeInfo}
         """
-        return cls(kind=TypeKind.UserType, type_name = type_name)
+        return cls(kind=TypeKind.UserType, type_name=type_name)
 
     @classmethod
     def TupleType(cls, subtypes):
@@ -64,7 +63,7 @@ class TypeInfo(object):
         @return: new tuple type
         @rtype: C{TypeInfo}
         """
-        return cls(kind=TypeKind.TupleType, subtypes = subtypes)
+        return cls(kind=TypeKind.TupleType, subtypes=subtypes)
 
     def __len__(self):
         """ Type length.
@@ -95,7 +94,7 @@ class TypeInfo(object):
         if self.is_UserType:
             return str(self._type_name)
         elif self.is_TupleType:
-            return "(%s)" % ", ".join( [ str(e) for e in self._subtypes ] )
+            return "(%s)" % ", ".join([ str(e) for e in self._subtypes ])
         elif self.is_AnyType:
             return 'AnyType'
 
@@ -151,10 +150,10 @@ class TypeInfo(object):
         @return: registered type.
         @rtype: C{TypeInfo}
         """
-        t = TypeInfo(kind = TypeKind.UserType, type_name = type_name)
+        t = TypeInfo(kind=TypeKind.UserType, type_name=type_name)
         setattr(cls, type_name, t)
         # gen methods and properties
-        setattr(cls, "is_{property_name}".format(property_name = type_name),
+        setattr(cls, "is_{property_name}".format(property_name=type_name),
                 property(lambda self : self._kind == TypeKind.UserType and self._type_name == type_name))
         return t
 
@@ -178,7 +177,7 @@ class TypeInfo(object):
         elif checker == Instance(Pid):
             return TypeInfo.Pid
         elif isinstance(checker, CrossProduct):
-            return TypeInfo.TupleType( [ TypeInfo.from_snakes_checker( t ) for t in checker._types ] )
+            return TypeInfo.TupleType([ TypeInfo.from_snakes_checker(t) for t in checker._types ])
         elif checker == Instance(object) or checker == tAll:
             return TypeInfo.AnyType
         else:
@@ -205,7 +204,7 @@ class TypeInfo(object):
                 return TypeInfo.String
 
             def match_tuple(self, raw):
-                return TypeInfo.TupleType( [ TypeInfo.from_raw( elt ) for elt in raw ] )
+                return TypeInfo.TupleType([ TypeInfo.from_raw(elt) for elt in raw ])
 
             def default(self, raw):
                 return TypeInfo.AnyType
@@ -296,7 +295,7 @@ class TypeInfo(object):
 
     @property
     def user_type_name(self):
-        assert( self.is_UserType )
+        assert(self.is_UserType)
         return self._type_name
 
 TypeInfo.AnyType = TypeInfo(kind=TypeKind.AnyType)
@@ -317,7 +316,7 @@ class TokenInfo(object):
 
     __metaclass__ = ABCMeta
 
-    def __init__(self, raw_token, kind = None, type = None):
+    def __init__(self, raw_token, kind=None, token_type=None):
         """
         """
         self._raw = raw_token
@@ -327,9 +326,9 @@ class TokenInfo(object):
             assert kind in TokenKind
             self._kind = kind
 
-        if type != None:
-            assert isinstance(type, TypeInfo)
-            self._type = type
+        if token_type != None:
+            assert isinstance(token_type, TypeInfo)
+            self._type = token_type
         else:
             self._type = TypeInfo.from_raw(raw_token)
 
@@ -341,9 +340,9 @@ class TokenInfo(object):
     def __repr__(self):
         return "TokenInfo(raw_token=%s, kind=%s, type=%s)" % (repr(self._raw), repr(self._kind), repr(self._type))
 
-    def update_type(self, type):
-        assert(isinstance(type, TypeInfo))
-        self._type = type
+    def update_type(self, token_type):
+        assert(isinstance(token_type, TypeInfo))
+        self._type = token_type
 
     @abstractmethod
     def base_names(self):
@@ -380,27 +379,27 @@ class TokenInfo(object):
 
     @classmethod
     def from_raw(cls, raw_token):
-        type = TypeInfo.from_raw(raw_token)
-        if type.is_TupleType:
-            return TupleInfo( [ cls.from_raw(c) for c in raw_token ] , type = type )
+        raw_type = TypeInfo.from_raw(raw_token)
+        if raw_type.is_TupleType:
+            return TupleInfo([ cls.from_raw(c) for c in raw_token ] , tuple_type=raw_type)
         else:
-            return ValueInfo(raw_token, type = type)
+            return ValueInfo(raw_token, value_type=raw_type)
 
     @classmethod
     def from_snakes(cls, snk_obj):
         class matcher(TypeMatch):
-            def match_Value(_, v):
+            def match_Value(self, v):
                 return cls.from_raw(v.value)
 
-            def match_Variable(_, v):
+            def match_Variable(self, v):
                 if v.name == "dot":
-                    return ValueInfo( dot, type = TypeInfo.BlackTokenType )
+                    return ValueInfo(dot, type=TypeInfo.BlackTokenType)
                 return VariableInfo(v.name)
 
-            def match_Expression(_, e):
+            def match_Expression(self, e):
                 return ExpressionInfo(e._str)
 
-            def match_Tuple(_, t):
+            def match_Tuple(self, t):
                 tpl = TupleInfo([])
                 for c in t._components:
                     cinfo = cls.from_snakes(c)
@@ -416,13 +415,14 @@ class ValueInfo(TokenInfo):
     """ values
     """
 
-    def __init__(self, value_data, *args, **kwargs):
+    def __init__(self, value_data, value_type=None):
         """ builds a new Value from raw data
 
         @param value_data: data
-        @type value_data: C{object}
+        @type_info value_data: C{object}
         """
-        TokenInfo.__init__(self, value_data, *args, kind = TokenKind.Value, **kwargs)
+        value_type = value_type if value_type else TypeInfo.AnyType 
+        TokenInfo.__init__(self, value_data, kind=TokenKind.Value, token_type=value_type)
 
     def __repr__(self):
         return "ValueInfo(value_data=%s, type=%s)" % (repr(self._raw), repr(self.type))
@@ -438,11 +438,11 @@ class ValueInfo(TokenInfo):
 
 class VariableInfo(TokenInfo):
     """ variables """
-    def __init__(self, name, type = None):
+    def __init__(self, name, variable_type=None):
         TokenInfo.__init__(self,
                            object(), # dummy value
-                           kind = TokenKind.Variable,
-                           type = type)
+                           kind=TokenKind.Variable,
+                           token_type=variable_type)
         self._name = name
         self._localname = name
 
@@ -465,7 +465,7 @@ class VariableInfo(TokenInfo):
 class ExpressionInfo(TokenInfo):
     """ expressions """
     def __init__(self, s):
-        TokenInfo.__init__(self, s, kind = TokenKind.Expression)
+        TokenInfo.__init__(self, s, kind=TokenKind.Expression)
 
     def variables(self):
         return defaultdict(lambda : 0) # To do
@@ -482,8 +482,11 @@ class ExpressionInfo(TokenInfo):
 ################################################################################
 
 class TupleInfo(TokenInfo):
-    def __init__(self, components = [], *args, **kwargs):
-        TokenInfo.__init__(self, components, *args, kind = TokenKind.Tuple, **kwargs)
+    def __init__(self, components=None, tuple_type=None):
+        components = components if components else []
+        tuple_type = tuple_type if tuple_type else TypeInfo.AnyType
+
+        TokenInfo.__init__(self, components, kind=TokenKind.Tuple, token_type=tuple_type)
         self.components = components
 
     def variables(self):
@@ -494,7 +497,7 @@ class TupleInfo(TokenInfo):
         return vardict
 
     def __repr__(self):
-        return "TupleInfo(components=%s)" % repr( [ c for c in self.components ] )
+        return "TupleInfo(components=%s)" % repr([ c for c in self.components ])
 
     def __str__(self):
         return "TupleInfo(%s)" % (", ".join([ str(c) for c in self.components]))
@@ -520,13 +523,13 @@ def build_tuple(info):
     @type info: C{netir._AST}
     """
     if info.is_tuple():
-        return netir.Tuple( components = [ build_tuple(component) for component in info.components ])
+        return netir.Tuple(components=[ build_tuple(component) for component in info.components ])
 
     elif info.is_variable():
-        return netir.Name( info.name )
+        return netir.Name(info.name)
 
     elif info.is_value():
-        return netir.PyExpr( info.value )
+        return netir.PyExpr(info.value)
 
     else:
         raise NotImplementedError, info.__class__
@@ -542,88 +545,89 @@ class ArcInfo(object):
         self.arc_annotation = arc_annotation
         self._vars = defaultdict(lambda : 0)
         self._data = RegDict()
-
+        
+        arc_info = self
         class matcher(TypeMatch):
             # variables
-            def match_Variable(_, arc_annotation):
-                # to do, infer type from inputs
+            def match_Variable(self, arc_annotation):
+                # to do, infer type_info from input_arcs
                 if arc_annotation.name == "dot":
-                    self.value = ValueInfo( dot, type = TypeInfo.BlackToken )
-                    self.kind = ArcKind.Value
+                    arc_info.value = ValueInfo(dot, value_type=TypeInfo.BlackToken)
+                    arc_info.kind = ArcKind.Value
                     # no variables
                 else:
-                    self.variable = VariableInfo( name = arc_annotation.name )
-                    if self.is_input:
-                        self.variable.update_type( self.place_info.type )
-                    self.kind = ArcKind.Variable
-                    self._vars[arc_annotation.name] += 1
+                    arc_info.variable = VariableInfo(name=arc_annotation.name)
+                    if arc_info.is_input:
+                        arc_info.variable.update_type(arc_info.place_info.type)
+                    arc_info.kind = ArcKind.Variable
+                    arc_info._vars[arc_annotation.name] += 1
 
             # values
-            def match_Value(_, arc_annotation):
-                self.value = ValueInfo( arc_annotation.value )
-                self.kind = ArcKind.Value
-                self._vars = {}
+            def match_Value(self, arc_annotation):
+                arc_info.value = ValueInfo(arc_annotation.value)
+                arc_info.kind = ArcKind.Value
+                arc_info._vars = {}
 
             # tests
-            def match_Test(_, arc_annotation):
-                self.annotation = arc_annotation._annotation
-                self.kind = ArcKind.Test
-                inner = TokenInfo.from_snakes( self.annotation )
-                self.inner = inner
+            def match_Test(self, arc_annotation):
+                arc_info.annotation = arc_annotation._annotation
+                arc_info.kind = ArcKind.Test
+                inner = TokenInfo.from_snakes(arc_info.annotation)
+                arc_info.inner = inner
 
                 if inner.is_Value:
-                    self.value = inner
+                    arc_info.value = inner
                 elif inner.is_Variable:
-                    self.variable = inner
+                    arc_info.variable = inner
                 elif inner.is_Tuple:
-                    self.tuple = inner
+                    arc_info.tuple = inner
                 else:
                     raise NotImplementedError, inner
 
-                if self.is_input and self.inner.is_Variable:
-                    self.inner.update_type(self.place_info.type)
-                self._vars = self.inner.variables()
+                if arc_info.is_input and arc_info.inner.is_Variable:
+                    arc_info.inner.update_type(arc_info.place_info.type)
+                arc_info._vars = arc_info.inner.variables()
 
             # flush
-            def match_Flush(_, arc_annotation):
-                self.annotation = arc_annotation._annotation
-                self.kind = ArcKind.Flush
-                self.inner = TokenInfo.from_snakes(self.annotation)
-                self._vars = self.inner.variables()
+            def match_Flush(self, arc_annotation):
+                arc_info.annotation = arc_annotation._annotation
+                arc_info.kind = ArcKind.Flush
+                arc_info.inner = TokenInfo.from_snakes(arc_info.annotation)
+                arc_info._vars = arc_info.inner.variables()
 
             # expression
-            def match_Expression(_, arc_annotation):
-                self.kind = ArcKind.Expression
-                self.expr = TokenInfo.from_snakes( arc_annotation )
-                self._vars = self.expr.variables() # may be bad if input
+            def match_Expression(self, arc_annotation):
+                arc_info.kind = ArcKind.Expression
+                arc_info.expr = TokenInfo.from_snakes(arc_annotation)
+                arc_info._vars = arc_info.expr.variables() # may be bad if input
 
             # tuple
-            def match_Tuple(_, arc_annotation):
-                self.kind = ArcKind.Tuple
-                self.tuple = TokenInfo.from_snakes( arc_annotation )
-                if self.is_input:
-                    self.tuple.update_type( self.place_info.type )
-                self._vars = self.tuple.variables()
+            def match_Tuple(self, arc_annotation):
+                arc_info.kind = ArcKind.Tuple
+                arc_info.tuple = TokenInfo.from_snakes(arc_annotation)
+                if arc_info.is_input:
+                    arc_info.tuple.update_type(arc_info.place_info.type)
+                arc_info._vars = arc_info.tuple.variables()
 
             # multiarc
-            def match_MultiArc(_, arc_annotation):
-                self.kind = ArcKind.MultiArc
-                self.sub_arcs = [ ArcInfo( place_info, annotation, is_input )
+            def match_MultiArc(self, arc_annotation):
+                arc_info.kind = ArcKind.MultiArc
+                arc_info.sub_arcs = [ ArcInfo(place_info, annotation, is_input)
                                   for annotation in arc_annotation._components ]
 
-                vardict = self._vars
-                for arc in self.sub_arcs:
+                vardict = arc_info._vars
+                for arc in arc_info.sub_arcs:
                     for name, occurences in arc.variables().iteritems():
                         vardict[name] += occurences
-            def match_GeneratorMultiArc(_, arc_annotation):
-                self.kind = ArcKind.GeneratorMultiArc
-                self.sub_arcs = [ ArcInfo( place_info, annotation, is_input )
+            def match_GeneratorMultiArc(self, arc_annotation):
+                arc_info.kind = ArcKind.GeneratorMultiArc
+                arc_info.sub_arcs = [ ArcInfo(place_info, annotation, is_input)
                                   for annotation in arc_annotation.components ]
-                self.pid = VariableInfo(name = arc_annotation.pid.name, type = TypeInfo.Pid)
-                self.counter  = VariableInfo(name = arc_annotation.counter.name, type = TypeInfo.Int)
-                self.new_pids = [ VariableInfo(name = pid.name, type = TypeInfo.Pid) for pid in arc_annotation.new_pids ]
+                arc_info.pid = VariableInfo(name=arc_annotation.pid.name, variable_type=TypeInfo.Pid)
+                arc_info.counter = VariableInfo(name=arc_annotation.counter.name, variable_type=TypeInfo.Int)
+                arc_info.new_pids = [ VariableInfo(name=pid.name, variable_type=TypeInfo.Pid) for pid in arc_annotation.new_pids ]
 
-            def default(_, arc_annotation):
+            def default(self, arc_annotation):
                 raise NotImplementedError, arc_annotation.__class__
         matcher().match(arc_annotation)
 
@@ -650,16 +654,16 @@ class ArcInfo(object):
             # TO DO tuple
             return []
 
-    def type_vars(self, vars):
+    def type_vars(self, variables):
         """
 
-        @param vars:
-        @type vars: C{}
+        @param variables:
+        @type variables: C{}
         """
         if self.is_Variable:
             name = self.variable.name
             other = None
-            for v in vars:
+            for v in variables:
                 if v.name == name:
                     other = v
             if other:
@@ -742,24 +746,24 @@ class TransitionInfo(object):
         self._process_name = ""
         self.generator_arc = None
 
-        inputs = []
+        input_arcs = []
         for place, arc_annotation in trans.input():
             place_info = PlaceInfo.instance[place.name]
             place_info.add_post(self)
             self.add_pre(place_info)
-            input = ArcInfo( place_info, arc_annotation, is_input = True)
-            inputs.append( input )
+            input_arc = ArcInfo(place_info, arc_annotation, is_input=True)
+            input_arcs.append(input_arc)
             self._process_name = place_info.process_name
 
-        self.inputs = inputs
+        self.input_arcs = input_arcs
 
         outputs = []
         for place, arc_annotation in trans.output():
             place_info = PlaceInfo.instance[place.name]
             place_info.add_pre(self)
             self.add_post(place_info)
-            output = ArcInfo( place_info, arc_annotation, is_input = False)
-            outputs.append( output )
+            output = ArcInfo(place_info, arc_annotation, is_input=False)
+            outputs.append(output)
             if output.is_GeneratorMultiArc:
                 self.generator_arc = output
 
@@ -769,15 +773,15 @@ class TransitionInfo(object):
         for var in trans.vars():
             vardict[var] = 1
 
-        for input in self.inputs:
-            for name, occurences in input.variables().iteritems():
+        for input_arc in self.input_arcs:
+            for name, occurences in input_arc.variables().iteritems():
                 vardict[name] += occurences
 
         self._vars = vardict
 
         input_vars = []
-        for input in self.inputs:
-            input_vars.extend(input.variables_info)
+        for input_arc in self.input_arcs:
+            input_vars.extend(input_arc.variables_info)
 
         for output in self.outputs:
             output.type_vars(input_vars)
@@ -791,9 +795,9 @@ class TransitionInfo(object):
 
     @property
     def input_multi_places(self):
-        for input in self.inputs:
-            info = input.place_info
-            if input.is_MultiArc:
+        for input_arc in self.input_arcs:
+            info = input_arc.place_info
+            if input_arc.is_MultiArc:
                 yield info
 
     def variable_informations(self):
@@ -804,8 +808,8 @@ class TransitionInfo(object):
         l.append("transition %s" % self.name)
         l.append("********************************************************************************")
 
-        for input in self.inputs:
-            l.append(str(input))
+        for input_arc in self.input_arcs:
+            l.append(str(input_arc))
 
         for output in self.outputs:
             l.append(str(output))
@@ -836,7 +840,7 @@ class TransitionInfo(object):
                 return 5
             else:
                 return 6
-        self.inputs.sort(key = transform )
+        self.input_arcs.sort(key=transform)
 
     def shared_input_variables(self):
         variables = self.input_variables()
@@ -847,16 +851,16 @@ class TransitionInfo(object):
 
     def input_variables(self):
         variables = defaultdict(lambda : 0)
-        for input in self.inputs:
-            for var, occurences in input.variables().iteritems():
+        for input_arc in self.input_arcs:
+            for var, occurences in input_arc.variables().iteritems():
                 variables[var] += occurences
         return variables
 
     def input_variable_by_name(self, name):
-        for input in self.inputs:
-            if input.is_Variable:
-                if input.variable.name == name:
-                    return input.variable
+        for input_arc in self.input_arcs:
+            if input_arc.is_Variable:
+                if input_arc.variable.name == name:
+                    return input_arc.variable
         return None
 
     def add_pre(self, place_info):
@@ -893,9 +897,9 @@ class TransitionInfo(object):
         @rtype: C{set}
         """
         mod = set([])
-        for input in self.inputs:
-            if not input.is_Test:
-                mod.add(input.place_info)
+        for input_arc in self.input_arcs:
+            if not input_arc.is_Test:
+                mod.add(input_arc.place_info)
 
         for output in self.outputs:
             if not output.is_Test:
@@ -915,10 +919,10 @@ class PlaceInfo(object):
         if not self._1safe:
             try:
                 capacity = place.label('capacity') if hasattr(place, 'label') else None
-            except KeyError as e: capacity = None
+            except KeyError: capacity = None
 
             if capacity:
-                (low, high) = capacity
+                (_, high) = capacity
                 if high == 1:
                     self._1safe = True
 
@@ -946,7 +950,7 @@ class PlaceInfo(object):
             else:
                 self.flow_control = False
         elif hasattr(place, 'flow_control'):
-            self.flow_control= place.flow_control
+            self.flow_control = place.flow_control
         else:
             self.flow_control = flow_control
 
@@ -967,9 +971,9 @@ class PlaceInfo(object):
         for key, value in state.iteritems():
             setattr(self, key, value)
 
-    def update_type(self, type):
-        assert(isinstance(type, TypeInfo))
-        self._type = type
+    def update_type(self, place_type):
+        assert(isinstance(place_type, TypeInfo))
+        self._type = place_type
 
     @property
     def process_name(self):
@@ -988,7 +992,7 @@ class PlaceInfo(object):
         return self._type
 
     @classmethod
-    def Dummy(cls, name, one_safe = False, process_name = None, flow_control = False):
+    def Dummy(cls, name, one_safe=False, process_name=None, flow_control=False):
         place = Place(name)
         return PlaceInfo(place, one_safe=one_safe, flow_control=flow_control, process_name=process_name)
 
@@ -1005,14 +1009,14 @@ class PlaceInfo(object):
         if type_max == 0: type_max = 1
 
         return ("place: {name:{name_max}} - one_safe: {one_safe:1} - flow: {flow_control:1} - process: {process_name:{process_name_max}} - type: {type:{type_max}}"
-                .format(name = self.name,
-                        one_safe = self.one_safe,
-                        flow_control = self.flow_control,
-                        process_name = self._process_name,
-                        type = str(self.type),
-                        name_max = name_max,
-                        process_name_max = process_name_max,
-                        type_max = type_max))
+                .format(name=self.name,
+                        one_safe=self.one_safe,
+                        flow_control=self.flow_control,
+                        process_name=self._process_name,
+                        type=str(self.type),
+                        name_max=name_max,
+                        process_name_max=process_name_max,
+                        type_max=type_max))
 
 
     def add_pre(self, transition_info):
@@ -1051,16 +1055,16 @@ class NetInfo(object):
         self.declare = getattr(net, '_declare', [])
         self.places = []
         for p in net.place():
-            self.places.append( PlaceInfo(p) )
+            self.places.append(PlaceInfo(p))
 
         self.transitions = []
         for t in net.transition():
-            self.transitions.append( TransitionInfo(t) )
+            self.transitions.append(TransitionInfo(t))
 
         for trans in self.transitions:
-            for input in trans.inputs:
-                if input.is_Flush:
-                    input.place_info.update_type(TypeInfo.AnyType)
+            for input_arc in trans.input_arcs:
+                if input_arc.is_Flush:
+                    input_arc.place_info.update_type(TypeInfo.AnyType)
             for output in trans.outputs:
                 if output.is_Flush:
                     output.place_info.update_type(TypeInfo.AnyType)
@@ -1078,8 +1082,8 @@ class NetInfo(object):
 
         self.process_info = []
         for process_name in process_names:
-            self.process_info.append(ProcessInfo(name = process_name,
-                                                 net_info = self))
+            self.process_info.append(ProcessInfo(name=process_name,
+                                                 net_info=self))
 
 
     def place_by_name(self, name):
@@ -1111,16 +1115,16 @@ class AtomInfo(object):
         cls.__next_id__ += 1
         return new_id
 
-    def __init__(self, name, place_names, id=None):
+    def __init__(self, name, place_names, identifier=None):
         """ Create a new atom inforamtion carying object.
 
         @param name: name of the atom
         @param place_names: places used to compute the truth value of the atom.
-        @type name: C{str}
+        @type_info name: C{string}
         """
         self._name = name
         self._place_names = place_names
-        self._id = self.__class__._new_id() if not id else id
+        self._id = self.__class__._new_id() if not identifier else identifier
 
     @property
     def id(self):
@@ -1153,7 +1157,7 @@ class ProcessInfo(object):
         """ Build a new ProcessInfo structure.
 
         @param name: process name
-        @type name: C{str}
+        @type_info name: C{string}
         """
         self._name = name
         # retrieve places
@@ -1171,7 +1175,7 @@ class ProcessInfo(object):
 
         self.transitions = []
         for transition in net_info.transitions:
-            for arc in transition.inputs:
+            for arc in transition.input_arcs:
                 place = arc.place_info
                 if place.process_name == self.name:
                     self.transitions.append(transition)
@@ -1235,7 +1239,7 @@ class VariableProvider(object):
     """
     __slots__ = ('_wordset', '_next', '_variables')
 
-    def __init__(self, wordset = None):
+    def __init__(self, wordset=None):
         """ Initialise provider.
 
         The provider will produce new names and ensures that they do
@@ -1243,17 +1247,17 @@ class VariableProvider(object):
         new variables appear.
 
         @param wordset: names to ignore.
-        @type wordset: C{wordset}
+        @type_info wordset: C{wordset}
         """
         self._wordset = wordset if wordset else set()
         self._next = 0
 
-    def new_variable(self, type = None, name = None):
-        var_name = self._new_name(name=name)
-        var_type = type if type else TypeInfo.AnyType
-        return VariableInfo(var_name, var_type)
+    def new_variable(self, variable_type=None, name=None):
+        variable_name = self._new_name(name=name)
+        variable_type = variable_type if variable_type else TypeInfo.AnyType
+        return VariableInfo(variable_name, variable_type)
 
-    def _new_name(self, name = None):
+    def _new_name(self, name=None):
         """ Produce a new variable name.
 
         @return new variable name
@@ -1264,24 +1268,24 @@ class VariableProvider(object):
                 self._wordset.add(name)
                 return name
             else:
-                next = self._next
+                next_elt = self._next
                 while True:
-                    final_name = '{}_v{}'.format(name, next)
-                    next += 1
+                    final_name = '{}_v{}'.format(name, next_elt)
+                    next_elt += 1
                     if not final_name in self._wordset:
                         break
-                self._next = next
+                self._next = next_elt
                 self._wordset.add(final_name)
                 print >> sys.stderr, "(W) cannot introduce a variable called {}, using {} instead.".format(name, final_name)
                 return final_name
 
-        next = self._next
+        next_elt = self._next
         while True:
-            name = '_v{}'.format(next)
-            next += 1
+            name = '_v{}'.format(next_elt)
+            next_elt += 1
             if not name in self._wordset:
                 break
-        self._next = next
+        self._next = next_elt
         self._wordset.add(name)
         return name
 
@@ -1298,9 +1302,9 @@ class SharedVariableHelper(VariableProvider):
         and a word set.
 
         @param shared: shared variables with occurences.
-        @type shared: C{dict} : VariableInfo -> int
+        @type_info shared: C{dict} : VariableInfo -> int
         @param wordset: word set representing existing symbols.
-        @type wordset: C{WordSet}
+        @type_info wordset: C{WordSet}
         """
         VariableProvider.__init__(self, wordset)
         self._shared = shared
@@ -1364,8 +1368,8 @@ class SharedVariableHelper(VariableProvider):
             self._variables[variable.name] = [ variable ]
             return variable
 
-    def new_variable(self, type = None):
-        new_var = VariableProvider.new_variable(self, type)
+    def new_variable(self, variable_type=None):
+        new_var = VariableProvider.new_variable(self, variable_type)
         self._variables[new_var.name] = [ new_var ]
         return new_var
 

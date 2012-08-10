@@ -32,7 +32,7 @@ class UnknownBackend(Exception):
         """ Initializer.
 
         @param backend: backend name
-        @type backend: C{str}
+        @type_info backend: C{string}
         """
         self.backend = backend
 
