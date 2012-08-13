@@ -140,11 +140,11 @@ class OneSafePlaceType(coretypes.OneSafePlaceType, PythonPlaceType):
 
     def copy_stmt(self, env, dst_marking_var, src_marking_var):
         env.add_import('copy')
-        return "{} = copy.deepcopy({})".format(self.field.access_from(dst_marking_var),
-                                               self.field.access_from(src_marking_var))
+        return pyast.E("{} = copy.deepcopy({})".format(self.field.access_from(dst_marking_var),
+                                                       self.field.access_from(src_marking_var)))
 
     def dump_expr(self, env, marking_var):
-        place_expr = self.place_expr(env, marking_var)
+        place_expr = pyast.E(self.field.access_from(marking_var))
         return pyast.IfExp(test=place_expr,
                            body=pyast.BinOp(left=pyast.Str('['),
                                             op=pyast.Add(),
@@ -155,10 +155,7 @@ class OneSafePlaceType(coretypes.OneSafePlaceType, PythonPlaceType):
                            orelse=pyast.Str('[]'))
 
     def enumerate(self, env, marking_var, token_var, compiled_body):
-        place_expr = env.marking_type.gen_get_place(env=env,
-                                                    marking_var=marking_var,
-                                                    place_name=self.info.name,
-                                                    mutable=False)
+        place_expr = pyast.E(self.field.access_from(marking_var))
         getnode = pyast.Assign(targets=[pyast.Name(id=token_var.name)],
                                value=place_expr)
         ifnode = pyast.If(test=pyast.Compare(left=pyast.Name(id=token_var.name),
@@ -214,22 +211,9 @@ class BTPlaceType(coretypes.BTPlaceType, PythonPlaceType):
 
     def dump_expr(self, env, marking_var):
         return pyast.E("'[' + ','.join(['dot'] * {}) + ']'".format(self.field.access_from(marking_var)))
-#        
-#        place_expr = self.place_expr(env, marking_var)
-#        return pyast.BinOp(left=pyast.Str('['),
-#                           op=pyast.Add(),
-#                           right=pyast.BinOp(left=pyast.Call(func=pyast.E("', '.join"),
-#                                                             args=[pyast.BinOp(left=pyast.List([pyast.Str('dot')]),
-#                                                                               op=pyast.Mult(),
-#                                                                               right=place_expr)]),
-#                                             op=pyast.Add(),
-#                                             right=pyast.Str(s=']')))
 
     def enumerate(self, env, marking_var, token_var, compiled_body):
-        place_expr = env.marking_type.gen_get_place(env=env,
-                                                    marking_var=marking_var,
-                                                    place_name=self.info.name,
-                                                    mutable=False)
+        place_expr = pyast.E(self.field.access_from(marking_var))
         getnode = pyast.Assign(targets=[pyast.Name(id=token_var.name)],
                                value=pyast.Name(id='dot'))
         ifnode = pyast.If(test=pyast.Compare(left=place_expr,
@@ -239,57 +223,6 @@ class BTPlaceType(coretypes.BTPlaceType, PythonPlaceType):
         return [ ifnode ]
 
 
-################################################################################
-
-class BTOneSafePlaceType(coretypes.BTOneSafePlaceType, PythonPlaceType):
-    """ Python one safe black token place type
-
-    Using this place type without the BTOneSafeTokenEnumerator may introduce inconsistency.
-    """
-    def __init__(self, place_info, marking_type):
-        coretypes.BTOneSafePlaceType.__init__(self,
-                                              place_info=place_info,
-                                              marking_type=marking_type,
-                                              type_info=TypeInfo.get('Bool'),
-                                              token_type=TypeInfo.get('BlackToken'))
-
-    def new_place_expr(self, env):
-        return pyast.E('True')
-
-    @should_not_be_called
-    def iterable_expr(self, env, marking_var): pass
-
-    def remove_token_stmt(self, env, compiled_token, marking_var, *args):
-        place_expr = self.place_expr(env, marking_var)
-        return pyast.Assign(targets=[place_expr],
-                            value=pyast.Name(id='True'))
-
-    def add_token_stmt(self, env, compiled_token, marking_var, *args):
-        place_expr = self.place_expr(env, marking_var)
-        return pyast.Assign(targets=[place_expr],
-                            value=pyast.Name(id='False'))
-
-    def copy_expr(self, env, marking_var):
-        return self.place_expr(env, marking_var)
-
-    def token_expr(self, env, value):
-        return pyast.E('dot')
-
-    def dump_expr(self, env, marking_var):
-        place_expr = self.place_expr(env, marking_var)
-        return pyast.IfExp(test=pyast.UnaryOp(op=pyast.Not(), operand=place_expr),
-                         body=pyast.Str('[ dot ]'),
-                         orelse=pyast.Str('[]'))
-
-    def enumerate(self, env, marking_var, token_var, compiled_body):
-        place_expr = env.marking_type.gen_get_place(env=env,
-                                                    marking_var=marking_var,
-                                                    place_name=self.info.name,
-                                                    mutable=False)
-        ifnode = pyast.If(test=pyast.UnaryOp(op=pyast.Not(), operand=place_expr),
-                          body=compiled_body)
-        return [ ifnode ]
-    
 ################################################################################
 
 class FlowPlaceType(coretypes.PlaceType, PythonPlaceType):
@@ -311,6 +244,7 @@ class FlowPlaceType(coretypes.PlaceType, PythonPlaceType):
                                      marking_type=marking_type,
                                      type_info=TypeInfo.get('Int'),
                                      token_type=TypeInfo.get('Int'))
+        self.field = marking_type.create_field(self, TypeInfo.get('Int'))
 
     @property
     def is_ProcessPlace(self):
@@ -322,13 +256,13 @@ class FlowPlaceType(coretypes.PlaceType, PythonPlaceType):
         """
         return TypeInfo.get('Int')
 
-    def new_place_expr(self, env):
+    def new_place_stmt(self, env, marking_var):
         """ Produce a new empty place.
 
         @returns: empty place expression
         @rtype: C{Expr}
         """
-        return pyast.E("0")
+        return pyast.E("{} = 0".format(self.field.access_from(marking_var)))
 
     @should_not_be_called
     def iterable_expr(self, env, marking_var): pass
@@ -339,7 +273,7 @@ class FlowPlaceType(coretypes.PlaceType, PythonPlaceType):
     @should_not_be_called
     def add_token_stmt(self, *args, **kwargs): pass
 
-    def copy_expr(self, env, marking_var):
+    def copy_stmt(self, env, dst_marking_var, src_marking_var):
         """ produce an expression corresponding to a copy of the place.
 
         @param env: compiling environment
@@ -347,7 +281,8 @@ class FlowPlaceType(coretypes.PlaceType, PythonPlaceType):
         @param marking_var: marking storing the place
         @type marking_var: C{VariableInfo}
         """
-        return self.place_expr(env, marking_var)
+        field = self.field
+        return pyast.E("{} = {}".format(field.access_from(dst_marking_var), field.access_from(src_marking_var)))
 
     def add_place(self, place_info):
         """ Adds a flow control place.
@@ -370,15 +305,15 @@ class FlowPlaceType(coretypes.PlaceType, PythonPlaceType):
     def gen_update_flow(self, env, marking_var, place_info):
         """ Get an pyast representing the flow update.
         """
-        place_expr = self.place_expr(env, marking_var)
-        return pyast.Assign(targets=[place_expr],
+        
+        return pyast.Assign(targets=[pyast.E( self.field.access_from(marking_var) )],
                             value=pyast.Num(self._places[place_info.name]))
 
     def gen_read_flow(self, env, marking_var):
-        return self.place_expr(env, marking_var)
+        return pyast.E(self.field.access_from(marking_var))
 
     def dump_expr(self, env, marking_var, variable):
-        place_expr = self.place_expr(env, marking_var)
+        place_expr = pyast.E(self.field.access_from(marking_var))
         l = []
         for place in self._places:
             l.append(pyast.stmt(pyast.Call(func=pyast.E('{}.append'.format(variable.name)),

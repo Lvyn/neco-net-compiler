@@ -90,13 +90,13 @@ class MarkingType(object):
     """
     __metaclass__ = ABCMeta
 
-    def __init__(self, type_info, container_type):
+    def __init__(self, type_info, container_type, config):
         """ Create a new marking type_info providing a type_info name.
 
         @param type_name: marking structure type_info name.
         @type_info type_name: C{string}
         """
-
+        self.config = config
         self._type = type_info
         self._contaner_type = container_type
         self._method_generators = []
@@ -106,9 +106,7 @@ class MarkingType(object):
         self._places = set()
         self._flow_control_places = set()
         self._one_safe_places = set()
-        
-        self._optimize = False
-        self._control_flow_elimination = False
+
 
     def add_method_generator(self, method_generator):
         self._method_generators.append(method_generator)
@@ -119,17 +117,9 @@ class MarkingType(object):
 
     def set_control_flow_elimination(self, enabled):
         self._control_flow_elimination = enabled
-        
-    @property
-    def control_flow_elimination(self):
-        return self._control_flow_elimination
 
     def set_optimize(self, enabled):
         self._optimize = enabled
-        
-    @property
-    def optimize(self):
-        return self._optimize
 
     def generate_methods(self, env):
         api = []
@@ -176,7 +166,10 @@ class MarkingType(object):
         places will be addeed to C{self.places}.
 
         """
-        if self.control_flow_elimination and place_info.flow_control:
+        print "adding place ", place_info.name
+        print place_info.flow_control
+        
+        if self.config.optimize_flow and place_info.flow_control:
             self._flow_control_places.add( place_info )
         elif place_info.one_safe:
             self._one_safe_places.add( place_info )

@@ -4,6 +4,7 @@ Created on 2 august 2012
 @author: Lukasz Fronc
 '''
 from neco.core.info import TypeInfo
+import pprint
 
 def bits_sizeof(cython_type):
     '''
@@ -11,19 +12,24 @@ def bits_sizeof(cython_type):
     '''
     if cython_type.is_Int:
         return 32
+    elif cython_type.is_UnsignedInt:
+        return 32
     elif cython_type.is_Char:
+        return 8
+    elif cython_type.is_UnsignedChar:
         return 8
     elif cython_type.is_Bool:
         return 1
-    raise NotImplementedError
+    raise RuntimeError
 
 def bytes_sizeof(cython_type):
     if cython_type.is_Int:
         return 4
+    elif cython_type.is_Char:
+        return 1
     elif cython_type.is_Bool:
         return 1
-    else:
-        return 0
+    raise RuntimeError
 
 class Mask(object):
     """ Class representing bit masks.
@@ -395,8 +401,11 @@ class MemoryChunk(object):
         self.cython_type = cython_type
         self.packed = packed
         self.bits = bits_sizeof(cython_type) if packed else 0
-        self.bytes = bytes_sizeof(cython_type)
-        self.hint = "no hint" 
+        #self.bytes = bytes_sizeof(cython_type)
+        self.hint = "no hint"
+        
+        self.bit_offset = 0
+        self.field_offset = 0 
         
     def get_cython_type(self):
         return self.cython_type
@@ -408,14 +417,12 @@ class MemoryChunk(object):
             return self.name
 
     def offset(self):
-        return self.chunk_manager.get_offset(self)
+        return (self.field_offset, self.bit_offset)
     
     def mask(self):
-        (_, bit_offset) = self.offset()
         (_, chunk_type, _) = self.chunk_manager.packed_attribute()
-        return Mask.build_mask(bit_offset, self.bits, bits_sizeof(chunk_type))
-        
-    
+        return Mask.build_mask(self.bit_offset, self.bits, bits_sizeof(chunk_type))
+
 class ChunkManager(object):
     '''
     Manages memory space reserved to the object, bitfield like.
@@ -429,6 +436,38 @@ class ChunkManager(object):
         self.named_chunks = {}
         self.packed_chunks = [] # simple list holding packed memory chunks
         self.normal_chunks = [] # simple list holding memory chunks
+        
+        
+        self.packed_type = TypeInfo.get('UnsignedChar')
+        self.packed_field_size = bits_sizeof(self.packed_type)
+        self.ordered_chunks = []
+        self.packed_field_count = 0
+        
+    def order_chunks(self):
+        self.ordered_chunks = sorted(self.packed_chunks, key=lambda x : -x.bits)
+        fields = [(0,[])]
+        
+        for chunk in self.ordered_chunks:
+            placed = False
+            for i in range(len(fields)):
+                (n, l) = fields[i]
+                if n + chunk.bits <= self.packed_field_size:
+                    l.append(chunk)
+                    placed = True
+                    fields[i] = (n+chunk.bits, l)
+                    break
+            if not placed:
+                fields.append( (chunk.bits, [chunk]) )
+
+
+        for field_offset, (n, chunks) in enumerate(fields):
+            bit_offset = 0
+            for chunk in chunks:
+                chunk.field_offset = field_offset
+                chunk.bit_offset = bit_offset
+                bit_offset += chunk.bits
+        print " >>>>>>>>>> ", len(fields), fields
+        self.packed_field_count = len(fields)
 
     def new_chunk(self, name, cython_type, packed=False):
         '''
@@ -440,6 +479,7 @@ class ChunkManager(object):
         self.named_chunks[name] = chunk
         if packed: 
             self.packed_chunks.append(chunk)
+            self.order_chunks()
         else:
             self.normal_chunks.append(chunk)
         return chunk
@@ -448,11 +488,12 @@ class ChunkManager(object):
         return self.named_chunks[name]
     
     def get_offset(self, chunk):
+        self.order_chunks()
         assert(chunk.packed)
         bits = 0
         for c in self.packed_chunks:
             if c == chunk:
-                return (bits / 8, bits % 8)
+                return (bits / self.packed_field_size, bits % self.packed_field_count)
             bits += c.bits
         raise KeyError
 
@@ -477,10 +518,10 @@ class ChunkManager(object):
         1
         """
         bits = self.packed_bits()
-        if bits % 8 == 0:
-            return bits / 8
+        if bits % self.packed_field_size == 0:
+            return bits / self.packed_field_size
         else:
-            return bits / 8 + 1
+            return bits / self.packed_field_size + 1
 
     def dump(self):
         '''
@@ -507,7 +548,7 @@ class ChunkManager(object):
         return ''.join(result)
 
     def packed_attribute(self):
-        return (self.packed_name, TypeInfo.get('Char'), self.packed_bytes())
+        return (self.packed_name, self.packed_type, self.packed_field_count)
 
     def normal_attributes(self):
         for chunk in self.normal_chunks:

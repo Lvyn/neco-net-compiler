@@ -49,8 +49,9 @@ class StaticMarkingType(coretypes.MarkingType):
     def __init__(self, config):
         coretypes.MarkingType.__init__(self,
                                        TypeInfo.register_type('Marking'),
-                                       TypeInfo.register_type('set'))
-        self.config = config
+                                       TypeInfo.register_type('set'),
+                                       config)
+        
         self.id_provider = utils.NameProvider()
         self._process_place_types = {}
         
@@ -97,17 +98,20 @@ class StaticMarkingType(coretypes.MarkingType):
             self._process_place_types[place_info.process_name] = place_type
 
     def __create_one_safe_place_type(self, place_info):
-        if self.optimize:
+        if self.config.optimize:
             if place_info.type.is_BlackToken:
-                return priv.placetypes.BTOneSafePlaceType(place_info, marking_type=self, packed=self.bit_packing)
+                return priv.placetypes.BTPlaceType(place_info, marking_type=self)
             else:
-                return priv.placetypes.OneSafePlaceType(place_info, marking_type=self, packed=self.bit_packing)
+                return priv.placetypes.OneSafePlaceType(place_info, marking_type=self)
         else:
             return priv.placetypes.ObjectPlaceType(place_info, marking_type=self)
 
     def gen_types(self):
         """ Build place types using C{select_type} predicate.
         """ 
+        
+        print ">>  >> ", self.flow_control_places, self.one_safe_places, self.place_types
+        
         for place_info in self.flow_control_places:
             self.__add_to_process_place_type(place_info)
             

@@ -197,7 +197,6 @@ def populateTestCases():
                 config_py = None
                 config_cy = config_BPACK('cython', entry)
             elif option == 'FLOW':
-                continue
                 config_py = config_FLOW('python', entry)
                 config_cy = config_FLOW('cython', entry)
 

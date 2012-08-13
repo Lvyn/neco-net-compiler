@@ -17,7 +17,8 @@ class StaticMarkingType(coretypes.MarkingType):
     def __init__(self, config):
         coretypes.MarkingType.__init__(self,
                                        TypeInfo.register_type("Marking"),
-                                       TypeInfo.register_type("MarkingSet"))
+                                       TypeInfo.register_type("MarkingSet"),
+                                       config)
 
         # id provider for class attributes
         self.id_provider = utils.NameProvider() # used to produce attribute names
