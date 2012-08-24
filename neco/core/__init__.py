@@ -408,7 +408,8 @@ class SuccTGenerator(object):
                 place_info = self.net_info.place_by_name( input_arc.place_name )
                 place_type = self.marking_type.get_place_type_by_name( place_info.name )
                 token_variable = input_arc.tuple.data['local_variable']
-
+                token_variable.update_type(place_type.token_type)
+                
                 # get a tuple
                 builder.begin_TokenEnumeration( arc = input_arc,
                                                 token_var = token_variable,
@@ -558,7 +559,8 @@ class SuccTGenerator(object):
         if self.config.optimize_flow and output.place_info.flow_control:
             return
 
-        output_impl_type = self.marking_type.get_place_type_by_name( output.place_info.name ).token_type
+        output_place = self.marking_type.get_place_type_by_name( output.place_info.name )
+        output_impl_type = output_place.token_type
 
         if output.is_Expression:
             # new temporary variable

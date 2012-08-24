@@ -98,6 +98,20 @@ class TypeInfo(object):
         elif self.is_AnyType:
             return 'AnyType'
 
+    def __hash__(self):
+        h = 0xDEADBEEF
+        if self.is_UserType:
+            return h ^ hash(self._type_name)
+        elif self.is_TupleType:
+            magic = 0xC0FFEE
+            for i, subtype in enumerate(self._subtypes):
+                h ^= hash(subtype) * magic
+                magic = magic * (magic + i)
+                return h
+        else:
+            return h
+            
+
     def split(self):
         """ Get subtypes.
 
@@ -246,6 +260,9 @@ class TypeInfo(object):
         True
         >>> print tuple1 == int
         False
+        >>> TypeInfo.TupleType([TypeInfo.Int, TypeInfo.Int]) == TypeInfo.TupleType([TypeInfo.Int, TypeInfo.Int])
+        True
+        
 
         @param other: right operand
         @type other: C{TypeInfo}

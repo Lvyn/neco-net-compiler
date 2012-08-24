@@ -455,6 +455,7 @@ class ChunkManager(object):
                     l.append(chunk)
                     placed = True
                     fields[i] = (n+chunk.bits, l)
+                    print "BITS : ", chunk.bits
                     break
             if not placed:
                 fields.append( (chunk.bits, [chunk]) )
@@ -488,7 +489,6 @@ class ChunkManager(object):
         return self.named_chunks[name]
     
     def get_offset(self, chunk):
-        self.order_chunks()
         assert(chunk.packed)
         bits = 0
         for c in self.packed_chunks:

@@ -113,6 +113,8 @@ class StaticMarkingType(coretypes.MarkingType):
             self.__gen_one_safe_place_type(place_info)
         for place_info in self.places:
             self.place_types[place_info.name] = self.place_type_from_info(place_info)
+        
+        self.chunk_manager.order_chunks()
 
     def __str__(self):
         """ Dump the marking structure. """
@@ -144,11 +146,6 @@ class StaticMarkingType(coretypes.MarkingType):
             (attr_name, attr_type, count) = self.chunk_manager.packed_attribute()
             cls.add_decl(cyast.CVar(attr_name + '[' + str(count) + ']', type=env.type2str(attr_type)))  
         
-        #chunk_place_map = { place.chunk.get_attribute_name() : place for place in self.place_types.values() }
-        #chunk_place_map += { place.helper_chunk.get_attribute_name() : place for place in self.place_types.values() if hasattr(place, 'helper_chunk') }
-
-        #print [ (a, b) for a, b in self.chunk_manager.normal_attributes() ]
-        #print sorted(chunk_place_map.keys())
         for chunk in self.chunk_manager.normal_chunks:
             attr_name = chunk.get_attribute_name()
             attr_type = chunk.get_cython_type()
@@ -268,15 +265,10 @@ class StaticMarkingType(coretypes.MarkingType):
             if attr_name in copied:
                 continue
 
-#            target_expr = cyast.E('{object}.{attribute}'.format(object=dst_marking.name,
-#                                                                attribute=attr_name))
-
             if attr_name in copy_attributes:
                 nodes.append(place_type.copy_stmt(env, dst_marking, src_marking))
                 nodes.append(cyast.Comment('copy: {} {!s}'.format(place_type.info.name, place_type.info.type)))
-#                nodes.append(cyast.Assign(targets=[target_expr],
-#                                          value=place_type.copy_expr(env, marking_var=src_marking))
-#                             )
+
             elif attr_name in assign_attributes:
                 nodes.append(place_type.light_copy_stmt(env, dst_marking, src_marking))
                 nodes.append(cyast.Comment('assign: {} {!s}'.format(place_type.info.name, place_type.info.type)))
@@ -288,20 +280,6 @@ class StaticMarkingType(coretypes.MarkingType):
         return cyast.Call(func=cyast.Attribute(name=marking_var.name,
                                                attr='copy')
                           )
-
-#    def gen_get_place(self, env, marking_var, place_name):
-#        place_type = self.get_place_type_by_name(place_name)        
-#        chunk = place_type.chunk
-#        if chunk.packed:
-#            return  
-#        
-#        marking_var.name
-#
-#        if place_type.is_packed:
-#            return place_type.pack.gen_get_place(env, marking_var, place_type)
-#        else:
-#            return cyast.Attribute(value=cyast.Name(marking_var.name),
-#                                   attr=self.id_provider.get(place_type))
 
     def gen_get_pack(self, env, marking_var, pack):
         return cyast.E(marking_var.name).attr(self.id_provider.get(pack))
