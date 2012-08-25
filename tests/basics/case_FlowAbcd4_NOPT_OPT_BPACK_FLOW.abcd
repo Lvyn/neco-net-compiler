@@ -1,0 +1,9 @@
+net gate (this) :
+    buffer state : object = 'OPEN'  # 1-safe
+    ([state-('OPEN'), state+('MOVING')] ;
+     [state-('MOVING'), state+('CLOSED')] ;
+     [state-('CLOSED'), state+('MOVING')] ;
+     [state-('MOVING'), state+('OPEN')])
+    * [False]
+
+gate(0) | gate(1)

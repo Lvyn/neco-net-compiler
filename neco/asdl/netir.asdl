@@ -1,0 +1,153 @@
+module netir version "$Revision: 1 $"
+{
+    Node = FunctionDef | Expr | Stmt
+
+    FunctionDef =
+	Init(identifier function_name,
+	     VariableInfo marking_var,
+	     VariableProvider variable_provider,
+	     Stmt* body)
+
+	| SuccT(identifier function_name,
+		VariableInfo arg_marking_set_var,
+		VariableInfo arg_marking_var,
+		TransitionInfo transition_info,
+		VariableProvider variable_provider,
+		Stmt* body)
+
+	| SuccP(identifier function_name,
+		VariableInfo arg_marking_set_var,
+		VariableInfo arg_marking_var,
+		VariableInfo flow_variable,
+		ProcessInfo process_info,
+		VariableProvider variable_provider,
+		Stmt* body)
+
+	| Succs(identifier function_name,
+		VariableInfo arg_marking_var,
+		VariableInfo arg_marking_set_var,
+		VariableProvider variable_provider,
+		Stmt* body)
+	
+	| IsFireable(identifier function_name,
+			 	 VariableInfo arg_marking_var,
+			     TransitionInfo transition_info,
+			     VariableProvider variable_provider,	
+			     Stmt* body)
+		    
+    Block = TokenEnumeration(ArcInfo arc,
+				 			 VariableInfo token_var,
+			 				 VariableInfo marking_var,
+			 		 		 identifier place_name,
+			 		 		 Stmt* body)
+			 
+	| MultiTokenEnumeration(ArcInfo multiarc,
+							VariableInfo marking_var,
+							identifier place_name,
+							Stmt* body)
+    
+	| NotEmpty(VariableInfo marking_var,
+		   	   identifier place_name,
+		   	   Stmt* body)
+
+	| GuardCheck(Expr condition,
+		     Stmt* body)
+
+	| If(Expr condition,
+	     Stmt* body,
+	     Stmt* orelse)
+
+	| Match(TupleInfo tuple_info,
+		Stmt* body)
+
+	| CheckTuple(VariableInfo tuple_var,
+		     TupleInfo tuple_info,
+		     Stmt* body)
+
+	| CheckType(VariableInfo variable,
+		    TypeInfo type,
+		    Stmt* body)
+				
+    Stmt =
+   	 AddToken(VariableInfo marking_var,
+		  	 identifier place_name,
+		  	 Expr token_expr)
+
+	| RemToken(VariableInfo marking_var,
+		   	   identifier place_name,
+		   	   Expr token_expr,
+		       str? use_index)
+
+	| MarkingCopy(VariableInfo dst,
+		      VariableInfo src,
+		      PlaceInfo* mod)
+
+	| AddMarking(VariableInfo marking_set_var,
+		     VariableInfo marking_var)
+
+	| FlushIn(VariableInfo token_var,
+		  VariableInfo marking_var,
+		  identifier place_name)
+
+	| FlushOut(VariableInfo marking_var,
+		   identifier place_name,
+		   Expr token_expr)
+
+	| RemTuple(VariableInfo marking_var,
+		       identifier place_name,
+		       Expr tuple_expr)
+
+	| TupleOut(VariableInfo marking_var,
+		   identifier place_name,
+		   TupleInfo  tuple_info)
+
+	| ProcedureCall(identifier function_name,
+			Expr* arguments)
+
+	| Assign(VariableInfo variable,
+		 	 Expr expr)
+
+	| Print(str message)
+
+	| UpdateFlow(VariableInfo marking_var,
+		     PlaceInfo place_info)
+
+	| Comment(str message)
+
+	| NormalizeMarking(VariableInfo marking_var)
+
+	| Return(Expr expr)
+	
+    Expr = PyExpr(string expr)
+
+	| ReadFlow(VariableInfo marking_var,
+		   identifier process_name)
+
+	| FunctionCall(identifier function_name,
+		       expr* arguments)
+
+	| Token(object value,
+		identifier place_name)
+
+	| Name(identifier name)
+
+	| Value(object value, identifier place_name)
+
+    | Tuple(Expr* components)
+
+	| Compare(Expr left,
+		  Operator* ops,
+		  Expr* comparators)
+
+	| Pickle( object obj )
+
+	| FlowCheck(VariableInfo marking_var,
+			    PlaceInfo place_info,
+			    Expr? current_flow)
+			    
+    PComponent =
+	PVar(identifier name)
+	| PValue(object value)
+
+    Operator = EQ
+}

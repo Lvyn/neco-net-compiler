@@ -1,0 +1,15 @@
+
+This compiler is under development and may include several bugs.
+
+* Dependencies:
+- Python ( http://www.python.org/ )
+- SNAKES toolkit ( http://code.google.com/p/python-snakes/ )
+
+* Optional dependencies:
+- Cython ( http://cython.org/ ) as well as a C compiler for Cython
+  Backend
+
+* Optional benchmark dependencies:
+- Helena ( http://helena.cnam.fr/ ) as well as a C compiler for Helena
+  benchmarks
+
