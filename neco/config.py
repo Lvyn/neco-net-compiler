@@ -11,7 +11,7 @@ class Config(object):
                          optimize_flow=False,
                          bit_packing=False,
                          debug=False,
-                         dump_enabled=True,
+                         dump_enabled=False,
                          no_stats=True,
                          search_paths='.',
                          trace_calls=False,

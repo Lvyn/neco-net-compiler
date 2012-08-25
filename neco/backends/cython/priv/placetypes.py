@@ -932,15 +932,14 @@ class FlowPlaceType(coretypes.PlaceType, CythonPlaceType):
             if place_name == place_info.name:
                 next_flow_value = Mask.from_int(next_flow, self.chunk.bits) # todo offset !
                 next_flow_value = int(next_flow_value << bit_offset)
-                print "next flow mask ", bin(next_flow_value) 
                 attr_name = self.chunk.get_attribute_name()
-                print "{}.{}[{}] & {} == {}  ie. {} {}".format(marking_var.name,
-                                                               attr_name,
-                                                               byte_offset,
-                                                               int(mask),
-                                                               int(next_flow_value),
-                                                               bin(mask),
-                                                               bin(next_flow_value))
+                # print "{}.{}[{}] & {} == {}  ie. {} {}".format(marking_var.name,
+                #                                                attr_name,
+                #                                                byte_offset,
+                #                                                int(mask),
+                #                                                int(next_flow_value),
+                #                                                bin(mask),
+                #                                                bin(next_flow_value))
                 
                 check = cyast.E("{}.{}[{}] & {} == {}".format(marking_var.name,
                                                               attr_name,

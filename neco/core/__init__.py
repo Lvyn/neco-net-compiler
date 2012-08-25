@@ -897,7 +897,6 @@ class Compiler(object):
         self.env = backend.new_compiling_environment(WordSet(), self.marking_type)
         self.env.net_info = self.net_info
         self.rebuild_marking_type()
-        print "compiler !"
 
     def rebuild_marking_type(self):
         """ Rebuild the marking type. (places will be rebuild) """
