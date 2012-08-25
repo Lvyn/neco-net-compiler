@@ -455,7 +455,7 @@ class ChunkManager(object):
                     l.append(chunk)
                     placed = True
                     fields[i] = (n+chunk.bits, l)
-                    print "BITS : ", chunk.bits
+                    # print "BITS : ", chunk.bits
                     break
             if not placed:
                 fields.append( (chunk.bits, [chunk]) )
@@ -467,7 +467,7 @@ class ChunkManager(object):
                 chunk.field_offset = field_offset
                 chunk.bit_offset = bit_offset
                 bit_offset += chunk.bits
-        print " >>>>>>>>>> ", len(fields), fields
+        # print " >>>>>>>>>> ", len(fields), fields
         self.packed_field_count = len(fields)
 
     def new_chunk(self, name, cython_type, packed=False):

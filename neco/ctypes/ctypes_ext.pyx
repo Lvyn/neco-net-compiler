@@ -206,7 +206,6 @@ cdef class MultiSet:
 
     def __richcmp__(MultiSet self, MultiSet other, int op):
         cdef int res = self.compare(other)
-        print "cmp op {}, res {}".format(op, res)
         if op == 0:
             return res < 0
         elif op == 1:
@@ -438,7 +437,7 @@ cdef MultiSet int_place_type_to_multiset(ctypes_ext.int_place_type_t* pt):
         value = ctypes_ext.int_place_type_get(pt, index)
         ms.add(value)
 
-    print ms.__dump__()
+    #print ms.__dump__()
     return ms
 
 

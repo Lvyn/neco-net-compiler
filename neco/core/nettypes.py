@@ -166,9 +166,6 @@ class MarkingType(object):
         places will be addeed to C{self.places}.
 
         """
-        print "adding place ", place_info.name
-        print place_info.flow_control
-        
         if self.config.optimize_flow and place_info.flow_control:
             self._flow_control_places.add( place_info )
         elif place_info.one_safe:

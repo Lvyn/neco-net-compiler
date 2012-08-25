@@ -81,10 +81,10 @@ class CopyGenerator(MarkingTypeMethodGenerator):
 
         copied = set()
         # copy packed
-        print marking_type.chunk_manager.packed_bits()
+        # print marking_type.chunk_manager.packed_bits()
         if marking_type.chunk_manager.packed_bits() > 0:
             attr_name, _, count = marking_type.chunk_manager.packed_attribute()
-            print attr_name
+            # print attr_name
             copied.add(attr_name)
             for i in range(count):
                 target_expr = cyast.E('{object}.{attribute}[{index!s}]'.format(object=marking_var.name,
@@ -102,7 +102,7 @@ class CopyGenerator(MarkingTypeMethodGenerator):
             attr_name = place_type.get_attribute_name()
             if attr_name in copied:
                 continue
-            print attr_name
+            # print attr_name
             target_expr = cyast.E('{object}.{attribute}'.format(object=marking_var.name,
                                                                 attribute=attr_name))
 

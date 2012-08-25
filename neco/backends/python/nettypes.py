@@ -109,9 +109,6 @@ class StaticMarkingType(coretypes.MarkingType):
     def gen_types(self):
         """ Build place types using C{select_type} predicate.
         """ 
-        
-        print ">>  >> ", self.flow_control_places, self.one_safe_places, self.place_types
-        
         for place_info in self.flow_control_places:
             self.__add_to_process_place_type(place_info)
             

@@ -159,7 +159,6 @@ class CompilerVisitor(coreir.CompilerVisitor):
         marking_type = self.env.marking_type
         place_type = marking_type.get_place_type_by_name(node.place_name)
         
-        print "enumeration of {}".format(place_type)
         if hasattr(place_type, 'enumerate'):
             return place_type.enumerate(self.env, node.marking_var, node.token_var, self.compile(node.body))
         
