@@ -74,6 +74,6 @@ if prefix:
     print
     print "export PATH=$PATH:{}bin".format(prefix)
     print "export PYTHONPATH=$PYTHONPATH:{}lib/python{}/site-packages".format(prefix, py_version)
-    print "export NECO_INCLUDE={prefix}lib/python{py_version}/site-packages/neco/ctypes:{prefix}lib/python{py_version}/site-packages/neco/ctypes".format(prefix=prefix, py_version=py_version)
+    print "export NECO_INCLUDE={prefix}lib/python{py_version}/site-packages/neco/ctypes:{prefix}lib/python{py_version}/site-packages".format(prefix=prefix, py_version=py_version)
     print "export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$NECO_INCLUDE"
     print
