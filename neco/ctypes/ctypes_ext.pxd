@@ -83,10 +83,6 @@ cdef class MultiSet:
 cdef api class Pid[object Pid, type Pid]:
         cdef TPid[int]* mPid
 
-cdef extern from "ctypes_spec.h":
-        cdef cppclass TPidFormatter
-
-
 # cdef class Pid:
 #       cdef list data
 

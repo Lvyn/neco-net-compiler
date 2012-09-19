@@ -11,6 +11,7 @@ cpdef dump(object obj):
     else:
         return repr(obj)
 
+
 cpdef __neco_compare__(object left, object right):
     if left < right:
         return -1

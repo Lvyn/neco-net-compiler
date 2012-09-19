@@ -15,7 +15,7 @@ PetriNet = nets.PetriNet
 
 class Pid(object):
 
-    def __init__(self):
+    def __init__(self, l=None):
         """
 
         >>> pid = Pid()
@@ -23,7 +23,7 @@ class Pid(object):
         []
 
         """
-        self.data = []
+        self.data = l if l else [] 
 
     @classmethod
     def from_str(self, str_repr=None):
@@ -98,15 +98,15 @@ class Pid(object):
         """
         >>> pid = Pid.from_str('1.2.3.4')
         >>> pid.subpid(0)
-        Pid.from_str('1.2.3.4')
+        Pid([1,2,3,4])
         >>> pid.subpid(1)
-        Pid.from_str('2.3.4')
+        Pid([2,3,4])
         >>> pid.subpid(0, -1)
-        Pid.from_str('1.2.3')
+        Pid([1,2,3])
         >>> pid.subpid(1, -1)
-        Pid.from_str('2.3')
+        Pid([2,3])
         >>> pid.subpid(1, 3)
-        Pid.from_str('2.3')
+        Pid([2,3])
         """
         pid = self.copy()
         for _ in range(0, begin):
@@ -127,7 +127,7 @@ class Pid(object):
         """
         >>> pid = Pid.from_str('1.2.3')
         >>> pid.prefix()
-        Pid.from_str('1.2')
+        Pid([1,2])
         """
         pid = self.copy()
         pid.data.pop(-1)
@@ -135,9 +135,9 @@ class Pid(object):
 
     def suffix(self):
         """
-        >>> pid = Pid.from_str('1.2.3')
+        >>> pid = Pid([1,2,3])
         >>> pid.suffix()
-        Pid.from_str('2.3')
+        Pid([2,3])
         """
         pid = self.copy()
         pid.data.pop(0)
@@ -306,12 +306,12 @@ class Pid(object):
 
     def __repr__(self):
         """
-        >>> repr(Pid.from_str('1.1.1'))
-        "Pid.from_str('1.1.1')"
-        >>> Pid.from_str('1.1.1') == eval(repr(Pid.from_str('1.1.1')))
+        >>> repr(Pid([1,1,1]))
+        'Pid([1,1,1])'
+        >>> Pid([1,1,1]) == eval(repr(Pid.from_str('1.1.1')))
         True
         """
-        return 'Pid.from_str(\'' + '.'.join([repr(e) for e in self.data]) + '\')'
+        return 'Pid([' + ','.join([repr(e) for e in self.data]) + '])'
 
     def __str__(self):
         """
@@ -426,7 +426,7 @@ class DPCPetriNet(nets.PetriNet):
     def __init__(self, name):
         """
         >>> DPCPetriNet('net').place()
-        [Place('sgen', MultiSet([(Pid.from_str('1'), 0)]), CrossProduct(Instance(Pid), (Instance(int) & GreaterOrEqual(0))))]
+        [Place('sgen', MultiSet([(Pid([1]), 0)]), CrossProduct(Instance(Pid), (Instance(int) & GreaterOrEqual(0))))]
 
         """
         nets.PetriNet.__init__(self, name)

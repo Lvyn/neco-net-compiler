@@ -1,0 +1,35 @@
+module Cpp version "0.1"
+{
+	File = Component(Stmt* body)
+	
+	Stmt = ClassDef(identifier name,
+					attribute* attributes)
+
+		 | StructDef(identifier name,
+				     attribute* attributes)
+
+		 | TemplateDef(Template_args* targs,
+		 			   ClassDef cls,
+		 			   Type* bind)
+
+	Attribute = AttrDecl(Type type,
+						 identifier name,
+						 int? array)
+	
+	Type = Native
+		 | UserType(identifier name)
+		 | TemplateType(identifier name)
+
+
+	Native = Void
+		   | Bool
+		   | Unsigned(NativeInt type)
+		   | NativeInt
+		   | NativeDec
+
+	NativeInt = Char | Short | Int | Long
+
+	NativeDec =  Float | Double
+
+	
+}
