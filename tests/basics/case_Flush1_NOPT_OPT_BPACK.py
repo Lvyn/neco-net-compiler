@@ -1,9 +1,9 @@
 from snakes.nets import *
 
 net = PetriNet('Net')
-s1 = Place('s1', [1, 2, 3], tInteger)
+s1 = Place('s1', [1, 2, 3]) # tInteger) # do not support flush in cython
 s1.is_OneSafe = True
-s2 = Place('s2', [], tInteger)
+s2 = Place('s2', []) # tInteger) # do not support flush in cython
 s2.is_OneSafe = True
 
 net.add_place(s1)

@@ -451,6 +451,14 @@ def neco__multiset_update_pids(ms, new_pid_dict):
         new_ms[new_tok] = count
     return new_ms
 
+def pid_place_type_update_pids(ms, new_pid_dict):
+    new_ms = multiset()
+    for tok, count in ms.iteritems():
+        new_tok = Pid.from_list(new_pid_dict[tuple(tok.data)])
+        new_ms[new_tok] = count
+    return new_ms
+    
+
 def neco__generator_token_transformer(ms, new_pid_dict):
     """
     This function updated a generator place multiset C{ms} with resepect to C{new_pid_dict}.

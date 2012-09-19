@@ -11,6 +11,7 @@ stubs = {
     'normalize_pid_tree' : 'data.neco__normalize_pid_tree',
     'generator_place_update_pids'     : 'data.neco__generator_token_transformer',
     'generator_place_update_pid_tree' : 'data.neco__generator_multiset_update_pid_tree',
+    'pid_place_type_update_pids' : 'data.pid_place_type_update_pids'
 }
 
 class UpdatePidsGenerator(MarkingTypeMethodGenerator):

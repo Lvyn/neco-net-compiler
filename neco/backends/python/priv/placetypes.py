@@ -92,15 +92,6 @@ class ObjectPlaceType(coretypes.ObjectPlaceType, PythonPlaceType):
                                              args=[self.place_expr(self, marking_var),
                                                    pyast.Name(new_pid_dict_var.name)]))
     
-    def update_pid_tree(self, env, marking_var, pid_tree_var):
-        stub_name = stubs['object_place_type_update_pid_tree']
-        return pyast.For(target=pyast.E(token_var.name),
-                         iter=place_expr,
-                         body=[])
-        
-        return pyast.stmt(pyast.Call(func=pyast.Name(stub_name),
-                                     args=[self.place_expr(self, marking_var),
-                                           pyast.Name(pid_tree_var.name)]))
         
     def enumerate(self, env, marking_var, token_var, compiled_body):
         return pyast.For(target=pyast.Name(token_var.name), 
@@ -138,14 +129,36 @@ class ObjectPlaceType(coretypes.ObjectPlaceType, PythonPlaceType):
                                                                   body=[ pyast.E('{} = {}[0]'.format(pid_var.name, token_var.name)),
                                                                          update_dict],
                                                                   orelse=[]))])])
-                                
-                                                                           
-                      
-                      
-                          
 
-        return pyast.stmt(pyast.B("iterable_update_pid_dict").call([place_expr, pyast.Name(dict_var.name)]).ast())
+class PidPlaceType(ObjectPlaceType):
+    
+    def __init__(self, place_info, marking_type):
+        ObjectPlaceType.__init__(self, place_info, marking_type)
+    
+    def extract_pids(self, env, marking_var, dict_var):
+        place_expr = pyast.E(self.field.access_from(marking_var))
+
+        vp = VariableProvider()
+        token_var = vp.new_variable(TypeInfo.get('AnyType'), name='token')
+        pid_var = vp.new_variable(TypeInfo.get('AnyType'), name='pid')
         
+        subscr = "{}[{}]".format(dict_var.name, pid_var.name)
+        update_dict =  pyast.If(test=pyast.E('{}.has_key({})'.format(dict_var.name, 
+                                                                     pid_var.name)),
+                                body=[ pyast.stmt(pyast.B(subscr).attr(self.field.name).attr('add').call([pyast.E(token_var.name)]).ast()) ],
+                                orelse=[ pyast.E('{} = Marking()'.format(subscr)),
+                                        pyast.stmt(pyast.B(subscr).attr(self.field.name).attr('add').call([pyast.E(token_var.name)]).ast()) ] ) 
+        return pyast.For(target=pyast.E(token_var.name), iter=place_expr,
+                         body=[ pyast.E('{} = {}'.format(pid_var.name,
+                                                         token_var.name)),
+                                                         update_dict ])
+    
+    def update_pids_stmt(self, env, marking_var, new_pid_dict_var):
+        return pyast.Assign(targets=[self.place_expr(env, marking_var)],
+                            value=pyast.Call(func=pyast.E(stubs['pid_place_type_update_pids']),
+                                             args=[self.place_expr(self, marking_var),
+                                                   pyast.Name(new_pid_dict_var.name)]))
+    
 
 ################################################################################
 # opt

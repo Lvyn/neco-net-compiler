@@ -108,19 +108,16 @@ class CompilerVisitor(coreir.CompilerVisitor):
     def compile_FlushIn(self, node):
         destination_place = self.env.marking_type.get_place_type_by_name(node.place_name)
         return [cyast.Assign(targets=[cyast.Name(node.token_var.name)],
-                             value=destination_place.attribute_expr(self.env, node.marking_var)
-#                             self.env.marking_type.gen_get_place(env=self.env,
-#                                                                       marking_var=node.marking_var,
-#                                                                       place_name=node.place_name)
-                             ),
-                destination_place.clear_stmt(env=self.env,
-                                             marking_var=node.marking_var)
-                ]
+                             value=destination_place.attribute_expr(self.env, node.marking_var))]
+        
+    def compile_RemAllTokens(self, node):
+        destination_place = self.env.marking_type.get_place_type_by_name(node.place_name)
+        return [destination_place.clear_stmt(env=self.env,
+                                             marking_var=node.marking_var)]
 
     def compile_FlushOut(self, node):
         destination_place = self.env.marking_type.get_place_type_by_name(node.place_name)
         multiset = self.compile(node.token_expr)
-        #var = self.env.new_variable()
         return destination_place.add_items_stmt(env=self.env,
                                                 multiset=multiset,
                                                 marking_var=node.marking_var)

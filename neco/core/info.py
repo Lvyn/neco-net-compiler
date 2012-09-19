@@ -1013,10 +1013,6 @@ class PlaceInfo(object):
         for key, value in state.iteritems():
             setattr(self, key, value)
 
-    def update_type(self, place_type):
-        assert(isinstance(place_type, TypeInfo))
-        self._type = place_type
-
     @property
     def is_generator_place(self):
         # \todo
@@ -1109,13 +1105,13 @@ class NetInfo(object):
         for t in net.transition():
             self.transitions.append(TransitionInfo(t))
 
-        for trans in self.transitions:
-            for input_arc in trans.input_arcs:
-                if input_arc.is_Flush:
-                    input_arc.place_info.update_type(TypeInfo.AnyType)
-            for output in trans.outputs:
-                if output.is_Flush:
-                    output.place_info.update_type(TypeInfo.AnyType)
+#        for trans in self.transitions:
+#            for input_arc in trans.input_arcs:
+#                if input_arc.is_Flush:
+#                    input_arc.place_info.update_type(TypeInfo.AnyType)
+#            for output in trans.outputs:
+#                if output.is_Flush:
+#                    output.place_info.update_type(TypeInfo.AnyType)
 
         process_names = set()
         for p in net.node():

@@ -885,13 +885,14 @@ class Compiler(object):
         
         self.config = config
         self.backend = backend        
-#        self.dump_enabled = config.dump_enabled
-#        self.debug = config.debug
-#        self.optimize_flow = config.optimize_flow
-#        self.optimize = config.optimize
-#        self.normalize_pids = config.pid_normalization
-#        
+ 
         self.net_info = NetInfo(net)
+            
+        if self.config.normalize_pids:
+            if not self.check_typed():
+                print >> sys.stderr, "pid normalization require fully typed nets."
+                exit(-1)
+        
         self.markingtype_class = "StaticMarkingType"
         self.marking_type = backend.new_marking_type(self.markingtype_class, self.config)
 
@@ -900,6 +901,20 @@ class Compiler(object):
         self.env = backend.new_compiling_environment(WordSet(), self.marking_type)
         self.env.net_info = self.net_info
         self.rebuild_marking_type()
+
+    def check_typed(self):
+        for place in self.net_info.places:
+            if place.type.is_AnyType:
+                print >> sys.stderr, "[W] place {} is assumed as pid-free".format(place.name)
+            elif place.type.allows_pids:
+                if place.type.is_Pid:
+                    continue
+                elif place.type.is_Tuple:
+                    for subtype in place.type.subtypes():
+                        if subtype.is_Tuple and subtype.allows_pids:
+                            print >> sys.stderr, "[E] nested tuples cannot contain pids. (this may be implemented in future)".fromat(place.name)
+                            return False
+        return True
 
     def rebuild_marking_type(self):
         """ Rebuild the marking type. (places will be rebuild) """

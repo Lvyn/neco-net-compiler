@@ -158,12 +158,7 @@ class Pid(object):
         >>> hash(Pid.from_str('1.2')) == hash(Pid.from_str('1.3'))
         False
         """
-        h, mult, i = 0xDEADDAD, 0xDEADBEEF, 0
-        for elt in self.data:
-            h = (h ^ hash(elt)) * mult
-            mult += 82520L + i + i
-            i += 1
-        return h
+        return hash(tuple(self.data))
 
     def __eq__(self, other):
         """

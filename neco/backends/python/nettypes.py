@@ -127,6 +127,8 @@ class StaticMarkingType(coretypes.MarkingType):
 
             if place_info.type.is_BlackToken:
                 place_type = priv.placetypes.BTPlaceType(place_info, marking_type=self)
+            elif place_info.type.is_Pid:
+                place_type = priv.placetypes.PidPlaceType(place_info, marking_type=self)
             else:
                 place_type = priv.placetypes.ObjectPlaceType(place_info, marking_type=self)
 
