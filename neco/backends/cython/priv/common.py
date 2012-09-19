@@ -1,7 +1,9 @@
 
 from cyast import CVar, to_ast
-import neco.core as core
+import cyast
 from neco.core.info import TypeInfo
+from neco.utils import flatten_ast, OutputProviderPredicate
+import neco.core as core
 
 def _str_list_to_endlstr(lst):
     lst.append("")
@@ -36,6 +38,9 @@ TypeInfo.register_type("Char")
 TypeInfo.register_type("Short")
 TypeInfo.register_type("UnsignedInt")
 TypeInfo.register_type("UnsignedChar")
+
+TypeInfo.register_type("PidPlace")
+TypeInfo.register_type("GeneratorPlace")
 
 ################################################################################
 
@@ -101,10 +106,16 @@ class CompilingEnvironment(core.CompilingEnvironment):
         self.register_cython_type(TypeInfo.get('Char'), 'char')
         self.register_cython_type(TypeInfo.get('Int'), 'int')
         self.register_cython_type(TypeInfo.get('Short'), 'short')
-        self.register_cython_type(TypeInfo.get('IntPlace'), from_neco_lib('int_place_type_t*'))
+        self.register_cython_type(TypeInfo.get('IntPlace'), from_neco_lib('TGenericPlaceType[int]*'))
         self.register_cython_type(TypeInfo.get('MultiSet'), 'ctypes_ext.MultiSet')
         self.register_cython_type(TypeInfo.get('UnsignedChar'), 'unsigned char')
         self.register_cython_type(TypeInfo.get('UnsignedInt'), 'unsigned int')
+        if marking_type.config.normalize_pids:
+            self.register_cython_type(TypeInfo.get('Pid'), from_neco_lib('Pid'))
+        else:
+            self.register_cython_type(TypeInfo.get('Pid'), 'object')
+        self.register_cython_type(TypeInfo.get('PidPlace'), from_neco_lib('TGenericPlaceType[' + from_neco_lib('Pid') + ']*'))
+        self.register_cython_type(TypeInfo.get('GeneratorPlace'), from_neco_lib('TGeneratorPlaceType[' + from_neco_lib('Pid') + ', int]*'))
 
     @property
     def cvars(self):
@@ -277,3 +288,47 @@ class CVarSet(object):
 
     def __str__(self):
         return str(self._set)
+
+
+
+class CythonPyxFile(object):
+
+    def __init__(self, name):
+        self.name = name
+        self.declarations = []
+        self.body = []
+
+    def write(self, env, base_dir = './'):
+        module_ast = flatten_ast(cyast.Module(body=self.body))
+
+        f = open(base_dir + self.name, "w")
+        f.write("\n".join(self.declarations))
+        cyast.Unparser(module_ast, f)
+        f.close()
+
+class CythonPxdFile(object):
+
+    def __init__(self, name):
+        self.name = name
+        self.declarations = []
+        self.body = []
+
+    def write(self, env, base_dir = './'):
+        module_ast = flatten_ast(cyast.Module(body=self.body))
+
+        f = open(base_dir + self.name, "w")
+        f.write("\n".join(self.declarations))
+        cyast.Unparser(module_ast, f)
+        f.close()
+        
+
+class IsCythonPyxFile(OutputProviderPredicate):
+
+    def __call__(self, output):
+        return isinstance(output, CythonPyxFile)
+
+class IsCythonPxdFile(OutputProviderPredicate):
+
+    def __call__(self, output):
+        return isinstance(output, CythonPxdFile)
+

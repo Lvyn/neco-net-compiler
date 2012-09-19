@@ -111,15 +111,15 @@ class Main(object):
             # produce exploration trace
             import cProfile
             if not dump_markings and not graph:
-                cProfile.run('explorecli.Main._instance_.explore()', 'explore.prof')
+                cProfile.run('neco.explorecli.Main._instance_.explore()', 'explore.prof')
 
             elif self.dump_markings:
                 # produce exploration trace with marking dump
-                cProfile.run('explorecli.Main._instance_.dump_markings()', 'explore_dump.prof')
+                cProfile.run('neco.explorecli.Main._instance_.dump_markings()', 'explore_dump.prof')
 
             elif self.graph:
                 # produce exploration trace with reachability graph
-                cProfile.run('explorecli.Main._instance_.dump_graph()', 'explore_graph.prof')
+                cProfile.run('neco.explorecli.Main._instance_.dump_graph()', 'explore_graph.prof')
 
         else: # without profiler
             if not dump_markings and not graph:
@@ -172,7 +172,7 @@ class Main(object):
         net = self.compiled_net
 
         start = time()
-        graph, _ = net.state_space_graph()
+        graph, map = net.state_space_graph()
         end = time()
         print "exploration time: ", end - start
         print "len visited = %d" % (len(map.keys()))

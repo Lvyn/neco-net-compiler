@@ -1,7 +1,8 @@
 """ Cython ast compiler. """
 
 from neco.core.info import TypeInfo, ExpressionInfo
-from priv.common import CVarSet
+from priv.common import CVarSet, from_neco_lib
+from priv.mrkpidfunctions import GENERATOR_PLACE
 import StringIO
 import cPickle as cPickle
 import neco.core.netir as coreir
@@ -106,13 +107,15 @@ class CompilerVisitor(coreir.CompilerVisitor):
 
     def compile_FlushIn(self, node):
         destination_place = self.env.marking_type.get_place_type_by_name(node.place_name)
-        return [ cyast.Assign(targets=[cyast.Name(node.token_var.name)],
-                              value=destination_place.attribute_expr(self.env, node.marking_var)) ]
-
-    def compile_RemAllTokens(self, node):
-        destination_place = self.env.marking_type.get_place_type_by_name(node.place_name)
-        return [ destination_place.clear_stmt(env=self.env,
-                                              marking_var=node.marking_var) ]
+        return [cyast.Assign(targets=[cyast.Name(node.token_var.name)],
+                             value=destination_place.attribute_expr(self.env, node.marking_var)
+#                             self.env.marking_type.gen_get_place(env=self.env,
+#                                                                       marking_var=node.marking_var,
+#                                                                       place_name=node.place_name)
+                             ),
+                destination_place.clear_stmt(env=self.env,
+                                             marking_var=node.marking_var)
+                ]
 
     def compile_FlushOut(self, node):
         destination_place = self.env.marking_type.get_place_type_by_name(node.place_name)
@@ -459,19 +462,22 @@ class CompilerVisitor(coreir.CompilerVisitor):
 
         body.append(cyast.E("return l"))
 
-        f2 = cyast.Builder.FunctionCDef(name="neco_succs",
-                                  args=cyast.A("m", type="Marking"),
-                                  body=body,
-                                  returns=cyast.Name("ctypes_ext.neco_list_t*"),
-                                  decl=[cyast.CVar(name="l", type="ctypes_ext.neco_list_t*"),
-                                        cyast.CVar(name="e", type="Marking")]
-                                  )
+#        f2 = cyast.Builder.FunctionCDef(name="neco_succs",
+#                                  args=cyast.A("m", type="Marking"),
+#                                  body=body,
+#                                  returns=cyast.Name("ctypes_ext.neco_list_t*"),
+#                                  decl=[cyast.CVar(name="l", type="ctypes_ext.neco_list_t*"),
+#                                        cyast.CVar(name="e", type="Marking")]
+#                                  )
 
-        return [f1, f2]
+        return [f1 ] # , f2]
 
 
 
     def compile_Init(self, node):
+        env = self.env
+        env.push_cvar_env()
+
         new_marking = cyast.Assign(targets=[cyast.Name(node.marking_var.name)],
                                    value=self.env.marking_type.new_marking_expr(self.env))
         return_stmt = cyast.E("return {}".format(node.marking_var.name))
@@ -480,15 +486,21 @@ class CompilerVisitor(coreir.CompilerVisitor):
         stmts.extend(self.compile(node.body))
         stmts.append(return_stmt)
 
+        decl = CVarSet()
+        decl.extend([cyast.CVar(node.marking_var.name, self.env.type2str(node.marking_var.type))])
+
+        additionnal_decls = self.env.pop_cvar_env()
+        decl.extend(additionnal_decls)
+
         f1 = cyast.Builder.FunctionDef(name=node.function_name,
                                        body=stmts,
                                        returns=cyast.Name("Marking"),
-                                       decl=[ cyast.CVar(node.marking_var.name, self.env.type2str(node.marking_var.type))])
+                                       decl=decl)
 
         f2 = cyast.Builder.FunctionCDef(name="neco_init",
-                                        body=[ stmts ],
+                                        body=stmts,
                                         returns=cyast.Name("Marking"),
-                                        decl=[ cyast.CVar(node.marking_var.name, self.env.type2str(node.marking_var.type))])
+                                        decl=decl)
 
         return [f1, f2]
         
@@ -511,6 +523,33 @@ class CompilerVisitor(coreir.CompilerVisitor):
         return self.env.marking_type.gen_update_flow(env=self.env,
                                                      marking_var=node.marking_var,
                                                      place_info=node.place_info)
+
+    ################################################################################
+    # MarkingNormalization
+    ################################################################################
+
+    def compile_InitGeneratorPlace(self, node):
+        marking_type = self.env.marking_type
+        generator_place = marking_type.get_place_type_by_name(GENERATOR_PLACE)
+        initial_pid_var = self.env.variable_provider.new_variable(variable_type=TypeInfo.get('Pid'))
+        self.env.try_declare_cvar(initial_pid_var.name, initial_pid_var.type)
+        assign = cyast.Assign(targets=[cyast.E(initial_pid_var.name)],
+                              value=self.compile_InitialPid(None))
+        return [ assign, generator_place.add_pid_stmt(self.env, initial_pid_var, node.marking_var) ]
+
+    def compile_NormalizeMarking(self, node):
+        return cyast.stmt(cyast.Call(func=cyast.E('normalize_pids'),
+                                     args=[cyast.E(node.marking_var.name)]))
+        
+    def compile_AddPid(self, node):
+        place_type = self.env.marking_type.get_place_type_by_name(node.place_name)
+        return place_type.add_token_stmt(env=self.env,
+                                         token_expr=node.token_expr,
+                                         compiled_token=self.compile(node.token_expr),
+                                         marking_var=node.marking_var)
+        
+    def compile_InitialPid(self, node):
+        return cyast.E(self.env.type2str(TypeInfo.get('Pid')) + '(1)')
 
 ################################################################################
 # EOF

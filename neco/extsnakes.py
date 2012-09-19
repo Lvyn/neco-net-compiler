@@ -4,15 +4,14 @@ from collections import defaultdict
 from neco.utils import NameProvider
 from snakes import ConstraintError
 from snakes.nets import ArcAnnotation, PetriNet, Place, Variable, Transition, \
-    Expression, Tuple, MultiArc, Value
+    Expression, Tuple, MultiArc, Value, dot, tBlackToken, tInteger #@UnusedImport
 from snakes.typing import Instance, CrossProduct, tNatural
 import snakes.plugins
 import sys
 
 snakes.plugins.load("gv", "snakes.nets", "nets")
 
-#from nets import PetriNet, Place, Transition, Instance, CrossProduct, tNatural, \
-#    Tuple, Variable, MultiArc, Expression, Value, ArcAnnotation
+PetriNet = nets.PetriNet
 
 class Pid(object):
 
@@ -43,7 +42,7 @@ class Pid(object):
         '1.2.3'
         """
         pid = Pid()
-        pid.data = frag_list if frag_list else []
+        pid.data = list(frag_list) if frag_list else []
         return pid
 
     def copy(self):
@@ -320,6 +319,9 @@ class Pid(object):
         '1.1.1'
         """
         return '.'.join([repr(e) for e in self.data])
+    
+    def __getitem__(self, index):
+        return self.data[index]
 
 tPid = Instance(Pid) 
 
@@ -415,9 +417,9 @@ class GeneratorMultiArc(ArcAnnotation):
             l.extend(component.vars())
         return l
 
-# dynamicp process creation petri net
+# dynamic process creation Petri net
 
-class DPCPetriNet(PetriNet):
+class DPCPetriNet(nets.PetriNet):
 
     strict = True
 
@@ -427,7 +429,7 @@ class DPCPetriNet(PetriNet):
         [Place('sgen', MultiSet([(Pid.from_str('1'), 0)]), CrossProduct(Instance(Pid), (Instance(int) & GreaterOrEqual(0))))]
 
         """
-        PetriNet.__init__(self, name)
+        nets.PetriNet.__init__(self, name)
         # add generator place
         initial_pid = Pid.from_str('1')
         generator_place = Place("sgen", [(initial_pid, 0)], CrossProduct(tPid, tNatural))
@@ -526,7 +528,85 @@ class DPCPetriNet(PetriNet):
                 generator_arc = GeneratorMultiArc(pid_var, counter_var, new_pids, tuple_list)
                 self.add_output(self._generator_place.name, trans, generator_arc)
                 self.transition(trans).generator_arc = generator_arc
-
+                
+#class TaskTransition(Transition):
+#
+#    def __init__(self, name, guard=None):
+#        if not guard: guard = Expression('True')
+#        Transition.__init__(self, name, guard)
+#        self.entry = None
+#        self.exit = None
+#        self.spawns = []
+#
+#    def spawn(self, tasks):
+#        self.spawns.extend(tasks)
+#
+#class Task(object):
+#
+#    def __init__(self, name, system):
+#        self.name = name
+#        self.system = system
+#        #system.register_task(task=self)
+#        self.entry = Place('{}.e'.format(name), check=tPid)
+#        self.exit  = Place('{}.x'.format(name), check=tPid)
+#        self.transitions = {}
+#        
+#        self.control_counter = -1
+#    
+#    def _new_control(self):
+#        self.control_counter += 1
+#        return Place('{}.i{!s}'.format(self.name, self.control_counter), check=tPid)
+#    
+#    def add_transition(self, name, pre=None, post=None):
+#        if not pre:  pre = self.entry
+#        if not post: post = self._new_control()
+# 
+#        t = TaskTransition(name, guard=Expression('True'))
+#        t.entry = pre
+#        t.add_input(pre, Variable("pid"))
+#        
+#        t.exit = post
+#        t.add_output(post, Variable("pid"))
+#        self.transitions[t.name] = t
+#        
+#    def transition(self, name):
+#        return self.transitions[name]
+#    
+#
+#class DPCPetriNet(PetriNet):
+#    
+#    def __init__(self, name):
+#        PetriNet.__init__(self, name)
+#
+#        self.entry = None
+#        self.tasks = {}
+#        
+#        
+#    def create_task(self, name):
+#        task = Task(name)
+#        self.tasks[task.name] = task
+#        return task
+#    
+#    def set_entry(self, task_name):
+#        self.entry = task_name
+#
+#net = DPCPetriNet("net")
+#
+#task = net.create_task('task')
+#task.add_transition(name='t0')
+#task.add_transition(name='t1', pre=task.transition('t0').exit)
+#task.add_transition(name='t2', pre=task.transition('t0').exit)
+#task.add_transition(name='t3', pre=task.transition('t1').exit)
+#task.add_transition(name='t4', pre=task.transition('t2').exit)
+#
+#main = net.create_task('main')
+#main.add_transition(name='t0')
+#main.add_transition(name='t1', pre=main.transition('t0').exit, post=main.transition('t0').exit) # loop
+#main.transition('t0').spawn( ['task', 'task'] )
+#
+#net.set_entry('main')
+#
+#exit(0)
 
 if __name__ == "__main__":
     import doctest

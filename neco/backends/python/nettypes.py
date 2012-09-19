@@ -67,6 +67,7 @@ class StaticMarkingType(coretypes.MarkingType):
             self.add_method_generator(priv.mrkpidmethods.HashGenerator())
             self.add_method_generator(priv.mrkpidmethods.UpdatePidsGenerator())
             self.add_method_generator(priv.mrkpidmethods.NormalizePidsGenerator())
+            self.add_method_generator(priv.mrkpidmethods.PidFreeCmpGenerator())
         else:
             self.add_method_generator(priv.mrkmethods.EqGenerator())
             self.add_method_generator(priv.mrkmethods.HashGenerator())
@@ -161,10 +162,6 @@ class StaticMarkingType(coretypes.MarkingType):
     def copy_marking_expr(self, env, marking_var, *args):
         return pyast.Call(func=pyast.Attribute(value=pyast.Name(id=marking_var.name),
                                                attr='copy'))
-
-    def gen_get_place(self, env, marking_var, place_name, mutable):
-        return pyast.Attribute(value=pyast.Name(id=marking_var.name),
-                               attr=self.id_provider.get(place_name))
 
     ################################################################################
     # Flow elimination

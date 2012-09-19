@@ -2,11 +2,13 @@
 
 from neco.core.info import TypeInfo, PlaceInfo
 from priv import cyast, placetypes
+from priv.common import IsCythonPyxFile, IsCythonPxdFile
 from priv.lowlevel import ChunkManager
 import neco.core.nettypes as coretypes
 import neco.utils as utils
 import priv.mrkfunctions
 import priv.mrkmethods
+import priv.mrkpidfunctions
 
         
 ################################################################################
@@ -37,10 +39,15 @@ class StaticMarkingType(coretypes.MarkingType):
 
         self._C_function_generators = []
 
-        self.add_C_function_generator(priv.mrkfunctions.CompareGenerator())
         self.add_C_function_generator(priv.mrkfunctions.DumpGenerator())
-        self.add_C_function_generator(priv.mrkfunctions.HashGenerator())
         self.add_C_function_generator(priv.mrkfunctions.CopyGenerator())
+        
+        self.add_C_function_generator(priv.mrkfunctions.CompareGenerator())
+        self.add_C_function_generator(priv.mrkfunctions.HashGenerator())
+
+        if config.normalize_pids:
+            self.add_C_function_generator(priv.mrkpidfunctions.UpdatePidsGenerator())
+            self.add_C_function_generator(priv.mrkpidfunctions.NormalizePidsGenerator())
 
     def add_C_function_generator(self, generator):
         self._C_function_generators.append(generator)
@@ -61,11 +68,18 @@ class StaticMarkingType(coretypes.MarkingType):
     def place_type_from_info(self, place_info):
         """ Returns a PlaceType object based on PlaceInfo type information. """
     
+        if self.config.normalize_pids and place_info.is_generator_place:
+            return placetypes.GeneratorPlaceType(place_info, self)
+    
         pi_type = place_info.type
         if   pi_type.is_Int:        return placetypes.IntPlaceType(place_info, marking_type=self)
         elif pi_type.is_Bool:       return placetypes.ObjectPlaceType(place_info, marking_type=self)
         elif pi_type.is_String:     return placetypes.ObjectPlaceType(place_info, marking_type=self)
         elif pi_type.is_BlackToken: return placetypes.BTPlaceType(place_info, marking_type=self, packed=False)
+        elif pi_type.is_Pid:
+            if self.config.normalize_pids:  return placetypes.PidPlaceType(place_info, marking_type=self)
+            else:                           return placetypes.ObjectPlaceType(place_info, marking_type=self)
+
         elif pi_type.is_UserType:   return placetypes.ObjectPlaceType(place_info, marking_type=self)
         else:
             return placetypes.ObjectPlaceType(place_info, marking_type=self)
@@ -106,7 +120,7 @@ class StaticMarkingType(coretypes.MarkingType):
         self.place_types[place_info.name] = flow_place_type.add_place(place_info)
 
     def gen_types(self):
-        #if self.packing_enabled:
+            #if self.packing_enabled:
         for place_info in self.flow_control_places:
             self.__gen_flow_control_place_type(place_info)
         for place_info in self.one_safe_places:
@@ -133,6 +147,15 @@ class StaticMarkingType(coretypes.MarkingType):
                           args=[cyast.Name('alloc')],
                           keywords=[cyast.Name('True')])
 
+    def generate_code(self, env):
+        ast = self.generate_api(env)
+        output = env.output_provider.get(env.module_name + '.pyx', IsCythonPyxFile())
+        output.body.append(ast)
+        
+        ast = self.generate_pxd(env)
+        output = env.output_provider.get(env.module_name + '.pxd', IsCythonPxdFile())
+        output.body.append(ast)
+        
     def generate_pxd(self, env):
         cls = cyast.Builder.PublicClassCDef(name="Marking",
                                             bases=[cyast.E("object")],
@@ -326,7 +349,11 @@ class StaticMarkingType(coretypes.MarkingType):
             return left_type.gen_place_compraison(env, marking_var, op, right_type)
         else:
             raise NotImplementedError
-        
+
+    def normalize_marking_call(self, env, marking_var):
+        return cyast.stmt(cyast.Call(func=cyast.E("{}.normalize_pids".format(marking_var.name)),
+                                     args=[]))
+
 
 ################################################################################
 

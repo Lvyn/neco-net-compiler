@@ -12,6 +12,7 @@ def gen_asdl():
     compile_asdl('neco/asdl/properties.asdl', 'neco/asdl/properties.py')
     compile_asdl('neco/asdl/netir.asdl',      'neco/asdl/netir.py')
     compile_asdl('neco/asdl/cython.asdl',     'neco/asdl/cython.py')
+    compile_asdl('neco/asdl/cpp.asdl',        'neco/asdl/cpp.py')
 
 std_paths = ['/usr', '/usr/', '/usr/local', '/usr/local/']
 def has_non_std_prefix():
@@ -51,9 +52,14 @@ setup(name='Neco',
                                      'include_no_stats.pyx',
                                      'ctypes_ext.pxd',
                                      'ctypes.h',
-                                     'ctypes.c'] },
+                                     'ctypes_spec.h',
+                                     'ctypes_ext.h',
+                                     'ctypes.cpp'] },
       cmdclass={'build_ext':build_ext},
-      ext_modules=[Extension("neco.ctypes.ctypes_ext", ["neco/ctypes/ctypes_ext.pyx", 'neco/ctypes/ctypes.c'])],
+      ext_modules=[Extension("neco.ctypes.ctypes_ext", 
+                             ["neco/ctypes/ctypes_ext.pyx",
+                              'neco/ctypes/ctypes.cpp'],
+                             language='c++')],
       license='LGPL',
       scripts=['bin/neco-check',
                'bin/neco-compile',

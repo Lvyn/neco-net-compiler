@@ -1,60 +1,122 @@
-
 cdef extern from "ctypes.h":
-    ctypedef struct int_place_type_t:
-        pass
+        cdef cppclass TGenericPlaceType[T]:
+                TGenericPlaceType()
+                TGenericPlaceType(TGenericPlaceType[T]&)
 
-    int int_place_type_eq(int_place_type_t* pt1, int_place_type_t* pt2)
-    int int_place_type_cmp(int_place_type_t* pt1, int_place_type_t* pt2)
-    int int_place_type_hash(int_place_type_t* pt)
-    int int_place_type_not_empty(int_place_type_t* pt)
+                void decrement_ref()
+                void increment_ref()
 
-    int_place_type_t* int_place_type_new()
-    void int_place_type_free(int_place_type_t* dst)
-    int_place_type_t* int_place_type_copy(int_place_type_t* origin)
-    int_place_type_t* int_place_type_light_copy(int_place_type_t* origin)
-    void int_place_type_clean(int_place_type_t *pt)
+                int equals(TGenericPlaceType[T]&)
+                int compare(TGenericPlaceType[T]&)
+                int hash()
+                int not_empty()
 
-    void int_place_type_add(int_place_type_t *pt, int value)
-    void int_place_type_rem_by_index(int_place_type_t *pt, int index)
-    void int_place_type_rem_by_value(int_place_type_t *pt, int index)
+                clean()
 
-    int int_place_type_get(int_place_type_t* pt, int index)
-    int int_place_type_size(int_place_type_t* pt)
-    void int_place_type_update(int_place_type_t* left, int_place_type_t* right)
-    char* int_place_type_cstr(int_place_type_t* pt)
+                void add(T& value)
+                void remove_by_value(T&)
+                void remove_by_index(int)
 
-    void structure_copy(void* dst, void* src, int n)
-    int structure_cmp(void* dst, void* src, int n)
-    int  structure_to_int(void* dst, int i)
-    char structure_to_char(void* dst, int i)
+                T& get(int)
+                int size()
+                void update(TGenericPlaceType[T]&)
+                char* cstr()
 
-    ctypedef struct neco_list_node_t:
-        pass
+        cdef cppclass TPid[T]:
+                TPid()
+                TPid(int i)
+                TPid(TPid[T]& pid)
+                TPid(TPid[T]& pid, int next)
+                bint operator == (TPid[T]& right)
+                int compare(TPid[T]& right)
 
-    ctypedef struct neco_list_t:
-        pass
+        cdef cppclass Pair[T1, T2]:
+                T1 get_first()
+                T2 get_second()
 
-    neco_list_t* neco_list_new()
-    void neco_list_push_front(neco_list_t* list, object elt)
+        cdef cppclass TGeneratorPlaceType[PidType, CounterType]:
+                TGeneratorPlaceType()
+                TGeneratorPlaceType(TGeneratorPlaceType[PidType, CounterType]&)
+
+                void increment_ref()
+                void decrement_ref()
+
+                void update_pid_counter(PidType&, CounterType&)
+                void remove_pid(PidType&)
+                char* cstr()
+                Pair[PidType, CounterType] get(int)
+
+                int size()
+                int hash()
+                int compare(TGeneratorPlaceType[PidType, CounterType]&)
+
+    # ctypedef struct neco_list_node_t:
+    #     pass
+
+    # ctypedef struct neco_list_t:
+    #     pass
+
+    # neco_list_t* neco_list_new()
+    # void neco_list_push_front(neco_list_t* list, object elt)
     # void neco_list_delete(neco_list_t* list, deletion_callback del)
     # neco_list_node_t* neco_list_first(neco_list_t* list)
     # neco_list_node_t* neco_list_node_next(neco_list_node_t* node)
-
-    void __Pyx_INCREF(object o)
+#void __Pyx_INCREF(object o)
 
 cdef class MultiSet:
-    cdef dict _data
+        cdef dict _data
 
-    cdef MultiSet copy(MultiSet self)
-    cdef void add(MultiSet self, object elt)
-    cdef add_items(self, items)
-    cdef void remove(MultiSet self, elt)
-    cdef size(MultiSet self)
-    cdef int hash(MultiSet self)
-    cdef int compare(MultiSet self, MultiSet other)
-    cdef void update(MultiSet self, MultiSet other)
-    cdef list domain(MultiSet self)
-    cpdef __dump__(MultiSet self)
-    cdef has_key(MultiSet self, object key)
+        cdef MultiSet copy(MultiSet self)
+        cdef void add(MultiSet self, object elt)
+        cdef add_items(self, items)
+        cdef void remove(MultiSet self, elt)
+        cdef size(MultiSet self)
+        cdef int hash(MultiSet self)
+        cdef int compare(MultiSet self, MultiSet other)
+        cdef void update(MultiSet self, MultiSet other)
+        cdef list domain(MultiSet self)
+        cpdef __dump__(MultiSet self)
+        cdef has_key(MultiSet self, object key)
 
-cdef MultiSet int_place_type_to_multiset(int_place_type_t* pt)
+
+
+cdef api class Pid[object Pid, type Pid]:
+        cdef TPid[int]* mPid
+
+cdef extern from "ctypes_spec.h":
+        cdef cppclass TPidFormatter
+
+
+# cdef class Pid:
+#       cdef list data
+
+#       cpdef copy_update(Pid self, Pid other)
+#       cpdef Pid copy(Pid self)
+#       cpdef append(Pid self, int frag)
+#       cpdef Pid subpid(Pid self, int begin, int end)
+#       cpdef int at(Pid self, int i)
+#       cpdef Pid prefix(Pid self)
+#       cpdef Pid suffix(Pid self)
+#       cpdef int ends_with(Pid self)
+#       cdef int cmp(Pid self, Pid other)
+#       cpdef Pid next(Pid self, int pid_component)
+#       cpdef int parent(Pid self, Pid other)
+#       cpdef int parent1(Pid self, Pid other)
+#       cpdef int sibling(Pid self, Pid other)
+#       cpdef int sibling1(Pid self, Pid other)
+#       cdef int hash(Pid self)
+
+# cdef Pid initial_pid()
+
+# cdef list pid_place_type_copy(list origin)
+# cdef int pid_place_type_hash(list place)
+# cdef int pid_place_type_cmp(list l, list r)
+
+# cdef MultiSet int_place_type_to_multiset(int_place_type_t* pt)
+
+# cdef int list_hash(list l)
+# cdef int generator_place_type_hash(dict generator)
+# cdef dict generator_place_type_copy(dict generator)
+# cdef generator_place_type_cstr(dict generator)
+# cdef int generator_place_type_cmp(dict left, dict right)
+# cdef pid_place_type_cstr(list pid)

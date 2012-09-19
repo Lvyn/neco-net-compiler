@@ -220,6 +220,9 @@ class TypeInfo(object):
             def match_tuple(self, raw):
                 return TypeInfo.TupleType([ TypeInfo.from_raw(elt) for elt in raw ])
 
+            def match_Pid(self, raw):
+                return TypeInfo.Pid
+
             def default(self, raw):
                 return TypeInfo.AnyType
         return matcher().match(raw)
@@ -314,6 +317,28 @@ class TypeInfo(object):
     def user_type_name(self):
         assert(self.is_UserType)
         return self._type_name
+    
+    @property
+    def allows_pids(self):
+        """
+        >>> t = TypeInfo.get('Pid')
+        >>> t.allows_pids
+        True
+        >>> t = TypeInfo.get('Int')
+        >>> t.allows_pids
+        False
+        >>> t = TypeInfo.TupleType([TypeInfo.get('Int'), TypeInfo.get('Int')])
+        >>> t.allows_pids
+        False
+        >>> t = TypeInfo.TupleType([TypeInfo.get('Pid'), TypeInfo.get('Int')])
+        >>> t.allows_pids
+        True
+        >>> t = TypeInfo.TupleType([TypeInfo.get('Int'), TypeInfo.TupleType([TypeInfo.get('Pid'), TypeInfo.get('Int')])])
+        >>> t.allows_pids
+        True
+        """
+        red = lambda acc, x : (acc or x.allow_pids)
+        return self.is_Pid or (self.is_TupleType and reduce(red, self.split(), False))
 
 TypeInfo.AnyType = TypeInfo(kind=TypeKind.AnyType)
 TypeInfo.register_type('Int')
@@ -993,6 +1018,11 @@ class PlaceInfo(object):
         self._type = place_type
 
     @property
+    def is_generator_place(self):
+        # \todo
+        return self._name == 'sgen'
+        
+    @property
     def process_name(self):
         return self._process_name
 
@@ -1071,6 +1101,7 @@ class NetInfo(object):
 
         self.declare = getattr(net, '_declare', [])
         self.places = []
+
         for p in net.place():
             self.places.append(PlaceInfo(p))
 

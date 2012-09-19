@@ -185,7 +185,10 @@ class Builder(coreir.BuilderBase):
 
         def __ast__(self):
             return self.node
-
+        
+        def ast(self):
+            return self.node
+        
         @property
         def body(self):
             return E(self.node.body)

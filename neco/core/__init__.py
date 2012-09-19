@@ -1023,11 +1023,20 @@ class Compiler(object):
 
         for place_info in self.net_info.places:
             if len(place_info.tokens) > 0:
-                # add tokens
-                if self.config.optimize_flow and place_info.flow_control:
+                # first handle generator place
+                if self.config.normalize_pids:
+                    if place_info.is_generator_place:
+                        builder.emit_InitGeneratorPlace(marking_var = marking_var)
+                        continue
+                
+                # pid normalization and flow optimizations are exclusive
+                
+                elif self.config.optimize_flow and place_info.flow_control:
                     builder.emit_UpdateFlow(marking_var = marking_var,
                                             place_info = place_info);
                     continue
+
+                # handle other places
 
                 for token in place_info.tokens:
                     info = TokenInfo.from_raw( token )
@@ -1037,7 +1046,14 @@ class Compiler(object):
                                                tuple_info = info )
                     elif info.is_Value:
                         t = info.type
-                        if t in [ TypeInfo.Int, TypeInfo.BlackToken ]:
+                        if self.config.normalize_pids and t.is_Pid:
+                            #assert(token == Pid.from_str('1'))
+                            builder.emit_AddPid( marking_var = marking_var, 
+                                                 place_name = place_info.name, 
+                                                 token_expr = netir.Token(value = token,
+                                                                          place_name = place_info.name) )
+                        
+                        elif t in [ TypeInfo.Int, TypeInfo.BlackToken ]:
                             builder.emit_AddToken( marking_var = marking_var,
                                                    place_name = place_info.name,
                                                    token_expr = netir.Token( value = token,

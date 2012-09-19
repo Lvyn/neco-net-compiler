@@ -7,6 +7,8 @@ import StringIO
 import cPickle as cPickle
 import neco.core.netir as coreir
 
+GENERATOR_PLACE = 'sgen'
+
 ################################################################################
 
 class CompilerVisitor(coreir.CompilerVisitor):
@@ -398,10 +400,31 @@ class CompilerVisitor(coreir.CompilerVisitor):
                                                      marking_var = node.marking_var,
                                                      place_info = node.place_info)
 
+    ################################################################################
+    # Marking normalization
+    ################################################################################
+
+    def compile_InitGeneratorPlace(self, node):
+        marking_type = self.env.marking_type
+        generator_place = marking_type.get_place_type_by_name(GENERATOR_PLACE)
+        return [ generator_place.add_token_stmt(self.env,
+                                                pyast.E("( Pid.from_str('1'), 0 )"), 
+                                                node.marking_var) ]
+
     def compile_NormalizeMarking(self, node):
         return self.env.marking_type.normalize_marking_call(env = self.env,
                                                             marking_var = node.marking_var)
         
+    def compile_AddPid(self, node):
+        place_type = self.env.marking_type.get_place_type_by_name(node.place_name)
+        return place_type.add_token_stmt(env=self.env,
+                                         compiled_token=self.compile(node.token_expr),
+                                         marking_var=node.marking_var)
+        
+    def compile_InitialPid(self, node):
+        return pyast.E("Pid.from_str('1')")
+
+    
 ################################################################################
 # EOF
 ################################################################################

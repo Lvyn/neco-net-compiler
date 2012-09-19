@@ -98,13 +98,13 @@ class ReprGenerator(MarkingTypeMethodGenerator):
         builder.begin_FunctionDef( name = "__repr__", args = pyast.A("self").ast() )
 
         builder.emit( pyast.E('s = "hdict({"') )
-        for (i, (place_name, _)) in enumerate(items):
+        for (i, (place_name, place_type)) in enumerate(items):
             tmp = ',\n ' if i > 0 else ''
             builder.emit(pyast.AugAssign(target=pyast.Name(id='s'),
                                        op=pyast.Add(),
                                        value=pyast.BinOp(left=pyast.Str(s = tmp + "'" + place_name + "' : "),
                                                        op=pyast.Add(),
-                                                       right=pyast.E('repr(self.' + marking_type.id_provider.get(place_name) + ')')
+                                                       right=pyast.E('repr(self.' + place_type.field.name + ')')
                                                        )
                                        )
                          )
@@ -149,4 +149,45 @@ class DumpGenerator(MarkingTypeMethodGenerator):
         builder.emit_Return(pyast.E('"\\n".join({})'.format(list_var.name)))
 
         builder.end_FunctionDef()
-        return builder.ast()
+        return builder.ast()        
+        
+#
+#class DotGenerator(MarkingTypeMethodGenerator):
+#    
+#    def generate(self, env):
+#        marking_type = env.marking_type
+#        
+#        items = list(marking_type.place_types.iteritems())
+#        items.sort(lambda (n1, t1), (n2, t2) : cmp(n1, n2))
+#
+#        vp = VariableProvider()
+#        self_var = vp.new_variable(marking_type.type, name='self')
+#        list_var = vp.new_variable()
+#
+#        builder = pyast.Builder()
+#        builder.begin_FunctionDef( name = "__dot__", args = pyast.A(self_var.name).ast() )
+#
+#        builder.emit( pyast.E('%s = ["[shape=record,label=\\\"{"]' % list_var.name) )
+#        for i, (place_name, place_type) in enumerate(items):
+#            if i > 0:
+#                builder.emit( pyast.stmt( pyast.E('%s.append("\l|")' % list_var.name) ) )
+#
+#            if place_type.is_ProcessPlace:
+#                builder.emit( place_type.dump_expr(env, self_var, list_var) )
+#            else:
+#                builder.emit(pyast.stmt(pyast.Call(func=pyast.E('{}.append'.format(list_var.name)),
+#                                           args=[ pyast.BinOp(left = pyast.Str(s = repr(place_name) + " : "),
+#                                                            op = pyast.Add(),
+#                                                            right = pyast.BinOp(left = pyast.B('dot_protect_string').call([place_type.dump_expr(env, self_var)]).ast(),
+#                                                                              op = pyast.Add(),
+#                                                                              right = pyast.Str(', '))
+#                                                            ) ]
+#                                           )
+#                                  )
+#                             )
+#
+#        builder.emit(pyast.stmt(pyast.E('%s.append("\l}\\\"]")' % list_var.name)))
+#        builder.emit_Return(pyast.E('"".join({})'.format(list_var.name)))
+#
+#        builder.end_FunctionDef()
+#        return builder.ast()

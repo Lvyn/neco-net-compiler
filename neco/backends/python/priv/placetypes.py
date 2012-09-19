@@ -1,6 +1,6 @@
 from mrkpidmethods import stubs
 from neco.backends.python.priv import pyast
-from neco.core.info import TypeInfo
+from neco.core.info import TypeInfo, VariableProvider
 from neco.utils import should_not_be_called
 import neco.core.nettypes as coretypes
 
@@ -12,10 +12,7 @@ class PythonPlaceType(object):
     allow_pids = False
 
     def place_expr(self, env, marking_var):
-        return self.marking_type.gen_get_place(env,
-                                               marking_var=marking_var,
-                                               place_name=self.info.name,
-                                               mutable=False)
+        return pyast.E(self.field.access_from(marking_var))
 
     @property
     def is_ProcessPlace(self):
@@ -66,7 +63,7 @@ class ObjectPlaceType(coretypes.ObjectPlaceType, PythonPlaceType):
     def light_copy_stmt(self, env, dst_marking_var, src_marking_var):
         return pyast.E("{} = {}".format(self.field.access_from(dst_marking_var),
                                         self.field.access_from(src_marking_var)))
-        
+
     def clear_stmt(self, env, marking_var):
         return pyast.E("{} = multiset()".format(self.field.access_from(marking_var)))
 
@@ -97,9 +94,58 @@ class ObjectPlaceType(coretypes.ObjectPlaceType, PythonPlaceType):
     
     def update_pid_tree(self, env, marking_var, pid_tree_var):
         stub_name = stubs['object_place_type_update_pid_tree']
+        return pyast.For(target=pyast.E(token_var.name),
+                         iter=place_expr,
+                         body=[])
+        
         return pyast.stmt(pyast.Call(func=pyast.Name(stub_name),
                                      args=[self.place_expr(self, marking_var),
                                            pyast.Name(pid_tree_var.name)]))
+        
+    def enumerate(self, env, marking_var, token_var, compiled_body):
+        return pyast.For(target=pyast.Name(token_var.name), 
+                         iter = self.iterable_expr(env, marking_var),
+                         body = compiled_body,
+                         orelse = [])
+    
+    def pid_free_compare_expr(self, env, left_marking_var, right_marking_var):
+        self_place_expr = pyast.E(self.field.access_from(left_marking_var))
+        other_place_expr = pyast.E(self.field.access_from(right_marking_var))
+        return pyast.B(self_place_expr).attr('pid_free_compare').call([other_place_expr]).ast()
+    
+    def extract_pids(self, env, marking_var, dict_var):
+        place_expr = pyast.E(self.field.access_from(marking_var))
+
+        vp = VariableProvider()
+        token_var = vp.new_variable(TypeInfo.get('AnyType'), name='token')
+        pid_var = vp.new_variable(TypeInfo.get('AnyType'), name='pid')
+        dict_marking_var = vp.new_variable(TypeInfo.get('Dict'), name='d')
+        assign_dict_marking = pyast.E("{} = {}[{}[0]]".format(dict_marking_var.name, dict_var.name, token_var.name))
+
+        subscr = "{}[{}]".format(dict_var.name, pid_var.name)
+        update_dict =  pyast.If(test=pyast.E('{}.has_key({})'.format(dict_var.name, 
+                                                                     pid_var.name)),
+                                body=[ pyast.stmt(pyast.B(subscr).attr(self.field.name).attr('add').call([pyast.E(token_var.name)]).ast()) ],
+                                orelse=[ pyast.E('{} = Marking()'.format(subscr)),
+                                        pyast.stmt(pyast.B(subscr).attr(self.field.name).attr('add').call([pyast.E(token_var.name)]).ast()) ] ) 
+        return pyast.For(target=pyast.E(token_var.name), iter=place_expr, body=
+                         [ # assign_dict_marking,
+                          pyast.If(test=pyast.E('isinstance({}, Pid)'.format(token_var.name)),
+                                   body=[ pyast.E('{} = {}'.format(pid_var.name, token_var.name)),
+                                          update_dict],
+                                   orelse=[pyast.If(test=pyast.E('isinstance({}, tuple)'.format(token_var.name)),
+                                                    body=pyast.If(test=pyast.E('isinstance({}[0], Pid)'.format(token_var.name)),
+                                                                  body=[ pyast.E('{} = {}[0]'.format(pid_var.name, token_var.name)),
+                                                                         update_dict],
+                                                                  orelse=[]))])])
+                                
+                                                                           
+                      
+                      
+                          
+
+        return pyast.stmt(pyast.B("iterable_update_pid_dict").call([place_expr, pyast.Name(dict_var.name)]).ast())
+        
 
 ################################################################################
 # opt

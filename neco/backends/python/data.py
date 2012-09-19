@@ -298,12 +298,83 @@ class multiset(hdict):
         @rtype: C{bool}
         """
         return other.__le__(self)
+    def compare(self, other):
+        if self < other:
+            return -1
+        elif self > other:
+            return 1
+        else:
+            return 0
+
+    def pid_free_compare(self, other):
+
+        self_keys = self.keys()
+        other_keys = other.keys()
+        tmp = len(self_keys) - len(other_keys)
+        if tmp != 0:
+            return tmp
+        if len(self_keys) == 0:
+            return 0
+        key = self_keys[0]
+        if isinstance(key, Pid):
+            return self.pid_free_compare_pid(other)
+        
+        elif isinstance(key, tuple) and isinstance(key[0], Pid):
+            return self.pid_free_compare_tuple1(other)
+        
+        else:
+            return self.compare(other)
+
+    def pid_free_compare_pid(self, other):
+        self_keys = self.keys()
+        other_keys = other.keys()
+        
+        #len(self_keys) == len(other_keys)
+        l = self[self_keys[0]]
+        r = other[other_keys[0]]
+        # print l, r
+        return  l - r
+
+    def pid_free_compare_tuple1(self, other):
+        self_keys = self.keys()
+        other_keys = other.keys()
+        l1 = len(self_keys)
+        l2 = len(other_keys)
+        i = 0
+
+        if l1 < l2:
+            return -1
+        elif l1 > l2:
+            return 1
+
+        # ensure we are working on sorted domain
+        self_keys.sort()
+        other_keys.sort()
+
+        for i in xrange(0,l1):
+            lkey = self_keys[i]
+            rkey = other_keys[i]
+
+            ltuplefree = lkey[:-1]
+            rtuplefree = rkey[:-1] 
+            if ltuplefree == rtuplefree: # equal tuples, without pids
+                v1 = self[lkey]
+                v2 = other[rkey]
+                cmp = v1 - v2
+                if cmp != 0:
+                    return cmp
+                continue
+            elif ltuplefree < rtuplefree:
+                return -1
+            else:
+                return 1
+        return 0
 
     def update(self, other):
         hdict.update(self, other)
 
     def domain(self):
-        """
+        """!
         >>> multiset(['foo', 'foo', 'bar']).domain()
         ['foo', 'bar']
 
@@ -372,7 +443,7 @@ def neco__multiset_update_pids(ms, new_pid_dict):
     new_ms = multiset()
     for tok, count in ms.iteritems():
         if isinstance(tok, Pid):
-            new_tok = Pid.from_list(new_pid_dict[tok].data)
+            new_tok = Pid.from_list(new_pid_dict[tuple(tok.data)])
         elif isinstance(tok, tuple):
             new_tok = neco__tuple_update_pids(tok, new_pid_dict)
         else:
@@ -395,10 +466,11 @@ def neco__generator_token_transformer(ms, new_pid_dict):
     multiset([(Pid.from_str('1.1'), 0), (Pid.from_str('1'), 2)])
 
     """
+    # print ">>> ", new_pid_dict
     new_ms = multiset()
     for pid, n in ms:
-        new_pid = Pid.from_list(new_pid_dict[pid].data)
-        new_n = Pid.from_list(new_pid_dict[ pid.next(n) ].data).ends_with() - 1
+        new_pid = Pid.from_list(new_pid_dict[tuple(pid.data)])
+        new_n = Pid.from_list(new_pid_dict[ tuple(pid.next(n).data) ]).ends_with() - 1
         new_ms.add((new_pid, new_n))
     return new_ms
 
@@ -459,11 +531,12 @@ def neco__iterable_update_pid_tree(iterable, pid_tree):
             neco__iterable_update_pid_tree(tok, pid_tree)
 
 def neco__create_pid_tree():
-    return PidTree()
+    return PidTree(0)
 
 def neco__normalize_pid_tree(pid_tree):
     return pid_tree.reduce_sibling_offsets()
-    
+
+            
 if __name__ == "__main__":
     import doctest
     doctest.testmod()

@@ -73,6 +73,10 @@ module netir version "$Revision: 1 $"
 		  	 identifier place_name,
 		  	 Expr token_expr)
 
+   	| AddPid(VariableInfo marking_var,
+		     identifier place_name,
+		  	 Expr token_expr)
+
 	| RemToken(VariableInfo marking_var,
 		   	   identifier place_name,
 		   	   Expr token_expr,
@@ -118,6 +122,19 @@ module netir version "$Revision: 1 $"
 	| Return(Expr expr)
 
 	| Comment(str message)
+	
+	| UpdateSpawns(VariableInfo marking_var,
+				   VariableInfo pid_var,
+				   Expr count)
+	
+	| DisableSpawns(VariableInfo marking_var,
+					VariableInfo pid_var)
+	
+	| InitGeneratorPlace(VariableInfo marking_var)
+	
+	| SpawnPid(VariableInfo marking_var, 
+			   VariableInfo parent_pid_var,
+			   VariableInfo spawned_pid)
 
 	| NormalizeMarking(VariableInfo marking_var)
 	
@@ -147,7 +164,9 @@ module netir version "$Revision: 1 $"
 	| FlowCheck(VariableInfo marking_var,
 			    PlaceInfo place_info,
 			    Expr? current_flow)
-			    
+
+	| InitialPid
+
     PComponent =
 	PVar(identifier name)
 	| PValue(object value)

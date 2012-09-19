@@ -4,8 +4,9 @@ from abc import abstractmethod, ABCMeta
 from functools import wraps
 from os.path import exists, abspath
 from snakes.nets import WordSet
-import sys
 import ast
+import sys
+import traceback
 
 def flatten_lists(l):
     """ Make a list of lists flat.
@@ -265,7 +266,7 @@ class IDProvider(object):
 
         return self.assoc[obj]
 
-class StringIDProvider(object):
+class StringIDProvider(object): 
     """ simple class that provides unique identifiers for objects.
     """
 
@@ -393,7 +394,6 @@ class NameProvider(object):
             new = self._next(obj, base)
             self.assoc[obj] = new
             return new
-
 
 ################################################################################
 # Decorator
@@ -746,3 +746,38 @@ def reverse_map(a_b_map):
 ################################################################################
 # EOF
 ################################################################################
+
+class OutputProviderPredicate(object):
+    
+    def __call__(self, ouput):
+        return True
+
+class OutputProvider(object):
+    
+    def __init__(self):
+        self.providers = {}
+
+    def register(self, output):
+        if self.providers.has_key(output.name):
+            print >> sys.stderr, "{!s} output already exists. Please use another output.".format(output.name)
+            traceback.print_stack()
+            exit(-1)
+
+        self.providers[output.name] = output
+        
+    def get(self, output_name, predicate = OutputProviderPredicate()):
+        try:
+            output = self.providers[output_name]
+            if predicate(output):
+                return output
+            else:
+                print >> sys.stderr, "{!s} do not satisfy {!s}".format(output_name, predicate)
+                traceback.print_stack()
+                exit(-1)
+        except KeyError:
+            print >> sys.stderr, "{!s} in not a valid output name. Please register an output before using it.".format(output_name)
+            traceback.print_stack()
+            exit(-1)
+
+    def __iter__(self):
+        return self.providers.itervalues()

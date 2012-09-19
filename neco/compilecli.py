@@ -151,7 +151,7 @@ class Main(object):
                                 search_paths=args.includes,
                                 trace_calls=False,
                                 trace_file=trace,
-                                pid_normalization=args.pid_normalization,
+                                normalize_pids=args.pid_normalization,
                                 model=model_file)
 
         # retrieve the Petri net from abcd file (produces a pnml file)
@@ -177,7 +177,7 @@ class Main(object):
         if profile:
             # produce compiler trace
             import cProfile
-            cProfile.run('compilecli.Main._instance_.compile()', 'compile.prof')
+            cProfile.run('neco.compilecli.Main._instance_.compile()', 'compile.prof')
 
         else: # without profiler
             self.compile()

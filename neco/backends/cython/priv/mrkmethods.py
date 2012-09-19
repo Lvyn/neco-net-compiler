@@ -183,7 +183,7 @@ class HashGenerator(MarkingTypeMethodGenerator):
 #                else:
             if place_type.get_attribute_name() in hashed:
                 continue
-            
+
             place_hash = place_type.hash_expr(env, marking_var = self_var)
             builder.emit(cyast.Assign(targets=[cyast.Name('h')],
                                       value=cyast.BinOp(left=cyast.BinOp(left=cyast.Name('h'),

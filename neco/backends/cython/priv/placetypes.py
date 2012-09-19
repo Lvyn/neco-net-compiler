@@ -1,5 +1,6 @@
 from common import NecoTypeError, from_neco_lib
 from lowlevel import Mask
+from neco import extsnakes
 from neco.core.info import TypeInfo
 from neco.core.nettypes import provides_by_index_access, \
     provides_by_index_deletion
@@ -96,8 +97,6 @@ def checking_without_helper(cls):
     cls._checking_need_helper_ = False
     return cls
 
-
-
 class CythonPlaceType(object):
     """ Base class for cython place types. """
 
@@ -105,6 +104,10 @@ class CythonPlaceType(object):
     _revelant_ = True # should be dumped
     _helper_ = False
     _checking_need_helper_ = True
+
+    @property
+    def allows_pids(self):
+        return self.type.allows_pids
 
     def get_attribute_name(self):
         return self.chunk.get_attribute_name()
@@ -233,153 +236,140 @@ class ObjectPlaceType(coretypes.ObjectPlaceType, CythonPlaceType):
     def multiset_expr(self, env, marking_var):
         return self.attribute_expr(env, marking_var)
 
+
+def check_index_type(index_expr):
+    if not index_expr.type.is_Int:
+        raise NecoTypeError(expr=index_expr, type=index_expr.type, expected=TypeInfo.get('Int'))
+
+def check_marking_type(marking_expr):
+    if not marking_expr.type.is_Marking:
+        raise NecoTypeError(expr=marking_expr, type=marking_expr.type, expected=TypeInfo.get('Marking'))
+
 @provides_by_index_access
 @provides_by_index_deletion
-class IntPlaceType(coretypes.PlaceType, CythonPlaceType):
+class GenericPlaceType(coretypes.PlaceType, CythonPlaceType):
     """ Place type for small unbounded 'int' places. """
 
-    def __init__(self, place_info, marking_type):
-        assert(place_info.type == TypeInfo.get('Int'))
+    def __init__(self, place_info, marking_type, impl_place_type, impl_token_type):
         coretypes.PlaceType.__init__(self,
                                      place_info=place_info,
                                      marking_type=marking_type,
-                                     type_info=TypeInfo.get('IntPlace'),
-                                     token_type=place_info.type)
+                                     type_info=impl_place_type,
+                                     token_type=impl_token_type)
 
-        self.chunk = marking_type.chunk_manager.new_chunk(marking_type.id_provider.get(self),
-                                                 TypeInfo.get('IntPlace'))
-        self.chunk.hint = "{} - {!s}".format(place_info.name, place_info.type)
+        self.chunk = marking_type.chunk_manager.new_chunk(marking_type.id_provider.get(self), impl_place_type)
+        self.chunk.hint = "{} - {!s} (impl {!s})".format(place_info.name, place_info.type, impl_place_type)
+        
+    def generic_type_name(self, env):
+        return from_neco_lib('TGenericPlaceType[' + env.type2str(self.token_type) + ']')
 
     def attribute_expr(self, env, marking_var):
-        return cyast.E('{}.{}'.format(marking_var.name,
-                                      self.chunk.get_attribute_name()))
-        
-    def check_token_type(self, token_expr):
-        if not token_expr.type.is_Int:
-            raise NecoTypeError(expr=token_expr, type=token_expr.type, expected=TypeInfo.get('Int'))
-
-    def check_index_type(self, index_expr):
-        if not index_expr.type.is_Int:
-            raise NecoTypeError(expr=index_expr, type=index_expr.type, expected=TypeInfo.get('Int'))
-
-    def check_marking_type(self, marking_expr):
-        if not marking_expr.type.is_Marking:
-            raise NecoTypeError(expr=marking_expr, type=marking_expr.type, expected=TypeInfo.get('Marking'))
+        return cyast.E('{}.{}'.format(marking_var.name, self.chunk.get_attribute_name()))
 
     def new_place_stmt(self, env, marking_var):
         return cyast.Assign(targets=[self.attribute_expr(env, marking_var)],
-                            value=cyast.E(from_neco_lib("int_place_type_new()")))
+                            value=cyast.Name('new {}()'.format(self.generic_type_name(env))))
 
     def delete_stmt(self, env, marking_var):
         place_expr = self.attribute_expr(env, marking_var)
-        return cyast.stmt(cyast.Call(func=cyast.E(from_neco_lib("int_place_type_free")),
-                                     args=[ place_expr ])
-                    )
+        return cyast.stmt(cyast.Builder.Helper(place_expr).attr("decrement_ref").call().ast())
 
     def hash_expr(self, env, marking_var):
         place_expr = self.attribute_expr(env, marking_var)
-        return cyast.Call(func=cyast.E(from_neco_lib("int_place_type_hash")),
-                          args=[ place_expr ])
+        return cyast.Call(func=cyast.Builder.Helper(place_expr).attr("hash").ast())
 
     def eq_expr(self, env, left, right):
-        return cyast.Call(func=cyast.E(from_neco_lib("int_place_type_eq")),
-                          args=[ left, right ])
+        return cyast.Call(func=cyast.Builder.Helper(left).attr("equals").ast(), args=[ right ])
 
     @should_not_be_called
     def iterable_expr(self, env, marking_var): pass
 
     def remove_token_stmt(self, env, token_expr, compiled_token, marking_var):
-        #self.check_token_type(token_expr)
-        self.check_marking_type(marking_var)
+        check_marking_type(marking_var)
 
         place_expr = self.attribute_expr(env, marking_var)
-        return cyast.stmt(cyast.Call(func=cyast.E(from_neco_lib("int_place_type_rem_by_value")),
-                               args=[ place_expr, compiled_token ])
-                    )
+        return cyast.stmt(cyast.Call(func=cyast.Builder.Helper(place_expr).attr("remove_by_value").ast(),
+                                     args=[ compiled_token ]))
 
     def remove_by_index_stmt(self, env, index_var, compiled_index, marking_var):
-        self.check_index_type(index_var)
-        self.check_marking_type(marking_var)
+        check_index_type(index_var)
+        check_marking_type(marking_var)
 
         place_expr = self.attribute_expr(env, marking_var)
-        return cyast.stmt(cyast.Call(func=cyast.E(from_neco_lib("int_place_type_rem_by_index")),
-                               args=[ place_expr, cyast.E(index_var.name) ])
+        return cyast.stmt(cyast.Call(func=cyast.Builder.Helper(place_expr).attr("remove_by_index").ast(),
+                               args=[ cyast.E(index_var.name) ])
                     )
 
     def add_token_stmt(self, env, token_expr, compiled_token, marking_var):
-        #self.check_token_type(token_expr)
-        self.check_marking_type(marking_var)
+        check_marking_type(marking_var)
 
         place_expr = self.attribute_expr(env, marking_var)
-        return cyast.stmt(cyast.Call(func=cyast.E(from_neco_lib("int_place_type_add")),
-                               args=[ place_expr, compiled_token ])
-                    )
+        return cyast.stmt(cyast.Call(func=cyast.Builder.Helper(place_expr).attr("add").ast(),
+                                     args=[ compiled_token ]))
 
     def copy_stmt(self, env, dst_marking_var, src_marking_var):
-        self.check_marking_type(src_marking_var)
-        self.check_marking_type(dst_marking_var)
+        check_marking_type(src_marking_var)
+        check_marking_type(dst_marking_var)
 
         attr_name = self.chunk.get_attribute_name()
-        return cyast.E("{}.{} = {}({}.{})".format(dst_marking_var.name, attr_name,
-                                                  from_neco_lib("int_place_type_copy"),
-                                                  src_marking_var.name, attr_name))
+        
+        # hack allowing new
+        construction = 'new {}(deref({}.{}))'.format(self.generic_type_name(env), src_marking_var.name, attr_name)
+        # hack to allow new
+        return cyast.stmt(cyast.Name("{}.{} = {}".format(dst_marking_var.name, attr_name, construction)))
         
     def light_copy_stmt(self, env, dst_marking_var, src_marking_var):
-        self.check_marking_type(dst_marking_var)
-        self.check_marking_type(src_marking_var)
+        check_marking_type(dst_marking_var)
+        check_marking_type(src_marking_var)
 
         attr_name = self.chunk.get_attribute_name()
-
-        return cyast.E("{}.{} = {}({}.{})".format(dst_marking_var.name, attr_name,
-                                                  from_neco_lib("int_place_type_light_copy"),
-                                                  src_marking_var.name, attr_name))
+        return [ cyast.E("{}.{} = {}.{}".format(dst_marking_var.name, attr_name,
+                                              src_marking_var.name, attr_name)),
+                 cyast.stmt(cyast.Builder.Helper("{}.{}".format(dst_marking_var.name, attr_name)).attr("increment_ref").call().ast()) ]
     
     def get_size_expr(self, env, marking_var):
-        self.check_marking_type(marking_var)
+        check_marking_type(marking_var)
+        
         place_expr = self.attribute_expr(env, marking_var)
-        return cyast.Call(func=cyast.E(from_neco_lib("int_place_type_size")),
-                          args=[ place_expr ])
+        return cyast.Call(func=cyast.Builder.Helper(place_expr).attr("size").ast())
 
     def get_token_expr(self, env, index_expr, compiled_index, marking_var):
-        self.check_index_type(index_expr)
-        self.check_marking_type(marking_var)
+        check_index_type(index_expr)
+        check_marking_type(marking_var)
 
         place_expr = self.attribute_expr(env, marking_var)
-        return cyast.Call(func=cyast.E(from_neco_lib("int_place_type_get")),
-                          args=[ place_expr, compiled_index ])
+        return cyast.Call(func=cyast.Builder.Helper(place_expr).attr("get").ast(),
+                          args=[ compiled_index ])
 
     def clear_stmt(self, env, marking_var):
-        self.check_marking_type(marking_var)
+        check_marking_type(marking_var)
 
         place_expr = self.attribute_expr(env, marking_var)
-        return cyast.Call(func=cyast.E(from_neco_lib("int_place_type_clear")),
-                          args=[ place_expr ])
+        return cyast.Call(func=cyast.Builder.Helper(place_expr).attr("clear").ast())
 
     def token_expr(self, env, token):
         return cyast.E(repr(token))
 
     def dump_expr(self, env, marking_var):
-        self.check_marking_type(marking_var)
+        check_marking_type(marking_var)
 
         place_expr = self.attribute_expr(env, marking_var)
-        return cyast.Call(func=cyast.E(from_neco_lib("int_place_type_cstr")),
-                          args=[ place_expr ])
+        return cyast.Call(func=cyast.Builder.Helper(place_expr).attr("cstr").ast())
 
     def compare_expr(self, env, left_marking_var, right_marking_var):
-        self.check_marking_type(left_marking_var)
-        self.check_marking_type(right_marking_var)
+        check_marking_type(left_marking_var)
+        check_marking_type(right_marking_var)
 
         left = self.attribute_expr(env, left_marking_var)
         right = self.attribute_expr(env, right_marking_var)
-        return cyast.Call(func=cyast.E(from_neco_lib("int_place_type_cmp")),
-                          args=[ left, right ])
+        return cyast.Call(func=cyast.Builder.Helper(left).attr("compare").ast(),
+                          args=[ cyast.Builder.Helper("deref").call([right]).ast() ])
 
     def not_empty_expr(self, env, marking_var):
-        self.check_marking_type(marking_var)
+        check_marking_type(marking_var)
 
         place_expr = self.place_expr(env, marking_var)
-        return cyast.Call(func=cyast.E(from_neco_lib("int_place_type_not_empty")),
-                          args=[place_expr])
+        return cyast.Call(func=cyast.Builder.Helper(place_expr).attr("not_empty").ast())
 
     @todo
     def add_multiset_expr(self, env, multiset, marking_type, marking_var): pass
@@ -416,14 +406,28 @@ class IntPlaceType(coretypes.PlaceType, CythonPlaceType):
                                            body ],
                                     orelse=[]) ]
     
-    def multiset_expr(self, env, marking_var):
-        self.check_marking_type(marking_var)
+#    def multiset_expr(self, env, marking_var):
+#        self.check_marking_type(marking_var)
+#
+#        place_expr = self.place_expr(env, marking_var)
+#        return cyast.Call(func=cyast.E(from_neco_lib("int_place_type_to_multiset")),
+#                          args=[place_expr])
 
-        place_expr = self.place_expr(env, marking_var)
-        return cyast.Call(func=cyast.E(from_neco_lib("int_place_type_to_multiset")),
-                          args=[place_expr])
-        
+class IntPlaceType(GenericPlaceType):
+    """ Place type for small unbounded 'int' places. """
 
+    def __init__(self, place_info, marking_type):
+        assert(place_info.type == TypeInfo.get('Int'))
+        GenericPlaceType.__init__(self, place_info, marking_type, 
+                                  TypeInfo.get("IntPlace"), TypeInfo.get("Int"))
+
+class PidPlaceType(GenericPlaceType):
+    """ Place type for small unbounded 'int' places. """
+
+    def __init__(self, place_info, marking_type):
+        assert(place_info.type == TypeInfo.get('Pid'))
+        GenericPlaceType.__init__(self, place_info, marking_type, 
+                                  TypeInfo.get("PidPlace"), TypeInfo.get("Pid"))
 
 class OneSafePlaceType(coretypes.OneSafePlaceType, CythonPlaceType):
     """ Cython one safe place Type implementation.
@@ -1024,144 +1028,333 @@ class FlowPlaceTypeHelper(coretypes.PlaceType, CythonPlaceType):
     def enumerate_tokens(self, checker_env, loop_var, marking_var, body):
         return self.flow_place_type.enumerate_tokens(checker_env, loop_var, marking_var, body, self.info)
 
-################################################################################
+
+
+#@provides_by_index_access
+#@provides_by_index_deletion
+#class PidPlaceType(coretypes.PlaceType, CythonPlaceType):
+#    """ Place type for small unbounded 'Pid' places. """
 #
-#@not_revelant
-#class PackedPlaceTypes(object):
-#    def __init__(self, name, marking_type):
-#        self.name = name
-#        self.marking_type = marking_type
-#        self._bitfield = MaskBitfield(native_width=8)
+#    def __init__(self, place_info, marking_type):
+#        assert(place_info.type == TypeInfo.get('Pid'))
+#        coretypes.PlaceType.__init__(self,
+#                                     place_info=place_info,
+#                                     marking_type=marking_type,
+#                                     type_info=TypeInfo.get('PidPlace'),
+#                                     token_type=place_info.type)
 #
-#    @property
-#    def type(self):
-#        return TypeInfo.UnsignedChar
+#        self.chunk = marking_type.chunk_manager.new_chunk(marking_type.id_provider.get(self),
+#                                                          TypeInfo.get('PidPlace'))
+#        self.chunk.hint = "{} - {!s}".format(place_info.name, place_info.type)
 #
-#    def _id_from_place_info(self, place_info):
-#        if place_info.flow_control:
-#            return self.marking_type.id_provider.get(place_info) + "_f"
-#        elif place_info.one_safe:
-#            return self.marking_type.id_provider.get(place_info) + "_1s"
-#        else:
-#            return self.marking_type.id_provider.get(place_info)
+#    def attribute_expr(self, env, marking_var):
+#        return cyast.E('{}.{}'.format(marking_var.name,
+#                                      self.chunk.get_attribute_name()))
 #
-#    def native_field_count(self):
-#        return self._bitfield.native_field_count()
+#    def check_token_type(self, token_expr):
+#        if not token_expr.type.is_Pid:
+#            raise NecoTypeError(expr=token_expr, type=token_expr.type, expected=TypeInfo.get('Pid'))
 #
-#    def get_native_field(self, marking_var, index):
-#        return cyast.Subscript(cyast.Attribute(cyast.Name(marking_var.name),
-#                                               attr=self.name),
-#                               slice=cyast.Index(cyast.Num(index)))
+#    def check_index_type(self, index_expr):
+#        if not index_expr.type.is_Int:
+#            raise NecoTypeError(expr=index_expr, type=index_expr.type, expected=TypeInfo.get('Int'))
+#
+#    def check_marking_type(self, marking_expr):
+#        if not marking_expr.type.is_Marking:
+#            raise NecoTypeError(expr=marking_expr, type=marking_expr.type, expected=TypeInfo.get('Marking'))
+#
+#    def new_place_stmt(self, env, marking_var):
+#        return cyast.Assign(targets=[self.attribute_expr(env, marking_var)],
+#                            value=cyast.E("[]"))
+#
+#    def delete_stmt(self, env, marking_var):
+#        return []
+#
+#    def hash_expr(self, env, marking_var):
+#        place_expr = self.attribute_expr(env, marking_var)
+#        return cyast.Call(func=cyast.E(from_neco_lib("pid_place_type_hash")),
+#                          args=[ place_expr ])
+#
+#    def eq_expr(self, env, left, right):
+#        return cyast.Call(func=cyast.E(from_neco_lib("pid_place_type_eq")),
+#                          args=[ left, right ])
+#
+#    @should_not_be_called
+#    def iterable_expr(self, env, marking_var): pass
+#
+#    def remove_token_stmt(self, env, token_expr, compiled_token, marking_var):
+#        #self.check_token_type(token_expr)
+#        self.check_marking_type(marking_var)
+#
+#        place_expr = self.attribute_expr(env, marking_var)
+#        return cyast.stmt(cyast.Call(func=cyast.Attribute(value=place_expr, attr='remove'),
+#                                     args=[compiled_token]))
+#
+#    def remove_by_index_stmt(self, env, index_var, compiled_index, marking_var):
+#        self.check_index_type(index_var)
+#        self.check_marking_type(marking_var)
+#
+#        place_expr = self.attribute_expr(env, marking_var)
+#        return cyast.stmt(cyast.Call(func=cyast.Attribute(value=place_expr, attr='pop'),
+#                                     args=[cyast.E(index_var.name)]))
+#
+#    def add_token_stmt(self, env, token_expr, compiled_token, marking_var):
+#        self.check_marking_type(marking_var)
+#
+#        place_expr = self.attribute_expr(env, marking_var)
+#
+#        return cyast.stmt(cyast.Call(func=cyast.Attribute(value=place_expr, attr='append'),
+#                                                 args=[compiled_token]))
+#
+#    def copy_stmt(self, env, dst_marking_var, src_marking_var):
+#        self.check_marking_type(src_marking_var)
+#        self.check_marking_type(dst_marking_var)
+#
+#        attr_name = self.chunk.get_attribute_name()
+#        return cyast.E("{}.{} = {}({}.{})".format(dst_marking_var.name, attr_name,
+#                                                  from_neco_lib("pid_place_type_copy"),
+#                                                  src_marking_var.name, attr_name))
+#        
+#    def light_copy_stmt(self, env, dst_marking_var, src_marking_var):
+#        self.check_marking_type(dst_marking_var)
+#        self.check_marking_type(src_marking_var)
+#
+#        attr_name = self.chunk.get_attribute_name()
+#
+#        return cyast.E("{dst}.{attr} = {src}.{attr}".format(dst=dst_marking_var.name,
+#                                                            src=src_marking_var.name,
+#                                                            attr=attr_name))
+#    
+#    def get_size_expr(self, env, marking_var):
+#        self.check_marking_type(marking_var)
+#        place_expr = self.attribute_expr(env, marking_var)
+#        return cyast.Call(func=cyast.E("len"),
+#                          args=[ place_expr ])
+#
+#    def get_token_expr(self, env, index_expr, compiled_index, marking_var):
+#        self.check_index_type(index_expr)
+#        self.check_marking_type(marking_var)
+#
+#        place_expr = self.attribute_expr(env, marking_var)
+#        return cyast.Subscript(value=place_expr, slice=cyast.Index(compiled_index))
+#
+#    def clear_stmt(self, env, marking_var):
+#        self.check_marking_type(marking_var)
+#
+#        place_expr = self.attribute_expr(env, marking_var)
+#        return cyast.Assign(targets=[ place_expr ], value=cyast.E('[]'))
+#
+#    def token_expr(self, env, token):
+#        return cyast.E(repr(token))
+#
+#    def dump_expr(self, env, marking_var):
+#        self.check_marking_type(marking_var)
+#
+#        place_expr = self.attribute_expr(env, marking_var)
+#        return cyast.Call(func=cyast.E(from_neco_lib("pid_place_type_cstr")),
+#                          args=[ place_expr ])
+#
+#    def compare_expr(self, env, left_marking_var, right_marking_var):
+#        self.check_marking_type(left_marking_var)
+#        self.check_marking_type(right_marking_var)
+#
+#        left = self.attribute_expr(env, left_marking_var)
+#        right = self.attribute_expr(env, right_marking_var)
+#        return cyast.Call(func=cyast.E(from_neco_lib("pid_place_type_cmp")),
+#                          args=[ left, right ])
+#
+#    def not_empty_expr(self, env, marking_var):
+#        self.check_marking_type(marking_var)
+#
+#        place_expr = self.place_expr(env, marking_var)
+#        return place_expr
+#
+#    @todo
+#    def add_multiset_expr(self, env, multiset, marking_type, marking_var): pass
+#
+#    @todo
+#    def add_items_stmt(self, env, multiset, marking_type, marking_var): pass
+#
+#    def enumerate_tokens(self, env, token_var, marking_var, body):
+#        index_var = env.variable_provider.new_variable(type=TypeInfo.get('Int'))
+#        size_var = env.variable_provider.new_variable(type=TypeInfo.get('Int'))
+#
+#        env.try_declare_cvar(token_var.name, token_var.type)
+#        env.try_declare_cvar(index_var.name, TypeInfo.get('Int'))
+#        env.try_declare_cvar(size_var.name, TypeInfo.get('Int'))
+#
+#        place_size = self.get_size_expr(env=env,
+#                                        marking_var=marking_var)
+#
+#        get_token = self.get_token_expr(env=env,
+#                                        index_expr=index_var,
+#                                        marking_var=marking_var,
+#                                        compiled_index=cyast.Name(index_var.name))
 #
 #
-#    def get_field_native_offset(self, place_type):
-#        return self._bitfield.get_field_native_offset(self._id_from_place_info(place_type.info))
+#        return [ cyast.Assign(targets=[cyast.Name(size_var.name)],
+#                              value=place_size),
+#                 cyast.Builder.CFor(start=cyast.Num(0),
+#                                    start_op=cyast.LtE(),
+#                                    target=cyast.Name(index_var.name),
+#                                    stop_op=cyast.Lt(),
+#                                    stop=cyast.Name(size_var.name),
+#                                    body=[ cyast.Assign(targets=[cyast.Name(token_var.name)],
+#                                                        value=get_token),
+#                                           body ],
+#                                    orelse=[]) ]
+#    
+#    def multiset_expr(self, env, marking_var):
+#        self.check_marking_type(marking_var)
 #
-#    def add_place(self, place_info, bits):
-#        self._bitfield.add_field(self._id_from_place_info(place_info), bits)
-#
-#    def get_fields(self):
-#        for field in self._bitfield.get_fields():
-#            yield field
-#
-#    def field_compatible_mask(self, place_info, integer):
-#        return self._bitfield.get_field_compatible_mask(self._id_from_place_info(place_info), integer)
-#
-#
-#    def gen_initialise(self, env, marking_var):
-#        l = []
-#        for index in range(0, self.native_field_count()):
-#            l.append(cyast.Assign(targets=[cyast.Subscript(value=cyast.Attribute(value=cyast.Name(marking_var.name),
-#                                                                                  attr=self.name),
-#                                                            slice=cyast.Index(cyast.Num(index)))],
-#                                   value=cyast.Num(0)))
-#        return cyast.to_ast(l)
-#
-#    def gen_get_place(self, env, marking_var, place_type):
-#        place_info = place_type.info
-#        offset = self._bitfield.get_field_native_offset(self._id_from_place_info(place_info))
-#        mask = int(~self._bitfield.get_field_mask(self._id_from_place_info(place_info)))
-#        return cyast.BinOp(left=cyast.Subscript(cyast.Attribute(cyast.Name(marking_var.name),
-#                                                                attr=self.name),
-#                                                slice=cyast.Index(cyast.Num(offset))),
-#                           op=cyast.BitAnd(),
-#                           right=cyast.E(mask))
-#
-#    def gen_remove_bit(self, env, marking_var, place_type):
-#        field_name = self._id_from_place_info(place_type.info)
-#        value = int(self._bitfield.get_field_compatible_mask(field_name, 1))
-#        offset = self._bitfield.get_field_native_offset(field_name)
-#        e = cyast.AugAssign(target=cyast.Subscript(value=cyast.Attribute(value=cyast.Name(marking_var.name),
-#                                                                         attr=self.name),
-#                                                   slice=cyast.Index(cyast.Num(offset))),
-#                            op=cyast.BitXor(),
-#                            value=cyast.Num(value))
-#        # e = E(marking_name).attr(self.name).subscript(index=offset).xor_assign(E(value))
-#        comment = cyast.Comment("vmask:{vmask:#0{anw}b} - place:{place}".format(vmask=value,
-#                                                                                anw=(self._bitfield.native_width + 2),
-#                                                                                place=place_type.info.name))
-#        return [ e, comment ]
-#
-#    def gen_set_bit(self, env, marking_var, place_type):
-#        field_name = self._id_from_place_info(place_type.info)
-#        value = int(self._bitfield.get_field_compatible_mask(field_name, 1))
-#        offset = self._bitfield.get_field_native_offset(field_name)
-#        e = cyast.AugAssign(target=cyast.Subscript(value=cyast.Attribute(value=cyast.Name(marking_var.name),
-#                                                                         attr=self.name),
-#                                                   slice=cyast.Index(cyast.Num(offset))),
-#                            op=cyast.BitOr(),
-#                            value=cyast.Num(value))
-#        #e = E(marking_name).attr(self.name).subscript(index=str(offset)).or_assign(E(value))
-#        comment = cyast.Builder.Comment("vmask:{vmask:#0{anw}b} - place:{place}".format(vmask=value, anw=(self._bitfield.native_width + 2), place=place_type.info.name))
-#        return [ e, comment ]
-#
-#    def gen_set(self, env, marking_var, place_type, integer):
-#        field = self._id_from_place_info(place_type.info)
-#        mask = int(self._bitfield.get_field_mask(field))
-#        vmask = int(self._bitfield.get_field_compatible_mask(field, integer))
-#        offset = self._bitfield.get_field_native_offset(field)
-#        #right  = E(marking_name).attr(self.name).subscript(index=str(offset)).bit_and(E(mask)).bit_or(E(vmask))
-#        right = cyast.BinOp(left=cyast.BinOp(left=cyast.Subscript(value=cyast.Attribute(value=cyast.Name(marking_var.name),
-#                                                                                         attr=self.name),
-#                                                                   slice=cyast.Index(cyast.Num(offset))),
-#                                              op=cyast.BitAnd(),
-#                                              right=cyast.E(mask)),
-#                             op=cyast.BitOr(),
-#                             right=cyast.E(vmask))
-#
-#        #e = E(marking_name).attr(self.name).subscript(index=str(offset)).assign(right)
-#        e = cyast.Assign(targets=[cyast.Subscript(value=cyast.Attribute(cyast.Name(marking_var.name),
-#                                                                        attr=self.name),
-#                                                  slice=cyast.Index(cyast.Num(offset)))],
-#                         value=right)
-#        comment = cyast.Builder.Comment("mask: {mask:#0{anw}b} vmask:{vmask:#0{anw}b} - place:{place}"
-#                                        .format(mask=mask, vmask=vmask, anw=(self._bitfield.native_width + 2), place=place_type.info.name))
-#        return [ e, comment ]
-#
-#    def copy_expr(self, env, src_marking_var, dst_marking_var):
-#        l = []
-#        for index in range(0, self.native_field_count()):
-#            right = cyast.Subscript(value=cyast.Attribute(value=cyast.Name(src_marking_var.name),
-#                                                          attr=self.name),
-#                                    slice=cyast.Index(cyast.Num(index)))
-#            left = cyast.Subscript(value=cyast.Attribute(value=cyast.Name(dst_marking_var.name),
-#                                                         attr=self.name),
-#                                   slice=cyast.Index(cyast.Num(index)))
-#            l.append(cyast.Assign(targets=[left],
-#                                   value=right))
-#        return l
-#
-#
-#    def gen_tests(self, left_marking_var, right_marking_var):
-#        """
-#        """
-#        tests = []
-#        for index in range(0, self.native_field_count()):
-#            left = cyast.Subscript(value=cyast.Attribute(value=cyast.Name(left_marking_var.name),
-#                                                         attr=self.name),
-#                                   slice=cyast.Index(cyast.Num(index)))
-#            right = cyast.Subscript(value=cyast.Attribute(value=cyast.Name(right_marking_var.name),
-#                                                          attr=self.name),
-#                                    slice=cyast.Index(cyast.Num(index)))
-#            tests.append((left, right,))
-#        return tests
+#        place_expr = self.place_expr(env, marking_var)
+#        return cyast.Call(func=cyast.E(from_neco_lib("pid_place_type_to_multiset")),
+#                          args=[place_expr])
+
+@provides_by_index_access
+@provides_by_index_deletion
+class GeneratorPlaceType(coretypes.PlaceType, CythonPlaceType):
+    """  """
+
+    def __init__(self, place_info, marking_type):
+        coretypes.PlaceType.__init__(self,
+                                     place_info=place_info,
+                                     marking_type=marking_type,
+                                     type_info=TypeInfo.get('GeneratorPlace'),
+                                     token_type=place_info.type)
+
+        self.chunk = marking_type.chunk_manager.new_chunk(marking_type.id_provider.get(self),
+                                                          TypeInfo.get('GeneratorPlace'))
+        self.chunk.hint = "{} - {!s}".format(place_info.name, place_info.type)
+
+    def attribute_expr(self, env, marking_var):
+        return cyast.E('{}.{}'.format(marking_var.name,
+                                      self.chunk.get_attribute_name()))
+
+    def new_place_stmt(self, env, marking_var):
+        return cyast.Assign(targets=[self.attribute_expr(env, marking_var)],
+                            value=cyast.Name("new {}()".format(env.type2str(self.type)[0:-1])))
+
+    def delete_stmt(self, env, marking_var):
+        place_expr = self.attribute_expr(env, marking_var)
+        return cyast.stmt(cyast.Builder.Helper(place_expr).attr("decrement_ref").call().ast())
+
+    def hash_expr(self, env, marking_var):
+        place_expr = self.attribute_expr(env, marking_var)
+        return cyast.Builder.Helper(place_expr).attr("hash").call().ast()
+
+    def eq_expr(self, env, left, right):
+        place_expr = self.attribute_expr(env, marking_var)
+        return cyast.Builder.Helper(place_expr).attr("hash").call().eq(cyast.Num(0)).ast()
+
+    @should_not_be_called
+    def iterable_expr(self, env, marking_var):
+        pass
+        #return cyast.E("{}.{}.iteritems()".format(marking_var.name, self.chunk.get_attribute_name()))
+
+    def remove_token_stmt(self, env, token_expr, compiled_token, marking_var):
+        place_expr = self.attribute_expr(env, marking_var)
+        pid_expr = cyast.Subscript(compiled_token, cyast.Index(cyast.Num(0)))
+        return cyast.stmt( cyast.Builder.Helper(place_expr).attr("remove_pid").call([pid_expr]).ast() )
+        #return cyast.stmt(cyast.Delete(targets=[ cyast.Subscript(place_expr, cyast.Index(pid_expr)) ]))
+
+    def remove_token_by_pid_stmt(self, env, pid_var, marking_var):
+        place_expr = self.attribute_expr(env, marking_var)
+        # del gen[pid]
+        return cyast.stmt(cyast.Delete(targets=[ cyast.Subscript(place_expr, cyast.Index(pid_var)) ]))
+
+    def add_token_stmt(self, env, token_expr, compiled_token, marking_var):
+        place_expr = self.attribute_expr(env, marking_var)
+        
+        pid_expr    = cyast.Subscript(compiled_token, cyast.Index(cyast.Num(0)))
+        spawns_expr = cyast.Subscript(compiled_token, cyast.Index(cyast.Num(1)))
+
+        # gen[pid] = spawns
+        return cyast.stmt(cyast.Builder.Helper(place_expr).attr("update_pid_counter").call([pid_expr, spawns_expr]).ast())
+#        return cyast.Assign(targets=[ cyast.Subscript(place_expr, cyast.Index(pid_expr)) ],
+#                            value=spawns_expr)
+    
+    def add_pid_stmt(self, env, pid_var, marking_var):
+        place_expr = self.attribute_expr(env, marking_var)
+        # gen[pid] = 0
+        return cyast.stmt(cyast.Builder.Helper(place_expr).attr("update_pid_counter").call([cyast.E(pid_var.name), cyast.Num(0)]).ast()) 
+    
+    def update_pid_spawns_stmt(self, env, pid_var, spawns_var, marking_var):
+        place_expr = self.attribute_expr(env, marking_var)
+        # gen[pid] += k
+        return cyast.AugAssign(targets=[ cyast.Subscript(place_expr, cyast.Index(pid_var)) ],
+                               op=cyast.Add(),
+                               value=cyast.Name(spawns_var.name))
+    
+    def copy_stmt(self, env, dst_marking_var, src_marking_var):
+        attr_name = self.chunk.get_attribute_name()
+        # ugly hack
+        return cyast.stmt(cyast.Name("{dst}.{attr} = new {type}(deref({src}.{attr}))".format(dst=dst_marking_var.name,
+                                                                                      attr=attr_name,
+                                                                                      type=env.type2str(self.type)[0:-1],
+                                                                                      src=src_marking_var.name)))
+        
+    def light_copy_stmt(self, env, dst_marking_var, src_marking_var):
+        attr_name = self.chunk.get_attribute_name()
+        return [ cyast.E("{dst}.{attr} = {src}.{attr}".format(dst=dst_marking_var.name,
+                                                            src=src_marking_var.name,
+                                                            attr=attr_name)),
+                cyast.Builder.Helper(attr_name).attr("increment_ref").call().ast() ]
+
+    def get_size_expr(self, env, marking_var):
+        check_marking_type(marking_var)
+        attr_expr = self.attribute_expr(env, marking_var)
+        return cyast.Builder.Helper(attr_expr).attr('size').call().ast()
+
+    def get_spawns_expr(self, env, pid_var, marking_var):
+        attr_expr = self.attribute_expr(env, marking_var)
+        return cyast.Subscript(value=attr_expr, slice=cyast.Index(pid_var))
+
+    @should_not_be_called
+    def clear_stmt(self, env, marking_var):
+        self.check_marking_type(marking_var)
+        place_expr = self.attribute_expr(env, marking_var)
+        return cyast.Assign(targets=[ place_expr ], value=cyast.E(env.type2str(self.type)[0:-1] + '()'))
+
+    @should_not_be_called
+    def token_expr(self, env, token):
+        return cyast.E(repr(token))
+
+    def dump_expr(self, env, marking_var):
+        attr_expr = self.attribute_expr(env, marking_var)
+        return cyast.Builder.Helper(attr_expr).attr("cstr").call().ast()
+
+    def compare_expr(self, env, left_marking_var, right_marking_var):
+        left = self.attribute_expr(env, left_marking_var)
+        right = self.attribute_expr(env, right_marking_var)
+        deref_right = cyast.Builder.Helper("deref").call([right]).ast()
+        return cyast.Builder.Helper(left).attr("compare").call([deref_right]).ast() 
+    
+    def not_empty_expr(self, env, marking_var):
+        return self.attribute_expr(env, marking_var)
+
+    @should_not_be_called
+    def add_multiset_expr(self, env, multiset, marking_type, marking_var): pass
+
+    @should_not_be_called
+    def add_items_stmt(self, env, multiset, marking_type, marking_var): pass
+
+    @should_not_be_called
+    def enumerate_tokens(self, env, token_var, marking_var, body): pass
+
+    def get_token_expr(self, env, index_expr, compiled_index, marking_var):
+        check_index_type(index_expr)
+        check_marking_type(marking_var)
+
+        place_expr = self.attribute_expr(env, marking_var)
+        token_expr = cyast.Builder.Helper(place_expr).attr("get").call([ compiled_index ]).ast()
+        return cyast.Tuple([cyast.Builder.Helper(token_expr).attr('get_first').call().ast(), 
+                            cyast.Builder.Helper(token_expr).attr('get_second').call().ast() ])
+
+
+    def multiset_expr(self, env, marking_var):
+        attribute_expr = self.attribute_expr_expr(env, marking_var)
+        return cyast.Call(func=cyast.E(from_neco_lib("generator_place_type_to_multiset")),
+                          args=[attribute_expr])
+
+

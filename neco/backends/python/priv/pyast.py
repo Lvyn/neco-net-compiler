@@ -200,6 +200,9 @@ class Builder(coreir.BuilderBase):
         Gt = _compare2(ast.Gt())
         Lt = _compare2(ast.Lt())
 
+        def ast(self):
+            return self.node
+
     def __init__(self):
         coreir.BuilderBase.__init__(self)
 
@@ -225,8 +228,15 @@ class Builder(coreir.BuilderBase):
     def begin_If(self, *args, **kwargs):
         self.begin_block(self.If(*args, **kwargs))
 
+    def begin_For(self, *args, **kwargs):
+        self.begin_block(self.If(*args, **kwargs))
+
     def end_If(self):
         assert( isinstance(self._current, ast.If) )
+        self.end_block()
+
+    def end_For(self):
+        assert( isinstance(self._current, ast.For) )
         self.end_block()
 
     def end_FunctionDef(self):
@@ -304,6 +314,9 @@ class Builder(coreir.BuilderBase):
 
     def __ast__(self):
         return super(Builder, self).ast()
+
+def B(expr):
+    return Builder.Helper(expr)
 
 ################################################################################
 # EOF
