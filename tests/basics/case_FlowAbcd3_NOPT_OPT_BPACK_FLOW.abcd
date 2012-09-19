@@ -1,0 +1,10 @@
+buffer b0 : int = 1
+buffer b1 : int = ()
+
+net p1():
+    [True]; [b0-(x), b1+(x)]; [True]
+
+net p2():
+    [True]; [b1-(x)]; [True]
+
+p1() | p2()

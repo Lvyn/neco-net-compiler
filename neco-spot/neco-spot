@@ -1,0 +1,3 @@
+#!/usr/bin/python2.7
+import neco.spotcli as spot
+spot.Main()

@@ -1,0 +1,9 @@
+net gate () :
+    buffer state : str = "OPEN"  # 1-safe
+    ([state-("OPEN"), state+("MOVING")] ;
+     [state-("MOVING"), state+("CLOSED")] ;
+     [state-("CLOSED"), state+("MOVING")] ;
+     [state-("MOVING"), state+("OPEN")])
+    * [False]
+
+gate()
