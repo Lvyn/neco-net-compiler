@@ -1,10 +1,12 @@
 from neco.core import CompilingEnvironment
+from neco.utils import search_file
 from priv import pyast
 from unparse import Unparser
 import ast
 import imp
 import netir
 import nettypes
+import re
 
 class Env(CompilingEnvironment):
     """ Compiling environment used for co1mpiling with the python backend. """
@@ -54,7 +56,8 @@ def new_compiling_environment(word_set, marking_type):
     return Env(word_set, marking_type)
 
 def compile_IR(env, config):
-    
+    search_paths = config.search_paths
+
     for decl in env.net_info.declare:
         env.add_declaration(decl)
 
@@ -71,8 +74,6 @@ def compile_IR(env, config):
 
     for mod in config.imports:
         env.add_declaration('from {} import *'.format(mod))
-
-    #env.add_declaration("from dolev_yao import *")
 
     compiled_nodes = []
 
@@ -91,108 +92,17 @@ def compile_IR(env, config):
     f = open(module_name + '.py', "w")
     Unparser(module_ast, f)
 
-    f.write("""
-
-def state_space():
-    visited = set()
-    visit = set([init()])
-    visit2  = set()
-    succ = set()
-    inter = set()
-    succs2 = set()
-    count = 0
-    last_count = 0
-    start = time()
-    last_time = start
-
-    try:
-        while True:
-            m = visit.pop()
-            count+=1
-
-            visited.add(m)
-            succ = succs(m)
-            succs2 = succ.difference(visited)
-            visit.update(succs2)
-            succ.clear()
-            succs2.clear()
-            if (count % 100 == 0):
-                new_time = time()
-                elapsed_time = new_time - start
-                sys.stdout.write('\\r{}st {:5.3f}s (global {:5.0f}st/s, since last log {:5.0f}st/s)'.format(count,
-                                                                                                           elapsed_time,
-                                                                                                           count / elapsed_time,
-                                                                                                           100/(new_time-last_time)))
-                sys.stdout.flush()
-                last_time = new_time
-
-    except KeyError:
-        pass
-
-    return visited
-
-
-def state_space_graph():
-    visited = set()
-    count = 0
-    next = 1
-    graph = {}
-    mrk_id_map = {}
-    succ_list = []
-    start = time()
-    last_time = start
-
-    m = init()
-
-    visit = set([m])
-    mrk_id_map[m] = next
-    next += 1
-
-    try:
-        while True:
-            count += 1
-            m = visit.pop()
-            visited.add(m)
-
-            # new marking, get the id
-            current_node_id = mrk_id_map[m]
-            succ = succs(m)
-            succ_list = []
-
-            for s_mrk in succ:
-                if mrk_id_map.has_key(s_mrk):
-                    node_id = mrk_id_map[s_mrk]
-                    succ_list.append(node_id)
-                else:
-                    node_id = next
-                    next += 1
-                    succ_list.append(node_id)
-                    mrk_id_map[s_mrk] = node_id
-
-            graph[current_node_id] = succ_list
-
-            visit.update(succ.difference(visited))
-            if (count % 250 == 0):
-                new_time = time()
-                elapsed_time = new_time - start
-                sys.stdout.write('\\r{}st {:5.3f}s (global {:5.0f}st/s, since last log {:5.0f}st/s)'.format(count,
-                                                                                                            elapsed_time,
-                                                                                                            count / elapsed_time,
-                                                                                                            250 / (new_time-last_time)))
-                sys.stdout.flush()
-                last_time = new_time
-    except KeyError:
-        print
-        return graph, mrk_id_map
-    return graph, mrk_id_map
-
-""")
+    include_file_path = search_file("include.py", search_paths)
+    include_file = open(include_file_path, 'r')
+    f.write('\n')
+    for line in include_file:
+        f.write(line)
     f.close()
 
     fp, pathname, description = imp.find_module(module_name)
     mod = imp.load_module(module_name, fp, pathname, description)
 
-    if fp: fp.close() # Since we may exit via an exception, close fp explicitly.
+    if fp: fp.close()
 
     return mod
 
