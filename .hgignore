@@ -50,6 +50,7 @@ neco-spot/ctypes.h
 *.err
 *.old
 *.tmp
+neco/asdl/cpp.py
 syntax: regexp
 .*/.gone/.*
 .gone/.*
