@@ -17,8 +17,8 @@ class InitGenerator(MarkingTypeMethodGenerator):
 
         for place_type in marking_type.place_types.values():
             if_block.body.append( place_type.new_place_stmt(env, self_var) )
-
-        function.body = if_block
+        
+        function.body = [ pyast.E('self.{} = None'.format(marking_type.get_field('_hash').name)), if_block ]
         return function
 
 class CopyGenerator(MarkingTypeMethodGenerator):
@@ -76,12 +76,18 @@ class HashGenerator(MarkingTypeMethodGenerator):
 
         builder = pyast.Builder()
         builder.begin_FunctionDef( name = '__hash__', args = pyast.A(self_var.name).ast() )
+
+        builder.begin_If(test=pyast.E('self.{} != None'.format(marking_type.get_field('_hash').name)))
+        builder.emit_Return(pyast.E('self.{}'.format(marking_type.get_field('_hash').name)))
+        builder.end_If()
+
         builder.emit( pyast.E('h = 0') )
 
         for (name, place_type) in marking_type.place_types.iteritems():
             magic = hash(name)
-            builder.emit( pyast.E('h ^= hash(' +  place_type.field.access_from(self_var) + ') ^ ' + str(magic)) )
+            builder.emit( pyast.E('h ^= hash(' +  place_type.field.access_from(self_var) + ') * ' + str(magic)) )
 
+        # builder.emit(pyast.E("print h"))
         builder.emit_Return(pyast.E("h"))
         builder.end_FunctionDef()
         return builder.ast()

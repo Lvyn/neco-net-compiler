@@ -139,16 +139,25 @@ class HashGenerator(MarkingTypeMethodGenerator):
         self_var  = vp.new_variable(env.marking_type.type, 'self')
         
         builder = pyast.Builder()
+        
         builder.begin_FunctionDef( name = '__hash__', args = pyast.A(self_var.name).ast() )
+
+        builder.begin_If(test=pyast.E('self.{} != None'.format(marking_type.get_field('_hash').name)))
+        builder.emit_Return(pyast.E('self.{}'.format(marking_type.get_field('_hash').name)))
+        builder.end_If()
+        
         builder.emit( pyast.E('h = 0') )
+
 
         for name, place_type in marking_type.place_types.iteritems():
             if name == GENERATOR_PLACE and config.normalize_pids:
                 continue
             
             magic = hash(name)
-            builder.emit( pyast.E('h ^= hash(' + place_type.field.access_from(self_var) + ') ^ ' + str(magic) ) )
+            builder.emit( pyast.E('h ^= hash(' + place_type.field.access_from(self_var) + ') * ' + str(magic) ) )
 
+        builder.emit(pyast.E("self.{} = h".format(marking_type.get_field('_hash').name)))
+        # builder.emit(pyast.E("print h"))
         builder.emit_Return(pyast.E("h"))
         builder.end_FunctionDef()
         return builder.ast()

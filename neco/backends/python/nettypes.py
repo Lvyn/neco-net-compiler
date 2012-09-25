@@ -56,6 +56,7 @@ class StaticMarkingType(coretypes.MarkingType):
         self._process_place_types = {}
         
         self.fields = set()
+        self.create_field('_hash', TypeInfo.get('Int'))
 
         self.add_method_generator(priv.mrkmethods.InitGenerator())
         self.add_method_generator(priv.mrkmethods.CopyGenerator())
@@ -77,6 +78,13 @@ class StaticMarkingType(coretypes.MarkingType):
         field = Field(name, field_type)
         self.fields.add( field )
         return field
+    
+    def get_field(self, obj):
+        name = self.id_provider.get(obj)
+        for field in self.fields:
+            if field.name == name:
+                return field
+        raise KeyError
 
     def __str__(self):
         s = []

@@ -1,6 +1,10 @@
 """ data structures designed for the compiled petrinet """
 
-from snakes.hashables import hdict
+from collections import Iterable
+from copy import copy # a swallow copy is enough here
+from neco.extsnakes import Pid
+from process import PidTree
+from snakes.hashables import hdict, hashable
 import operator
 
 def dump(e):
@@ -14,12 +18,17 @@ class multiset(hdict):
     """
     """
 
+    def __hash__(self):
+        return reduce(operator.xor, (hash(i) for i in self.items()), 252756382)
+
     def __init__(self, initial_data=[]):
         """ builds a brand new multiset from some initial data
 
         @param initial_data: list of elements (eventually with repetitions
         @type initial_data: C{}
         """
+        hdict.__init__(self)
+
         for elt in initial_data:
             self.add(elt)
 
@@ -146,10 +155,7 @@ class multiset(hdict):
 
         @rtype: C{int}
         """
-        if self.size() == 0:
-            return 0
-        else:
-            return reduce(operator.add, self.values())
+        return reduce(operator.add, self.values(), 0)
 
     def size(self):
         """ number of elements, excluding repetitions
@@ -356,7 +362,7 @@ class multiset(hdict):
             rkey = other_keys[i]
 
             ltuplefree = lkey[:-1]
-            rtuplefree = rkey[:-1] 
+            rtuplefree = rkey[:-1]
             if ltuplefree == rtuplefree: # equal tuples, without pids
                 v1 = self[lkey]
                 v2 = other[rkey]
@@ -388,8 +394,6 @@ class multiset(hdict):
             l.append(', ')
         l.append(']')
         return "".join(l) 
-    
-from neco.extsnakes import Pid
 
 def neco__tuple_update_pids(tup, new_pid_dict):
     """
@@ -426,8 +430,6 @@ def neco__tuple_update_pids(tup, new_pid_dict):
         new_iterable.append(new_tok)
     return tuple(new_iterable)
 
-from collections import Iterable
-from copy import copy # a swallow copy is enough here
 
 def neco__multiset_update_pids(ms, new_pid_dict):
     """
@@ -482,7 +484,6 @@ def neco__generator_token_transformer(ms, new_pid_dict):
         new_ms.add((new_pid, new_n))
     return new_ms
 
-from process import PidTree
 
 def neco__generator_multiset_update_pid_tree(ms, pid_tree):
     """

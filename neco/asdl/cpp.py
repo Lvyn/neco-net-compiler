@@ -1,6 +1,6 @@
 # this file has been automatically generated running:
 # setup.py install --prefix=~/.local
-# timestamp: 2012-09-19 19:07:09.826470
+# timestamp: 2012-09-24 12:06:32.836848
 
 from snakes.lang import ast
 from ast import *

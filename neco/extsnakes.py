@@ -4,7 +4,7 @@ from collections import defaultdict
 from neco.utils import NameProvider
 from snakes import ConstraintError
 from snakes.nets import ArcAnnotation, PetriNet, Place, Variable, Transition, \
-    Expression, Tuple, MultiArc, Value, dot, tBlackToken, tInteger #@UnusedImport
+    Expression, Tuple, MultiArc, Value, dot, tBlackToken, tInteger, Flush #@UnusedImport
 from snakes.typing import Instance, CrossProduct, tNatural
 import snakes.plugins
 import sys
