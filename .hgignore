@@ -57,6 +57,7 @@ neco/ctypes/ctypes_ext_api.h
 neco/ctypes/ctypes_ext.h
 neco/ctypes/ctypes_ext.cpp
 trace
+*.ig
 syntax: regexp
 .*/.gone/.*
 .gone/.*
