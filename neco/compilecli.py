@@ -77,12 +77,15 @@ class Main(object):
         optimize_group.add_argument('--optimize-flow', '-Of', default=False, dest='optimize_flow', action='store_true',
                                     help='enable flow control optimizations')
 
-
-
         pid_group = parser.add_argument_group('Dynamic process creation')
-
         pid_group.add_argument('--pid-normalization', default=False, dest='pid_normalization', action='store_true',
                                help='enable process identifier normalization (wip)')
+        pid_group.add_argument('--pid-parent', '-pp', default=True, dest='pid_parent', action='store_true',
+                               help='support parent relation.')
+        pid_group.add_argument('--pid-sibling', '-ps', default=False, dest='pid_sibling', action='store_true',
+                               help='support sibling relation. [not implemented yet]')
+        pid_group.add_argument('--pid-first', '-pf', default=True, dest='pid_first', action='store_true',
+                               help='use pid-first restriction, ie., pids are tuple first components.')
 
         print_group = parser.add_argument_group('Printing and profiling')
         print_group.add_argument('--profile', '-p', default=False, dest='profile', action='store_true',
@@ -152,6 +155,9 @@ class Main(object):
                                 trace_calls=False,
                                 trace_file=trace,
                                 normalize_pids=args.pid_normalization,
+                                pid_parent=args.pid_parent,
+                                pid_sibling=args.pid_sibling,
+                                pid_first=args.pid_first,
                                 model=model_file)
 
         # retrieve the Petri net from abcd file (produces a pnml file)
