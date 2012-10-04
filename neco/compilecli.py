@@ -53,48 +53,48 @@ class Main(object):
         parser = argparse.ArgumentParser(progname,
                                          argument_default=argparse.SUPPRESS,
                                          formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-
+        
         parser.add_argument('--lang', '-l', default='python', dest='language', choices=['python', 'cython'],
                             help='set target language')
 
-        parser.add_argument('--abcd', dest='abcd', default=None, metavar='FILE', type=str,
-                            help='ABCD file to be compiled')
+        model_group = parser.add_argument_group('Model related options')
+        model_group.add_argument('--abcd', dest='abcd', default=None, metavar='FILE', type=str,
+                                 help='ABCD file to be compiled')
+        model_group.add_argument('--pnml', dest='pnml', default=None, metavar='FILE', type=str,
+                                 help='ABCD file to be compiled ( or produced if used with --abcd )')
+        model_group.add_argument('--module', '-m', default=None, dest='module', metavar='MODULE', type=str,
+                                 help='Python module containing the Petri net to be compiled')
+        model_group.add_argument('--netvar', '-v', default='net', dest='netvar', metavar='VARIABLE', type=str,
+                                 help='Variable holding the Petri net')
+        model_group.add_argument('--import', '-i', default=[], dest='imports', action='append',
+                                 help='add additional files to be imported')
 
-        parser.add_argument('--pnml', dest='pnml', default=None, metavar='FILE', type=str,
-                            help='ABCD file to be compiled ( or produced if used with --abcd )')
+        optimize_group = parser.add_argument_group('Optimizations')
+        optimize_group.add_argument('--optimize', '-O', default=False, dest='optimize', action='store_true',
+                                    help='enable optimizations')
+        optimize_group.add_argument('--optimize-pack', '-Op', default=False, dest='bit_packing', action='store_true',
+                                    help='enable bit packing')
+        optimize_group.add_argument('--optimize-flow', '-Of', default=False, dest='optimize_flow', action='store_true',
+                                    help='enable flow control optimizations')
 
-        parser.add_argument('--module', '-m', default=None, dest='module', metavar='MODULE', type=str,
-                            help='Python module containing the Petri net to be compiled')
 
-        parser.add_argument('--netvar', '-v', default='net', dest='netvar', metavar='VARIABLE', type=str,
-                            help='Variable holding the Petri net')
 
-        parser.add_argument('--optimize', '-O', default=False, dest='optimize', action='store_true',
-                            help='enable optimisations')
+        pid_group = parser.add_argument_group('Dynamic process creation')
 
-        parser.add_argument('--optimize-pack', '-Op', default=False, dest='bit_packing', action='store_true',
-                            help='enable bit packing')
+        pid_group.add_argument('--pid-normalization', default=False, dest='pid_normalization', action='store_true',
+                               help='enable process identifier normalization (wip)')
 
-        parser.add_argument('--optimize-flow', '-Of', default=False, dest='optimize_flow', action='store_true',
-                            help='enable flow control optimisations')
-
-        parser.add_argument('--profile', '-p', default=False, dest='profile', action='store_true',
-                            help='enable profiling support')
-
-        parser.add_argument('--import', '-i', default=[], dest='imports', action='append',
-                            help='add additional files to be imported')
-
-        parser.add_argument('--include', '-I', default=[], dest='includes', action='append',
-                            help='additional include paths (cython)')
-
-        parser.add_argument('--trace', '-t', default='trace', dest='trace', metavar='TRACEFILE', type=str,
-                            help='additional include paths (cython)')
-
-        parser.add_argument('--pid-normalization', default=False, dest='pid_normalization', action='store_true',
-                            help='enable process identifier normalization (wip)')
-
-        parser.add_argument('--no-stats', default=False, dest='no_stats', action='store_true',
-                            help='disable dynamic stats (transitions/sec, etc.)')
+        print_group = parser.add_argument_group('Printing and profiling')
+        print_group.add_argument('--profile', '-p', default=False, dest='profile', action='store_true',
+                                 help='enable profiling support')
+        print_group.add_argument('--no-stats', default=False, dest='no_stats', action='store_true',
+                                 help='disable dynamic stats (transitions/sec, etc.)')
+        
+        other_group = parser.add_argument_group('Cython specific options')
+        other_group.add_argument('--trace', '-t', default='trace', dest='trace', metavar='TRACEFILE', type=str,
+                                 help='setup trace file name, trace files are used by neco-check.')
+        other_group.add_argument('--include', '-I', default=[], dest='includes', action='append',
+                                 help='additional include paths.')
 
         if cli_args:
             args = parser.parse_args(cli_args)
