@@ -51,6 +51,12 @@ neco-spot/ctypes.h
 *.old
 *.tmp
 neco/asdl/cpp.py
+tests/basics/py_*
+tests/basics/cy_*
+neco/ctypes/ctypes_ext_api.h
+neco/ctypes/ctypes_ext.h
+neco/ctypes/ctypes_ext.cpp
+trace
 syntax: regexp
 .*/.gone/.*
 .gone/.*
