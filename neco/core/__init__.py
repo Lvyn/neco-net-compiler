@@ -206,11 +206,13 @@ class SuccTGenerator(object):
         # function arguments
         self.arg_marking_var = helper.new_variable(variable_type = marking_type.type)
         self.marking_set_var = helper.new_variable(variable_type = marking_type.container_type)
+        self.arg_state_space_set_var = helper.new_variable(variable_type = marking_type.container_type)
 
         # create function
         self.builder.begin_function_SuccT( function_name     = self.function_name,
                                            arg_marking_var   = self.arg_marking_var,
                                            arg_marking_set_var = self.marking_set_var,
+                                           arg_state_space_set_var = self.arg_state_space_set_var,
                                            transition_info   = self.transition,
                                            variable_provider = helper )
 
@@ -525,7 +527,12 @@ class SuccTGenerator(object):
             else:
                 raise NotImplementedError, token_info
 
-        for (inner, inner_type) in izip_longest(tuple_info.split(), tuple_info.type.split(), fillvalue=TypeInfo.AnyType):
+        if not tuple_info.type.is_TupleType:
+            sub_types = []
+        else:
+            sub_types = tuple_info.type.split()
+
+        for (inner, inner_type) in izip_longest(tuple_info.split(), sub_types, fillvalue=TypeInfo.AnyType):
             if not inner_type.is_AnyType:
                 inner.update_type(inner_type)
 
@@ -753,7 +760,7 @@ class SuccTGenerator(object):
         self.gen_enumerators()
 
         # produce new pids if process Petri net.
-        
+
         if trans.generator_arc:
             # ok, that looks like a process Petri net... you quack, you're a duck...
             generator_arc = trans.generator_arc
@@ -778,15 +785,16 @@ class SuccTGenerator(object):
         except:
             builder.begin_GuardCheck( condition = netir.PyExpr(guard) )
 
-#        if self.trace_calls:
-#            builder.emit_Print("  guard valid in " + self.function_name)
-
         computed_productions = defaultdict(list)
         for output in trans.outputs:
             self.gen_computed_production(output, computed_productions)
         self.computed_productions = computed_productions
 
         new_marking_var = helper.new_variable(self.marking_type.type)
+
+        if self.config.normalize_pids:
+            normalized_marking_var = helper.new_variable(self.marking_type.type)
+
         self.new_marking_var = new_marking_var
         builder.emit_MarkingCopy( dst = new_marking_var,
                                   src = self.arg_marking_var,
@@ -853,11 +861,19 @@ class SuccTGenerator(object):
         
         # add pid normalization step if needed
         if self.config.normalize_pids:
-            builder.emit_NormalizeMarking( marking_var = new_marking_var )
-        
-        # add marking to set
-        builder.emit_AddMarking( marking_set_var = self.marking_set_var,
-                                 marking_var = new_marking_var)
+            builder.emit_NormalizeMarking( normalized_marking_var = normalized_marking_var,
+                                           marking_var = new_marking_var,
+                                           acc_set_var = self.marking_set_var,
+                                           state_space_set_var = self.arg_state_space_set_var)
+
+            builder.begin_If( condition = netir.Name( normalized_marking_var.name ) )
+            builder.emit_AddMarking( marking_set_var = self.marking_set_var,
+                                     marking_var = normalized_marking_var )
+            builder.end_block()
+        else:
+            # add marking to set
+            builder.emit_AddMarking( marking_set_var = self.marking_set_var,
+                                     marking_var = new_marking_var)
         # end function
         builder.end_all_blocks()
         builder.end_function()
@@ -906,12 +922,12 @@ class Compiler(object):
         for place in self.net_info.places:
             if place.type.is_AnyType:
                 print >> sys.stderr, "[W] place {} is assumed as pid-free".format(place.name)
-            elif place.type.allows_pids:
+            elif place.type.has_pids:
                 if place.type.is_Pid:
                     continue
-                elif place.type.is_Tuple:
-                    for subtype in place.type.subtypes():
-                        if subtype.is_Tuple and subtype.allows_pids:
+                elif place.type.is_TupleType:
+                    for subtype in place.type:
+                        if subtype.is_TupleType and subtype.has_pids:
                             print >> sys.stderr, "[E] nested tuples cannot contain pids. (this may be implemented in future)".fromat(place.name)
                             return False
         return True
@@ -1000,15 +1016,18 @@ class Compiler(object):
         variable_provider = VariableProvider(set([self.succs_function]))
         arg_marking_var = variable_provider.new_variable( variable_type = self.marking_type.type )
         arg_marking_set_var = variable_provider.new_variable( variable_type = self.marking_type.container_type )
+        arg_state_space_set_var = variable_provider.new_variable( variable_type = self.marking_type.container_type )
 
         builder = netir.Builder()
         builder.begin_function_Succs( function_name = "succs",
                                       arg_marking_var = arg_marking_var,
                                       arg_marking_set_var = arg_marking_set_var,
+                                      arg_state_space_set_var = arg_state_space_set_var,
                                       variable_provider = variable_provider)
 
         markingset_node  = netir.Name(arg_marking_set_var.name)
         marking_arg_node = netir.Name(arg_marking_var.name)
+        state_space_arg_node = netir.Name(arg_state_space_set_var.name)
 
         if self.config.optimize_flow:
             for function_name in self.env.process_succ_functions:
@@ -1020,7 +1039,8 @@ class Compiler(object):
             for function_name in self.env.succ_functions:
                 builder.emit_ProcedureCall( function_name = function_name,
                                             arguments = [ markingset_node,
-                                                          marking_arg_node ] )
+                                                          marking_arg_node,
+                                                          state_space_arg_node ] )
 
         builder.end_function()
         return builder.ast()

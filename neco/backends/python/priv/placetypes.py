@@ -99,10 +99,10 @@ class ObjectPlaceType(coretypes.ObjectPlaceType, PythonPlaceType):
                          body = compiled_body,
                          orelse = [])
     
-    def pid_free_compare_expr(self, env, left_marking_var, right_marking_var):
+    def pid_free_compare_expr(self, env, left_marking_var, right_marking_var, ignore):
         self_place_expr = pyast.E(self.field.access_from(left_marking_var))
         other_place_expr = pyast.E(self.field.access_from(right_marking_var))
-        return pyast.B(self_place_expr).attr('pid_free_compare').call([other_place_expr]).ast()
+        return pyast.B(self_place_expr).attr('pid_free_tuple_compare').call([other_place_expr, pyast.E(repr(ignore))]).ast()
     
     def extract_pids(self, env, marking_var, dict_var):
         place_expr = pyast.E(self.field.access_from(marking_var))
@@ -158,6 +158,10 @@ class PidPlaceType(ObjectPlaceType):
                             value=pyast.Call(func=pyast.E(stubs['pid_place_type_update_pids']),
                                              args=[self.place_expr(self, marking_var),
                                                    pyast.Name(new_pid_dict_var.name)]))
+    def pid_free_compare_expr(self, env, left_marking_var, right_marking_var, ignore):
+        self_place_expr = pyast.E(self.field.access_from(left_marking_var))
+        other_place_expr = pyast.E(self.field.access_from(right_marking_var))
+        return pyast.B(self_place_expr).attr('pid_free_pid_compare').call([other_place_expr]).ast()
     
 
 ################################################################################

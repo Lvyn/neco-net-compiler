@@ -67,7 +67,8 @@ class StaticMarkingType(coretypes.MarkingType):
             self.add_method_generator(priv.mrkpidmethods.EqGenerator())
             self.add_method_generator(priv.mrkpidmethods.HashGenerator())
             self.add_method_generator(priv.mrkpidmethods.UpdatePidsGenerator())
-            self.add_method_generator(priv.mrkpidmethods.NormalizePidsGenerator())
+            #self.add_method_generator(priv.mrkpidmethods.NormalizePidsGenerator())
+            self.add_method_generator(priv.mrkpidmethods.BuildPidTreeGenerator())
             self.add_method_generator(priv.mrkpidmethods.PidFreeCmpGenerator())
         else:
             self.add_method_generator(priv.mrkmethods.EqGenerator())

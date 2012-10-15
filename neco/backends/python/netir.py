@@ -345,7 +345,8 @@ class CompilerVisitor(coreir.CompilerVisitor):
                   pyast.E('return ' + node.arg_marking_set_var.name) ]
         result = pyast.FunctionDef(name = node.function_name,
                                  args = pyast.arguments(args=[pyast.Name(id=node.arg_marking_set_var.name),
-                                                            pyast.Name(id=node.arg_marking_var.name)]),
+                                                              pyast.Name(id=node.arg_marking_var.name),
+                                                              pyast.Name(id=node.arg_state_space_set_var.name)]),
                                  body = stmts)
         self.env.pop_variable_provider()
         return result
@@ -365,8 +366,9 @@ class CompilerVisitor(coreir.CompilerVisitor):
         body.extend( self.compile(node.body) )
         body.append( pyast.Return(pyast.Name(id=node.arg_marking_set_var.name)) )
         return pyast.FunctionDef( name = node.function_name,
-                                args = pyast.arguments(args=[pyast.Name(id=node.arg_marking_var.name)]),
-                                body = body )
+                                  args = pyast.arguments(args=[pyast.Name(id=node.arg_marking_var.name),
+                                                               pyast.Name(id=node.arg_state_space_set_var.name)]),
+                                  body = body )
 
     def compile_Init(self, node):
         new_marking = pyast.Assign(targets=[pyast.Name(id=node.marking_var.name)],
@@ -412,8 +414,10 @@ class CompilerVisitor(coreir.CompilerVisitor):
                                                 node.marking_var) ]
 
     def compile_NormalizeMarking(self, node):
-        return self.env.marking_type.normalize_marking_call(env = self.env,
-                                                            marking_var = node.marking_var)
+        return pyast.E("{} = normalize_marking({}, {}, {})".format(node.normalized_marking_var.name,
+                                                                   node.marking_var.name,
+                                                                   node.acc_set_var.name,
+                                                                   node.state_space_set_var.name))
         
     def compile_AddPid(self, node):
         place_type = self.env.marking_type.get_place_type_by_name(node.place_name)
@@ -424,7 +428,6 @@ class CompilerVisitor(coreir.CompilerVisitor):
     def compile_InitialPid(self, node):
         return pyast.E("Pid.from_str('1')")
 
-    
 ################################################################################
 # EOF
 ################################################################################

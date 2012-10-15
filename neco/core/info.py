@@ -29,7 +29,6 @@ class TypeInfo(object):
         @type_info type_name: C{string}
         """
         self._kind = kind
-
         if self.is_UserType:
             self._type_name = type_name
         elif self.is_TupleType:
@@ -39,7 +38,7 @@ class TypeInfo(object):
     def get(cls, type_name):
         t = getattr(cls, type_name, None)
         if not t:
-            print >> sys.stderr, "[W] cannot get type {!s}".format(type_name)
+            print >> sys.stderr, "[W] cannot get type {!s}, using fallback.".format(type_name)
             t = cls.AnyType 
         return t
 
@@ -118,7 +117,14 @@ class TypeInfo(object):
         @return: list of subtypes (empty if is not a TupleType).
         @rtype: C{list<TypeInfo>}
         """
-        return (self._subtypes if self.is_TupleType else [])
+        if not self.is_TupleType:
+            raise RuntimeError('Only tuple types can be split.')
+        return self._subtypes
+
+    def __iter__(self):
+        if not self.is_TupleType:
+            raise RuntimeError('Only tuple types can be iterated.')
+        return self._subtypes.__iter__()
 
     @classmethod
     def register_type(cls, type_name):
@@ -319,26 +325,26 @@ class TypeInfo(object):
         return self._type_name
     
     @property
-    def allows_pids(self):
+    def has_pids(self):
         """
         >>> t = TypeInfo.get('Pid')
-        >>> t.allows_pids
+        >>> t.has_pids
         True
         >>> t = TypeInfo.get('Int')
-        >>> t.allows_pids
+        >>> t.has_pids
         False
         >>> t = TypeInfo.TupleType([TypeInfo.get('Int'), TypeInfo.get('Int')])
-        >>> t.allows_pids
+        >>> t.has_pids
         False
         >>> t = TypeInfo.TupleType([TypeInfo.get('Pid'), TypeInfo.get('Int')])
-        >>> t.allows_pids
+        >>> t.has_pids
         True
         >>> t = TypeInfo.TupleType([TypeInfo.get('Int'), TypeInfo.TupleType([TypeInfo.get('Pid'), TypeInfo.get('Int')])])
-        >>> t.allows_pids
+        >>> t.has_pids
         True
         """
-        red = lambda acc, x : (acc or x.allow_pids)
-        return self.is_Pid or (self.is_TupleType and reduce(red, self.split(), False))
+        red = lambda acc, x : (acc or x.has_pids)
+        return self.is_Pid or (self.is_TupleType and reduce(red, self, False))
 
 TypeInfo.AnyType = TypeInfo(kind=TypeKind.AnyType)
 TypeInfo.register_type('Int')

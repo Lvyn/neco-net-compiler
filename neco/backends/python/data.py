@@ -5,7 +5,36 @@ from copy import copy # a swallow copy is enough here
 from neco.extsnakes import Pid
 from process import PidTree
 from snakes.hashables import hdict, hashable
+from functools import partial
 import operator
+
+def pid_free_tuple_count_compare(ignore_set, left_pair, right_pair):
+    left,  left_count  = left_pair
+    right, right_count = right_pair
+    
+    length = len(left)
+    for i in xrange(length):
+        if i in ignore_set:
+            continue
+        li = left[i]
+        ri = right[i]
+        if li < ri:
+            return -1
+        elif li > ri:
+            return 1
+        d = left_count - right_count
+        if d != 0:
+            return d
+
+    return 0
+
+def pid_free_pid_count_compare(left_pair, right_pair):
+    _,  left_count = left_pair
+    _, right_count = right_pair
+    tmp = left_count - right_count
+    if tmp != 0:
+        return tmp
+    return 0
 
 def dump(e):
     if hasattr(e, '__dump__'):
@@ -312,36 +341,50 @@ class multiset(hdict):
         else:
             return 0
 
-    def pid_free_compare(self, other):
+    def pid_free_tuple_compare(self, other, ignore):
 
         self_keys = self.keys()
         other_keys = other.keys()
+        self_len = len(self_keys)
+        
         tmp = len(self_keys) - len(other_keys)
         if tmp != 0:
             return tmp
-        if len(self_keys) == 0:
+        if self_len == 0:
             return 0
-        key = self_keys[0]
-        if isinstance(key, Pid):
-            return self.pid_free_compare_pid(other)
         
-        elif isinstance(key, tuple) and isinstance(key[0], Pid):
-            return self.pid_free_compare_tuple1(other)
+        # order items x values
+        cmp_fun = partial(pid_free_tuple_count_compare, ignore)
+        left  = sorted( self.iteritems(),  cmp = cmp_fun )
+        right = sorted( other.iteritems(), cmp = cmp_fun )
         
-        else:
-            return self.compare(other)
+        for i in xrange(self_len):
+            tmp = cmp_fun(left[i], right[i])
+            if tmp != 0:
+                return tmp
+        return 0
 
-    def pid_free_compare_pid(self, other):
-        self_keys = self.keys()
+    def pid_free_pid_compare(self, other):
+        self_keys  = self.keys()
         other_keys = other.keys()
         
-        #len(self_keys) == len(other_keys)
-        l = self[self_keys[0]]
-        r = other[other_keys[0]]
-        # print l, r
-        return  l - r
+        self_len  = len(self_keys)
+        other_len = len(other_keys)
+        
+        tmp = self_len - other_len
+        if tmp != 0:
+            return tmp
 
-    def pid_free_compare_tuple1(self, other):
+        left  = sorted(self_keys, cmp = pid_free_pid_count_compare )
+        right = sorted(self_keys, cmp = pid_free_pid_count_compare )
+        
+        for i in range(self_len):
+            tmp = pid_free_pid_count_compare(left[i], right[i])
+            if tmp != 0:
+                return tmp
+        return 0
+
+    def pid_free_first_tuple_compare(self, other):
         self_keys = self.keys()
         other_keys = other.keys()
         l1 = len(self_keys)
@@ -422,7 +465,7 @@ def neco__tuple_update_pids(tup, new_pid_dict):
     new_iterable = []
     for tok in tup:
         if isinstance(tok, Pid):
-            new_tok = Pid.from_list(new_pid_dict[tok].data)
+            new_tok = Pid.from_list(new_pid_dict[tuple(tok.data)])
         elif isinstance(tok, tuple):
             new_tok = neco__tuple_update_pids(tok, new_pid_dict)
         else:

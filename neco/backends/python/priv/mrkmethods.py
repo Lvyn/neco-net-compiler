@@ -37,7 +37,7 @@ class CopyGenerator(MarkingTypeMethodGenerator):
                            value=pyast.E('Marking(False)')) ]
 
         for place_type in marking_type.place_types.values():
-            tmp.append( place_type.copy_stmt(env, self_var, marking_var) )
+            tmp.append( place_type.copy_stmt(env, marking_var, self_var) )
 
         tmp.append(pyast.Return(pyast.Name(id=marking_var.name)))
         function.body = tmp

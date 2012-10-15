@@ -70,7 +70,7 @@ def compile_IR(env, config):
 
     if config.normalize_pids:
         env.add_declaration("from neco.extsnakes import *")
-        env.add_declaration("from neco.backends.python.process import PidTree")
+        env.add_declaration("from neco.backends.python.process import PidTree, pid_free_marking_order")
 
     for mod in config.imports:
         env.add_declaration('from {} import *'.format(mod))

@@ -1,348 +1,9 @@
 
 from collections import defaultdict
 from neco.extsnakes import Pid
-
-#class SONode(object):
-#    
-#    def __init__(self, pid=None):
-#        self.pid = pid
-#        self.children = []
-#        self.active = False
-#
-#    def copy(self):
-#        node = SONode(self.pid)
-#        for child in self.children:
-#            node.children.append(child.copy())
-#        node.active = self.active
-#        return node
-#    
-#    def insert_node(self, node):
-#        index = 0
-#        for child in self.children:
-#            if child.pid < node.pid:
-#                index += 1
-#            elif child.pid == node.pid:
-#                return child
-#            else:
-#                break
-#        self.children.insert(index, node)
-#        return node
-#    
-#    def expanded_insert(self, pid):
-#        node = self
-#        for frag in pid:
-#            node = node.insert_node(SONode(Pid.from_list([frag])))
-#        node.active = True # set leaf as active
-#        
-#    def reduce_sibling_offsets(self):
-#        """
-#        >>> n = SONode(None)
-#        >>> n.expanded_insert(Pid.from_str('1.1.1'))
-#        >>> n.expanded_insert(Pid.from_str('1.2.1'))
-#        >>> n.expanded_insert(Pid.from_str('1.3.1'))
-#        >>> n.print_structure()
-#        <active=F>
-#        |-1-<active=F>
-#          |-1-<active=F>
-#          | |-1-<active=T>
-#          |-2-<active=F>
-#          | |-1-<active=T>
-#          |-3-<active=F>
-#            |-1-<active=T>
-#        >>> _ = n.reduce_sibling_offsets()
-#        >>> n.print_structure()
-#        <active=F>
-#        |-1-<active=F>
-#          |-1-<active=F>
-#          | |-1-<active=T>
-#          |-2-<active=F>
-#          | |-1-<active=T>
-#          |-3-<active=F>
-#            |-1-<active=T>
-#        >>> n = SONode(None)
-#        >>> n.expanded_insert(Pid.from_str('2.4.7'))
-#        >>> n.expanded_insert(Pid.from_str('2.5.8'))
-#        >>> n.expanded_insert(Pid.from_str('2.6.9'))
-#        >>> _ = n.reduce_sibling_offsets()
-#        >>> n.print_structure()
-#        <active=F>
-#        |-1-<active=F>
-#          |-1-<active=F>
-#          | |-1-<active=T>
-#          |-2-<active=F>
-#          | |-1-<active=T>
-#          |-3-<active=F>
-#            |-1-<active=T>
-#        >>> n = SONode(None)
-#        >>> n.expanded_insert(Pid.from_str('2.42.7'))
-#        >>> n.expanded_insert(Pid.from_str('2.31.8'))
-#        >>> n.expanded_insert(Pid.from_str('2.32.8'))
-#        >>> n.expanded_insert(Pid.from_str('22.32.9'))
-#        >>> _ = n.reduce_sibling_offsets()
-#        >>> n.print_structure()
-#        <active=F>
-#        |-1-<active=F>
-#        | |-1-<active=F>
-#        | | |-1-<active=T>
-#        | |-2-<active=F>
-#        | | |-1-<active=T>
-#        | |-4-<active=F>
-#        |   |-1-<active=T>
-#        |-3-<active=F>
-#          |-1-<active=F>
-#            |-1-<active=T>
-#        """
-#        new_pids_map = {}
-#        self._reduce_sibling_offsets(old_prefix=[], new_prefix=[], new_pids_map=new_pids_map)
-#        return new_pids_map
-#    
-#    def _reduce_sibling_offsets(self, old_prefix, new_prefix, new_pids_map):
-#        """
-#        >>> from pprint import pprint
-#        >>> n = SONode(None)
-#        >>> n.expanded_insert(Pid.from_str('2.42.7'))
-#        >>> n.expanded_insert(Pid.from_str('2.31.8'))
-#        >>> n.expanded_insert(Pid.from_str('2.32.8'))
-#        >>> n.expanded_insert(Pid.from_str('22.32.9'))
-#        >>> new_pid_dict = {} 
-#        >>> n._reduce_sibling_offsets([], [], new_pid_dict)
-#        >>> n.print_structure()
-#        <active=F>
-#        |-1-<active=F>
-#        | |-1-<active=F>
-#        | | |-1-<active=T>
-#        | |-2-<active=F>
-#        | | |-1-<active=T>
-#        | |-4-<active=F>
-#        |   |-1-<active=T>
-#        |-3-<active=F>
-#          |-1-<active=F>
-#            |-1-<active=T>
-#        >>> pprint(new_pid_dict)
-#        {Pid.from_str('2'): Pid.from_str('1'),
-#         Pid.from_str('22'): Pid.from_str('3'),
-#         Pid.from_str('2.32'): Pid.from_str('1.2'),
-#         Pid.from_str('2.31'): Pid.from_str('1.1'),
-#         Pid.from_str('22.32'): Pid.from_str('3.1'),
-#         Pid.from_str('2.42'): Pid.from_str('1.4'),
-#         Pid.from_str('2.31.8'): Pid.from_str('1.1.1'),
-#         Pid.from_str('2.42.7'): Pid.from_str('1.4.1'),
-#         Pid.from_str('2.32.8'): Pid.from_str('1.2.1'),
-#         Pid.from_str('22.32.9'): Pid.from_str('3.1.1')}
-#        
-#        """
-#        if not self.children:
-#            return
-#        
-#        child_1 = self.children[0]
-#        old_frag_1 = int(child_1.pid)
-#        new_frag = 1
-#        new_pid = Pid.from_list([new_frag])
-#        child_1.pid = new_pid
-#        
-#        _old_pid = Pid.from_list(old_prefix + [old_frag_1])
-#        _new_pid = Pid.from_list(new_prefix + [new_frag])
-#        new_pids_map[_old_pid] = _new_pid
-#        child_1._reduce_sibling_offsets(old_prefix=old_prefix + [old_frag_1],
-#                                        new_prefix=new_prefix + [new_frag],
-#                                        new_pids_map=new_pids_map)
-#        for child_2 in self.children[1:]:
-#            old_frag_2 = int(child_2.pid)
-#            difference = old_frag_2 - old_frag_1
-#            if difference == 1:
-#                new_frag += 1
-#            else:
-#                new_frag += 2
-#                
-#            child_2.pid = Pid.from_list([new_frag])
-#            
-#            _old_pid = Pid.from_list(old_prefix + [old_frag_2])
-#            _new_pid = Pid.from_list(new_prefix + [new_frag])
-#            new_pids_map[_old_pid] = _new_pid
-#            child_2._reduce_sibling_offsets(old_prefix=old_prefix + [old_frag_2],
-#                                            new_prefix=new_prefix + [new_frag],
-#                                            new_pids_map=new_pids_map)
-#            
-#            child_1 = child_2
-#            old_frag_1 = old_frag_2
-#    
-#    def strip(self):
-#        """
-#        >>> n = SONode();
-#        >>> n.expanded_insert(Pid.from_str('1.1.1'))
-#        >>> n.print_structure()
-#        <active=F>
-#        |-1-<active=F>
-#          |-1-<active=F>
-#            |-1-<active=T>
-#        >>> n.strip()
-#        >>> n.print_structure()
-#        <active=F>
-#        |-1.1.1-<active=T>
-#        
-#        
-#        >>> n = SONode();
-#        >>> n.expanded_insert(Pid.from_str('1.1.1'))
-#        >>> n.expanded_insert(Pid.from_str('1.2.1'))
-#        >>> n.strip()
-#        >>> n.print_structure()
-#        <active=F>
-#        |-1.1.1-<active=T>
-#        |-1.2.1-<active=T>
-#        
-#        >>> n = SONode();
-#        >>> n.expanded_insert(Pid.from_str('1.1.1'))
-#        >>> n.expanded_insert(Pid.from_str('1.2.1'))
-#        >>> n.expanded_insert(Pid.from_str('1.1'))
-#        >>> n.strip()
-#        >>> n.print_structure()
-#        <active=F>
-#        |-1.1-<active=T>
-#        | |-1-<active=T>
-#        |-1.2.1-<active=T>
-#        
-#        >>> n = SONode();
-#        >>> n.expanded_insert(Pid.from_str('1.1.1'))
-#        >>> n.expanded_insert(Pid.from_str('1.2.1'))
-#        >>> n.expanded_insert(Pid.from_str('1.1'))
-#        >>> n.expanded_insert(Pid.from_str('1.2.1.1'))
-#        >>> n.expanded_insert(Pid.from_str('1'))
-#        >>> n.strip()
-#        >>> n.print_structure()
-#        <active=F>
-#        |-1-<active=T>
-#          |-1-<active=T>
-#          | |-1-<active=T>
-#          |-2.1-<active=T>
-#            |-1-<active=T>
-#        """
-#        to_remove = []
-#        to_add = []
-#        for child in self.children:
-#            # strip grandchildren, etc.
-#            child.strip()
-#            # handle child
-#            if not child.active:
-#                # child need to be stripped
-#                fragment = child.pid
-#                # remove child from node
-#                to_remove.append(child)
-#                
-#                # handle grand children
-#                for grandchild in child.children:
-#                    # change grandchild pid
-#                    grandchild.pid = fragment + grandchild.pid
-#                to_add.append(child.children)
-#    
-#        # remove childs
-#        for child in to_remove:
-#            self.children.remove(child)
-#    
-#        # insert grandchildren
-#        for grandchildren in to_add:
-#            for grandchild in grandchildren:
-#                node = self.insert_node(grandchild)
-#                if node != grandchild:
-#                    raise RuntimeError
-#
-#    def stripped(self):
-#        """
-#        >>> n = SONode()
-#        >>> n.expanded_insert(Pid.from_str('1.1.1'))
-#        >>> n.print_structure()
-#        <active=F>
-#        |-1-<active=F>
-#          |-1-<active=F>
-#            |-1-<active=T>
-#        >>> n.stripped().print_structure()
-#        <active=F>
-#        |-1.1.1-<active=T>
-#        
-#        
-#        >>> n = SONode();
-#        >>> n.expanded_insert(Pid.from_str('1.1.1'))
-#        >>> n.expanded_insert(Pid.from_str('1.2.1'))
-#        >>> n.stripped().print_structure()
-#        <active=F>
-#        |-1.1.1-<active=T>
-#        |-1.2.1-<active=T>
-#        
-#        >>> n = SONode();
-#        >>> n.expanded_insert(Pid.from_str('1.1.1'))
-#        >>> n.expanded_insert(Pid.from_str('1.2.1'))
-#        >>> n.expanded_insert(Pid.from_str('1.1'))
-#        >>> n.stripped().print_structure()
-#        <active=F>
-#        |-1.1-<active=T>
-#        | |-1-<active=T>
-#        |-1.2.1-<active=T>
-#        
-#        >>> n = SONode();
-#        >>> n.expanded_insert(Pid.from_str('1.1.1'))
-#        >>> n.expanded_insert(Pid.from_str('1.2.1'))
-#        >>> n.expanded_insert(Pid.from_str('1.1'))
-#        >>> n.expanded_insert(Pid.from_str('1.2.1.1'))
-#        >>> n.expanded_insert(Pid.from_str('1'))
-#        >>> n.stripped().print_structure()
-#        <active=F>
-#        |-1-<active=T>
-#          |-1-<active=T>
-#          | |-1-<active=T>
-#          |-2.1-<active=T>
-#            |-1-<active=T>
-#        """
-#        node = self.copy()
-#        node.strip()
-#        return node
-#    
-#    def reduce_parent_offset(self):
-#        """
-#        >>> 
-#        """
-#        for child in self.children:
-#            if len(child.pid) > 2:
-#                pid = child.pid
-#                child.pid = pid.prefix() + pid.suffix()
-#                
-#        
-#    
-#    def print_structure(self, child_prefix='', prefix=''):
-#        """
-#        >>> n = SONode(None)
-#        >>> n.print_structure()
-#        <active=F>
-#        >>> _ = n.expanded_insert(Pid.from_str('1.1.1'))
-#        >>> n.print_structure()
-#        <active=F>
-#        |-1-<active=F>
-#          |-1-<active=F>
-#            |-1-<active=T>
-#        >>> _ = n.expanded_insert(Pid.from_str('1.2'))
-#        >>> n.print_structure()
-#        <active=F>
-#        |-1-<active=F>
-#          |-1-<active=F>
-#          | |-1-<active=T>
-#          |-2-<active=T>
-#        >>> _ = n.expanded_insert(Pid.from_str('1'))
-#        >>> n.print_structure()
-#        <active=F>
-#        |-1-<active=T>
-#          |-1-<active=F>
-#          | |-1-<active=T>
-#          |-2-<active=T>
-#        """
-#        
-#        print "{}<active={}>".format(child_prefix, 'T' if self.active else 'F')
-#        length = len(self.children) - 1
-#        child_prefix = prefix + '|-'
-#        for i, child in enumerate(self.children): 
-#            child_prefix = prefix + '|-{}-'.format(child.pid)
-#            new_prefix = prefix + '| ' if i < length else prefix + '  ' 
-#            child.print_structure(child_prefix, new_prefix)
-#    
-#PidTree = SONode
-
+from neco.utils import flatten_lists
+import itertools
+import pprint
 
 def sibling_order( left, right ):
     return left.frag - right.frag
@@ -354,13 +15,20 @@ def pid_free_marking_order( left, right ):
     # print "RES :", res
     return -res
 
+class mydefaultdict(dict):
+    def __missing__(self, key):
+        l = [key]
+        self[key] = l
+        return l
+        
 class PidTree(object):
 
     def __init__(self, frag):
         self.frag = frag
         self.children = {} # defaultdict(lambda : PidTree())
         self.marking = None
-
+        self.orbits  = None # will be build during orderings
+        
     def add_marking(self, pid, marking):
         if len(pid) == 0:
             self.marking = marking
@@ -372,11 +40,87 @@ class PidTree(object):
                 tree = PidTree(frag)
                 self.children[frag] = tree
                 tree.add_marking(pid[1:], marking)
-        
-    def order_tree(self, order = pid_free_marking_order):
+
+    def order_tree(self, compare, n=0):
+        #
+        # Each time a child is ordered, its orbits are updated.
+        # In initial state, all children have singleton orbits.
+        # When compare detects an equality orbits are fused together.
+        #
+        # We use fragments as unique identifiers in orbits because
+        # there are no clashes (cf. Pid-tree definition)
+        # 
+
+        # order children and populate orbits with singletons
+        orbits = {}
         for child in self.children.itervalues():
-            child.order_tree(order)
-        self.children = sorted( self.children.itervalues(), cmp=order )
+            child.order_tree(compare, n+1)
+            orbits[child.frag] = [child]
+
+        # the following function is used to order children, it will use order
+        # to compare elements and if they are equal update respective orbits
+
+        def comparison_function(left, right):
+            # left and right are (pid-fragment x pid-tree) pairs.
+
+            comparison_result = compare(left, right)
+            # assert( comparison_result == -(compare(right, left)) )
+            if comparison_result == 0:
+                # fuse orbits
+                left_frag, right_frag = left.frag, right.frag
+                left_orbit  = orbits[left_frag]
+                right_orbit = orbits[right_frag]
+
+                left_orbit.extend(right_orbit)
+
+                for c in left_orbit:
+                    orbits[c.frag] = left_orbit
+
+            # return the comparison_result since it's a comparison function
+            return comparison_result
+
+        # sort children and rebuild orbits
+        self.children = sorted( list(self.children.itervalues()), cmp=comparison_function )
+        # don't forget to store orbits
+        self.orbits = orbits
+
+    def permutable_children(self):
+        identities = set()
+        permutable_children = []
+
+        for child in self.children:
+            value = self.orbits[child.frag]
+            
+            identity = id(value)
+            if not identity in identities:
+                identities.add(identity)
+                permutable_children.append(value)
+                
+        return permutable_children
+
+    def permutations(self):
+        permutable = self.permutable_children()
+        for permutation in itertools.product(*[itertools.permutations(p) for p in permutable]):
+            yield itertools.chain.from_iterable(permutation)
+#
+    def __repr__(self):
+        return str(self.frag)
+    
+    def itertrees(self, n=0):
+        for permutation in self.permutations():
+            tmp = list(permutation)
+            # print "perm {} : {} ".format(n, [ c.frag for c in tmp ])
+            for children in itertools.product( *(child.itertrees(n+1) for child in tmp) ): # permutation) ):
+                # print "children : ", children 
+                # print "children (n={}) : {} ".format(n, [c.frag for c in children])
+#                for oc, nc in zip(self.children, children):
+#                    print "oc {}".format(oc.frag)
+#                    print "nc {}".format(nc.frag)
+#
+                tree = PidTree(self.frag)
+                tree.marking = self.marking
+                tree.children = children
+                yield tree
 
     def build_map(self):
         """
@@ -388,7 +132,7 @@ class PidTree(object):
         >>> n.add_marking([22,32,9], None)
         >>> n.order_tree()
         >>> new_pid_dict = n.build_map()
-        >>> n.print_ordered_structure()
+        >>> n.print_structure()
         |-1-
         | |-1-
         | | |-1-
@@ -413,8 +157,7 @@ class PidTree(object):
         """
         
 #        print
-#        self.print_ordered_structure()
-
+#        self.print_structure()
         old_prefix = [] 
         new_prefix = []
         bijection = {}
@@ -424,27 +167,27 @@ class PidTree(object):
     def _update_map(self, old_prefix, new_prefix, bijection):
         # children are assumed ordered
         # normalize pids
+        
         i = 1
         for child in self.children:
             old_prefix.append(child.frag)
             new_prefix.append(i)
-            bijection[tuple(old_prefix)] = tuple(new_prefix)
-            child.frag = i
             i += 1
+            bijection[tuple(old_prefix)] = tuple(new_prefix)
             child._update_map(old_prefix, new_prefix, bijection)
             old_prefix.pop()
             new_prefix.pop()
 
-    def print_ordered_structure(self, child_prefix='', prefix=''):
+    def print_structure(self, child_prefix='', prefix=''):
         """
         >>> n = PidTree(0)
         >>> n.order_tree()
-        >>> n._ordered_structure()
+        >>> n.print_structure()
 
         >>> n = PidTree(0)
         >>> _ = n.add_marking([1,1,1], None)
         >>> n.order_tree()
-        >>> n.print_ordered_structure()
+        >>> n.print_structure()
         |-1-
           |-1-
             |-1-
@@ -452,7 +195,7 @@ class PidTree(object):
         >>> _ = n.add_marking([1,1,1], None)
         >>> _ = n.add_marking([1,2], None)
         >>> n.order_tree()
-        >>> n.print_ordered_structure()
+        >>> n.print_structure()
         |-1-
           |-1-
           | |-1-
@@ -462,7 +205,7 @@ class PidTree(object):
         >>> _ = n.add_marking([1,2], None)
         >>> _ = n.add_marking([1], None)
         >>> n.order_tree()
-        >>> n.print_ordered_structure()
+        >>> n.print_structure()
         |-1-
           |-1-
           | |-1-
@@ -473,9 +216,9 @@ class PidTree(object):
         length = len(self.children) - 1
         child_prefix = prefix + '|-'
         for i, child in enumerate(self.children): 
-            child_prefix = prefix + '|-{}-'.format(child.frag)
+            child_prefix = prefix + '|-{}- {}'.format(child.frag, child.marking.__line_dump__())
             new_prefix = prefix + '| ' if i < length else prefix + '  ' 
-            child.print_ordered_structure(child_prefix, new_prefix)
+            child.print_structure(child_prefix, new_prefix)
 
 
 if __name__ == '__main__':
