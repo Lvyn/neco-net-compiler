@@ -28,6 +28,15 @@ def pid_free_tuple_count_compare(ignore_set, left_pair, right_pair):
 
     return 0
 
+def build_pid_count_map(place):
+    pid_count_map = {}
+    for token in place:
+        try:
+            pid_count_map[token] += 1
+        except KeyError:
+            pid_count_map[token] = 0
+    return pid_count_map
+
 def pid_free_pid_count_compare(left_pair, right_pair):
     _,  left_count = left_pair
     _, right_count = right_pair
@@ -375,8 +384,11 @@ class multiset(hdict):
         if tmp != 0:
             return tmp
 
-        left  = sorted(self_keys, cmp = pid_free_pid_count_compare )
-        right = sorted(self_keys, cmp = pid_free_pid_count_compare )
+        left_map = build_pid_count_map(self_keys)
+        right_map = build_pid_count_map(other_keys)
+
+        left  = sorted(left_map.iteritems(), cmp = pid_free_pid_count_compare )
+        right = sorted(right_map.iteritems(), cmp = pid_free_pid_count_compare )
         
         for i in range(self_len):
             tmp = pid_free_pid_count_compare(left[i], right[i])
@@ -504,7 +516,7 @@ def pid_place_type_update_pids(ms, new_pid_dict):
     return new_ms
     
 
-def neco__generator_token_transformer(ms, new_pid_dict):
+def generator_place_update_pids(ms, new_pid_dict):
     """
     This function updated a generator place multiset C{ms} with resepect to C{new_pid_dict}.
 

@@ -205,7 +205,7 @@ class Pid(object):
         if len(od) > len(sd):
             i = 0
             # test if parent is a prefix of the child
-            for elt in sd:
+            for i, elt in enumerate(sd):
                 if elt != od[i]:
                     return False
             # loop passed ok

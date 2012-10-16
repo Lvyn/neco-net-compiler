@@ -1,48 +1,34 @@
 from time import time
+import pprint
 import sys
 
 def normalize_marking(marking, current_set, state_space):
-#    print
-#    print "HANDLING ", marking.__dump__()
-#    print "CURRENT : ", current_set
-#    print "ST : ", state_space
     pid_tree = marking.buildPidTree()
     pid_tree.order_tree(pid_free_marking_order)
-#    pid_tree.print_structure()
-    
+
     iter_trees = pid_tree.itertrees()
-    
+
     default_tree = iter_trees.next()
-#    print "default_tree\n", default_tree.print_structure()
     bijection = default_tree.build_map()
     default_marking = marking.copy()
-#    print "biection ", bijection
+
     default_marking.update_pids(bijection)
-#    print "P MRK (default) : ", default_marking
 
     if default_marking in state_space:
-#        print "IN"
-        return None
+        return default_marking
     if default_marking in current_set:
-#        print "IN"
-        return None
-    
+        return default_marking
+
     for tree in iter_trees:
-#        print "tree\n", tree.print_structure()
         bijection = tree.build_map()
         tmp = marking.copy()
-#        print "biection ", bijection
         tmp.update_pids(bijection)
-        
-#        print "P MRK : ", tmp
-        if tmp in state_space:
-#            print "IN"
-            return None
-        if tmp in current_set:
-#            print "IN"
-            return None
 
-#    print "NOT IN"
+        if tmp in state_space:
+            return tmp
+        if tmp in current_set:
+            return tmp
+
     return default_marking
 
 def state_space():

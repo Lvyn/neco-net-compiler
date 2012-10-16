@@ -10,7 +10,7 @@ stubs = {
     'object_place_type_update_pid_tree' : 'data.neco__iterable_update_pid_tree',
     'iterable_extract_pids' : 'data.neco__iterable_extract_pids',
     'normalize_pid_tree' : 'data.neco__normalize_pid_tree',
-    'generator_place_update_pids'     : 'data.neco__generator_token_transformer',
+    'generator_place_update_pids'     : 'data.generator_place_update_pids',
     'generator_place_update_pid_tree' : 'data.neco__generator_multiset_update_pid_tree',
     'pid_place_type_update_pids' : 'data.pid_place_type_update_pids'
 }
@@ -28,11 +28,17 @@ class UpdatePidsGenerator(MarkingTypeMethodGenerator):
                                    args=pyast.A(self_var.name).param(new_pid_dict_var.name).ast())
             
         body = []
-        for place_type in marking_type.place_types.itervalues():
+        for name, place_type in marking_type.place_types.iteritems():
             print place_type
             if not place_type.allow_pids:
                 continue
-            body.append( place_type.update_pids_stmt(env, self_var, new_pid_dict_var) )
+            if name == GENERATOR_PLACE:
+                body.append( pyast.Assign(targets=[ place_type.place_expr(env, self_var) ],
+                                          value=pyast.Call(func=pyast.Name(stubs['generator_place_update_pids']),
+                                                           args=[place_type.place_expr(env, self_var),
+                                                                pyast.Name(new_pid_dict_var.name)]) ) )
+            else:
+                body.append( place_type.update_pids_stmt(env, self_var, new_pid_dict_var) )
         
         if not body:
             body = [pyast.Pass()]

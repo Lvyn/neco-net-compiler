@@ -11,7 +11,16 @@ def sibling_order( left, right ):
 def pid_free_marking_order( left, right ):
     # print "LEFT :", left.marking
     # print "RIGHT :", right.marking
-    res = left.marking.pid_free_compare(right.marking)
+    if left.marking: 
+        if right.marking:
+            res = left.marking.pid_free_compare(right.marking)
+        else:
+            res = 1
+    else:
+        if right.marking:
+            res = -1
+        else:
+            res = 0
     # print "RES :", res
     return -res
 
@@ -62,7 +71,6 @@ class PidTree(object):
 
         def comparison_function(left, right):
             # left and right are (pid-fragment x pid-tree) pairs.
-
             comparison_result = compare(left, right)
             # assert( comparison_result == -(compare(right, left)) )
             if comparison_result == 0:
@@ -103,9 +111,9 @@ class PidTree(object):
         for permutation in itertools.product(*[itertools.permutations(p) for p in permutable]):
             yield itertools.chain.from_iterable(permutation)
 #
-    def __repr__(self):
-        return str(self.frag)
-    
+#    def __repr__(self):
+#        return #str(self.frag)
+#    
     def itertrees(self, n=0):
         for permutation in self.permutations():
             tmp = list(permutation)
@@ -216,7 +224,7 @@ class PidTree(object):
         length = len(self.children) - 1
         child_prefix = prefix + '|-'
         for i, child in enumerate(self.children): 
-            child_prefix = prefix + '|-{}- {}'.format(child.frag, child.marking.__line_dump__())
+            child_prefix = prefix + '|-{}-'.format(child.frag) #, child.marking.__line_dump__())
             new_prefix = prefix + '| ' if i < length else prefix + '  ' 
             child.print_structure(child_prefix, new_prefix)
 

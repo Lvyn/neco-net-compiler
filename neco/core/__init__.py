@@ -865,11 +865,8 @@ class SuccTGenerator(object):
                                            marking_var = new_marking_var,
                                            acc_set_var = self.marking_set_var,
                                            state_space_set_var = self.arg_state_space_set_var)
-
-            builder.begin_If( condition = netir.Name( normalized_marking_var.name ) )
             builder.emit_AddMarking( marking_set_var = self.marking_set_var,
                                      marking_var = normalized_marking_var )
-            builder.end_block()
         else:
             # add marking to set
             builder.emit_AddMarking( marking_set_var = self.marking_set_var,
