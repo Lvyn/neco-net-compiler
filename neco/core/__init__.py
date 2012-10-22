@@ -206,12 +206,16 @@ class SuccTGenerator(object):
         # function arguments
         self.arg_marking_var = helper.new_variable(variable_type = marking_type.type)
         self.marking_set_var = helper.new_variable(variable_type = marking_type.container_type)
+        self.todo_set_var = helper.new_variable(variable_type = marking_type.container_type)
+        self.hash_set_var = helper.new_variable(variable_type = TypeInfo.get('set'))
         self.arg_state_space_set_var = helper.new_variable(variable_type = marking_type.container_type)
 
         # create function
         self.builder.begin_function_SuccT( function_name     = self.function_name,
                                            arg_marking_var   = self.arg_marking_var,
                                            arg_marking_set_var = self.marking_set_var,
+                                           arg_hash_set_var = self.hash_set_var,
+                                           arg_todo_set_var = self.todo_set_var,
                                            arg_state_space_set_var = self.arg_state_space_set_var,
                                            transition_info   = self.transition,
                                            variable_provider = helper )
@@ -864,9 +868,13 @@ class SuccTGenerator(object):
             builder.emit_NormalizeMarking( normalized_marking_var = normalized_marking_var,
                                            marking_var = new_marking_var,
                                            acc_set_var = self.marking_set_var,
+                                           hash_set_var = self.hash_set_var,
+                                           todo_set_var = self.todo_set_var,
                                            state_space_set_var = self.arg_state_space_set_var)
             builder.emit_AddMarking( marking_set_var = self.marking_set_var,
                                      marking_var = normalized_marking_var )
+            builder.emit_UpdateHashSet( hash_set_var = self.hash_set_var,
+                                        marking_var = normalized_marking_var )
         else:
             # add marking to set
             builder.emit_AddMarking( marking_set_var = self.marking_set_var,
@@ -1013,17 +1021,23 @@ class Compiler(object):
         variable_provider = VariableProvider(set([self.succs_function]))
         arg_marking_var = variable_provider.new_variable( variable_type = self.marking_type.type )
         arg_marking_set_var = variable_provider.new_variable( variable_type = self.marking_type.container_type )
+        arg_todo_set_var    = variable_provider.new_variable( variable_type = self.marking_type.container_type )
+        arg_hash_set_var    = variable_provider.new_variable( variable_type = self.marking_type.container_type )
         arg_state_space_set_var = variable_provider.new_variable( variable_type = self.marking_type.container_type )
 
         builder = netir.Builder()
         builder.begin_function_Succs( function_name = "succs",
-                                      arg_marking_var = arg_marking_var,
+                                      arg_marking_var     = arg_marking_var,
+                                      arg_hash_set_var    = arg_hash_set_var,
                                       arg_marking_set_var = arg_marking_set_var,
+                                      arg_todo_set_var    = arg_todo_set_var,
                                       arg_state_space_set_var = arg_state_space_set_var,
                                       variable_provider = variable_provider)
 
         markingset_node  = netir.Name(arg_marking_set_var.name)
         marking_arg_node = netir.Name(arg_marking_var.name)
+        todo_set_arg_node = netir.Name(arg_todo_set_var.name)
+        hash_set_arg_node = netir.Name(arg_hash_set_var.name)
         state_space_arg_node = netir.Name(arg_state_space_set_var.name)
 
         if self.config.optimize_flow:
@@ -1037,6 +1051,8 @@ class Compiler(object):
                 builder.emit_ProcedureCall( function_name = function_name,
                                             arguments = [ markingset_node,
                                                           marking_arg_node,
+                                                          hash_set_arg_node,
+                                                          todo_set_arg_node,
                                                           state_space_arg_node ] )
 
         builder.end_function()

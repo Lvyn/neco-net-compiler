@@ -19,9 +19,6 @@ if (2, 7, 0) <= sys.version_info < (3, 0, 0) :
 else:
     raise RuntimeError("unsupported python version")
 
-
-
-
 g_produced_files = ["*.pyc",
                     "net.so",
                     "net.pyx",

@@ -2,10 +2,12 @@
 
 from collections import defaultdict
 from neco.utils import NameProvider
-from snakes import ConstraintError
+from snakes import ConstraintError, nets
 from snakes.nets import ArcAnnotation, PetriNet, Place, Variable, Transition, \
-    Expression, Tuple, MultiArc, Value, dot, tBlackToken, tInteger, Flush #@UnusedImport
+    Expression, Tuple, MultiArc, Value, dot, tBlackToken, tInteger, \
+    Flush #@UnusedImport
 from snakes.typing import Instance, CrossProduct, tNatural
+import operator
 import snakes.plugins
 import sys
 
@@ -59,13 +61,13 @@ class Pid(object):
 
     def __iter__(self):
         return iter(self.data)
-
-    def __bool__(self):
-        return self.data # False iff empty
-
-    def __int__(self):
-        assert(len(self.data) == 1)
-        return self.data[0]
+#
+#    def __bool__(self):
+#        return self.data # False iff empty
+#
+#    def __int__(self):
+#        assert(len(self.data) == 1)
+#        return self.data[0]
 
     def __add__(self, frag):
         pid = self.copy()
@@ -75,21 +77,21 @@ class Pid(object):
 
     def __len__(self):
         return len(self.data)
-
-    def __lt__(self, other):
-        sl = len(self.data)
-        ol = len(other.data)
-        if sl < ol:
-            return True
-        elif ol > sl:
-            return False
-        else:
-            for se, oe in zip(self.data, other.data):
-                if se < oe:
-                    continue
-                else:
-                    return False
-            return True
+#
+#    def __lt__(self, other):
+#        sl = len(self.data)
+#        ol = len(other.data)
+#        if sl < ol:
+#            return True
+#        elif ol > sl:
+#            return False
+#        else:
+#            for se, oe in zip(self.data, other.data):
+#                if se < oe:
+#                    continue
+#                else:
+#                    return False
+#            return True
 
     def at(self, i):
         return self.data[i]
@@ -158,6 +160,7 @@ class Pid(object):
         >>> hash(Pid.from_str('1.2')) == hash(Pid.from_str('1.3'))
         False
         """
+        # return reduce(operator.xor, (hash(x) for x in self.data), 0)
         return hash(tuple(self.data))
 
     def __eq__(self, other):
@@ -165,15 +168,23 @@ class Pid(object):
         >>> Pid.from_str('1.1.1') == Pid.from_str('1.1.1')
         True
         """
+        if len(self.data) != len(other.data):
+            return False
+
+        for a, b in zip(self.data, other.data):
+            if a != b:
+                return False
+        return True
+
         return self.data == other.data
 
 
-    def __ne__(self, other):
-        """
-        >>> Pid.from_str('1.1.1') != Pid.from_str('1.1.2')
-        True
-        """
-        return self.data != other.data
+#    def __ne__(self, other):
+#        """
+#        >>> Pid.from_str('1.1.1') != Pid.from_str('1.1.2')
+#        True
+#        """
+#        return self.data != other.data
 
     def next(self, pid_component):
         """

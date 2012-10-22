@@ -1,8 +1,11 @@
 from time import time
 import pprint
 import sys
+import pdb
 
-def normalize_marking(marking, current_set, state_space):
+perm_log = open('perm_log', 'w')
+
+def normalize_marking(marking, hash_set, current_set, todo_set, state_space):
     pid_tree = marking.buildPidTree()
     pid_tree.order_tree(pid_free_marking_order)
 
@@ -11,44 +14,64 @@ def normalize_marking(marking, current_set, state_space):
     default_tree = iter_trees.next()
     bijection = default_tree.build_map()
     default_marking = marking.copy()
-
     default_marking.update_pids(bijection)
+
+    # return default_marking
+    perm_log.write(".")
+
+    if not default_marking.__pid_free_hash__() in hash_set:
+        perm_log.write("h")
+        return default_marking
 
     if default_marking in state_space:
         return default_marking
+    if default_marking in todo_set:
+        return default_marking
     if default_marking in current_set:
         return default_marking
-
+    
+    perm_log.write("+")
+#    print "+"
     for tree in iter_trees:
+        # tree.print_structure()
+        perm_log.write("*")
         bijection = tree.build_map()
         tmp = marking.copy()
         tmp.update_pids(bijection)
+
+        # print tmp.__pid_free_hash__() == default_marking.__pid_free_hash__()
 
         if tmp in state_space:
             return tmp
         if tmp in current_set:
             return tmp
+        if tmp in todo_set:
+            return tmp
+        
+    perm_log.write("%")
 
     return default_marking
 
 def state_space():
-    visited = set()
-    visit = set([init()])
+    done = set()
+    todo = set([init()])
     succ = set()
     succs2 = set()
     count = 0
     start = time()
     last_time = start
 
+    hash_set = set()
+
     try:
         while True:
-            m = visit.pop()
+            m = todo.pop()
             count+=1
 
-            visited.add(m)
-            succ = succs(m,visited)
-            succs2 = succ.difference(visited)
-            visit.update(succs2)
+            done.add(m)
+            succ = succs(m, hash_set, done, todo)
+            succs2 = succ.difference(done)
+            todo.update(succs2)
             succ.clear()
             succs2.clear()
             if (count % 250 == 0):
@@ -64,7 +87,7 @@ def state_space():
     except KeyError:
         pass
     print
-    return visited
+    return done
 
 
 def state_space_graph():
@@ -76,6 +99,7 @@ def state_space_graph():
     succ_list = []
     start = time()
     last_time = start
+    hash_set = set()
 
     m = init()
 
@@ -91,7 +115,7 @@ def state_space_graph():
 
             # new marking, get the id
             current_node_id = mrk_id_map[m]
-            succ = succs(m, visited)
+            succ = succs(m, hash_set, visit, visited)
             succ_list = []
 
             for s_mrk in succ:

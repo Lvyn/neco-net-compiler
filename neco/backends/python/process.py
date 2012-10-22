@@ -9,19 +9,10 @@ def sibling_order( left, right ):
     return left.frag - right.frag
 
 def pid_free_marking_order( left, right ):
-    # print "LEFT :", left.marking
-    # print "RIGHT :", right.marking
     if left.marking: 
-        if right.marking:
-            res = left.marking.pid_free_compare(right.marking)
-        else:
-            res = 1
+        res = left.marking.pid_free_compare(right.marking) if right.marking else 1
     else:
-        if right.marking:
-            res = -1
-        else:
-            res = 0
-    # print "RES :", res
+        res = -1 if right.marking else 0
     return -res
 
 class mydefaultdict(dict):
@@ -64,7 +55,7 @@ class PidTree(object):
         orbits = {}
         for child in self.children.itervalues():
             child.order_tree(compare, n+1)
-            orbits[child.frag] = [child]
+            orbits[child.frag] = set([child])
 
         # the following function is used to order children, it will use order
         # to compare elements and if they are equal update respective orbits
@@ -79,7 +70,7 @@ class PidTree(object):
                 left_orbit  = orbits[left_frag]
                 right_orbit = orbits[right_frag]
 
-                left_orbit.extend(right_orbit)
+                left_orbit = left_orbit.union(right_orbit)
 
                 for c in left_orbit:
                     orbits[c.frag] = left_orbit
@@ -95,36 +86,34 @@ class PidTree(object):
     def permutable_children(self):
         identities = set()
         permutable_children = []
+        
+#        f = False
+#        if self.children:
+#            f = True
+            # print [ c.frag for c in self.children ]
 
         for child in self.children:
             value = self.orbits[child.frag]
             
             identity = id(value)
             if not identity in identities:
+#                if f:
+#                    print "adding ", [ v.frag for v in value ], identity
                 identities.add(identity)
                 permutable_children.append(value)
-                
+
         return permutable_children
 
     def permutations(self):
         permutable = self.permutable_children()
         for permutation in itertools.product(*[itertools.permutations(p) for p in permutable]):
             yield itertools.chain.from_iterable(permutation)
-#
-#    def __repr__(self):
-#        return #str(self.frag)
-#    
+
     def itertrees(self, n=0):
         for permutation in self.permutations():
             tmp = list(permutation)
-            # print "perm {} : {} ".format(n, [ c.frag for c in tmp ])
             for children in itertools.product( *(child.itertrees(n+1) for child in tmp) ): # permutation) ):
-                # print "children : ", children 
-                # print "children (n={}) : {} ".format(n, [c.frag for c in children])
-#                for oc, nc in zip(self.children, children):
-#                    print "oc {}".format(oc.frag)
-#                    print "nc {}".format(nc.frag)
-#
+
                 tree = PidTree(self.frag)
                 tree.marking = self.marking
                 tree.children = children

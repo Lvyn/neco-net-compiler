@@ -104,6 +104,10 @@ class ObjectPlaceType(coretypes.ObjectPlaceType, PythonPlaceType):
         other_place_expr = pyast.E(self.field.access_from(right_marking_var))
         return pyast.B(self_place_expr).attr('pid_free_tuple_compare').call([other_place_expr, pyast.E(repr(ignore))]).ast()
     
+    def pid_free_hash_expr(self, env, marking_var, ignore):
+        self_place_expr = pyast.E(self.field.access_from(marking_var))
+        return pyast.B(self_place_expr).attr('pid_free_hash').call([pyast.E(repr(ignore))]).ast()
+    
     def extract_pids(self, env, marking_var, dict_var):
         place_expr = pyast.E(self.field.access_from(marking_var))
 
@@ -163,6 +167,8 @@ class PidPlaceType(ObjectPlaceType):
         other_place_expr = pyast.E(self.field.access_from(right_marking_var))
         return pyast.B(self_place_expr).attr('pid_free_pid_compare').call([other_place_expr]).ast()
     
+    def pid_free_hash_expr(self, env, marking_var, ignore):
+        return pyast.E("{}.pid_pid_free_hash()".format(self.field.access_from(marking_var)))
 
 ################################################################################
 # opt

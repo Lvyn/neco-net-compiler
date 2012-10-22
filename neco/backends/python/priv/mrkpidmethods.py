@@ -216,8 +216,7 @@ class HashGenerator(MarkingTypeMethodGenerator):
         return builder.ast()
 
 class PidFreeHashGenerator(MarkingTypeMethodGenerator):
-    
-    @todo
+
     def generate(self, env):
         marking_type = env.marking_type
         config = marking_type.config
@@ -227,24 +226,45 @@ class PidFreeHashGenerator(MarkingTypeMethodGenerator):
         
         builder = pyast.Builder()
         
-        builder.begin_FunctionDef( name = '__hash__', args = pyast.A(self_var.name).ast() )
-
-        builder.begin_If(test=pyast.E('self.{} != None'.format(marking_type.get_field('_hash').name)))
-        builder.emit_Return(pyast.E('self.{}'.format(marking_type.get_field('_hash').name)))
-        builder.end_If()
-        
+        builder.begin_FunctionDef( name = '__pid_free_hash__', args = pyast.A(self_var.name).ast() )
+       
         builder.emit( pyast.E('h = 0') )
-
-
-        for name, place_type in marking_type.place_types.iteritems():
-            if name == GENERATOR_PLACE and config.normalize_pids:
-                continue
-            
+        
+        
+        for (name, place_type) in marking_type.place_types.iteritems():
             magic = hash(name)
-            builder.emit( pyast.E('h ^= hash(' + place_type.field.access_from(self_var) + ') * ' + str(magic) ) )
+            type_info = place_type.token_type
 
-        builder.emit(pyast.E("self.{} = h".format(marking_type.get_field('_hash').name)))
-        # builder.emit(pyast.E("print h"))
+            if type_info.is_Pid:
+                
+                # builder.emit( pyast.E('h ^= hash(' +  place_type.field.access_from(self_var) + ') * ' + str(magic)) )
+                
+                right_operand = pyast.BinOp( left=place_type.pid_free_hash_expr(env, self_var, [0]),
+                                             op=pyast.Mult(),
+                                             right=pyast.E(str(magic)) )
+                
+                builder.emit( pyast.AugAssign(target = [pyast.E("h")],
+                                              op=pyast.BitXor(),
+                                              value = right_operand ) )
+
+            elif type_info.has_pids:
+                # must be tuple
+                assert( type_info.is_TupleType )
+                
+                ignore = [ i for i, subtype in enumerate(type_info) if subtype.is_Pid ]
+                # builder.emit("{!s} = {!r}".format(ig_var.name, ig))
+                
+                right_operand = pyast.BinOp( left=place_type.pid_free_hash_expr(env, self_var, ignore),
+                                             op=pyast.Mult(),
+                                             right=pyast.E(str(magic)) )
+                
+                builder.emit( pyast.AugAssign(target = [pyast.E("h")],
+                                              op=pyast.BitXor(),
+                                              value = right_operand ) )
+
+            else:
+                builder.emit( pyast.E('h ^= hash(' +  place_type.field.access_from(self_var) + ') * ' + str(magic)) )
+
         builder.emit_Return(pyast.E("h"))
         builder.end_FunctionDef()
         return builder.ast()

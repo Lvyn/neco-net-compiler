@@ -232,6 +232,12 @@ class multiset(hdict):
                         return False
                 except (KeyError, TypeError) :
                     return False
+            for val in other:
+                try :
+                    if self[val] != other[val] :
+                        return False
+                except (KeyError, TypeError) :
+                    return False
         return True
 
     def __ne__(self, other):
@@ -372,6 +378,33 @@ class multiset(hdict):
             if tmp != 0:
                 return tmp
         return 0
+
+    def pid_free_hash(self, ignore):
+        # ignore = []
+        h = 0
+        for elt, count in self.items():
+            h ^= reduce(operator.xor, (hash(e) for i, e in enumerate(elt) if i not in ignore), 0xDEED1337) ^ count
+        #h = reduce(operator.xor, (hash(e) for e in self.items()), 0x252756382)
+        return h
+    
+    def pid_pid_free_hash(self):
+        def f(p1, p2):
+            a1, a2 = p1
+            b1, b2 = p2
+            tmp = len(a1) - len(b1)
+            if tmp != 0:
+                return tmp
+            return a2 - b2
+            
+        sitems = sorted( self.iteritems(),  cmp = f)
+        
+        h = len(self)
+        magic = 0xC0FFEE
+        for i, (_, c) in enumerate(sitems):
+            h ^= c ^ (i * magic)
+
+        return h
+        
 
     def pid_free_pid_compare(self, other):
         self_keys  = self.keys()

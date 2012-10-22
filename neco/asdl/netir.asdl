@@ -11,6 +11,8 @@ module netir version "$Revision: 1 $"
 	| SuccT(identifier function_name,
 		VariableInfo arg_marking_set_var,
 		VariableInfo arg_marking_var,
+		VariableInfo arg_hash_set_var,
+		VariableInfo arg_todo_set_var,
 		VariableInfo arg_state_space_set_var,
 		TransitionInfo transition_info,
 		VariableProvider variable_provider,
@@ -26,7 +28,9 @@ module netir version "$Revision: 1 $"
 
 	| Succs(identifier function_name,
 		VariableInfo arg_marking_var,
+		VariableInfo arg_hash_set_var,
 		VariableInfo arg_marking_set_var,
+		VariableInfo arg_todo_set_var,
 		VariableInfo arg_state_space_set_var,
 		VariableProvider variable_provider,
 		Stmt* body)
@@ -89,7 +93,10 @@ module netir version "$Revision: 1 $"
 		      PlaceInfo* mod)
 
 	| AddMarking(VariableInfo marking_set_var,
-		     VariableInfo marking_var)
+		     	 VariableInfo marking_var)
+
+	| UpdateHashSet(VariableInfo hash_set_var,
+		     	 	VariableInfo marking_var)
 
 	| FlushIn(VariableInfo token_var,
 			  VariableInfo marking_var,
@@ -140,7 +147,9 @@ module netir version "$Revision: 1 $"
 
 	| NormalizeMarking(VariableInfo normalized_marking_var,
 					   VariableInfo marking_var,
+					   VariableInfo hash_set_var,
 					   VariableInfo acc_set_var,
+					   VariableInfo todo_set_var,
 					   VariableInfo state_space_set_var)
 
     Expr = PyExpr(string expr)
