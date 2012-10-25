@@ -921,10 +921,13 @@ class Compiler(object):
         
         self.config = config
         self.backend = backend        
- 
+
         self.net_info = NetInfo(net)
             
         if self.config.normalize_pids:
+            if self.config.pid_first and not self.check_first_pid():
+                exit(-1)
+
             if not self.check_typed():
                 print >> sys.stderr, "pid normalization require fully typed nets."
                 exit(-1)
@@ -948,9 +951,24 @@ class Compiler(object):
                 elif place.type.is_TupleType:
                     for subtype in place.type:
                         if subtype.is_TupleType and subtype.has_pids:
-                            print >> sys.stderr, "[E] nested tuples cannot contain pids. (this may be implemented in future)".fromat(place.name)
+                            print >> sys.stderr, "[E] nested tuples cannot contain pids. (this may be implemented in future)".format(place.name)
                             return False
         return True
+    
+    def check_first_pid(self):
+        for place in self.net_info.places:
+            if place.type.is_AnyType:
+                print >> sys.stderr, "[W] place {} is assumed as pid-free".format(place.name)
+            elif place.type.has_pids:
+                if place.type.is_Pid:
+                    continue
+                elif place.type.is_TupleType:
+                    for i, subtype in enumerate(place.type):
+                        if i > 0 and subtype.has_pids:
+                            print >> sys.stderr, "[E] place {} accepts pids at position {}".format(place.name, i)
+                            return False
+        return True
+    
 
     def rebuild_marking_type(self):
         """ Rebuild the marking type. (places will be rebuild) """
