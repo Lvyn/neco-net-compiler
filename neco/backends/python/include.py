@@ -5,7 +5,7 @@ import pdb
 
 perm_log = open('perm_log', 'w')
 
-def normalize_marking(marking, hash_set, current_set, todo_set, state_space):
+def full_normalize_marking(marking, hash_set, current_set, todo_set, state_space):
     pid_tree = marking.buildPidTree()
     pid_tree.order_tree(pid_free_marking_order)
 
@@ -31,15 +31,11 @@ def normalize_marking(marking, hash_set, current_set, todo_set, state_space):
         return default_marking
     
     perm_log.write("+")
-#    print "+"
     for tree in iter_trees:
-        # tree.print_structure()
         perm_log.write("*")
         bijection = tree.build_map()
         tmp = marking.copy()
         tmp.update_pids(bijection)
-
-        # print tmp.__pid_free_hash__() == default_marking.__pid_free_hash__()
 
         if tmp in state_space:
             return tmp
@@ -51,6 +47,14 @@ def normalize_marking(marking, hash_set, current_set, todo_set, state_space):
     perm_log.write("%")
 
     return default_marking
+
+def normalize_marking(marking, hash_set, current_set, todo_set, state_space):
+    pid_tree = marking.buildPidTree()
+    pid_tree.order_tree_without_orbits(pid_free_marking_order)
+    bijection = pid_tree.build_map()
+    marking.update_pids(bijection)
+    perm_log.write(".")
+    return marking
 
 def state_space():
     done = set()

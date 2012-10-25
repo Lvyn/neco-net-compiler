@@ -113,6 +113,11 @@ class ProcessSuccGenerator(object):
 
         self._arg_marking_var = variable_provider.new_variable(variable_type = marking_type.type)
         self._arg_marking_set_var = variable_provider.new_variable(variable_type = marking_type.container_type)
+        
+        self._arg_hash_set_var = variable_provider.new_variable(variable_type = marking_type.container_type)
+        self._arg_todo_set_var = variable_provider.new_variable(variable_type = marking_type.container_type)
+        self._arg_state_space_set_var = variable_provider.new_variable(variable_type = marking_type.container_type)
+        
 
         env.register_process_succ_function(function_name)
 
@@ -120,9 +125,13 @@ class ProcessSuccGenerator(object):
         """ Generate function.
         """
         env = self._env
-        function_name   = self._function_name
+        function_name       = self._function_name
         arg_marking_var     = self._arg_marking_var
         arg_marking_set_var = self._arg_marking_set_var
+
+        arg_hash_set_var = self._arg_hash_set_var
+        arg_todo_set_var = self._arg_todo_set_var
+        arg_state_space_set_var = self._arg_state_space_set_var
         process_info    = self._process_info
 
         if not self.config.optimize_flow:
@@ -133,6 +142,9 @@ class ProcessSuccGenerator(object):
         builder.begin_function_SuccP( function_name      = function_name,
                                       arg_marking_var        = arg_marking_var,
                                       arg_marking_set_var    = arg_marking_set_var,
+                                      arg_hash_set_var = arg_hash_set_var,
+                                      arg_todo_set_var = arg_todo_set_var,
+                                      arg_state_space_set_var = arg_state_space_set_var,
                                       process_info       = process_info,
                                       flow_variable      = self._flow_variable,
                                       variable_provider  = self._variable_provider )
@@ -161,7 +173,10 @@ class ProcessSuccGenerator(object):
                 name = env.get_succ_function_name( transition )
                 builder.emit_ProcedureCall( function_name = name,
                                             arguments = [ netir.Name( name = arg_marking_set_var.name ),
-                                                          netir.Name( name = arg_marking_var.name ) ] )
+                                                          netir.Name( name = arg_marking_var.name ),
+                                                          netir.Name( name = arg_hash_set_var.name ),
+                                                          netir.Name( name = arg_todo_set_var.name ),
+                                                          netir.Name( name = arg_state_space_set_var.name ) ] )
 
         builder.end_all_blocks()
         builder.end_function()
@@ -1044,7 +1059,10 @@ class Compiler(object):
             for function_name in self.env.process_succ_functions:
                 builder.emit_ProcedureCall( function_name = function_name,
                                             arguments = [ markingset_node,
-                                                          marking_arg_node ] )
+                                                          marking_arg_node,
+                                                          hash_set_arg_node,
+                                                          todo_set_arg_node,
+                                                          state_space_arg_node ] )
 
         else:
             for function_name in self.env.succ_functions:

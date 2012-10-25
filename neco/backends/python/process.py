@@ -1,9 +1,4 @@
-
-from collections import defaultdict
-from neco.extsnakes import Pid
-from neco.utils import flatten_lists
 import itertools
-import pprint
 
 def sibling_order( left, right ):
     return left.frag - right.frag
@@ -13,6 +8,15 @@ def pid_free_marking_order( left, right ):
         res = left.marking.pid_free_compare(right.marking) if right.marking else 1
     else:
         res = -1 if right.marking else 0
+    if res == 0:
+        tmp = len(left.children) - len(right.children)
+        if tmp != 0:
+            return -tmp
+
+        for li, ri in zip(left.children, right.children):
+            tmp = pid_free_marking_order(li, ri)
+            if tmp != 0:
+                return tmp
     return -res
 
 class mydefaultdict(dict):
@@ -41,7 +45,7 @@ class PidTree(object):
                 self.children[frag] = tree
                 tree.add_marking(pid[1:], marking)
 
-    def order_tree(self, compare, n=0):
+    def order_tree(self, compare):
         #
         # Each time a child is ordered, its orbits are updated.
         # In initial state, all children have singleton orbits.
@@ -54,7 +58,7 @@ class PidTree(object):
         # order children and populate orbits with singletons
         orbits = {}
         for child in self.children.itervalues():
-            child.order_tree(compare, n+1)
+            child.order_tree(compare)
             orbits[child.frag] = set([child])
 
         # the following function is used to order children, it will use order
@@ -83,22 +87,20 @@ class PidTree(object):
         # don't forget to store orbits
         self.orbits = orbits
 
+    def order_tree_without_orbits(self, compare):
+        for child in self.children.itervalues():
+            child.order_tree_without_orbits(compare)
+        self.children = sorted(list(self.children.itervalues()), cmp=compare)
+
     def permutable_children(self):
         identities = set()
         permutable_children = []
-        
-#        f = False
-#        if self.children:
-#            f = True
-            # print [ c.frag for c in self.children ]
 
         for child in self.children:
             value = self.orbits[child.frag]
             
             identity = id(value)
             if not identity in identities:
-#                if f:
-#                    print "adding ", [ v.frag for v in value ], identity
                 identities.add(identity)
                 permutable_children.append(value)
 
@@ -213,7 +215,7 @@ class PidTree(object):
         length = len(self.children) - 1
         child_prefix = prefix + '|-'
         for i, child in enumerate(self.children): 
-            child_prefix = prefix + '|-{}-'.format(child.frag) #, child.marking.__line_dump__())
+            child_prefix = prefix + '|-{}- {}'.format(child.frag, child.marking.__line_dump__())
             new_prefix = prefix + '| ' if i < length else prefix + '  ' 
             child.print_structure(child_prefix, new_prefix)
 

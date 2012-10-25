@@ -68,21 +68,23 @@ class Main(object):
 
         optimize_group = parser.add_argument_group('Optimizations')
         optimize_group.add_argument('--optimize', '-O', default=False, dest='optimize', action='store_true',
-                                    help='enable optimizations')
+                                    help='enable optimizations.')
         optimize_group.add_argument('--optimize-pack', '-Op', default=False, dest='bit_packing', action='store_true',
-                                    help='enable bit packing')
+                                    help='enable bit packing. [cython only]')
         optimize_group.add_argument('--optimize-flow', '-Of', default=False, dest='optimize_flow', action='store_true',
-                                    help='enable flow control optimizations')
+                                    help='enable flow control optimizations.')
 
         pid_group = parser.add_argument_group('Dynamic process creation')
-        pid_group.add_argument('--pid-normalization', default=False, dest='pid_normalization', action='store_true',
-                               help='enable process identifier normalization (wip)')
+        pid_group.add_argument('--detect-pid-symmetries', '-dps', default=False, dest='detect_pid_symmetries', action='store_true',
+                               help='enable reductions by symmetries.')
         pid_group.add_argument('--pid-parent', '-pp', default=True, dest='pid_parent', action='store_true',
-                               help='support parent relation.')
+                               help='preserve parent relation.')
         pid_group.add_argument('--pid-sibling', '-ps', default=False, dest='pid_sibling', action='store_true',
-                               help='support sibling relation. [not implemented yet]')
-        pid_group.add_argument('--pid-first', '-pf', default=True, dest='pid_first', action='store_true',
-                               help='use pid-first restriction, ie., pids are tuple first components.')
+                               help='preserve sibling relation. [not implemented yet]')
+        pid_group.add_argument('--normalize-only', '-no', default=False, dest='normalize_only', action='store_true',
+                               help='optimistic approach, order trees but do not perform permutations.')
+        pid_group.add_argument('--pid-first', '-pf', default=False, dest='pid_first', action='store_true',
+                               help='use pid-first restriction, ie., pids are tuple first components. Pid-tree reordering yield normal forms.')
 
         print_group = parser.add_argument_group('Printing and profiling')
         print_group.add_argument('--profile', '-p', default=False, dest='profile', action='store_true',
@@ -151,9 +153,10 @@ class Main(object):
                                 search_paths=args.includes,
                                 trace_calls=False,
                                 trace_file=trace,
-                                normalize_pids=args.pid_normalization,
+                                normalize_pids=args.detect_pid_symmetries,
                                 pid_parent=args.pid_parent,
                                 pid_sibling=args.pid_sibling,
+                                normalize_only=args.normalize_only,
                                 pid_first=args.pid_first,
                                 model=model_file)
 

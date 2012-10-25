@@ -156,6 +156,45 @@ class DumpGenerator(MarkingTypeMethodGenerator):
 
         builder.end_FunctionDef()
         return builder.ast()        
+
+class LineDumpGenerator(MarkingTypeMethodGenerator):
+    
+    def generate(self, env):
+        marking_type = env.marking_type
+        
+        items = list(marking_type.place_types.iteritems())
+        items.sort(lambda (n1, t1), (n2, t2) : cmp(n1, n2))
+
+        vp = VariableProvider()
+        self_var = vp.new_variable(marking_type.type, name='self')
+        list_var = vp.new_variable()
+
+        builder = pyast.Builder()
+        builder.begin_FunctionDef( name = "__line_dump__", args = pyast.A(self_var.name).ast() )
+
+        builder.emit( pyast.E('%s = ["{"]' % list_var.name) )
+        for (place_name, place_type) in items:
+            if place_type.is_ProcessPlace:
+                builder.emit( place_type.dump_expr(env, self_var, list_var) )
+            else:
+                builder.begin_If(test=place_type.place_expr(env, self_var))
+                builder.emit(pyast.stmt(pyast.Call(func=pyast.E('{}.append'.format(list_var.name)),
+                                           args=[ pyast.BinOp(left = pyast.Str(s = repr(place_name) + " : "),
+                                                              op = pyast.Add(),
+                                                              right = pyast.BinOp(left = place_type.dump_expr(env, self_var),
+                                                                                  op = pyast.Add(),
+                                                                                  right = pyast.Str(', '))
+                                                              ) ]                   
+                                           )
+                                  )
+                             )
+                builder.end_If()
+
+        builder.emit(pyast.stmt(pyast.E('%s.append("}")' % list_var.name)))
+        builder.emit_Return(pyast.E('"".join({})'.format(list_var.name)))
+
+        builder.end_FunctionDef()
+        return builder.ast()        
         
 #
 #class DotGenerator(MarkingTypeMethodGenerator):

@@ -2,7 +2,7 @@
 
 from neco.core.info import ExpressionInfo
 from nettypes import type2str
-from priv import pyast
+from priv import pyast, mrkpidmethods
 import StringIO
 import cPickle as cPickle
 import neco.core.netir as coreir
@@ -16,8 +16,9 @@ class CompilerVisitor(coreir.CompilerVisitor):
 
     backend = "python"
 
-    def __init__(self, env):
+    def __init__(self, env, config):
         self.env = env
+        self.config = config
 
     def compile_Print(self, node):
         return pyast.Print(dest = None,
@@ -357,9 +358,12 @@ class CompilerVisitor(coreir.CompilerVisitor):
         stmts = [ self.compile( node.body ),
                   pyast.E('return ' + node.arg_marking_set_var.name) ]
         return pyast.FunctionDef(name = node.function_name,
-                               args = pyast.arguments(args=[pyast.Name(id=node.arg_marking_set_var.name),
-                                                          pyast.Name(id=node.arg_marking_var.name)]),
-                               body = stmts)
+                                 args = pyast.arguments(args=[pyast.Name(id=node.arg_marking_set_var.name),
+                                                              pyast.Name(id=node.arg_marking_var.name),
+                                                              pyast.Name(id=node.arg_hash_set_var.name),
+                                                              pyast.Name(id=node.arg_todo_set_var.name),
+                                                              pyast.Name(id=node.arg_state_space_set_var.name)]),
+                                 body = stmts)
 
     def compile_Succs(self, node):
         body = [ pyast.Assign(targets=[pyast.Name(id=node.arg_marking_set_var.name)],
@@ -418,12 +422,14 @@ class CompilerVisitor(coreir.CompilerVisitor):
                                                 node.marking_var) ]
 
     def compile_NormalizeMarking(self, node):
-        return pyast.E("{} = normalize_marking({}, {}, {}, {}, {})".format(node.normalized_marking_var.name,
-                                                                           node.marking_var.name,
-                                                                           node.hash_set_var.name,
-                                                                           node.acc_set_var.name,
-                                                                           node.todo_set_var.name,
-                                                                           node.state_space_set_var.name))
+        function = mrkpidmethods.select_normalization_function(self.config)
+        return pyast.E("{dst} = {fun}({mrk}, {hs}, {acc}, {todo}, {ss})".format(dst=node.normalized_marking_var.name,
+                                                                                fun=function,
+                                                                                mrk=node.marking_var.name,
+                                                                                hs=node.hash_set_var.name,
+                                                                                acc=node.acc_set_var.name,
+                                                                                todo=node.todo_set_var.name,
+                                                                                ss=node.state_space_set_var.name))
         
     def compile_AddPid(self, node):
         place_type = self.env.marking_type.get_place_type_by_name(node.place_name)

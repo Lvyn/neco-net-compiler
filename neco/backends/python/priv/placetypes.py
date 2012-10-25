@@ -113,26 +113,51 @@ class ObjectPlaceType(coretypes.ObjectPlaceType, PythonPlaceType):
 
         vp = VariableProvider()
         token_var = vp.new_variable(TypeInfo.get('AnyType'), name='token')
-        pid_var = vp.new_variable(TypeInfo.get('AnyType'), name='pid')
-        dict_marking_var = vp.new_variable(TypeInfo.get('Dict'), name='d')
-        assign_dict_marking = pyast.E("{} = {}[{}[0]]".format(dict_marking_var.name, dict_var.name, token_var.name))
-
-        subscr = "{}[{}]".format(dict_var.name, pid_var.name)
-        update_dict =  pyast.If(test=pyast.E('{}.has_key({})'.format(dict_var.name, 
-                                                                     pid_var.name)),
-                                body=[ pyast.stmt(pyast.B(subscr).attr(self.field.name).attr('add').call([pyast.E(token_var.name)]).ast()) ],
-                                orelse=[ pyast.E('{} = Marking()'.format(subscr)),
-                                        pyast.stmt(pyast.B(subscr).attr(self.field.name).attr('add').call([pyast.E(token_var.name)]).ast()) ] ) 
-        return pyast.For(target=pyast.E(token_var.name), iter=place_expr, body=
-                         [ # assign_dict_marking,
-                          pyast.If(test=pyast.E('isinstance({}, Pid)'.format(token_var.name)),
-                                   body=[ pyast.E('{} = {}'.format(pid_var.name, token_var.name)),
-                                          update_dict],
-                                   orelse=[pyast.If(test=pyast.E('isinstance({}, tuple)'.format(token_var.name)),
-                                                    body=pyast.If(test=pyast.E('isinstance({}[0], Pid)'.format(token_var.name)),
-                                                                  body=[ pyast.E('{} = {}[0]'.format(pid_var.name, token_var.name)),
-                                                                         update_dict],
-                                                                  orelse=[]))])])
+        
+        if not self.token_type.has_pids:
+            return []
+        
+        if self.token_type.is_Pid:
+            raise RuntimeError
+        elif self.token_type.is_TupleType:
+            print "!!! TUPLE >> ", self.token_type
+            
+            for index, subtype in enumerate(self.token_type):
+                body = []
+                if subtype.is_Pid:
+                    if index == 0:
+                        # head is pid, owned token
+                        place_in_dict_marking = self.field.access_from_str("{pid_dict}[ {token}[{index}] ]".format(pid_dict=dict_var.name,
+                                                                                                                   token=token_var.name,
+                                                                                                                   index=index)) 
+                        body.append( pyast.stmt(pyast.E( "{marking}.add({token})".format( marking=place_in_dict_marking, token=token_var.name )) ))
+                    else:
+                        place_in_dict_marking = "{pid_dict}[ {token}[{index}] ]".format(pid_dict=dict_var.name,
+                                                                                        token=token_var.name,
+                                                                                        index=index)
+                        body.append( pyast.E( "{marking} = Marking(True)".format( marking=place_in_dict_marking )) )
+                return pyast.For(target=pyast.E(token_var.name), iter=place_expr, body=body)
+        
+        else:
+            print "!!! DATA >> ", self.token_type
+            return []
+#        
+#        subscr = "{}[{}]".format(dict_var.name, pid_var.name)
+#        update_dict =  pyast.If(test=pyast.E('{}.has_key({})'.format(dict_var.name, 
+#                                                                     pid_var.name)),
+#                                body=[ pyast.stmt(pyast.B(subscr).attr(self.field.name).attr('add').call([pyast.E(token_var.name)]).ast()) ],
+#                                orelse=[ pyast.E('{} = Marking()'.format(subscr)),
+#                                        pyast.stmt(pyast.B(subscr).attr(self.field.name).attr('add').call([pyast.E(token_var.name)]).ast()) ] ) 
+#        return pyast.For(target=pyast.E(token_var.name), iter=place_expr, body=
+#                         [ # assign_dict_marking,
+#                          pyast.If(test=pyast.E('isinstance({}, Pid)'.format(token_var.name)),
+#                                   body=[ pyast.E('{} = {}'.format(pid_var.name, token_var.name)),
+#                                          update_dict],
+#                                   orelse=[pyast.If(test=pyast.E('isinstance({}, tuple)'.format(token_var.name)),
+#                                                    body=pyast.If(test=pyast.E('isinstance({}[0], Pid)'.format(token_var.name)),
+#                                                                  body=[ pyast.E('{} = {}[0]'.format(pid_var.name, token_var.name)),
+#                                                                         update_dict],
+#                                                                  orelse=[]))])])
 
 class PidPlaceType(ObjectPlaceType):
     
@@ -143,20 +168,15 @@ class PidPlaceType(ObjectPlaceType):
         place_expr = pyast.E(self.field.access_from(marking_var))
 
         vp = VariableProvider()
-        token_var = vp.new_variable(TypeInfo.get('AnyType'), name='token')
-        pid_var = vp.new_variable(TypeInfo.get('AnyType'), name='pid')
+        token_var = vp.new_variable(TypeInfo.get('AnyType'), name='pid')
         
-        subscr = "{}[{}]".format(dict_var.name, pid_var.name)
-        update_dict =  pyast.If(test=pyast.E('{}.has_key({})'.format(dict_var.name, 
-                                                                     pid_var.name)),
-                                body=[ pyast.stmt(pyast.B(subscr).attr(self.field.name).attr('add').call([pyast.E(token_var.name)]).ast()) ],
-                                orelse=[ pyast.E('{} = Marking()'.format(subscr)),
-                                        pyast.stmt(pyast.B(subscr).attr(self.field.name).attr('add').call([pyast.E(token_var.name)]).ast()) ] ) 
-        return pyast.For(target=pyast.E(token_var.name), iter=place_expr,
-                         body=[ pyast.E('{} = {}'.format(pid_var.name,
-                                                         token_var.name)),
-                                                         update_dict ])
-    
+        place_in_dict_marking = self.field.access_from_str("{pid_dict}[ {token} ]".format(pid_dict=dict_var.name,
+                                                                                                   token=token_var.name)) 
+        body = [ pyast.stmt(pyast.E( "{marking}.add({token})".format( marking=place_in_dict_marking, token=token_var.name )) ) ]
+        return pyast.For(target=pyast.E(token_var.name), iter=place_expr, body=body)
+        
+        
+        
     def update_pids_stmt(self, env, marking_var, new_pid_dict_var):
         return pyast.Assign(targets=[self.place_expr(env, marking_var)],
                             value=pyast.Call(func=pyast.E(stubs['pid_place_type_update_pids']),

@@ -43,6 +43,9 @@ class Field(object):
     def access_from(self, marking_var):
         return "{}.{}".format(marking_var.name, self.name) 
     
+    def access_from_str(self, marking_str):
+        return "{}.{}".format(marking_str, self.name) 
+    
 class StaticMarkingType(coretypes.MarkingType):
     """ Python marking type implementation, places as class attributes. """
 
@@ -62,6 +65,7 @@ class StaticMarkingType(coretypes.MarkingType):
         self.add_method_generator(priv.mrkmethods.CopyGenerator())
         self.add_method_generator(priv.mrkmethods.ReprGenerator())
         self.add_method_generator(priv.mrkmethods.DumpGenerator())
+        self.add_method_generator(priv.mrkmethods.LineDumpGenerator())
         
         if self.config.normalize_pids:
             self.add_method_generator(priv.mrkpidmethods.EqGenerator())
@@ -148,11 +152,6 @@ class StaticMarkingType(coretypes.MarkingType):
 
     def new_marking_expr(self, env, *args):
         return pyast.E("Marking()")
-
-    def normalize_marking_call(self, env, marking_var):
-        return pyast.stmt(pyast.Call(func=pyast.Attribute(value=pyast.Name(id=marking_var.name),
-                                                          attr='normalize_pids'),
-                                     args=[]))
 
     def generate_api(self, env):
         cls = pyast.ClassDef('Marking', bases=[pyast.Name(id='object')])

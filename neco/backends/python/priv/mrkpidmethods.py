@@ -15,6 +15,12 @@ stubs = {
     'pid_place_type_update_pids' : 'data.pid_place_type_update_pids'
 }
 
+def select_normalization_function(config):
+    if config.pid_first or config.normalize_only:
+        return 'normalize_marking'
+    else:
+        return 'full_normalize_marking'
+
 class UpdatePidsGenerator(MarkingTypeMethodGenerator):
     
     def generate(self, env):
@@ -45,70 +51,70 @@ class UpdatePidsGenerator(MarkingTypeMethodGenerator):
         
         function.body = body
         return function
-
-class NormalizePidsGenerator(MarkingTypeMethodGenerator):
-    
-    def generate(self, env):  
-        marking_type = env.marking_type
-
-        vp = VariableProvider()
-        self_var = vp.new_variable(marking_type.type, name='self')
-        tree_var = vp.new_variable(TypeInfo.get('AnyType'),  name='tree')
-        token_var = vp.new_variable(TypeInfo.get('AnyType'),  name='token')
-        pid_dict_var = vp.new_variable(TypeInfo.get('Dict'), name='pid_dict')
-        pid_map_var  = vp.new_variable(TypeInfo.get('Dict'), name='pid_map')
-        state_space_var = vp.new_variable(TypeInfo.get('Set'), name='ss')
-        
-        tmp_pid_var = vp.new_variable(TypeInfo.get('Pid'), name='tpid')
-        tmp_marking_var = vp.new_variable(TypeInfo.get('Marking'), name='tmkr')
-
-        function = pyast.FunctionDef(name='normalize_pids',
-                                   args=pyast.A(self_var.name).param(state_space_var.name).ast())
-        body = []
-        body.append( pyast.E("{} = {{}}".format(pid_dict_var.name)) )
-        body.append( pyast.E("{} = PidTree(0)".format(tree_var.name)) )
-        # build the tree
-        for name, place_type in marking_type.place_types.iteritems():
-            if not place_type.allow_pids:
-                continue
-
-            if name == GENERATOR_PLACE:
-                enum_body = [ pyast.If(test=pyast.E('not {}.has_key({}[0])'.format(pid_dict_var.name, token_var.name)),
-                                       body=[pyast.E("{}[ {}[0] ] = Marking(True)".format(pid_dict_var.name, token_var.name))]),
-                              pyast.E("{}[ Pid.from_list({}[0].data + [{}[1] + 1]) ] = Marking(True)".format(pid_dict_var.name, token_var.name, token_var.name)) ]
-
-                body.append( place_type.enumerate( env, self_var, token_var, enum_body ) )
-            else:
-                body.append( place_type.extract_pids(env, self_var, pid_dict_var) )
-
-        # body.append(pyast.E("print {}".format(pid_dict_var.name)))
-        body.append(pyast.For(target=pyast.E('{}, {}'.format(tmp_pid_var.name, tmp_marking_var.name)),
-                              iter=pyast.E(('{}.iteritems()'.format(pid_dict_var.name))),
-                              body=[pyast.stmt(pyast.E('{}.add_marking({}, {})'.format(tree_var.name,
-                                                                                       tmp_pid_var.name,
-                                                                                       tmp_marking_var.name)))]))
-        
-        body.append(pyast.stmt(pyast.E("{}.order_tree(pid_free_marking_order)".format(tree_var.name))))
-        body.append(pyast.E("{} = {}.build_map()".format(pid_map_var.name, tree_var.name)))
-        
-        # update tokens with new pids
-        for name, place_type in marking_type.place_types.iteritems():
-            if not place_type.allow_pids:
-                continue
-
-            if name == GENERATOR_PLACE:
-                body.append( pyast.Assign(targets=[ place_type.place_expr(env, self_var) ],
-                                        value=pyast.Call(func=pyast.Name(stubs['generator_place_update_pids']),
-                                                         args=[place_type.place_expr(env, self_var),
-                                                               pyast.Name(pid_map_var.name)]) ) )
-            else:
-                body.append( place_type.update_pids_stmt(env, self_var, pid_map_var) )
-
-        if not body:
-            body = [pyast.Pass()]
-
-        function.body = body
-        return function
+#
+#class NormalizePidsGenerator(MarkingTypeMethodGenerator):
+#    
+#    def generate(self, env):  
+#        marking_type = env.marking_type
+#
+#        vp = VariableProvider()
+#        self_var = vp.new_variable(marking_type.type, name='self')
+#        tree_var = vp.new_variable(TypeInfo.get('AnyType'),  name='tree')
+#        token_var = vp.new_variable(TypeInfo.get('AnyType'),  name='token')
+#        pid_dict_var = vp.new_variable(TypeInfo.get('Dict'), name='pid_dict')
+#        pid_map_var  = vp.new_variable(TypeInfo.get('Dict'), name='pid_map')
+#        state_space_var = vp.new_variable(TypeInfo.get('Set'), name='ss')
+#        
+#        tmp_pid_var = vp.new_variable(TypeInfo.get('Pid'), name='tpid')
+#        tmp_marking_var = vp.new_variable(TypeInfo.get('Marking'), name='tmkr')
+#
+#        function = pyast.FunctionDef(name='normalize_pids',
+#                                   args=pyast.A(self_var.name).param(state_space_var.name).ast())
+#        body = []
+#        body.append( pyast.E("{} = {{}}".format(pid_dict_var.name)) )
+#        body.append( pyast.E("{} = PidTree(0)".format(tree_var.name)) )
+#        # build the tree
+#        for name, place_type in marking_type.place_types.iteritems():
+#            if not place_type.allow_pids:
+#                continue
+#
+#            if name == GENERATOR_PLACE:
+#                enum_body = [ pyast.If(test=pyast.E('not {}.has_key({}[0])'.format(pid_dict_var.name, token_var.name)),
+#                                       body=[pyast.E("{}[ {}[0] ] = Marking(True)".format(pid_dict_var.name, token_var.name))]),
+#                              pyast.E("{}[ Pid.from_list({}[0].data + [{}[1] + 1]) ] = Marking(True)".format(pid_dict_var.name, token_var.name, token_var.name)) ]
+#
+#                body.append( place_type.enumerate( env, self_var, token_var, enum_body ) )
+#            else:
+#                body.append( place_type.extract_pids(env, self_var, pid_dict_var) )
+#
+#        # body.append(pyast.E("print {}".format(pid_dict_var.name)))
+#        body.append(pyast.For(target=pyast.E('{}, {}'.format(tmp_pid_var.name, tmp_marking_var.name)),
+#                              iter=pyast.E(('{}.iteritems()'.format(pid_dict_var.name))),
+#                              body=[pyast.stmt(pyast.E('{}.add_marking({}, {})'.format(tree_var.name,
+#                                                                                       tmp_pid_var.name,
+#                                                                                       tmp_marking_var.name)))]))
+#        
+#        body.append(pyast.stmt(pyast.E("{}.order_tree(pid_free_marking_order)".format(tree_var.name))))
+#        body.append(pyast.E("{} = {}.build_map()".format(pid_map_var.name, tree_var.name)))
+#        
+#        # update tokens with new pids
+#        for name, place_type in marking_type.place_types.iteritems():
+#            if not place_type.allow_pids:
+#                continue
+#
+#            if name == GENERATOR_PLACE:
+#                body.append( pyast.Assign(targets=[ place_type.place_expr(env, self_var) ],
+#                                        value=pyast.Call(func=pyast.Name(stubs['generator_place_update_pids']),
+#                                                         args=[place_type.place_expr(env, self_var),
+#                                                               pyast.Name(pid_map_var.name)]) ) )
+#            else:
+#                body.append( place_type.update_pids_stmt(env, self_var, pid_map_var) )
+#
+#        if not body:
+#            body = [pyast.Pass()]
+#
+#        function.body = body
+#        return function
 
 
 class BuildPidTreeGenerator(MarkingTypeMethodGenerator):
@@ -121,7 +127,6 @@ class BuildPidTreeGenerator(MarkingTypeMethodGenerator):
         tree_var = vp.new_variable(TypeInfo.get('AnyType'),  name='tree')
         token_var = vp.new_variable(TypeInfo.get('AnyType'),  name='token')
         pid_dict_var = vp.new_variable(TypeInfo.get('Dict'), name='pid_dict')
-        pid_map_var  = vp.new_variable(TypeInfo.get('Dict'), name='pid_map')
 
         tmp_pid_var = vp.new_variable(TypeInfo.get('Pid'), name='tpid')
         tmp_marking_var = vp.new_variable(TypeInfo.get('Marking'), name='tmkr')
@@ -129,7 +134,7 @@ class BuildPidTreeGenerator(MarkingTypeMethodGenerator):
         function = pyast.FunctionDef(name='buildPidTree',
                                    args=pyast.A(self_var.name).ast())
         body = []
-        body.append( pyast.E("{} = {{}}".format(pid_dict_var.name)) )
+        body.append( pyast.E("{} = defaultdict(Marking)".format(pid_dict_var.name)) )
         body.append( pyast.E("{} = PidTree(0)".format(tree_var.name)) )
         # build the tree
         for name, place_type in marking_type.place_types.iteritems():
@@ -154,7 +159,6 @@ class BuildPidTreeGenerator(MarkingTypeMethodGenerator):
         body.append(pyast.E("return {}".format(tree_var.name)))
         function.body = body
         return function
-
     
 class EqGenerator(MarkingTypeMethodGenerator):
     
