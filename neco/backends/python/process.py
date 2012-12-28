@@ -4,6 +4,14 @@ def sibling_order( left, right ):
     return left.frag - right.frag
 
 def pid_free_marking_order( left, right ):
+    # forbids
+    if left.is_next_pid():
+        if right.is_next_pid():
+            return 0
+        return 1
+    elif right.is_next_pid():
+        return -1
+
     if left.marking: 
         res = left.marking.pid_free_compare(right.marking) if right.marking else 1
     else:
@@ -24,7 +32,9 @@ class mydefaultdict(dict):
         l = [key]
         self[key] = l
         return l
-        
+
+NEXT_PID = "next_pid"
+
 class PidTree(object):
 
     def __init__(self, frag):
@@ -32,7 +42,13 @@ class PidTree(object):
         self.children = {} # defaultdict(lambda : PidTree())
         self.marking = None
         self.orbits  = None # will be build during orderings
-        
+
+    def set_nextpid(self):
+        self.marking = NEXT_PID
+
+    def is_next_pid(self):
+        return isinstance(self.marking, str)
+
     def add_marking(self, pid, marking):
         if len(pid) == 0:
             self.marking = marking
@@ -69,6 +85,8 @@ class PidTree(object):
             comparison_result = compare(left, right)
             # assert( comparison_result == -(compare(right, left)) )
             if comparison_result == 0:
+                if left.is_next_pid():
+                    return comparison_result
                 # fuse orbits
                 left_frag, right_frag = left.frag, right.frag
                 left_orbit  = orbits[left_frag]
@@ -215,7 +233,8 @@ class PidTree(object):
         length = len(self.children) - 1
         child_prefix = prefix + '|-'
         for i, child in enumerate(self.children): 
-            child_prefix = prefix + '|-{}- {}'.format(child.frag, child.marking.__line_dump__())
+            child_prefix = prefix + '|-{}- {}'.format(child.frag, 
+                                                      child.marking.__line_dump__() if child.marking != 'next_pid' else 'next_pid')
             new_prefix = prefix + '| ' if i < length else prefix + '  ' 
             child.print_structure(child_prefix, new_prefix)
 

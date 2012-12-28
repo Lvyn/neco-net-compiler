@@ -144,7 +144,7 @@ class BuildPidTreeGenerator(MarkingTypeMethodGenerator):
             if name == GENERATOR_PLACE:
                 enum_body = [ pyast.If(test=pyast.E('not {}.has_key({}[0])'.format(pid_dict_var.name, token_var.name)),
                                        body=[pyast.E("{}[ {}[0] ] = Marking(True)".format(pid_dict_var.name, token_var.name))]),
-                              pyast.E("{}[ Pid.from_list({}[0].data + [{}[1] + 1]) ] = Marking(True)".format(pid_dict_var.name, token_var.name, token_var.name)) ]
+                              pyast.E("{}[ Pid.from_list({}[0].data + [{}[1] + 1]) ] = 'next_pid'".format(pid_dict_var.name, token_var.name, token_var.name)) ]
 
                 body.append( place_type.enumerate( env, self_var, token_var, enum_body ) )
             else:

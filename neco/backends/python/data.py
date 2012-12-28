@@ -380,10 +380,10 @@ class multiset(hdict):
         return 0
 
     def pid_free_hash(self, ignore):
-        # ignore = []
-        h = 0
+        # ignore = [1]
+        h = len(self)
         for elt, count in self.items():
-            h ^= reduce(operator.xor, (hash(e) for i, e in enumerate(elt) if i not in ignore), 0xDEED1337) ^ count
+            h ^= reduce(operator.xor, (hash(e) for i, e in enumerate(elt) if i not in ignore), 0xDEED1337) ^ count 
         #h = reduce(operator.xor, (hash(e) for e in self.items()), 0x252756382)
         return h
     

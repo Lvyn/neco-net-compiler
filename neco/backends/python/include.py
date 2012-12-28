@@ -4,13 +4,12 @@ import sys
 import pdb
 
 perm_log = open('perm_log', 'w')
-
+calls = 0
 def full_normalize_marking(marking, hash_set, current_set, todo_set, state_space):
     pid_tree = marking.buildPidTree()
     pid_tree.order_tree(pid_free_marking_order)
-
     iter_trees = pid_tree.itertrees()
-
+    
     default_tree = iter_trees.next()
     bijection = default_tree.build_map()
     default_marking = marking.copy()
@@ -23,16 +22,22 @@ def full_normalize_marking(marking, hash_set, current_set, todo_set, state_space
         perm_log.write("h")
         return default_marking
 
-    if default_marking in state_space:
+    if ((default_marking in state_space) or
+        (default_marking in todo_set) or
+        (default_marking in current_set)):
         return default_marking
-    if default_marking in todo_set:
-        return default_marking
-    if default_marking in current_set:
-        return default_marking
-    
+
     perm_log.write("+")
+    c = 0
+    # print "begin permutations !"
+    global calls
+#    calls += 1
+#    print calls
     for tree in iter_trees:
+        c+=1
         perm_log.write("*")
+        # print "tree ", c
+        # tree.print_structure()
         bijection = tree.build_map()
         tmp = marking.copy()
         tmp.update_pids(bijection)
@@ -44,7 +49,7 @@ def full_normalize_marking(marking, hash_set, current_set, todo_set, state_space
         if tmp in todo_set:
             return tmp
         
-    perm_log.write("%")
+    perm_log.write("{}%".format(c))
 
     return default_marking
 

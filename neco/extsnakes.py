@@ -10,6 +10,7 @@ from snakes.typing import Instance, CrossProduct, tNatural
 import operator
 import snakes.plugins
 import sys
+import itertools
 
 snakes.plugins.load("gv", "snakes.nets", "nets")
 
@@ -325,7 +326,7 @@ class Pid(object):
         '1.1.1'
         """
         return '.'.join([repr(e) for e in self.data])
-    
+
     def __getitem__(self, index):
         return self.data[index]
 
@@ -436,14 +437,11 @@ class DPCPetriNet(nets.PetriNet):
 
         """
         nets.PetriNet.__init__(self, name)
-        # add generator place
         initial_pid = Pid.from_str('1')
-        generator_place = Place("sgen", [(initial_pid, 0)], CrossProduct(tPid, tNatural))
+        self.pids = set([initial_pid])
 
         self._initial_pid = initial_pid
         self.name_provider = NameProvider()
-        self._generator_place = generator_place
-        self.add_place(self._generator_place)
         self.spawn_operations = defaultdict(lambda : defaultdict(list))
         self.get_operations = defaultdict(list)
         self.terminate_operations = defaultdict(set)
@@ -501,6 +499,10 @@ class DPCPetriNet(nets.PetriNet):
         raise RuntimeError
 
     def finalize_net(self):
+        # create generator place
+        self._generator_place = Place("sgen", self._generator_tokens, CrossProduct(tPid, tNatural))
+        self.add_place(self._generator_place)
+
         # add arcs
         for trans in self._trans:
             # from generator place to transition.
@@ -534,7 +536,23 @@ class DPCPetriNet(nets.PetriNet):
                 generator_arc = GeneratorMultiArc(pid_var, counter_var, new_pids, tuple_list)
                 self.add_output(self._generator_place.name, trans, generator_arc)
                 self.transition(trans).generator_arc = generator_arc
-                
+
+    def setup_initial_hierarchy(self, hierarchy = None):
+        if not hierarchy:
+            hierarchy = {}
+        prefix = Pid([1])
+        pids = set()
+
+        def gen_pids(acc, prefix, hierarchy):
+            pids.add( (prefix, max( [ int(x[0]) for x in hierarchy.keys() ] + [0] ) ) )
+            for frag, subhierarchy in hierarchy.iteritems():
+                subpid = prefix + Pid.from_str(frag)
+                gen_pids(acc, subpid, subhierarchy)
+            return acc
+
+        gen_pids(pids, prefix, hierarchy)
+        self._generator_tokens = pids
+
 #class TaskTransition(Transition):
 #
 #    def __init__(self, name, guard=None):

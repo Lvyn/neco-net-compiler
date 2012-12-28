@@ -1108,14 +1108,14 @@ class Compiler(object):
         for place_info in self.net_info.places:
             if len(place_info.tokens) > 0:
                 # first handle generator place
-                if self.config.normalize_pids:
-                    if place_info.is_generator_place:
-                        builder.emit_InitGeneratorPlace(marking_var = marking_var)
-                        continue
-                
+#                if self.config.normalize_pids:
+#                    if place_info.is_generator_place:
+#                        builder.emit_InitGeneratorPlace(marking_var = marking_var)
+#                        continue
+#                
                 # pid normalization and flow optimizations are exclusive
                 
-                elif self.config.optimize_flow and place_info.flow_control:
+                if self.config.optimize_flow and place_info.flow_control:
                     builder.emit_UpdateFlow(marking_var = marking_var,
                                             place_info = place_info);
                     continue
