@@ -8,15 +8,11 @@ calls = 0
 def full_normalize_marking(marking, hash_set, current_set, todo_set, state_space):
     pid_tree = marking.buildPidTree()
     pid_tree.order_tree(pid_free_marking_order)
-    iter_trees = pid_tree.itertrees()
-    
-    default_tree = iter_trees.next()
+
+    default_tree = pid_tree
     bijection = default_tree.build_map()
     default_marking = marking.copy()
     default_marking.update_pids(bijection)
-
-    # return default_marking
-    perm_log.write(".")
 
     if not default_marking.__pid_free_hash__() in hash_set:
         perm_log.write("h")
@@ -26,6 +22,9 @@ def full_normalize_marking(marking, hash_set, current_set, todo_set, state_space
         (default_marking in todo_set) or
         (default_marking in current_set)):
         return default_marking
+
+    iter_trees = pid_tree.itertrees()
+    perm_log.write(".")
 
     perm_log.write("+")
     c = 0
