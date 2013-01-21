@@ -39,10 +39,10 @@ class UpdatePidsGenerator(MarkingTypeMethodGenerator):
             if not place_type.allow_pids:
                 continue
             if name == GENERATOR_PLACE:
-                body.append( pyast.Assign(targets=[ place_type.place_expr(env, self_var) ],
-                                          value=pyast.Call(func=pyast.Name(stubs['generator_place_update_pids']),
-                                                           args=[place_type.place_expr(env, self_var),
-                                                                pyast.Name(new_pid_dict_var.name)]) ) )
+                body.append( pyast.Assign(targets = [ place_type.place_expr(env, self_var) ],
+                                          value   = pyast.Call(func = pyast.Name(stubs['generator_place_update_pids']),
+                                                               args = [ place_type.place_expr(env, self_var),
+                                                                        pyast.Name(new_pid_dict_var.name) ])) )
             else:
                 body.append( place_type.update_pids_stmt(env, self_var, new_pid_dict_var) )
         
@@ -51,88 +51,23 @@ class UpdatePidsGenerator(MarkingTypeMethodGenerator):
         
         function.body = body
         return function
-#
-#class NormalizePidsGenerator(MarkingTypeMethodGenerator):
-#    
-#    def generate(self, env):  
-#        marking_type = env.marking_type
-#
-#        vp = VariableProvider()
-#        self_var = vp.new_variable(marking_type.type, name='self')
-#        tree_var = vp.new_variable(TypeInfo.get('AnyType'),  name='tree')
-#        token_var = vp.new_variable(TypeInfo.get('AnyType'),  name='token')
-#        pid_dict_var = vp.new_variable(TypeInfo.get('Dict'), name='pid_dict')
-#        pid_map_var  = vp.new_variable(TypeInfo.get('Dict'), name='pid_map')
-#        state_space_var = vp.new_variable(TypeInfo.get('Set'), name='ss')
-#        
-#        tmp_pid_var = vp.new_variable(TypeInfo.get('Pid'), name='tpid')
-#        tmp_marking_var = vp.new_variable(TypeInfo.get('Marking'), name='tmkr')
-#
-#        function = pyast.FunctionDef(name='normalize_pids',
-#                                   args=pyast.A(self_var.name).param(state_space_var.name).ast())
-#        body = []
-#        body.append( pyast.E("{} = {{}}".format(pid_dict_var.name)) )
-#        body.append( pyast.E("{} = PidTree(0)".format(tree_var.name)) )
-#        # build the tree
-#        for name, place_type in marking_type.place_types.iteritems():
-#            if not place_type.allow_pids:
-#                continue
-#
-#            if name == GENERATOR_PLACE:
-#                enum_body = [ pyast.If(test=pyast.E('not {}.has_key({}[0])'.format(pid_dict_var.name, token_var.name)),
-#                                       body=[pyast.E("{}[ {}[0] ] = Marking(True)".format(pid_dict_var.name, token_var.name))]),
-#                              pyast.E("{}[ Pid.from_list({}[0].data + [{}[1] + 1]) ] = Marking(True)".format(pid_dict_var.name, token_var.name, token_var.name)) ]
-#
-#                body.append( place_type.enumerate( env, self_var, token_var, enum_body ) )
-#            else:
-#                body.append( place_type.extract_pids(env, self_var, pid_dict_var) )
-#
-#        # body.append(pyast.E("print {}".format(pid_dict_var.name)))
-#        body.append(pyast.For(target=pyast.E('{}, {}'.format(tmp_pid_var.name, tmp_marking_var.name)),
-#                              iter=pyast.E(('{}.iteritems()'.format(pid_dict_var.name))),
-#                              body=[pyast.stmt(pyast.E('{}.add_marking({}, {})'.format(tree_var.name,
-#                                                                                       tmp_pid_var.name,
-#                                                                                       tmp_marking_var.name)))]))
-#        
-#        body.append(pyast.stmt(pyast.E("{}.order_tree(pid_free_marking_order)".format(tree_var.name))))
-#        body.append(pyast.E("{} = {}.build_map()".format(pid_map_var.name, tree_var.name)))
-#        
-#        # update tokens with new pids
-#        for name, place_type in marking_type.place_types.iteritems():
-#            if not place_type.allow_pids:
-#                continue
-#
-#            if name == GENERATOR_PLACE:
-#                body.append( pyast.Assign(targets=[ place_type.place_expr(env, self_var) ],
-#                                        value=pyast.Call(func=pyast.Name(stubs['generator_place_update_pids']),
-#                                                         args=[place_type.place_expr(env, self_var),
-#                                                               pyast.Name(pid_map_var.name)]) ) )
-#            else:
-#                body.append( place_type.update_pids_stmt(env, self_var, pid_map_var) )
-#
-#        if not body:
-#            body = [pyast.Pass()]
-#
-#        function.body = body
-#        return function
-
 
 class BuildPidTreeGenerator(MarkingTypeMethodGenerator):
 
     def generate(self, env):  
         marking_type = env.marking_type
 
-        vp = VariableProvider()
-        self_var = vp.new_variable(marking_type.type, name='self')
-        tree_var = vp.new_variable(TypeInfo.get('AnyType'),  name='tree')
-        token_var = vp.new_variable(TypeInfo.get('AnyType'),  name='token')
+        vp           = VariableProvider()
+        self_var     = vp.new_variable(marking_type.type, name='self')
+        tree_var     = vp.new_variable(TypeInfo.get('AnyType'),  name='tree')
+        token_var    = vp.new_variable(TypeInfo.get('AnyType'),  name='token')
         pid_dict_var = vp.new_variable(TypeInfo.get('Dict'), name='pid_dict')
 
-        tmp_pid_var = vp.new_variable(TypeInfo.get('Pid'), name='tpid')
+        tmp_pid_var     = vp.new_variable(TypeInfo.get('Pid'), name='tpid')
         tmp_marking_var = vp.new_variable(TypeInfo.get('Marking'), name='tmkr')
 
-        function = pyast.FunctionDef(name='buildPidTree',
-                                   args=pyast.A(self_var.name).ast())
+        function = pyast.FunctionDef(name = 'buildPidTree',
+                                     args = pyast.A(self_var.name).ast())
         body = []
         body.append( pyast.E("{} = defaultdict(Marking)".format(pid_dict_var.name)) )
         body.append( pyast.E("{} = PidTree(0)".format(tree_var.name)) )
@@ -164,14 +99,14 @@ class EqGenerator(MarkingTypeMethodGenerator):
     
     def generate(self, env):
         marking_type = env.marking_type
-        config = marking_type.config
+        config       = marking_type.config
         
-        vp = VariableProvider()
+        vp        = VariableProvider()
         self_var  = vp.new_variable(env.marking_type.type, 'self')
         other_var = vp.new_variable(env.marking_type.type, 'other')
         
-        function = pyast.FunctionDef(name='__eq__',
-                                     args=pyast.A(self_var.name).param(other_var.name).ast())
+        function  = pyast.FunctionDef(name = '__eq__',
+                                      args = pyast.A(self_var.name).param(other_var.name).ast())
         return_str = "return ("
         for i, (name, place_type) in enumerate(marking_type.place_types.iteritems()):
             if name == GENERATOR_PLACE and config.normalize_pids:
@@ -190,9 +125,9 @@ class HashGenerator(MarkingTypeMethodGenerator):
     
     def generate(self, env):
         marking_type = env.marking_type
-        config = marking_type.config
+        config       = marking_type.config
         
-        vp = VariableProvider()
+        vp        = VariableProvider()
         self_var  = vp.new_variable(env.marking_type.type, 'self')
         
         builder = pyast.Builder()
@@ -243,13 +178,13 @@ class PidFreeHashGenerator(MarkingTypeMethodGenerator):
                 
                 # builder.emit( pyast.E('h ^= hash(' +  place_type.field.access_from(self_var) + ') * ' + str(magic)) )
                 
-                right_operand = pyast.BinOp( left=place_type.pid_free_hash_expr(env, self_var, [0]),
-                                             op=pyast.Mult(),
-                                             right=pyast.E(str(magic)) )
+                right_operand = pyast.BinOp( left  = place_type.pid_free_hash_expr(env, self_var, [0]),
+                                             op    = pyast.Mult(),
+                                             right = pyast.E(str(magic)) )
                 
-                builder.emit( pyast.AugAssign(target = [pyast.E("h")],
-                                              op=pyast.BitXor(),
-                                              value = right_operand ) )
+                builder.emit( pyast.AugAssign( target = [pyast.E("h")],
+                                               op     = pyast.BitXor(),
+                                               value  = right_operand ) )
 
             elif type_info.has_pids:
                 # must be tuple
@@ -258,13 +193,13 @@ class PidFreeHashGenerator(MarkingTypeMethodGenerator):
                 ignore = [ i for i, subtype in enumerate(type_info) if subtype.is_Pid ]
                 # builder.emit("{!s} = {!r}".format(ig_var.name, ig))
                 
-                right_operand = pyast.BinOp( left=place_type.pid_free_hash_expr(env, self_var, ignore),
-                                             op=pyast.Mult(),
-                                             right=pyast.E(str(magic)) )
+                right_operand = pyast.BinOp( left  = place_type.pid_free_hash_expr(env, self_var, ignore),
+                                             op    = pyast.Mult(),
+                                             right = pyast.E(str(magic)) )
                 
                 builder.emit( pyast.AugAssign(target = [pyast.E("h")],
-                                              op=pyast.BitXor(),
-                                              value = right_operand ) )
+                                              op     = pyast.BitXor(),
+                                              value  = right_operand ) )
 
             else:
                 builder.emit( pyast.E('h ^= hash(' +  place_type.field.access_from(self_var) + ') * ' + str(magic)) )
@@ -280,21 +215,20 @@ class PidFreeCmpGenerator(MarkingTypeMethodGenerator):
         marking_type = env.marking_type
 
         vp = VariableProvider()
-        self_var = vp.new_variable(marking_type.type, 'self')
+        self_var  = vp.new_variable(marking_type.type, 'self')
         other_var = vp.new_variable(marking_type.type, 'other')
-        cmp_var = vp.new_variable(marking_type.type, 'tmp')
-        # ig_var = vp.new_variable(marking_type.type, 'ignore')
+        cmp_var   = vp.new_variable(marking_type.type, 'tmp')
 
         builder = pyast.Builder()
-        builder.begin_FunctionDef(name='pid_free_compare',
-                                  args=pyast.A(self_var.name).param(other_var.name).ast())
+        builder.begin_FunctionDef(name = 'pid_free_compare',
+                                  args = pyast.A(self_var.name).param(other_var.name).ast())
 
         for place_type in marking_type.place_types.values():
             type_info = place_type.token_type
             print type_info, place_type
             if type_info.is_Pid:
                 builder.emit( pyast.Assign(targets = [pyast.E(cmp_var.name)],
-                                           value = place_type.pid_free_compare_expr(env, self_var, other_var, [0]) ) )
+                                           value   = place_type.pid_free_compare_expr(env, self_var, other_var, [0]) ) )
                 builder.begin_If(test=pyast.E('{} != 0'.format(cmp_var.name)))
                 builder.emit_Return( pyast.E(cmp_var.name) )
                 builder.end_If()
@@ -307,14 +241,14 @@ class PidFreeCmpGenerator(MarkingTypeMethodGenerator):
                 # builder.emit("{!s} = {!r}".format(ig_var.name, ig))
 
                 builder.emit( pyast.Assign(targets = [pyast.E(cmp_var.name)],
-                                           value = place_type.pid_free_compare_expr(env, self_var, other_var, ignore) ) )
-                builder.begin_If(test=pyast.E('{} != 0'.format(cmp_var.name)))
-                builder.emit_Return( pyast.E(cmp_var.name) )
+                                           value   = place_type.pid_free_compare_expr(env, self_var, other_var, ignore) ) )
+                builder.begin_If(test = pyast.E('{} != 0'.format(cmp_var.name)))
+                builder.emit_Return(pyast.E(cmp_var.name))
                 builder.end_If()
 
             else:
                 builder.emit( pyast.Assign(targets = [pyast.E(cmp_var.name)],
-                                           value = place_type.compare_expr(env, self_var, other_var) ) )
+                                           value   = place_type.compare_expr(env, self_var, other_var) ) )
                 builder.begin_If(test=pyast.E('{} != 0'.format(cmp_var.name)))
                 builder.emit_Return( pyast.E(cmp_var.name) )
                 builder.end_If()

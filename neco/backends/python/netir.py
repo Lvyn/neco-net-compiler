@@ -1,4 +1,4 @@
-""" Python AST compiler. """
+""" Python AST compilser. """
 
 from neco.core.info import ExpressionInfo
 from nettypes import type2str
@@ -343,44 +343,44 @@ class CompilerVisitor(coreir.CompilerVisitor):
     def compile_SuccT(self, node):
         self.env.push_variable_provider(node.variable_provider)
         stmts = [ self.compile( node.body ),
-                  pyast.E('return ' + node.arg_marking_set_var.name) ]
+                  pyast.E('return ' + node.arg_marking_acc_var.name) ]
         result = pyast.FunctionDef(name = node.function_name,
-                                 args = pyast.arguments(args=[pyast.Name(id=node.arg_marking_set_var.name),
-                                                              pyast.Name(id=node.arg_marking_var.name),
-                                                              pyast.Name(id=node.arg_hash_set_var.name),
-                                                              pyast.Name(id=node.arg_todo_set_var.name),
-                                                              pyast.Name(id=node.arg_state_space_set_var.name)]),
+                                 args = pyast.arguments(args=[ pyast.Name(id = node.arg_marking_var.name),
+                                                               pyast.Name(id = node.arg_marking_acc_var.name), 
+                                                               pyast.Name(id = node.arg_state_space_var.name),
+                                                               pyast.Name(id = node.arg_pidfree_hash_set_var.name),
+                                                               pyast.Name(id = node.arg_remaining_set_var.name) ]),
                                  body = stmts)
         self.env.pop_variable_provider()
         return result
 
     def compile_SuccP(self, node):
         stmts = [ self.compile( node.body ),
-                  pyast.E('return ' + node.arg_marking_set_var.name) ]
+                  pyast.E('return ' + node.arg_marking_acc_var.name) ]
         return pyast.FunctionDef(name = node.function_name,
-                                 args = pyast.arguments(args=[pyast.Name(id=node.arg_marking_set_var.name),
-                                                              pyast.Name(id=node.arg_marking_var.name),
-                                                              pyast.Name(id=node.arg_hash_set_var.name),
-                                                              pyast.Name(id=node.arg_todo_set_var.name),
-                                                              pyast.Name(id=node.arg_state_space_set_var.name)]),
+                                 args = pyast.arguments(args=[ pyast.Name(id = node.arg_marking_var.name),
+                                                               pyast.Name(id = node.arg_marking_acc_var.name),
+                                                               pyast.Name(id = node.arg_pidfree_hash_set_var.name),
+                                                               pyast.Name(id = node.arg_remaining_set_var.name),
+                                                               pyast.Name(id = node.arg_state_space_var.name)]),
                                  body = stmts)
 
     def compile_Succs(self, node):
-        body = [ pyast.Assign(targets=[pyast.Name(id=node.arg_marking_set_var.name)],
-                            value=self.env.marking_set_type.new_marking_set_expr(self.env)) ]
+        body = [ pyast.Assign(targets = [pyast.Name(id = node.arg_marking_acc_var.name)],
+                              value   = self.env.marking_set_type.new_marking_set_expr(self.env)) ]
 
         body.extend( self.compile(node.body) )
-        body.append( pyast.Return(pyast.Name(id=node.arg_marking_set_var.name)) )
+        body.append( pyast.Return(pyast.Name(id=node.arg_marking_acc_var.name)) )
         return pyast.FunctionDef( name = node.function_name,
-                                  args = pyast.arguments(args=[pyast.Name(id=node.arg_marking_var.name),
-                                                               pyast.Name(id=node.arg_hash_set_var.name),
-                                                               pyast.Name(id=node.arg_todo_set_var.name),
-                                                               pyast.Name(id=node.arg_state_space_set_var.name)]),
+                                  args = pyast.arguments(args=[ pyast.Name(id = node.arg_marking_var.name),
+                                                                pyast.Name(id = node.arg_state_space_var.name),
+                                                                pyast.Name(id = node.arg_pidfree_hash_set_var.name),
+                                                                pyast.Name(id = node.arg_remaining_set_var.name) ]),
                                   body = body )
 
     def compile_Init(self, node):
-        new_marking = pyast.Assign(targets=[pyast.Name(id=node.marking_var.name)],
-                                 value=self.env.marking_type.new_marking_expr(self.env))
+        new_marking = pyast.Assign(targets = [ pyast.Name(id=node.marking_var.name) ],
+                                   value   = self.env.marking_type.new_marking_expr(self.env))
         return_stmt = pyast.Return(pyast.Name(id=node.marking_var.name))
 
         stmts = [new_marking]
@@ -388,7 +388,7 @@ class CompilerVisitor(coreir.CompilerVisitor):
         stmts.append( return_stmt )
 
         return pyast.FunctionDef( name = node.function_name,
-                                body = stmts )
+                                  body = stmts )
 
     ################################################################################
     # Flow elimination
@@ -423,13 +423,13 @@ class CompilerVisitor(coreir.CompilerVisitor):
 
     def compile_NormalizeMarking(self, node):
         function = mrkpidmethods.select_normalization_function(self.config)
-        return pyast.E("{dst} = {fun}({mrk}, {hs}, {acc}, {todo}, {ss})".format(dst=node.normalized_marking_var.name,
-                                                                                fun=function,
-                                                                                mrk=node.marking_var.name,
-                                                                                hs=node.hash_set_var.name,
-                                                                                acc=node.acc_set_var.name,
-                                                                                todo=node.todo_set_var.name,
-                                                                                ss=node.state_space_set_var.name))
+        return pyast.E("{dst} = {fun}({mrk}, {hs}, {acc}, {todo}, {ss})".format(dst  = node.normalized_marking_var.name,
+                                                                                fun  = function,
+                                                                                mrk  = node.marking_var.name,
+                                                                                hs   = node.pidfree_hash_set_var.name,
+                                                                                acc  = node.marking_acc_var.name,
+                                                                                todo = node.remaining_set_var.name,
+                                                                                ss   = node.state_space_var.name))
         
     def compile_AddPid(self, node):
         place_type = self.env.marking_type.get_place_type_by_name(node.place_name)
@@ -442,7 +442,7 @@ class CompilerVisitor(coreir.CompilerVisitor):
     
     def compile_UpdateHashSet(self, node):
         #return []
-        return pyast.stmt(pyast.E("{}.add({}.__pid_free_hash__())".format(node.hash_set_var.name, node.marking_var.name)))
+        return pyast.stmt(pyast.E("{}.add({}.__pid_free_hash__())".format(node.pidfree_hash_set_var.name, node.marking_var.name)))
 
 ################################################################################
 # EOF

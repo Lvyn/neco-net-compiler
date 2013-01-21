@@ -52,7 +52,7 @@ def full_normalize_marking(marking, hash_set, current_set, todo_set, state_space
 
     return default_marking
 
-def normalize_marking(marking, hash_set, current_set, todo_set, state_space):
+def normalize_marking(marking, current_set, state_space, hash_set, todo_set):
     pid_tree = marking.buildPidTree()
     pid_tree.order_tree_without_orbits(pid_free_marking_order)
     bijection = pid_tree.build_map()
@@ -77,7 +77,7 @@ def state_space():
             count+=1
 
             done.add(m)
-            succ = succs(m, hash_set, done, todo)
+            succ = succs(m, done, hash_set, todo)
             succs2 = succ.difference(done)
             todo.update(succs2)
             succ.clear()
@@ -123,7 +123,7 @@ def state_space_graph():
 
             # new marking, get the id
             current_node_id = mrk_id_map[m]
-            succ = succs(m, hash_set, visit, visited)
+            succ = succs(m, visited, hash_set, visit)
             succ_list = []
 
             for s_mrk in succ:

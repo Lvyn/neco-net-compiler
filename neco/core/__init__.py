@@ -108,25 +108,25 @@ class ProcessSuccGenerator(object):
         self.builder = netir.Builder()
 
         self.arg_marking_var     = variable_provider.new_variable(variable_type = marking_type.type)
-        self.arg_marking_set_var = variable_provider.new_variable(variable_type = marking_type.container_type)
+        self.arg_marking_acc_var = variable_provider.new_variable(variable_type = marking_type.container_type)
 
-        self.arg_hash_set_var = variable_provider.new_variable(variable_type = marking_type.container_type)
-        self.arg_todo_set_var = variable_provider.new_variable(variable_type = marking_type.container_type)
-        self.arg_state_space_set_var = variable_provider.new_variable(variable_type = marking_type.container_type)
+        self.arg_pidfree_hash_set_var = variable_provider.new_variable(variable_type = marking_type.container_type)
+        self.arg_remaining_set_var = variable_provider.new_variable(variable_type = marking_type.container_type)
+        self.arg_state_space_var = variable_provider.new_variable(variable_type = marking_type.container_type)
 
         env.register_process_succ_function(function_name)
 
     def __call__(self):
         """ Generate function.
         """
-        env = self.env
-        function_name       = self.function_name
-        arg_marking_var     = self.arg_marking_var
-        arg_marking_set_var = self.arg_marking_set_var
-        process_info        = self.process_info
-        arg_hash_set_var    = self.arg_hash_set_var
-        arg_todo_set_var    = self.arg_todo_set_var
-        arg_state_space_set_var = self.arg_state_space_set_var
+        env                      = self.env
+        function_name            = self.function_name
+        arg_marking_var          = self.arg_marking_var
+        arg_marking_acc_var      = self.arg_marking_acc_var
+        process_info             = self.process_info
+        arg_pidfree_hash_set_var = self.arg_pidfree_hash_set_var
+        arg_remaining_set_var    = self.arg_remaining_set_var
+        arg_state_space_var      = self.arg_state_space_var
         
 
         if not self.env.config.optimize_flow:
@@ -134,23 +134,23 @@ class ProcessSuccGenerator(object):
 
         builder = self.builder
 
-        builder.begin_function_SuccP( function_name           = function_name,
-                                      arg_marking_var         = arg_marking_var,
-                                      arg_marking_set_var     = arg_marking_set_var,
-                                      arg_hash_set_var        = arg_hash_set_var,
-                                      arg_todo_set_var        = arg_todo_set_var,
-                                      arg_state_space_set_var = arg_state_space_set_var,
-                                      process_info            = process_info,
-                                      flow_variable           = self.flow_variable,
-                                      variable_provider       = self.variable_provider )
+        builder.begin_function_SuccP( function_name            = function_name,
+                                      arg_marking_var          = arg_marking_var,
+                                      arg_marking_acc_var      = arg_marking_acc_var,
+                                      arg_state_space_var      = arg_state_space_var,
+                                      arg_pidfree_hash_set_var = arg_pidfree_hash_set_var,
+                                      arg_remaining_set_var    = arg_remaining_set_var,
+                                      process_info             = process_info,
+                                      flow_variable            = self.flow_variable,
+                                      variable_provider        = self.variable_provider )
 
         # enumerate places with not empty post
         ne_post = filter( lambda place : place.post,        process_info.flow_places )
 
         current_flow = self.flow_variable
 
-        read=builder.ReadFlow(marking_var  = arg_marking_var,
-                              process_name = process_info.name)
+        read = builder.ReadFlow(marking_var  = arg_marking_var,
+                                process_name = process_info.name)
         builder.emit_Assign(variable = current_flow,
                             expr     = read)
 
@@ -168,11 +168,11 @@ class ProcessSuccGenerator(object):
             for transition in flow_place.post:
                 name = env.get_succ_function_name( transition )
                 builder.emit_ProcedureCall( function_name = name,
-                                            arguments = [ netir.Name( name = arg_marking_set_var.name ),
-                                                          netir.Name( name = arg_marking_var.name ),
-                                                          netir.Name( name = arg_hash_set_var.name ),
-                                                          netir.Name( name = arg_todo_set_var.name ),
-                                                          netir.Name( name = arg_state_space_set_var.name ) ] )
+                                            arguments = [ netir.Name( name = arg_marking_var.name ),
+                                                          netir.Name( name = arg_marking_acc_var.name ),
+                                                          netir.Name( name = arg_state_space_var.name ),
+                                                          netir.Name( name = arg_pidfree_hash_set_var.name ),
+                                                          netir.Name( name = arg_remaining_set_var.name ) ] )
 
         builder.end_all_blocks()
         builder.end_function()
@@ -215,21 +215,22 @@ class SuccTGenerator(object):
             self.transition.order_inputs()
 
         # create new variables for function arguments
-        self.arg_marking_var = helper.new_variable(variable_type = marking_type.type)
-        self.marking_set_var = helper.new_variable(variable_type = marking_type.container_type)
-        self.todo_set_var    = helper.new_variable(variable_type = marking_type.container_type)
-        self.hash_set_var    = helper.new_variable(variable_type = TypeInfo.get('set'))
-        self.arg_state_space_set_var = helper.new_variable(variable_type = marking_type.container_type)
+        self.arg_marking_var      = helper.new_variable(variable_type = marking_type.type)
+        self.marking_acc_var      = helper.new_variable(variable_type = marking_type.container_type)
+        self.remaining_set_var    = helper.new_variable(variable_type = marking_type.container_type)
+        self.pidfree_hash_set_var = helper.new_variable(variable_type = TypeInfo.get('set'))
+        self.arg_state_space_var  = helper.new_variable(variable_type = marking_type.container_type)
 
         # create function
-        self.builder.begin_function_SuccT( function_name           = self.function_name,
-                                           arg_marking_var         = self.arg_marking_var,
-                                           arg_marking_set_var     = self.marking_set_var,
-                                           arg_hash_set_var        = self.hash_set_var,
-                                           arg_todo_set_var        = self.todo_set_var,
-                                           arg_state_space_set_var = self.arg_state_space_set_var,
-                                           transition_info         = self.transition,
-                                           variable_provider       = helper )
+
+        self.builder.begin_function_SuccT( function_name            = self.function_name,
+                                           arg_marking_var          = self.arg_marking_var,
+                                           arg_marking_acc_var      = self.marking_acc_var,
+                                           arg_pidfree_hash_set_var = self.pidfree_hash_set_var,
+                                           arg_remaining_set_var    = self.remaining_set_var,
+                                           arg_state_space_var      = self.arg_state_space_var,
+                                           transition_info          = self.transition,
+                                           variable_provider        = helper )
 
         # remember this succ function
         env.register_succ_function(transition, function_name)
@@ -888,18 +889,19 @@ class SuccTGenerator(object):
         # add pid normalization step if needed
         if self.config.normalize_pids:
             builder.emit_NormalizeMarking( normalized_marking_var = normalized_marking_var,
-                                           marking_var  = new_marking_var,
-                                           acc_set_var  = self.marking_set_var,
-                                           hash_set_var = self.hash_set_var,
-                                           todo_set_var = self.todo_set_var,
-                                           state_space_set_var = self.arg_state_space_set_var)
-            builder.emit_AddMarking( marking_set_var = self.marking_set_var,
+                                           marking_var            = new_marking_var,
+                                           marking_acc_var        = self.marking_acc_var,
+                                           pidfree_hash_set_var   = self.pidfree_hash_set_var,
+                                           remaining_set_var      = self.remaining_set_var,
+                                           state_space_var        = self.arg_state_space_var)
+            
+            builder.emit_AddMarking( marking_set_var = self.marking_acc_var,
                                      marking_var     = normalized_marking_var )
-            builder.emit_UpdateHashSet( hash_set_var = self.hash_set_var,
-                                        marking_var  = normalized_marking_var )
+            builder.emit_UpdateHashSet( pidfree_hash_set_var = self.pidfree_hash_set_var,
+                                        marking_var          = normalized_marking_var )
         else:
             # add marking to set
-            builder.emit_AddMarking( marking_set_var = self.marking_set_var,
+            builder.emit_AddMarking( marking_set_var = self.marking_acc_var,
                                      marking_var     = new_marking_var)
         # end function
         builder.end_all_blocks()
@@ -1052,44 +1054,44 @@ class Compiler(object):
 
         self.succs_function = 'succs'
         vp = VariableProvider(set([self.succs_function]))
-        arg_marking_var         = vp.new_variable( variable_type = self.marking_type.type )
-        arg_marking_set_var     = vp.new_variable( variable_type = self.marking_type.container_type )
-        arg_todo_set_var        = vp.new_variable( variable_type = self.marking_type.container_type )
-        arg_hash_set_var        = vp.new_variable( variable_type = self.marking_type.container_type )
-        arg_state_space_set_var = vp.new_variable( variable_type = self.marking_type.container_type )
+        arg_marking_var          = vp.new_variable( variable_type = self.marking_type.type )
+        arg_marking_acc_var      = vp.new_variable( variable_type = self.marking_type.container_type )
+        arg_remaining_set_var    = vp.new_variable( variable_type = self.marking_type.container_type )
+        arg_pidfree_hash_set_var = vp.new_variable( variable_type = self.marking_type.container_type )
+        arg_state_space_var      = vp.new_variable( variable_type = self.marking_type.container_type )
 
         builder = netir.Builder()
-        builder.begin_function_Succs( function_name = "succs",
-                                      arg_marking_var     = arg_marking_var,
-                                      arg_hash_set_var    = arg_hash_set_var,
-                                      arg_marking_set_var = arg_marking_set_var,
-                                      arg_todo_set_var    = arg_todo_set_var,
-                                      arg_state_space_set_var = arg_state_space_set_var,
-                                      variable_provider   = vp)
+        builder.begin_function_Succs( function_name             = "succs",
+                                      arg_marking_var           = arg_marking_var,
+                                      arg_marking_acc_var       = arg_marking_acc_var,
+                                      arg_state_space_var       = arg_state_space_var,
+                                      arg_pidfree_hash_set_var  = arg_pidfree_hash_set_var,
+                                      arg_remaining_set_var     = arg_remaining_set_var,
+                                      variable_provider         = vp )
 
-        markingset_node   = netir.Name(arg_marking_set_var.name)
-        marking_arg_node  = netir.Name(arg_marking_var.name)
-        todo_set_arg_node = netir.Name(arg_todo_set_var.name)
-        hash_set_arg_node = netir.Name(arg_hash_set_var.name)
-        state_space_arg_node = netir.Name(arg_state_space_set_var.name)
+        marking_acc_node           = netir.Name(arg_marking_acc_var.name)
+        marking_arg_node          = netir.Name(arg_marking_var.name)
+        remaining_set_arg_node    = netir.Name(arg_remaining_set_var.name)
+        pidfree_hash_set_arg_node = netir.Name(arg_pidfree_hash_set_var.name)
+        state_space_arg_node      = netir.Name(arg_state_space_var.name)
 
         if self.config.optimize_flow:
             for function_name in self.env.process_succ_functions:
                 builder.emit_ProcedureCall( function_name = function_name,
-                                            arguments     = [ markingset_node,
-                                                              marking_arg_node,
-                                                              hash_set_arg_node,
-                                                              todo_set_arg_node,
-                                                              state_space_arg_node ] )
+                                            arguments     = [ marking_arg_node,
+                                                              marking_acc_node,
+                                                              state_space_arg_node,
+                                                              pidfree_hash_set_arg_node,
+                                                              remaining_set_arg_node ] )
 
         else:
             for function_name in self.env.succ_functions:
                 builder.emit_ProcedureCall( function_name = function_name,
-                                            arguments = [ markingset_node,
-                                                          marking_arg_node,
-                                                          hash_set_arg_node,
-                                                          todo_set_arg_node,
-                                                          state_space_arg_node ] )
+                                            arguments = [ marking_arg_node,
+                                                          marking_acc_node,
+                                                          state_space_arg_node,
+                                                          pidfree_hash_set_arg_node,
+                                                          remaining_set_arg_node ] )
 
         builder.end_function()
         return builder.ast()
