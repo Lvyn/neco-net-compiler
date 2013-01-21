@@ -11,8 +11,8 @@ import re
 class Env(CompilingEnvironment):
     """ Compiling environment used for co1mpiling with the python backend. """
 
-    def __init__(self, word_set, marking_type):
-        CompilingEnvironment.__init__(self)
+    def __init__(self, config, net_info, word_set, marking_type):
+        CompilingEnvironment.__init__(self, config, net_info)
         
         self.marking_type = marking_type
         self.marking_set_type = nettypes.MarkingSetType(marking_type)
@@ -52,8 +52,8 @@ class Env(CompilingEnvironment):
 def new_marking_type(name, config):
     return nettypes.StaticMarkingType(config)
 
-def new_compiling_environment(word_set, marking_type):
-    return Env(word_set, marking_type)
+def new_compiling_environment(config, net_info, word_set, marking_type):
+    return Env(config, net_info, word_set, marking_type)
 
 def compile_IR(env, config):
     search_paths = config.search_paths

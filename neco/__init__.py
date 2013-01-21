@@ -79,7 +79,6 @@ def compile_net(net, config):
     print "search paths:       {}".format(config.search_paths)
     print "################################################################################"
 
-    # compiler.set_marking_type_by_name("StaticMarkingType")
     return compiler.run()
 
 
