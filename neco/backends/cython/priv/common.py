@@ -46,7 +46,7 @@ TypeInfo.register_type("GeneratorPlace")
 
 class CVars(object):
 
-    def __init__(self, env, initial=None):
+    def __init__(self, env, initial = None):
         self.env = env
         self._cvars = initial if initial else set([])
 
@@ -72,7 +72,7 @@ class CVars(object):
 
     def __iter__(self):
         for n, t in self._cvars:
-            yield CVar(name=n, type=self.env.type2str(t))
+            yield CVar(name = n, type = self.env.type2str(t))
         raise StopIteration
 
     def __str__(self):
@@ -83,9 +83,9 @@ class CVars(object):
 class CompilingEnvironment(core.CompilingEnvironment):
     """ Compiling environment used for compiling with Cython backend. """
 
-    def __init__(self, word_set, marking_type, marking_set_type):
-        core.CompilingEnvironment.__init__(self)
-        
+    def __init__(self, config, net_info, word_set, marking_type, marking_set_type):
+        core.CompilingEnvironment.__init__(self, config, net_info)
+
         self._word_set = word_set
         self._marking_type = marking_type
         self._marking_set_type = marking_set_type
@@ -95,7 +95,7 @@ class CompilingEnvironment(core.CompilingEnvironment):
         self._pxd_declarations = []
         self._c_declarations = []
 
-        
+
         self._cvar_decl = []
         self._variable_providers = []
 
@@ -139,7 +139,7 @@ class CompilingEnvironment(core.CompilingEnvironment):
 
     ################################################################################
 
-    def new_variable(self, base=""):
+    def new_variable(self, base = ""):
         """
 
         @param self:
@@ -175,7 +175,7 @@ class CompilingEnvironment(core.CompilingEnvironment):
 
     ################################################################################
 
-    def add_pxd_declaration(self, decl, unique=False):
+    def add_pxd_declaration(self, decl, unique = False):
         if unique and decl in self._pxd_declarations:
             return
         self._pxd_declarations.append(to_ast(decl))
@@ -218,7 +218,7 @@ class CompilingEnvironment(core.CompilingEnvironment):
         @type id: C{str}
         """
         self._registered_cython_types[str(typeinfo)] = identifier
-    
+
     def is_cython_type(self, typeinfo):
         """ Check if a type is registered.
     
@@ -228,9 +228,9 @@ class CompilingEnvironment(core.CompilingEnvironment):
         @rtype bool
         """
         return self._registered_cython_types.has_key(str(typeinfo))
-            
+
     ################################################################################
-    
+
     def type2str(self, typ):
         """ translates a type info to a string
     
@@ -251,7 +251,7 @@ class CompilingEnvironment(core.CompilingEnvironment):
 
 class CVarSet(object):
 
-    def __init__(self, iterable=[]):
+    def __init__(self, iterable = []):
         """ Initialize the set.
 
         @param iterable: iterable object containing initial elements.
@@ -299,7 +299,7 @@ class CythonPyxFile(object):
         self.body = []
 
     def write(self, env, base_dir = './'):
-        module_ast = flatten_ast(cyast.Module(body=self.body))
+        module_ast = flatten_ast(cyast.Module(body = self.body))
 
         f = open(base_dir + self.name, "w")
         f.write("\n".join(self.declarations))
@@ -314,13 +314,13 @@ class CythonPxdFile(object):
         self.body = []
 
     def write(self, env, base_dir = './'):
-        module_ast = flatten_ast(cyast.Module(body=self.body))
+        module_ast = flatten_ast(cyast.Module(body = self.body))
 
         f = open(base_dir + self.name, "w")
         f.write("\n".join(self.declarations))
         cyast.Unparser(module_ast, f)
         f.close()
-        
+
 
 class IsCythonPyxFile(OutputProviderPredicate):
 

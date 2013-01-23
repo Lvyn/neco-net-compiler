@@ -25,7 +25,7 @@ cpdef state_space():
             count += 1
             m = visit.pop()
             visited.add(m)
-            succ = succs(m)
+            succ = succs(m, None, None, None)
             visit.update(succ.difference(visited))
             if (count % 250 == 0):
                 new_time = time()
@@ -69,7 +69,7 @@ cpdef state_space_graph():
 
             # new marking, get the id
             current_node_id = mrk_id_map[m]
-            succ = succs(m)
+            succ = succs(m, None, None, None)
             succ_list = []
 
             for s_mrk in succ:

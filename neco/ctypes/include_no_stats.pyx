@@ -19,7 +19,7 @@ cpdef state_space():
         while True:
             m = visit.pop()
             visited.add(m)
-            succ = succs(m)
+            succ = succs(m, None, None, None)
             visit.update(succ.difference(visited))
     except KeyError:
         return visited
@@ -48,7 +48,7 @@ cpdef state_space_graph():
 
             # new marking, get the id
             current_node_id = mrk_id_map[m]
-            succ = succs(m)
+            succ = succs(m, None, None, None)
             succ_list = []
 
             for s_mrk in succ:

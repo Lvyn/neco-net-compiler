@@ -18,8 +18,8 @@ _backend_ = "cython"
 def new_marking_type(name, config):
     return nettypes.StaticMarkingType(config)
 
-def new_compiling_environment(word_set, marking_type):
-    env = common.CompilingEnvironment(word_set, marking_type, nettypes.MarkingSetType(marking_type))
+def new_compiling_environment(config, net_info, word_set, marking_type):
+    env = common.CompilingEnvironment(config, net_info, word_set, marking_type, nettypes.MarkingSetType(marking_type))
     # register this marking type as a cython
     # class, will be used instead of object
     env.register_cython_type(marking_type.type, "Marking")
@@ -34,8 +34,8 @@ def compile_IR(env, config):
 
     module_pyx_file = CythonPyxFile(module_name + '.pyx')
     module_pxd_file = CythonPxdFile(module_name + '.pxd')
-    env.output_provider.register( module_pyx_file )
-    env.output_provider.register( module_pxd_file )
+    env.output_provider.register(module_pyx_file)
+    env.output_provider.register(module_pxd_file)
 
     base_dir = "build/"
     try:
@@ -66,7 +66,7 @@ def compile_IR(env, config):
         module_pyx_file.declarations.append("from {} import *".format(mod))
 
     # model imports
-    module_pyx_file.declarations.extend( env.net_info.declare )
+    module_pyx_file.declarations.extend(env.net_info.declare)
 
     ################################################################################
     # inline hand written code into pyx
@@ -97,12 +97,12 @@ def compile_IR(env, config):
     # add functions to pyx file
     compiler = netir.CompilerVisitor(env)
     for node in env.function_nodes():
-        module_pyx_file.body.append( compiler.compile(node) )
+        module_pyx_file.body.append(compiler.compile(node))
 
     ################################################################################
     # produce code
     ################################################################################
-    
+
     for output in env.output_provider:
         output.write(env, base_dir)
 
@@ -118,26 +118,26 @@ def compile_IR(env, config):
 
     ctypes_source = search_file("ctypes.cpp", search_paths)
     sources = [base_dir + module_name + ".pyx", ctypes_source]
-    
+
     macros = []
     if config.normalize_pids:
-        macros.append( ('USE_PIDS', '1',) )
+        macros.append(('USE_PIDS', '1',))
 
-    setup(name=base_dir + module_name + ".pyx",
-          cmdclass={'build_ext': build_ext},
+    setup(name = base_dir + module_name + ".pyx",
+          cmdclass = {'build_ext': build_ext},
 #          ext_modules=cythonize([ base_dir + module_name + '.pyx', ctypes_source ],
 #                                includes=search_paths + [base_dir],
 #                                library_dirs=search_paths + [base_dir]),
-                    ext_modules=[Extension(config.out_module, #config.output_module,
+                    ext_modules = [Extension(config.out_module,    # config.output_module,
                                  sources,
-                                 include_dirs=search_paths + [base_dir],
-                                 define_macros=macros,
-                                 #extra_compile_args=['-ggdb'],
-                                 #extra_link_args=['-lctypes'],
-                                 library_dirs=search_paths + [base_dir],
-                                 language='c++')],
-          script_args=["build_ext", "--inplace"],
-          options={ 'build': { 'build_base': 'build' } })
+                                 include_dirs = search_paths + [base_dir],
+                                 define_macros = macros,
+                                 # extra_compile_args=['-ggdb'],
+                                 # extra_link_args=['-lctypes'],
+                                 library_dirs = search_paths + [base_dir],
+                                 language = 'c++')],
+          script_args = ["build_ext", "--inplace"],
+          options = { 'build': { 'build_base': 'build' } })
 
     if config.debug:
         print "********************************************************************************"
