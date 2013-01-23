@@ -69,8 +69,8 @@ class CompilerVisitor(coreir.CompilerVisitor):
             if component.is_Value:
                 # self.try_declare_cvar(component.data['local_variable'].name, component.type)
                 n = cyast.Builder.If(test = cyast.Builder.Compare(left = cyast.E(component.data['local_variable'].name),
-                                                                ops = [ cyast.Eq() ],
-                                                                comparators = [ cyast.E(repr(component.raw)) ]),    # TO DO unify value & pickle
+                                                                  ops = [ cyast.Eq() ],
+                                                                  comparators = [ cyast.E(repr(component.raw)) ]),    # TO DO unify value & pickle
                                      orelse = [])
                 if cur == None:
                     cur = n
@@ -380,6 +380,20 @@ class CompilerVisitor(coreir.CompilerVisitor):
 
         return CVarSet()
 
+
+    def succ_function_args(self, node):
+        return  (cyast.A(node.arg_marking_var.name, type = self.env.type2str(node.arg_marking_var.type))
+                 .param(node.arg_marking_acc_var.name, type = self.env.type2str(node.arg_marking_acc_var.type))
+                 .param(node.arg_state_space_var.name, type = self.env.type2str(node.arg_state_space_var.type))
+                 .param(node.arg_pidfree_hash_set_var.name, type = self.env.type2str(node.arg_pidfree_hash_set_var.type))
+                 .param(node.arg_remaining_set_var.name, type = self.env.type2str(node.arg_remaining_set_var.type)))
+
+    def main_succ_function_args(self, node):
+        return  (cyast.A(node.arg_marking_var.name, type = self.env.type2str(node.arg_marking_var.type))
+                 .param(node.arg_state_space_var.name, type = self.env.type2str(node.arg_state_space_var.type))
+                 .param(node.arg_pidfree_hash_set_var.name, type = self.env.type2str(node.arg_pidfree_hash_set_var.type))
+                 .param(node.arg_remaining_set_var.name, type = self.env.type2str(node.arg_remaining_set_var.type)))
+
     def compile_SuccT(self, node):
         self.env.push_cvar_env()
         self.env.push_variable_provider(node.variable_provider)
@@ -405,15 +419,11 @@ class CompilerVisitor(coreir.CompilerVisitor):
             decl.add(var)
 
         result = cyast.to_ast(cyast.Builder.FunctionDef(name = node.function_name,
-                                             args = (cyast.A(node.arg_marking_var.name, type = self.env.type2str(node.arg_marking_var.type))
-                                                     .param(node.arg_marking_acc_var.name, type = self.env.type2str(node.arg_marking_acc_var.type))
-                                                     .param(node.arg_state_space_var.name, type = self.env.type2str(node.arg_state_space_var.type))
-                                                     .param(node.arg_pidfree_hash_set_var.name, type = self.env.type2str(node.arg_pidfree_hash_set_var.type))
-                                                     .param(node.arg_remaining_set_var.name, type = self.env.type2str(node.arg_remaining_set_var.type))),
-                                             body = stmts,
-                                             lang = cyast.CpDef(public = True),
-                                             returns = cyast.Name(""),
-                                             decl = decl))
+                                                        args = self.succ_function_args(node),
+                                                        body = stmts,
+                                                        lang = cyast.CpDef(public = True),
+                                                        returns = cyast.Name(""),
+                                                        decl = decl))
         return result
 
 
@@ -429,11 +439,7 @@ class CompilerVisitor(coreir.CompilerVisitor):
             decl.add(var)
 
         return cyast.Builder.FunctionDef(name = node.function_name,
-                                         args = (cyast.A(node.arg_marking_var.name, type = self.env.type2str(node.arg_marking_var.type))
-                                                 .param(node.arg_marking_acc_var.name, type = self.env.type2str(node.arg_marking_acc_var.type))
-                                                 .param(node.arg_state_space_var.name, type = self.env.type2str(node.arg_state_space_var.type))
-                                                 .param(node.arg_pidfree_hash_set_var.name, type = self.env.type2str(node.arg_pidfree_hash_set_var.type))
-                                                 .param(node.arg_remaining_set_var.name, type = self.env.type2str(node.arg_remaining_set_var.type))),
+                                         args = self.succ_function_args(node),
                                          body = stmts,
                                          lang = cyast.CDef(public = False),
                                          returns = cyast.E("void"),
@@ -444,41 +450,28 @@ class CompilerVisitor(coreir.CompilerVisitor):
         body.extend(self.compile(node.body))
         body.append(cyast.E("return " + node.arg_marking_acc_var.name))
         f1 = cyast.Builder.FunctionCDef(name = node.function_name,
-                                        args = (cyast.A(node.arg_marking_var.name, self.env.type2str(node.arg_marking_var.type))
-                                                .param(node.arg_state_space_var.name, type = self.env.type2str(node.arg_state_space_var.type))
-                                                .param(node.arg_pidfree_hash_set_var.name, type = self.env.type2str(node.arg_pidfree_hash_set_var.type))
-                                                .param(node.arg_remaining_set_var.name, type = self.env.type2str(node.arg_remaining_set_var.type))),
-                                  body = body,
-                                  returns = cyast.Name("set"),
-                                  decl = [ cyast.CVar(name = node.arg_marking_acc_var.name,
-                                                      type = self.env.type2str(node.arg_marking_acc_var.type),
-                                                      init = self.env.marking_set_type.new_marking_set_expr(self.env)) ]
-                                  )
+                                        args = self.main_succ_function_args(node),
+                                        body = body,
+                                        returns = cyast.Name("set"),
+                                        decl = [ cyast.CVar(name = node.arg_marking_acc_var.name,
+                                                            type = self.env.type2str(node.arg_marking_acc_var.type),
+                                                            init = self.env.marking_set_type.new_marking_set_expr(self.env)) ]
+                                        )
 
         body = [ cyast.E("l = ctypes_ext.neco_list_new()") ]
 
         body.append(cyast.For(target = cyast.to_ast(cyast.E("e")),
                                iter = cyast.to_ast(cyast.E("succs(m)")),
                                body = [ cyast.to_ast(cyast.stmt(cyast.E("ctypes_ext.__Pyx_INCREF(e)"))),
-                                      cyast.Expr(cyast.Call(func = cyast.to_ast(cyast.E("ctypes_ext.neco_list_push_front")),
-                                                            args = [cyast.to_ast(cyast.E("l")), cyast.Name("e")],
-                                                            keywords = [],
-                                                            starargs = None,
-                                                            kwargs = None)) ]))
+                                        cyast.Expr(cyast.Call(func = cyast.to_ast(cyast.E("ctypes_ext.neco_list_push_front")),
+                                                              args = [cyast.to_ast(cyast.E("l")), cyast.Name("e")],
+                                                              keywords = [],
+                                                              starargs = None,
+                                                              kwargs = None)) ]))
 
         body.append(cyast.E("return l"))
 
-#        f2 = cyast.Builder.FunctionCDef(name="neco_succs",
-#                                  args=cyast.A("m", type="Marking"),
-#                                  body=body,
-#                                  returns=cyast.Name("ctypes_ext.neco_list_t*"),
-#                                  decl=[cyast.CVar(name="l", type="ctypes_ext.neco_list_t*"),
-#                                        cyast.CVar(name="e", type="Marking")]
-#                                  )
-
-        return [f1 ]    # , f2]
-
-
+        return [f1]
 
     def compile_Init(self, node):
         env = self.env

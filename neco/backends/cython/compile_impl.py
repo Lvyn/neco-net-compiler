@@ -12,6 +12,7 @@ from neco.utils import flatten_ast, search_file, OutputProvider, \
 import imp
 import nettypes
 import os
+from distutils.sysconfig import get_config_vars
 
 _backend_ = "cython"
 
@@ -123,6 +124,17 @@ def compile_IR(env, config):
     if config.normalize_pids:
         macros.append(('USE_PIDS', '1',))
 
+    #
+    # remove -Wstrict-prototypes since we compile using g++
+    #
+    (opt,) = get_config_vars('OPT')
+    os.environ['OPT'] = " ".join(
+        flag for flag in opt.split() if flag != '-Wstrict-prototypes'
+    )
+
+    #
+    # build library
+    #
     setup(name = base_dir + module_name + ".pyx",
           cmdclass = {'build_ext': build_ext},
 #          ext_modules=cythonize([ base_dir + module_name + '.pyx', ctypes_source ],

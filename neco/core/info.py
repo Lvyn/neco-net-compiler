@@ -353,7 +353,8 @@ TypeInfo.register_type('String')
 TypeInfo.register_type('BlackToken')
 
 TypeInfo.register_type('Pid')
-TypeInfo.register_type('Dict')
+TypeInfo.register_type('dict')
+TypeInfo.register_type('set')
 
 ################################################################################
 
