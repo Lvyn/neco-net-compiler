@@ -5,7 +5,7 @@ from C{cyast_gen.asdl}.
 
 """
 
-from neco.asdl.cython import * #@UnusedWildImport
+from neco.asdl.cython import *    # @UnusedWildImport
 from neco.backends.python.unparse import Unparser as _Unparser
 from neco.backends.pythonic import extract_python_expr, check_arg, check_attrs
 from neco.core.netir import CurrentBlockError
@@ -18,69 +18,69 @@ import neco.core.netir as coreir
 # Node wrappers.
 ################################################################################
 
-def Call(func, args=None, keywords=None, starargs=None, kwargs=None):
+def Call(func, args = None, keywords = None, starargs = None, kwargs = None):
     return cyast_gen.Call(func,
                           args if args else [],
                           keywords if keywords else [],
                           starargs,
                           kwargs)
 
-def FunctionDef(name, args=None, body=None, decorator_list=None):
+def FunctionDef(name, args = None, body = None, decorator_list = None):
     if not args:
-        args = cyast_gen.arguments(args=[],
-                                   vararg=None,
-                                   kwarg=None,
-                                   defaults=[]),
+        args = cyast_gen.arguments(args = [],
+                                   vararg = None,
+                                   kwarg = None,
+                                   defaults = []),
     return cyast_gen.FunctionDef(name,
                                  args,
                                  body if body else [],
                                  decorator_list if decorator_list else [])
 
 def FunctionDecl(name,
-                 args=None,
-                 returns=None,
+                 args = None,
+                 returns = None,
                  **kwargs):
     if not args:
-        args = cyast_gen.arguments(args=[],
-                                   vararg=None,
-                                   kwarg=None,
-                                   defaults=[])
-        
-    return cyast_gen.FunctionDecl(name=name,
-                                  args=args,
-                                  returns=returns,
-                                  decorator_list=[],
+        args = cyast_gen.arguments(args = [],
+                                   vararg = None,
+                                   kwarg = None,
+                                   defaults = [])
+
+    return cyast_gen.FunctionDecl(name = name,
+                                  args = args,
+                                  returns = returns,
+                                  decorator_list = [],
                                   **kwargs)
 
-#def arguments(args=[], vararg=None, kwarg=None, defaults=[]):
+# def arguments(args=[], vararg=None, kwarg=None, defaults=[]):
 #    return ast.arguments(args, vararg, kwarg, defaults)
 
-def If(test, body=None, orelse=None):
+def If(test, body = None, orelse = None):
     return cyast_gen.If(test,
                         body if body else [],
                         orelse if orelse else [])
 
-def Tuple(elts=None):
-    return cyast_gen.Tuple(elts=elts if elts else [])
+def Tuple(elts = None):
+    return cyast_gen.Tuple(elts = elts if elts else [])
 
-def ClassDef(name, bases=None, body=None, decorator_list=None):
+def ClassDef(name, bases = None, body = None, decorator_list = None):
     return cyast_gen.ClassDef(name,
-                              bases=bases if bases else [],
-                              body=body if body else [],
-                              decorator_list=decorator_list if decorator_list else [])
+                              bases = bases if bases else [],
+                              body = body if body else [],
+                              decorator_list = decorator_list if decorator_list else [])
 
 def Index(value):
-    return cyast_gen.Index(value=value)
+    return cyast_gen.Index(value = value)
 
-def Subscript(value, slice, ctx=None): #@ReservedAssignment
+def Subscript(value, slice, ctx = None):    # @ReservedAssignment
     if not ctx:
         ctx = cyast_gen.Load()
-    return cyast_gen.Subscript(value=value, slice=slice)
+    return cyast_gen.Subscript(value = value, slice = slice)
 
-def List(elts, ctx=None):
+def List(elts, ctx = None):
     if not ctx:
         ctx = cyast_gen.Store()
-    return cyast_gen.List(elts=elts, ctx=ctx)
+    return cyast_gen.List(elts = elts, ctx = ctx)
 
 #################################################################################
 
@@ -145,7 +145,7 @@ def E(expr):
     """
     return _extract_expr(expr)
 
-def A(param=None, type=None): #@ReservedAssignment
+def A(param = None, type = None, default = None):    # @ReservedAssignment
     """ Argument construction helper.
 
     @param param: optional first argument.
@@ -155,15 +155,15 @@ def A(param=None, type=None): #@ReservedAssignment
     """
     args = Builder.Arguments()
     if param != None:
-        return args.param(param, type=type)
+        return args.param(param, type = type, default = default)
     return args
 
 
 def _aug_assign(operator):
     def fun(self, value):
-        self.node = cyast_gen.AugAssign(target=to_ast(self.node),
-                                        op=operator,
-                                        value=to_ast(value));
+        self.node = cyast_gen.AugAssign(target = to_ast(self.node),
+                                        op = operator,
+                                        value = to_ast(value));
         return self
     return fun
 
@@ -171,9 +171,9 @@ def _aug_assign(operator):
 def _bin_op(operator):
     def fun(self, right):
         right = to_ast(right)
-        self.node = cyast_gen.BinOp(left=to_ast(self.node),
-                                    op=operator,
-                                    right=to_ast(right))
+        self.node = cyast_gen.BinOp(left = to_ast(self.node),
+                                    op = operator,
+                                    right = to_ast(right))
         return self
     return fun
 
@@ -185,10 +185,10 @@ class Builder(coreir.BuilderBase):
 
         def __ast__(self):
             return self.node
-        
+
         def ast(self):
             return self.node
-        
+
         @property
         def body(self):
             return E(self.node.body)
@@ -197,26 +197,26 @@ class Builder(coreir.BuilderBase):
         def body(self, e):
             self.node.body = to_ast(e)
 
-        def call(self, args=None):
+        def call(self, args = None):
             args = to_ast(args if args else [])
-            self.node = cyast_gen.Call(func=to_ast(self.node), args=args, keywords=[], starargs=None, kwargs=None)
+            self.node = cyast_gen.Call(func = to_ast(self.node), args = args, keywords = [], starargs = None, kwargs = None)
             return self
 
         def args(self, args):
             self.node.args = to_ast(args)
             return self
 
-        def subscript(self, index=None):
-            self.node = cyast_gen.Subscript(value=to_ast(self.node), slice=cyast_gen.Index(to_ast(E(index))))
+        def subscript(self, index = None):
+            self.node = cyast_gen.Subscript(value = to_ast(self.node), slice = cyast_gen.Index(to_ast(E(index))))
             return self
 
         def attr(self, attribute):
             assert(isinstance(attribute, str))
-            self.node = cyast_gen.Attribute(value=to_ast(self.node), attr=attribute)
+            self.node = cyast_gen.Attribute(value = to_ast(self.node), attr = attribute)
             return self
 
         def assign(self, value):
-            self.node = cyast_gen.Assign(targets=[ to_ast(self.node) ], value=to_ast(E(value)));
+            self.node = cyast_gen.Assign(targets = [ to_ast(self.node) ], value = to_ast(E(value)));
             return self
 
         def type(self, value):
@@ -248,11 +248,11 @@ class Builder(coreir.BuilderBase):
 
     class arguments_helper(object):
         def __init__(self):
-            self.node = cyast_gen.arguments(args=[], vararg=None, kwargs=None, defaults=[])
+            self.node = cyast_gen.arguments(args = [], vararg = None, kwargs = None, defaults = [])
 
-        def param(self, name, default=None, type=None): #@ReservedAssignment
+        def param(self, name, default = None, type = None):    # @ReservedAssignment
             annot = to_ast(E(type)) if type else None
-            self.node.args.append(cyast_gen.arg(arg=name, annotation=annot))
+            self.node.args.append(cyast_gen.arg(arg = name, annotation = annot))
             if default != None:
                 self.node.defaults.append(to_ast(E(default)))
             return self
@@ -273,29 +273,29 @@ class Builder(coreir.BuilderBase):
 
     @classmethod
     def EqCompare(cls, left, right):
-        return E(cyast_gen.Compare(left=to_ast(left), ops=[ cyast_gen.Eq() ], comparators=[ to_ast(right) ]))
+        return E(cyast_gen.Compare(left = to_ast(left), ops = [ cyast_gen.Eq() ], comparators = [ to_ast(right) ]))
 
     @classmethod
     def LtCompare(cls, left, right):
-        return E(cyast_gen.Compare(left=to_ast(left), ops=[ cyast_gen.Lt() ], comparators=[ to_ast(right) ]))
+        return E(cyast_gen.Compare(left = to_ast(left), ops = [ cyast_gen.Lt() ], comparators = [ to_ast(right) ]))
 
     @classmethod
     def FunctionDef(cls, **kwargs):
         args_to_ast(kwargs, cyast_gen.FunctionDef._fields)
         check_arg(kwargs, "lang", cyast_gen.Def())
-        check_arg(kwargs, "args", cyast_gen.arguments(args=[], vararg=None, kwarg=None, defaults=[]))
-        return check_attrs(cyast_gen.FunctionDef(**kwargs), body=[], decl=[])
+        check_arg(kwargs, "args", cyast_gen.arguments(args = [], vararg = None, kwarg = None, defaults = []))
+        return check_attrs(cyast_gen.FunctionDef(**kwargs), body = [], decl = [])
 
     @classmethod
     def FunctionCpDef(cls, **kwargs):
         args_to_ast(kwargs, cyast_gen.FunctionDef._fields)
-        check_arg(kwargs, "lang", cyast_gen.CpDef(public=True, api=True))
+        check_arg(kwargs, "lang", cyast_gen.CpDef(public = True, api = True))
         return cls.FunctionDef(**kwargs)
 
     @classmethod
     def FunctionCDef(cls, **kwargs):
         args_to_ast(kwargs, cyast_gen.FunctionDef._fields)
-        check_arg(kwargs, "lang", cyast_gen.CDef(public=True, api=True))
+        check_arg(kwargs, "lang", cyast_gen.CDef(public = True, api = True))
         return cls.FunctionDef(**kwargs)
 
     def begin_FunctionDef(self, **kwargs):
@@ -304,31 +304,31 @@ class Builder(coreir.BuilderBase):
     def begin_FunctionCDef(self, **kwargs):
         api = False if not kwargs.has_key('api') else kwargs['api']
         public = False if not kwargs.has_key('public') else kwargs['public']
-        self.begin_FunctionDef(lang=cyast_gen.CDef(public=public, api=api), **kwargs)
+        self.begin_FunctionDef(lang = cyast_gen.CDef(public = public, api = api), **kwargs)
 
     def begin_FunctionCPDef(self, **kwargs):
-        self.begin_FunctionDef(lang=cyast_gen.CpDef(public=True, api=True), **kwargs)
+        self.begin_FunctionDef(lang = cyast_gen.CpDef(public = True, api = True), **kwargs)
 
     def begin_PrivateFunctionCDef(self, **kwargs):
-        self.begin_FunctionDef(lang=cyast_gen.CDef(public=False), **kwargs)
+        self.begin_FunctionDef(lang = cyast_gen.CDef(public = False), **kwargs)
 
     @classmethod
     def CFor(cls, *args, **kwargs):
         args = to_ast(args)
         args_to_ast(kwargs, cyast_gen.CFor._fields)
-        return check_attrs(cyast_gen.CFor(*args, **kwargs), body=[], or_else=[])
+        return check_attrs(cyast_gen.CFor(*args, **kwargs), body = [], or_else = [])
 
     @classmethod
     def For(cls, *args, **kwargs):
         args = to_ast(args)
         args_to_ast(kwargs, cyast_gen.For._fields)
-        return check_attrs(cyast_gen.For(*args, **kwargs), body=[], or_else=[])
+        return check_attrs(cyast_gen.For(*args, **kwargs), body = [], or_else = [])
 
     @classmethod
     def If(cls, *args, **kwargs):
         args = to_ast(args)
         args_to_ast(kwargs, cyast_gen.If._fields)
-        return check_attrs(cyast_gen.If(*args, **kwargs), body=[], or_else=[])
+        return check_attrs(cyast_gen.If(*args, **kwargs), body = [], or_else = [])
 
     def begin_If(self, *args, **kwargs):
         self.begin_block(to_ast(self.If(*args, **kwargs)))
@@ -347,7 +347,7 @@ class Builder(coreir.BuilderBase):
 
     def end_FunctionDef(self):
         if not isinstance(self._current, cyast_gen.FunctionDef):
-            raise CurrentBlockError(expected=cyast_gen.FunctionDef, got=self._current)
+            raise CurrentBlockError(expected = cyast_gen.FunctionDef, got = self._current)
         self._current.body = to_ast(flatten_lists(self._current.body))
         if(self._current.body == []):
             self._current.body.append(cyast_gen.Pass())
@@ -359,17 +359,17 @@ class Builder(coreir.BuilderBase):
         return super(Builder, self).emit(e)
 
     def emit_Return(self, value):
-        self.emit(cyast_gen.Return(value=to_ast(value)))
+        self.emit(cyast_gen.Return(value = to_ast(value)))
 
     @classmethod
     def Tuple(self, elts):
-        return E(cyast_gen.Tuple(elts=to_ast(elts)))
+        return E(cyast_gen.Tuple(elts = to_ast(elts)))
 
     class class_def_helper(object):
         def __init__(self, name, bases, lang, **kwargs):
-            self.node = cyast_gen.ClassDef(name=to_ast(name),
-                                           bases=to_ast(bases),
-                                           lang=to_ast(lang),
+            self.node = cyast_gen.ClassDef(name = to_ast(name),
+                                           bases = to_ast(bases),
+                                           lang = to_ast(lang),
                                            **kwargs)
 
         def add_method(self, method):
@@ -382,40 +382,40 @@ class Builder(coreir.BuilderBase):
             return self.node
 
     @classmethod
-    def ClassDef(cls, name, bases=None):
+    def ClassDef(cls, name, bases = None):
         return cls.class_def_helper(name,
                                     bases if bases else None,
                                     cyast_gen.Def())
 
     @classmethod
-    def PublicClassCDef(cls, name, bases=None, **kwargs):
+    def PublicClassCDef(cls, name, bases = None, **kwargs):
         return cls.class_def_helper(name,
                                     bases if bases else [],
-                                    cyast_gen.CDef(public=True), **kwargs)
+                                    cyast_gen.CDef(public = True), **kwargs)
 
     @classmethod
-    def ClassCDef(cls, name, bases=None, **kwargs):
+    def ClassCDef(cls, name, bases = None, **kwargs):
         return cls.class_def_helper(name,
                                     bases if bases else [],
-                                    cyast_gen.CDef(public=False), **kwargs)
+                                    cyast_gen.CDef(public = False), **kwargs)
 
     @classmethod
     def Compare(self, left, ops, comparators):
-        return E(cyast_gen.Compare(left=to_ast(left), ops=ops, comparators=to_ast(comparators)))
+        return E(cyast_gen.Compare(left = to_ast(left), ops = ops, comparators = to_ast(comparators)))
 
     @classmethod
-    def PublicCVar(cls, name, type=None, init=None): #@ReservedAssignment
-        return E(cyast_gen.CVar(name=name,
-                                type=type,
-                                public=True,
-                                init=to_ast(init)))
+    def PublicCVar(cls, name, type = None, init = None):    # @ReservedAssignment
+        return E(cyast_gen.CVar(name = name,
+                                type = type,
+                                public = True,
+                                init = to_ast(init)))
 
     @classmethod
-    def CVar(cls, name, type=None, init=None): #@ReservedAssignment
-        return E(cyast_gen.CVar(name=name,
-                                type=type,
-                                public=False,
-                                init=to_ast(init)))
+    def CVar(cls, name, type = None, init = None):    # @ReservedAssignment
+        return E(cyast_gen.CVar(name = name,
+                                type = type,
+                                public = False,
+                                init = to_ast(init)))
 
     @classmethod
     def Arguments(cls):
@@ -434,11 +434,11 @@ class Python2Cythyon(ast.NodeTransformer):
         return [ self.visit(e) for e in l ]
 
     def visit_FunctionDef(self, node):
-        return cyast_gen.FunctionDef(name=node.name,
-                                     args=self.visit(node.args),
-                                     body=self.visit(node.body),
-                                     lang=cyast_gen.Def(),
-                                     decl=[])
+        return cyast_gen.FunctionDef(name = node.name,
+                                     args = self.visit(node.args),
+                                     body = self.visit(node.body),
+                                     lang = cyast_gen.Def(),
+                                     decl = [])
 
 
 #################################################################################

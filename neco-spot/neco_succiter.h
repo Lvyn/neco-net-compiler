@@ -12,50 +12,48 @@
 
 namespace neco {
 
-    class state;
+class state;
 
-    //! Successor states iterator.
-    //!
-    //! This iterator enumerates successor states of a state,
-    //! modes of Petri net transitions are not stored.
-    class succ_iterator: public spot::kripke_succ_iterator
-    {
-    public:
-	//! Constructor.
-	//!
-	//! \param state current state in the tgba.
-	//! \param condition is the one returned bu current_condition().
-	//! \param list list of successor markings, states will be build on the fly.
-	succ_iterator(const state* state, bdd condition,
-		      neco_list_t* list);
+//! Successor states iterator.
+//!
+//! This iterator enumerates successor states of a state,
+//! modes of Petri net transitions are not stored.
+class succ_iterator
+    : public spot::kripke_succ_iterator
+{
+public:
+                                //! Constructor.
+                                //!
+                            	//! \param state current state in the tgba.
+                            	//! \param condition is the one returned bu current_condition().
+                            	//! \param list list of successor markings, states will be build on the fly.
+                                succ_iterator(const state* current_state_tgba,
+                                              bdd current_condition,
+                                              neco_list_t* successor_list);
+	virtual                     ~succ_iterator();
 
-	//! Destructor.
-	virtual ~succ_iterator();
+                            	//! Set the iterator at the beginning.
+	virtual void                first();
+                                //! Advance by one.
+	virtual void                next();
+                                //! All enumerated ?
+	virtual	bool                done() const;
 
-	//! Set the iterator at the beginning.
- 	virtual void first();
+                            	//! Get the current state.
+	virtual spot::state*        current_state() const;
 
-	//! Advance by one.
-	virtual void next();
+private:
+                                //! Copy constructor, disabled: non copyable.
+                                succ_iterator(const succ_iterator& other);
+                                //! Assignment operator, disabled: non copyable.
+	const succ_iterator&        operator=(const succ_iterator& other);
 
-	//! All enumerated ?
-	virtual bool done() const;
+private:
+	const state*                m_state;     //!< current state.
+	neco_list_t*                m_list;      //!< list of successor markings.
+	int                         m_node_index; //!< current node, used for iteration over the list.
+};
 
-	//! Get the current state.
-	virtual spot::state* current_state() const;
-
-    private:
-	//! Copy constructor, disabled: non copyable.
-	succ_iterator(const succ_iterator& other);
-
-	//! Assignment operator, disabled: non copyable.
-	const succ_iterator& operator=(const succ_iterator& other);
-
-    private:
-	const state* m_state;     //!< current state.
-	neco_list_t* m_list;      //!< list of successor markings.
-	neco_list_node_t* m_node; //!< current node, used for iteration over the list.
-    };
-}
+} /* namespace neco */
 
 #endif /* _NECO_SUCCITER_H_ */

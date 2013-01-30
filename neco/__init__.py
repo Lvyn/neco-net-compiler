@@ -65,8 +65,8 @@ def compile_net(net, config):
     backend = config.backend
     try:
         compiler = core.Compiler(net,
-                                 backend=backends[backend].compile_impl,
-                                 config=config)
+                                 backend = backends[backend].compile_impl,
+                                 config = config)
     except KeyError as e:
         raise UnknownBackend(e)
 
@@ -75,20 +75,20 @@ def compile_net(net, config):
     print "################################################################################"
     print "optimisations:      {optimize!s:5}".format(optimize = config.optimize)
     print "Debug:              {debug!s:5}".format(debug = config.debug)
-    print "flow optimisations: {pfe!s:5}".format(pfe=config.optimize_flow)
+    print "flow optimisations: {pfe!s:5}".format(pfe = config.optimize_flow)
     print "search paths:       {}".format(config.search_paths)
     print "################################################################################"
 
     return compiler.run()
 
 
-def compile_checker(formula, net, *arg, **kwargs):
+def compile_checker(formula, net, config, *arg, **kwargs):
     """ Produce checking functions for a compiled net.
     """
 
-    #TODO: use trace file to store configuration options
+    # TODO: use trace file to store configuration options
     backends = get_backends()
-    backend = config.get('backend')
+    backend = config.backend
     try:
         backend_instance = backends[backend]
     except KeyError as e:
@@ -97,12 +97,12 @@ def compile_checker(formula, net, *arg, **kwargs):
     print "################################################################################"
     print "Compiling formula {} ".format(formula)
     print "################################################################################"
-    
-    compiler = core.check.CheckerCompiler(formula, net, backend_instance)
+
+    compiler = core.check.CheckerCompiler(formula, net, config, backend_instance)
     return compiler.compile()
 
 
-def produce_pnml_file(abcd_file, pnml_file=None):
+def produce_pnml_file(abcd_file, pnml_file = None):
     """ Compile an abcd file to pnml.
     """
     random.seed(time())
@@ -120,7 +120,7 @@ def produce_pnml_file(abcd_file, pnml_file=None):
     main(['--pnml={}'.format(out_pnml), abcd_file])
     return out_pnml
 
-def load_pnml_file(pnml_file, remove=False):
+def load_pnml_file(pnml_file, remove = False):
     """ Load a model from a pnml file.
     """
     print "loading pnml file"
@@ -145,6 +145,6 @@ def load_snakes_net(module_name, net_var_name):
         # return the net from the module
         return getattr(module, net_var_name)
     except AttributeError:
-        fatal_error('No variable named {varname} in module {module}'.format(varname=net_var_name,
-                                                                            module=module_name))
+        fatal_error('No variable named {varname} in module {module}'.format(varname = net_var_name,
+                                                                            module = module_name))
 

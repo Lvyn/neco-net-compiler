@@ -11,7 +11,7 @@
 #include <spot/ltlenv/defaultenv.hh>
 #include <spot/ltlast/allnodes.hh>
 #include <spot/ltlparse/public.hh>
-#include <spot/ltlvisit/reduce.hh>
+#include <spot/ltlvisit/simplify.hh>
 #include <spot/tgbaalgos/ltl2tgba_fm.hh>
 #include <spot/tgbaalgos/sccfilter.hh>
 #include <spot/tgbaalgos/emptiness.hh>
@@ -186,7 +186,8 @@ main(int argc, char **argv)
 
   tm.start("reducing formula");
   {
-      const spot::ltl::formula* r = spot::ltl::reduce(f);
+      spot::ltl::ltl_simplifier simplifier;
+      const spot::ltl::formula* r = simplifier.simplify(f);
       f->destroy();
       f = r;
   }

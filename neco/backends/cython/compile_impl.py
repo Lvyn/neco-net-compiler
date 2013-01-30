@@ -137,17 +137,12 @@ def compile_IR(env, config):
     #
     setup(name = base_dir + module_name + ".pyx",
           cmdclass = {'build_ext': build_ext},
-#          ext_modules=cythonize([ base_dir + module_name + '.pyx', ctypes_source ],
-#                                includes=search_paths + [base_dir],
-#                                library_dirs=search_paths + [base_dir]),
-                    ext_modules = [Extension(config.out_module,    # config.output_module,
-                                 sources,
-                                 include_dirs = search_paths + [base_dir],
-                                 define_macros = macros,
-                                 # extra_compile_args=['-ggdb'],
-                                 # extra_link_args=['-lctypes'],
-                                 library_dirs = search_paths + [base_dir],
-                                 language = 'c++')],
+                      ext_modules = [Extension(config.out_module,    # config.output_module,
+                                               sources,
+                                               include_dirs = search_paths + [base_dir],
+                                               define_macros = macros,
+                                               library_dirs = search_paths + [base_dir],
+                                               language = 'c++')],
           script_args = ["build_ext", "--inplace"],
           options = { 'build': { 'build_base': 'build' } })
 

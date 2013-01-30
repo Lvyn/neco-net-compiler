@@ -4,29 +4,32 @@ Created on 2 august 2012
 @author: Lukasz Fronc
 '''
 from neco.core.info import TypeInfo
-import pprint
+import pprint, struct
+
+bits_per_byte = 8
 
 def bits_sizeof(cython_type):
     '''
-        \todo use module struct 
     '''
     if cython_type.is_Int:
-        return 32
+        return struct.Struct('i').size * bits_per_byte
     elif cython_type.is_UnsignedInt:
-        return 32
+        return struct.Struct('I').size * bits_per_byte
     elif cython_type.is_Char:
-        return 8
+        return struct.Struct('c').size * bits_per_byte
     elif cython_type.is_UnsignedChar:
-        return 8
+        return struct.Struct('B').size * bits_per_byte
     elif cython_type.is_Bool:
         return 1
     raise RuntimeError
 
 def bytes_sizeof(cython_type):
     if cython_type.is_Int:
-        return 4
+        return struct.Struct('i').size * bits_per_byte
+    elif cython_type.is_UnsignedInt:
+        return struct.Struct('I').size * bits_per_byte
     elif cython_type.is_Char:
-        return 1
+        return struct.Struct('c').size * bits_per_byte
     elif cython_type.is_Bool:
         return 1
     raise RuntimeError
@@ -35,7 +38,7 @@ class Mask(object):
     """ Class representing bit masks.
     """
 
-    def __init__(self, value=[0, 0, 0, 0, 0, 0, 0, 0]):
+    def __init__(self, value = [0, 0, 0, 0, 0, 0, 0, 0]):
         """ New mask.
 
         >>> Mask()
@@ -155,7 +158,7 @@ class Mask(object):
         return str(self._mask)
 
     def __repr__(self):
-        return "Mask(value={value})".format(value=self._mask)
+        return "Mask(value={value})".format(value = self._mask)
 
     def set_bit(self, num, value):
         """ Set a bit value.
@@ -341,7 +344,7 @@ class Mask(object):
         @rtype: C{Mask}
         """
         return Mask([ int(b1 == 0) for b1 in self._mask ])
-    
+
     def lshift(self, value):
         l = self._mask + value * [0]
         # do not pop !
@@ -385,15 +388,15 @@ class Mask(object):
 
     def __lshift__(self, value):
         return self.lshift(value)
-        
+
     def __rshift__(self, value):
         return self.rshift(value)
 
-    
+
 class MemoryChunk(object):
     '''
     '''
-    def __init__(self, mgr, name, cython_type, packed=False):
+    def __init__(self, mgr, name, cython_type, packed = False):
         ''' 
         '''
         self.name = name
@@ -401,15 +404,15 @@ class MemoryChunk(object):
         self.cython_type = cython_type
         self.packed = packed
         self.bits = bits_sizeof(cython_type) if packed else 0
-        #self.bytes = bytes_sizeof(cython_type)
+        # self.bytes = bytes_sizeof(cython_type)
         self.hint = "no hint"
-        
+
         self.bit_offset = 0
-        self.field_offset = 0 
-        
+        self.field_offset = 0
+
     def get_cython_type(self):
         return self.cython_type
-    
+
     def get_attribute_name(self):
         if self.packed:
             return self.chunk_manager.packed_name
@@ -418,7 +421,7 @@ class MemoryChunk(object):
 
     def offset(self):
         return (self.field_offset, self.bit_offset)
-    
+
     def mask(self):
         (_, chunk_type, _) = self.chunk_manager.packed_attribute()
         return Mask.build_mask(self.bit_offset, self.bits, bits_sizeof(chunk_type))
@@ -434,19 +437,19 @@ class ChunkManager(object):
         '''
         self.packed_name = reserved_packed_name
         self.named_chunks = {}
-        self.packed_chunks = [] # simple list holding packed memory chunks
-        self.normal_chunks = [] # simple list holding memory chunks
-        
-        
+        self.packed_chunks = []    # simple list holding packed memory chunks
+        self.normal_chunks = []    # simple list holding memory chunks
+
+
         self.packed_type = TypeInfo.get('UnsignedChar')
         self.packed_field_size = bits_sizeof(self.packed_type)
         self.ordered_chunks = []
         self.packed_field_count = 0
-        
+
     def order_chunks(self):
-        self.ordered_chunks = sorted(self.packed_chunks, key=lambda x : -x.bits)
-        fields = [(0,[])]
-        
+        self.ordered_chunks = sorted(self.packed_chunks, key = lambda x :-x.bits)
+        fields = [(0, [])]
+
         for chunk in self.ordered_chunks:
             placed = False
             for i in range(len(fields)):
@@ -454,11 +457,11 @@ class ChunkManager(object):
                 if n + chunk.bits <= self.packed_field_size:
                     l.append(chunk)
                     placed = True
-                    fields[i] = (n+chunk.bits, l)
+                    fields[i] = (n + chunk.bits, l)
                     # print "BITS : ", chunk.bits
                     break
             if not placed:
-                fields.append( (chunk.bits, [chunk]) )
+                fields.append((chunk.bits, [chunk]))
 
 
         for field_offset, (n, chunks) in enumerate(fields):
@@ -470,24 +473,24 @@ class ChunkManager(object):
         # print " >>>>>>>>>> ", len(fields), fields
         self.packed_field_count = len(fields)
 
-    def new_chunk(self, name, cython_type, packed=False):
+    def new_chunk(self, name, cython_type, packed = False):
         '''
         '''
         chunk = MemoryChunk(self, name, cython_type, packed)
         if name in self.named_chunks:
-            raise RuntimeError 
-        
+            raise RuntimeError
+
         self.named_chunks[name] = chunk
-        if packed: 
+        if packed:
             self.packed_chunks.append(chunk)
             self.order_chunks()
         else:
             self.normal_chunks.append(chunk)
         return chunk
-    
+
     def get_chunk(self, name):
         return self.named_chunks[name]
-    
+
     def get_offset(self, chunk):
         assert(chunk.packed)
         bits = 0
@@ -507,7 +510,7 @@ class ChunkManager(object):
         3
         """
         return sum(map((lambda x : x.bits), self.packed_chunks))
-    
+
     def packed_bytes(self):
         """
         >>> chunk_manager = ChunkManager('reserved_name')
@@ -556,6 +559,6 @@ class ChunkManager(object):
 
 if __name__ == '__main__':
     import doctest
-    doctest.testmod(optionflags=doctest.NORMALIZE_WHITESPACE |
+    doctest.testmod(optionflags = doctest.NORMALIZE_WHITESPACE |
                                 doctest.REPORT_ONLY_FIRST_FAILURE |
                                 doctest.ELLIPSIS)

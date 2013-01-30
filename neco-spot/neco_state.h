@@ -8,49 +8,42 @@ struct Marking;
 
 namespace neco {
 
-    //! A state in neco::tgba.
-    //!
-    //! This class wraps a neco Marking structure to represent states inside
-    //! the transition based generalized buchi automata.
-    class state: public spot::state
-    {
-    public:
-	//! Constructor
-	//!
-	//! Builds the state from a marking structure.
-	state(const struct Marking* marking);
+//! A state in neco::tgba.
+//!
+//! This class wraps a neco Marking structure to represent states inside
+//! the transition based generalized buchi automata.
+class state
+    : public spot::state
+{
+public:
+                                    	//! Constructor that builds the state from a marking.
+                                    	state(const Marking* marking);
 
-	//! Destructor
-	virtual ~state();
+	virtual                             ~state();
 
-	//! Comparison operation on states.
-	//!
-	//! Compares the contained neco Marking structures.
-	virtual int compare(const spot::state* other) const;
+                                    	//! Comparison operation on states.
+                                    	//!
+                                    	//! Compares the contained neco Marking.
+	virtual int                         compare(const spot::state* other) const;
 
-	//! Get hash value of the state.
-	virtual size_t hash() const;
+                                        //! Get hash value of the state.
+	virtual size_t                      hash() const;
 
-	//! Clone a state.
-	//!
-	//! Creates a copy of the Marking structure.
-	virtual spot::state* clone() const;
+                                        //! Creates a copy of the Marking.
+	virtual spot::state*                clone() const;
 
-	//! Get the contained Marking structure.
-	inline const struct Marking* get_marking() const {
-	    return m_marking;
-	}
+    inline const struct Marking*        get_marking() const         { return m_marking; }
 
-    private:
-	//! Copy constructor, disabled: non copyable
-	state(const state& other);
+private:
+                                    	//! Copy constructor, disabled: non copyable
+                                    	state(const state& other);
 
-	//! Assignment operator, disabled: non copyable
-	const state& operator=(const state& other);
+                                    	//! Assignment operator, disabled: non copyable
+	const state&                        operator=(const state& other);
 
-    private:
-	const Marking* m_marking; //!< neco Marking structure that the state represents.
-    };
+private:
+	const Marking*                      m_marking; //!< neco Marking that the state represents.
+};
 }
 
 #endif /* _NECO_STATE_H_ */

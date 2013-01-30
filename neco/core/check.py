@@ -11,12 +11,12 @@ import neco.core.info as info
 def has_deadlocks(formula):
     if formula.isDeadlock():
         return True
-    return properties.reduce_ast( lambda acc, node: acc or has_deadlocks(node),
+    return properties.reduce_ast(lambda acc, node: acc or has_deadlocks(node),
                                   formula,
-                                  False )
-    
+                                  False)
+
 def spot_formula(formula):
-    
+
     if formula.isAtomicProposition():
         return '(p' + str(formula.identifier) + ')'
     elif formula.isDeadlock():
@@ -48,15 +48,17 @@ class CheckerCompiler(object):
     """ Class responsible of compiling atomic propositions and provide id-prop maps.
     """
 
-    def __init__(self, formula, net, backend):
-        trace_file = open(config.get('trace_file'), 'rb')
+    def __init__(self, formula, net, config, backend):
+        trace_file = open(config.trace_file, 'rb')
 
         trace = pickle.load(trace_file)
         self.marking_type = trace['marking_type']
-        config.set(optimize=trace['optimize'])
-        config.set(model=trace['model'])
-        
-        self.net_info = info.NetInfo(net) #trace.get_marking_type()
+        self.config = config
+
+        config.set_options(optimize = trace['optimize'],
+                           model = trace['model'])
+
+        self.net_info = info.NetInfo(net)    # trace.get_marking_type()
 
         # normalize and decompose formula
         formula = properties.normalize_formula(formula)
@@ -65,21 +67,21 @@ class CheckerCompiler(object):
         except (LookupError, TypeError) as e:
             print >> sys.stderr, e.message
             exit(1)
-        
+
         formula = properties.transform_formula(formula)
         formula = properties.extract_atoms(formula)
         self.formula = formula
         self.id_prop_map = properties.build_atom_map(formula, IDProvider(), {})
-        
+
         print "compiled formula: {!s}".format(self.formula)
         spot_str = spot_formula(self.formula)
         print "spot formula:     {!s}".format(spot_str)
         print "atomic propositions:"
-        for i, (key, value) in enumerate(self.id_prop_map.iteritems(), start=1):
+        for i, (key, value) in enumerate(self.id_prop_map.iteritems(), start = 1):
             print "{!s:>3}. p{!s:<3} = {!s}".format(i, key, value)
         print "end atomic propositions"
         print
-        
+
         # write formula to file
         formula_file = open('neco_formula', 'w')
         if has_deadlocks(formula):
@@ -89,7 +91,7 @@ class CheckerCompiler(object):
         formula_file.close()
 
         self.backend = backend
-        self.checker_env = backend.check_impl.CheckerEnv(set(), self.net_info, self.marking_type)
+        self.checker_env = backend.check_impl.CheckerEnv(config, self.net_info, set(), self.marking_type)
 
     def compile(self):
         """ Produce compiled checker.
