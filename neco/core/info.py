@@ -356,6 +356,8 @@ TypeInfo.register_type('Pid')
 TypeInfo.register_type('dict')
 TypeInfo.register_type('set')
 
+TypeInfo.register_type('NecoCtx')
+
 ################################################################################
 
 TokenKind = Enum("Variable", "Value", "Expression", "Tuple")

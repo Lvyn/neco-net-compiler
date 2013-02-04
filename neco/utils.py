@@ -139,7 +139,7 @@ def search_file(filename, paths):
     raise IOError('{} file not found, check search paths'.format(filename))
 #
 #
-#class Factory(object):
+# class Factory(object):
 #    """ Generic factory class. """
 #
 #    class Builder(object):
@@ -262,11 +262,11 @@ class IDProvider(object):
             identifier = self.next
             self.assoc[obj] = identifier
             self.next += 1;
-            return id
+            return identifier
 
         return self.assoc[obj]
 
-class StringIDProvider(object): 
+class StringIDProvider(object):
     """ simple class that provides unique identifiers for objects.
     """
 
@@ -277,7 +277,7 @@ class StringIDProvider(object):
         self.assoc = {}
 
     def _next(self, obj):
-        return self._escape(self.wordset.fresh(True, base=str(obj)))
+        return self._escape(self.wordset.fresh(True, base = str(obj)))
 
     def _escape(self, string):
         res = ""
@@ -365,13 +365,13 @@ class NameProvider(object):
     def to_string(self, obj):
         return "\"" + self.get(obj) + "\""
 
-    def new(self, base=""):
+    def new(self, base = ""):
         return self._next(None, base)
 
     def set(self, obj, identifier):
         self.assoc[obj] = identifier
 
-    def get(self, obj, base=""):
+    def get(self, obj, base = ""):
         """ get an identifier for an object.
 
         >>> provider = IDProvider()
@@ -453,14 +453,14 @@ class multidict(dict):
             self[key].append(elt)
 
 
-def _extract_dict(d, key_fun=lambda x: x, value_fun=lambda x : x):
-    return [ "{key}: {value}".format(key=key_fun(key), value=value_fun(value))
+def _extract_dict(d, key_fun = lambda x: x, value_fun = lambda x : x):
+    return [ "{key}: {value}".format(key = key_fun(key), value = value_fun(value))
              for key, value in sorted(d.iteritems()) ]
 
 class bidict(object):
     """ Bidirectional dictionary. """
 
-    def __init__(self, data={}):
+    def __init__(self, data = {}):
         """ build a bidirectional dictionary from a dictionnary
 
         @param data: initial elements
@@ -632,12 +632,12 @@ def indent(n):
 
 
 class EnumValue(object):
-    #__slots__ = ('__value')
+    # __slots__ = ('__value')
     def __init__(self, name, value):
         self.__name = name
         self.__value = value
     Value = property(lambda self: self.__value)
-    #EnumType = property(lambda self: EnumType)
+    # EnumType = property(lambda self: EnumType)
     def __hash__(self):        return hash(self.__value)
     def __cmp__(self, other):
         return cmp(self.__value, other.__value)
@@ -645,7 +645,7 @@ class EnumValue(object):
     def __repr__(self):        return str(self.__name)
 
 class EnumClass(object):
-    #__slots__ = ('names', 'constants')
+    # __slots__ = ('names', 'constants')
     def __init__(self, names):
         self.names = names
         constants = [None] * len(names)
@@ -693,7 +693,7 @@ def should_not_be_called(function):
     @wraps(function)
     def wrapper(*args, **kwargs):
         msg = ("{function_name} Should not be called, supports by index access"
-               .format(function_name=function.__name__))
+               .format(function_name = function.__name__))
         raise RuntimeError(msg)
     return wrapper
 
@@ -703,7 +703,7 @@ def todo(function):
     @wraps(function)
     def wrapper(*args, **kwargs):
         msg = ("TODO: {function_name}"
-               .format(function_name=function.__name__))
+               .format(function_name = function.__name__))
         raise RuntimeError(msg)
     return wrapper
 
@@ -728,13 +728,13 @@ class Matcher(object):
 
 ################################################################################
 
-def fatal_error(msg, ret= -1):
+def fatal_error(msg, ret = -1):
     """ Helper function for handling fatal errors.
 
     this function will put C{msg} in C{sys.stderr} and exit the program
     with C{ret} return value.
     """
-    print >> sys.stderr, 'Error: {msg}'.format(msg=msg)
+    print >> sys.stderr, 'Error: {msg}'.format(msg = msg)
     exit(ret)
 
 def reverse_map(a_b_map):
@@ -748,12 +748,12 @@ def reverse_map(a_b_map):
 ################################################################################
 
 class OutputProviderPredicate(object):
-    
+
     def __call__(self, ouput):
         return True
 
 class OutputProvider(object):
-    
+
     def __init__(self):
         self.providers = {}
 
@@ -764,7 +764,7 @@ class OutputProvider(object):
             exit(-1)
 
         self.providers[output.name] = output
-        
+
     def get(self, output_name, predicate = OutputProviderPredicate()):
         try:
             output = self.providers[output_name]

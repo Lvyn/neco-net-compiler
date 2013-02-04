@@ -49,9 +49,9 @@ private:
 	const succ_iterator&        operator=(const succ_iterator& other);
 
 private:
-	const state*                m_state;     //!< current state.
-	neco_list_t*                m_list;      //!< list of successor markings.
-	int                         m_node_index; //!< current node, used for iteration over the list.
+	const state*                m_state;        //!< current state.
+	neco_list_t*                m_list;         //!< list of successor markings.
+	int                         m_node_index;   //!< current node, used for iteration over the list.
 };
 
 } /* namespace neco */

@@ -45,7 +45,7 @@ def iter_fields(formula):
     for field in formula._fields:
         yield getattr(formula, field)
 
-def reduce_ast(function, formula, initial=None):
+def reduce_ast(function, formula, initial = None):
     value = initial
     for field in iter_fields(formula):
         if is_AST(field):
@@ -85,11 +85,11 @@ def formula_to_str(formula):
                                     formula_to_str(formula.right))
     # NaryLogicOperator
     elif formula.isConjunction():
-        return "(" + " /\\ ".join( map(formula_to_str, formula.operands) ) + ")"
+        return "(" + " /\\ ".join(map(formula_to_str, formula.operands)) + ")"
     elif formula.isDisjunction():
-        return "(" + " \\/ ".join( map(formula_to_str, formula.operands) ) + ")"
+        return "(" + " \\/ ".join(map(formula_to_str, formula.operands)) + ")"
     elif formula.isExclusiveDisjunction():
-        return "(" + " ^ ".join( map(formula_to_str, formula.operands) ) + ")"
+        return "(" + " ^ ".join(map(formula_to_str, formula.operands)) + ")"
     # BooleanExpression
     elif (formula.isIntegerComparison() or
           formula.isMultisetComparison()):
@@ -149,12 +149,12 @@ __update_LTLFormula_class_str()
 
 
 def __match_atom(formula):
-    return ( formula.isIntegerComparison() or
+    return (formula.isIntegerComparison() or
              formula.isMultisetComparison() or
              formula.isLive() or
              formula.isFireable() or
              formula.isPlaceMarking() or
-             formula.isMultisetCardinality() )
+             formula.isMultisetCardinality())
 
 
 def __update_atomic_proposition_identifiers(next_identifier, formula):
@@ -166,7 +166,7 @@ def __update_atomic_proposition_identifiers(next_identifier, formula):
         return next_identifier + 1
 
     else:
-        next_identifier = reduce_ast( __update_atomic_proposition_identifiers, formula, next_identifier )
+        next_identifier = reduce_ast(__update_atomic_proposition_identifiers, formula, next_identifier)
         return next_identifier
 
 def __extract_atoms(formula):
@@ -199,13 +199,13 @@ def normalize_formula(formula):
             new_op = properties_gen.LE()
 
         if swap:
-            new_left  = normalize_formula(formula.right)
+            new_left = normalize_formula(formula.right)
             new_right = normalize_formula(formula.left)
         else:
-            new_left  = normalize_formula(formula.left)
+            new_left = normalize_formula(formula.left)
             new_right = normalize_formula(formula.right)
 
-        return __new(formula, operator=new_op, left=new_left, right=new_right)
+        return __new(formula, operator = new_op, left = new_left, right = new_right)
 
     elif (formula.isConjunction() or
           formula.isDisjunction() or
@@ -232,9 +232,9 @@ def has_bounds(formula):
     elif formula.isPlaceBound():
         return True
     else:
-        return reduce( lambda acc, f2 : acc or has_bounds(f2),
+        return reduce(lambda acc, f2 : acc or has_bounds(f2),
                        iter_fields(formula),
-                       False )
+                       False)
 
 def transform_formula(formula):
     if not is_AST(formula):
@@ -243,7 +243,7 @@ def transform_formula(formula):
     if formula.isLive():
         if formula.level != 0:
             raise NotImplementedError
-        return Negation(Future(Fireable( formula.transition_name )))
+        return Negation(Future(Fireable(formula.transition_name)))
 
     elif formula.isPlaceBound():
         return properties_gen.MultisetCardinality(PlaceMarking(formula.place_name))
@@ -253,8 +253,8 @@ def transform_formula(formula):
 
     elif (formula.isIntegerComparison() or
           formula.isMultisetComparison()):
-        left   = formula.left
-        right  = formula.right
+        left = formula.left
+        right = formula.right
         new_op = formula.operator
 
         left_has_bounds = has_bounds(left)
@@ -269,10 +269,10 @@ def transform_formula(formula):
             if formula.operator.isEQ():
                 new_op = properties_gen.LE()
 
-        left  = transform_formula(left)
+        left = transform_formula(left)
         right = transform_formula(right)
 
-        return __new(formula, operator = new_op, left=left, right=right)
+        return __new(formula, operator = new_op, left = left, right = right)
 
     elif (formula.isSum() or
           formula.isConjunction() or
@@ -333,7 +333,7 @@ def build_atom_map(formula, name_provider, name_atom_map):
 
     return name_atom_map
 
-### PARSER
+# ## PARSER
 
 def merge_spaces(s):
     """
@@ -368,81 +368,81 @@ def merge_spaces(s):
 
 
 
-#yappy.parser._DEBUG = 1
+# yappy.parser._DEBUG = 1
 class PropertyParser(Yappy):
 
     def __init__(self):
 
-        grammar = grules([(" formula -> G formula",               self.globally_rule),
-                          (" formula -> F formula",               self.future_rule),
-                          (" formula -> X formula",               self.next_rule),
-                          (" formula -> formula UNTIL formula",   self.until_rule),
-                          (" formula -> formula AND formula",     self.and_rule),
-                          (" formula -> formula OR formula",      self.or_rule),
-                          (" formula -> formula XOR formula",     self.xor_rule),
-                          (" formula -> formula EQUIV formula",   self.equiv_rule),
-                          (" formula -> formula IMPL formula",    self.impl_rule),
-                          (" formula -> NOT formula",             self.not_rule),
-                          (" formula -> ( formula )",             self.scope_rule),
-                          (" formula -> bool_expr",               self.default_rule),
+        grammar = grules([(" formula -> G formula", self.globally_rule),
+                          (" formula -> F formula", self.future_rule),
+                          (" formula -> X formula", self.next_rule),
+                          (" formula -> formula UNTIL formula", self.until_rule),
+                          (" formula -> formula AND formula", self.and_rule),
+                          (" formula -> formula OR formula", self.or_rule),
+                          (" formula -> formula XOR formula", self.xor_rule),
+                          (" formula -> formula EQUIV formula", self.equiv_rule),
+                          (" formula -> formula IMPL formula", self.impl_rule),
+                          (" formula -> NOT formula", self.not_rule),
+                          (" formula -> ( formula )", self.scope_rule),
+                          (" formula -> bool_expr", self.default_rule),
                           (" bool_expr -> int_expr CMP int_expr", self.integer_cmp_rule),
-                          (" bool_expr -> ms_expr CMP ms_expr",   self.multiset_cmp_rule),
-                          (" bool_expr -> ms_py_expr CMP ms_expr",   self.multiset_cmp_rule),
-                          (" bool_expr -> ms_expr CMP ms_py_expr",   self.multiset_cmp_rule),
+                          (" bool_expr -> ms_expr CMP ms_expr", self.multiset_cmp_rule),
+                          (" bool_expr -> ms_py_expr CMP ms_expr", self.multiset_cmp_rule),
+                          (" bool_expr -> ms_expr CMP ms_py_expr", self.multiset_cmp_rule),
                           (" bool_expr -> LIVE ( INTEGER , ID )", self.live_rule),
-                          (" bool_expr -> FIREABLE ( ID )",       self.fireable_rule),
-                          (" bool_expr -> DEADLOCK",              self.deadlock_rule),
-                          (" bool_expr -> BOOL",                  self.bool_rule),
-                          (" int_expr -> int_expr + int_expr",    self.plus_rule),
-                          (" int_expr -> BOUND ( ID )",           self.bound_rule),
-                          (" int_expr -> CARD ( ms_expr )",       self.card_rule),
-                          (" int_expr -> INTEGER",                self.integer_rule),
-                          (" int_expr -> ( int_expr )",           self.scope_rule),
-                          (" ms_expr  -> MARKING ( ID )",         self.marking_rule),
-                          (" ms_expr  -> [ ]",                    self.empty_multiset_rule),
-                          (" ms_expr  -> [ ms_elts ]",            self.multiset_rule),
-                          (" ms_elts -> ms_elts , ms_elts",       self.multiset_elts_seq_rule),
-                          (" ms_elts -> INTEGER",                 lambda l, c : [ l[0] ]),
-                          (" ms_elts -> DOT",                     lambda l, c : [ 'dot' ]),
-                          (" ms_elts -> ID",                      lambda l, c : [ '"' + l[0]  + '"' ]),
-                          (" ms_py_expr -> PY_EXPR",              self.multiset_python_expression_rule)
+                          (" bool_expr -> FIREABLE ( ID )", self.fireable_rule),
+                          (" bool_expr -> DEADLOCK", self.deadlock_rule),
+                          (" bool_expr -> BOOL", self.bool_rule),
+                          (" int_expr -> int_expr + int_expr", self.plus_rule),
+                          (" int_expr -> BOUND ( ID )", self.bound_rule),
+                          (" int_expr -> CARD ( ms_expr )", self.card_rule),
+                          (" int_expr -> INTEGER", self.integer_rule),
+                          (" int_expr -> ( int_expr )", self.scope_rule),
+                          (" ms_expr  -> MARKING ( ID )", self.marking_rule),
+                          (" ms_expr  -> [ ]", self.empty_multiset_rule),
+                          (" ms_expr  -> [ ms_elts ]", self.multiset_rule),
+                          (" ms_elts -> ms_elts , ms_elts", self.multiset_elts_seq_rule),
+                          (" ms_elts -> INTEGER", lambda l, c : [ l[0] ]),
+                          (" ms_elts -> DOT", lambda l, c : [ 'dot' ]),
+                          (" ms_elts -> ID", lambda l, c : [ '"' + l[0] + '"' ]),
+                          (" ms_py_expr -> PY_EXPR", self.multiset_python_expression_rule)
                           ])
 
         tokenize = [(r'<\[.*\]>', lambda x : ('PY_EXPR', x)),
-                    (r'"[a-zA-Z]+(\s*[a-zA-Z_0-9]+)*"|\'[a-zA-Z]+(\s*[a-zA-Z_0-9]+)*\'',  lambda x : ('ID', x[1:-1])), # protected ids
-                    (r'\s', ""), # skip white spaces
-                    (r'<=>|<->',        lambda x : ('EQUIV', x),    ('EQUIV', 50, 'left')),
-                    (r'=>|->',          lambda x : ('IMPL', x),     ('IMPL',  40,  'left')),
-                    (r'<=|<|=|!=|>=|>', lambda x : ('CMP', x),      ('CMP',   800, 'left')),
-                    (r'\+',             lambda x : (x, x),          ('+',     750, 'left')),
-                    (r'true|false',     lambda x : ('BOOL', x),     ('BOOL',     700, 'noassoc')),
-                    (r'live',           lambda x : ('LIVE', x),     ('LIVE',     700, 'noassoc')),
-                    (r'fireable',       lambda x : ('FIREABLE', x), ('FIREABLE', 700, 'noassoc')),
-                    (r'deadlock',       lambda x : ('DEADLOCK', x), ('DEADLOCK', 700, 'noassoc')),
-                    (r'bound',   lambda x : ('BOUND', x),     ('BOUND',   700, 'noassoc')),
-                    (r'card',    lambda x : ('CARD', x),      ('CARD',    700, 'noassoc')),
-                    (r'marking', lambda x : ('MARKING', x),   ('MARKING', 700, 'noassoc')),
-                    (r'dot|@',   lambda x : ('DOT', x),       ('DOT',     700, 'noassoc')),
-                    (r'!',       lambda x : ('NOT', x),       ('NOT',     600, 'noassoc')),
-                    (r'G',       lambda x : ('G', x),         ('G',       500, 'noassoc')),
-                    (r'F',       lambda x : ('F', x),         ('F',       500, 'noassoc')),
-                    (r'X',       lambda x : ('X', x),         ('X',       500, 'noassoc')),
-                    (r'U',       lambda x : ('UNTIL', x),     ('UNTIL',   400, 'left')),
-                    (r'/\\',     lambda x : ('AND', x),       ('AND',     300, 'left')),
-                    (r'\\/',     lambda x : ('OR',  x),       ('OR',      200, 'left')),
-                    (r'\^',      lambda x : ('XOR', x),       ('XOR',     200, 'left')),
-                    (r';',       lambda x : (x, x),           (';',       10,  'left')),
-                    (r',',       lambda x : (x, x),           (',',       10,  'left')),
-                    (r'\(|\)|\[|\]|\{|\}',       lambda x : (x, x)),
-                    (r'[a-zA-Z]+[a-zA-Z_0-9]*',  lambda x : ('ID', x)),
-                    (r'[0-9]+',  lambda x : ('INTEGER', x)),
+                    (r'"[a-zA-Z]+(\s*[a-zA-Z_0-9]+)*"|\'[a-zA-Z]+(\s*[a-zA-Z_0-9]+)*\'', lambda x : ('ID', x[1:-1])),    # protected ids
+                    (r'\s', ""),    # skip white spaces
+                    (r'<=>|<->', lambda x : ('EQUIV', x), ('EQUIV', 50, 'left')),
+                    (r'=>|->', lambda x : ('IMPL', x), ('IMPL', 40, 'left')),
+                    (r'<=|<|=|!=|>=|>', lambda x : ('CMP', x), ('CMP', 800, 'left')),
+                    (r'\+', lambda x : (x, x), ('+', 750, 'left')),
+                    (r'true|false', lambda x : ('BOOL', x), ('BOOL', 700, 'noassoc')),
+                    (r'live', lambda x : ('LIVE', x), ('LIVE', 700, 'noassoc')),
+                    (r'fireable', lambda x : ('FIREABLE', x), ('FIREABLE', 700, 'noassoc')),
+                    (r'deadlock', lambda x : ('DEADLOCK', x), ('DEADLOCK', 700, 'noassoc')),
+                    (r'bound', lambda x : ('BOUND', x), ('BOUND', 700, 'noassoc')),
+                    (r'card', lambda x : ('CARD', x), ('CARD', 700, 'noassoc')),
+                    (r'marking', lambda x : ('MARKING', x), ('MARKING', 700, 'noassoc')),
+                    (r'dot|@', lambda x : ('DOT', x), ('DOT', 700, 'noassoc')),
+                    (r'!', lambda x : ('NOT', x), ('NOT', 600, 'noassoc')),
+                    (r'G', lambda x : ('G', x), ('G', 500, 'noassoc')),
+                    (r'F', lambda x : ('F', x), ('F', 500, 'noassoc')),
+                    (r'X', lambda x : ('X', x), ('X', 500, 'noassoc')),
+                    (r'U', lambda x : ('UNTIL', x), ('UNTIL', 400, 'left')),
+                    (r'/\\', lambda x : ('AND', x), ('AND', 300, 'left')),
+                    (r'\\/', lambda x : ('OR', x), ('OR', 200, 'left')),
+                    (r'\^', lambda x : ('XOR', x), ('XOR', 200, 'left')),
+                    (r';', lambda x : (x, x), (';', 10, 'left')),
+                    (r',', lambda x : (x, x), (',', 10, 'left')),
+                    (r'\(|\)|\[|\]|\{|\}', lambda x : (x, x)),
+                    (r'[a-zA-Z]+[a-zA-Z_0-9]*', lambda x : ('ID', x)),
+                    (r'[0-9]+', lambda x : ('INTEGER', x)),
                     ]
 #        import os
 #        try:
 #            os.remove("YappyTab")
 #        except:
 #            pass
-        Yappy.__init__(self, tokenize=tokenize, grammar=grammar)
+        Yappy.__init__(self, tokenize = tokenize, grammar = grammar)
 
     def default_rule(self, tokens, ctx):
         return tokens[0]
@@ -653,13 +653,13 @@ class PropertyParser(Yappy):
     def multiset_python_expression_rule(self, tokens, ctx):
         return MultisetPythonExpression(merge_spaces(tokens[0][2:-2]))
 
-#p = PropertyParser()
-#print "out: ", p.input("F [dot] < marking( place52 ) \\/ G card( marking( 'long place name' )) + 1 + 1 + 1 <= 5 U bound( p3 ) <= 4")
-#f = "G bound( place2 ) <= 1 \\/ G ( card(marking('long place name')) = card(marking(shortname)) => [1,1,1] <= marking(place3) )"
-#formula = p.input(f)
-#print formula
+# p = PropertyParser()
+# print "out: ", p.input("F [dot] < marking( place52 ) \\/ G card( marking( 'long place name' )) + 1 + 1 + 1 <= 5 U bound( p3 ) <= 4")
+# f = "G bound( place2 ) <= 1 \\/ G ( card(marking('long place name')) = card(marking(shortname)) => [1,1,1] <= marking(place3) )"
+# formula = p.input(f)
+# print formula
 #
-#print ast.dump(formula)
+# print ast.dump(formula)
 
 if __name__ == "__main__":
     import doctest

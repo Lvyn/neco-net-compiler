@@ -1,4 +1,5 @@
 cdef extern from "ctypes.h":
+        void __Pyx_INCREF(object o)
         cdef cppclass TGenericPlaceType[T]:
                 TGenericPlaceType()
                 TGenericPlaceType(TGenericPlaceType[T]&)
@@ -50,6 +51,11 @@ cdef extern from "ctypes.h":
                 int hash()
                 int compare(TGeneratorPlaceType[PidType, CounterType]&)
 
+        cdef cppclass neco_list_t:
+                neco_list_t()
+                void push_back(void*)
+                int size()
+
     # ctypedef struct neco_list_node_t:
     #     pass
 
@@ -61,7 +67,7 @@ cdef extern from "ctypes.h":
     # void neco_list_delete(neco_list_t* list, deletion_callback del)
     # neco_list_node_t* neco_list_first(neco_list_t* list)
     # neco_list_node_t* neco_list_node_next(neco_list_node_t* node)
-#void __Pyx_INCREF(object o)
+
 
 cdef class MultiSet:
         cdef dict _data

@@ -80,12 +80,21 @@ def compile_IR(env, config):
     include_pyx = open(path , "r")
 
     for line in include_pyx:
+        if line[-1] == '\n':
+            line = line[:-1]
         module_pyx_file.declarations.append(line)
 
     ################################################################################
-    # handle pxd file declarations
+    # inline hand written code into pxd
     ################################################################################
-    module_pxd_file.declarations.append("cimport neco.ctypes.ctypes_ext as ctypes_ext\n")
+
+    path = search_file("include.pxd", search_paths)
+    include_pyx = open(path , "r")
+
+    for line in include_pyx:
+        if line[-1] == '\n':
+            line = line[:-1]
+        module_pxd_file.declarations.append(line)
 
     ################################################################################
     # populate bodies

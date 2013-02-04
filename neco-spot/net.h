@@ -1,7 +1,35 @@
 #ifndef __PYX_HAVE__net
 #define __PYX_HAVE__net
 
+struct NecoCtx;
 struct Marking;
+
+/* "net.pxd":3
+ * cimport neco.ctypes.ctypes_ext as ctypes_ext
+ * 
+ * cdef public class NecoCtx(object)[object NecoCtx, type NecoCtxType]:             # <<<<<<<<<<<<<<
+ *     cdef set state_space
+ *     cdef set pid_free_hash
+ */
+struct NecoCtx {
+  PyObject_HEAD
+  PyObject *state_space;
+  PyObject *pid_free_hash;
+  PyObject *remaining;
+};
+
+/* "net.pxd":9
+ * 
+ * 
+ * cdef public class Marking(object)[object Marking, type MarkingType]:             # <<<<<<<<<<<<<<
+ *     cdef unsigned char _n1__packed[1]
+ * 
+ */
+struct Marking {
+  PyObject_HEAD
+  struct __pyx_vtabstruct_3net_Marking *__pyx_vtab;
+  unsigned char _n1__packed[1];
+};
 
 #ifndef __PYX_HAVE_API__net
 
@@ -13,15 +41,21 @@ struct Marking;
   #endif
 #endif
 
+__PYX_EXTERN_C DL_IMPORT(PyTypeObject) NecoCtxType;
 __PYX_EXTERN_C DL_IMPORT(PyTypeObject) MarkingType;
 
-__PYX_EXTERN_C DL_IMPORT(int) neco_marking_hash(struct Marking *);
+__PYX_EXTERN_C DL_IMPORT(struct NecoCtx) *neco_ctx(struct Marking *);
+__PYX_EXTERN_C DL_IMPORT(neco_list_t) *neco_succs(struct Marking *, struct NecoCtx *);
+__PYX_EXTERN_C DL_IMPORT(char) *neco_marking_dump(struct Marking *);
 __PYX_EXTERN_C DL_IMPORT(struct Marking) *neco_marking_copy(struct Marking *);
 __PYX_EXTERN_C DL_IMPORT(int) neco_marking_compare(struct Marking *, struct Marking *);
-__PYX_EXTERN_C DL_IMPORT(char) *neco_marking_dump(struct Marking *);
+__PYX_EXTERN_C DL_IMPORT(int) neco_marking_hash(struct Marking *);
+__PYX_EXTERN_C DL_IMPORT(PyObject) *succs_0(struct Marking *, PyObject *, struct NecoCtx *, int __pyx_skip_dispatch);
+__PYX_EXTERN_C DL_IMPORT(PyObject) *succs_1(struct Marking *, PyObject *, struct NecoCtx *, int __pyx_skip_dispatch);
+__PYX_EXTERN_C DL_IMPORT(PyObject) *succs_2(struct Marking *, PyObject *, struct NecoCtx *, int __pyx_skip_dispatch);
+__PYX_EXTERN_C DL_IMPORT(PyObject) *succs_3(struct Marking *, PyObject *, struct NecoCtx *, int __pyx_skip_dispatch);
+__PYX_EXTERN_C DL_IMPORT(PyObject) *succs(struct Marking *, struct NecoCtx *);
 __PYX_EXTERN_C DL_IMPORT(struct Marking) *neco_init(void);
-__PYX_EXTERN_C DL_IMPORT(PyObject) *succs(struct Marking *);
-__PYX_EXTERN_C DL_IMPORT(neco_list_t) *neco_succs(struct Marking *);
 
 #endif /* !__PYX_HAVE_API__net */
 

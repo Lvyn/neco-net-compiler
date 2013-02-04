@@ -5,7 +5,7 @@ from distutils.extension import Extension
 from neco.asdl.properties import Sum
 from neco.core.info import VariableProvider, TypeInfo
 from priv import common, cyast
-from snakes.nets import WordSet
+from snakes.nets import WordSet, dot
 import neco.core as core
 import neco.core.info as info
 import netir
@@ -176,8 +176,8 @@ class IsFireableGenerator(core.SuccTGenerator):
         self.transition = transition
         self.function_name = function_name
         self.marking_type = checker_env.marking_type
-        config = self.marking_type.config
-        self.ignore_flow = config.optimize_flow
+        self.config = checker_env.config
+        self.ignore_flow = self.config.optimize_flow
         self.env = checker_env
 
         # this helper will create new variables and take care of shared instances
@@ -185,11 +185,11 @@ class IsFireableGenerator(core.SuccTGenerator):
                                            WordSet(transition.variables().keys()))
         self.variable_helper = helper
 
-        if config.optimize:
+        if self.config.optimize:
             self.transition.order_inputs()
 
         # function arguments
-        self.arg_marking_var = helper.new_variable(type_info = self.marking_type.type)
+        self.arg_marking_var = helper.new_variable(variable_type = self.marking_type.type)
 
         # create function
         self.builder.begin_function_IsFireable(function_name = self.function_name,
@@ -226,7 +226,6 @@ def build_multiset(elements):
     l = defaultdict(zero)
     for e in elements:
             l[eval(e)] += 1
-
     return cyast.E("ctypes_ext.MultiSet({!r})".format(dict(l)))
 
 def multiset_expr_from_place_name(checker_env, marking_var, place_name):
@@ -332,7 +331,7 @@ def gen_check_function(checker_env, identifier, atom):
     checker_env.push_variable_provider(variable_provider)
 
     builder = cyast.Builder()
-    marking_var = variable_provider.new_variable(type = marking_type.type)
+    marking_var = variable_provider.new_variable(variable_type = marking_type.type)
 
     function_name = "check_{}".format(identifier)
     builder.begin_FunctionCDef(name = function_name,
@@ -362,8 +361,8 @@ def gen_main_check_function(checker_env, id_prop_map):
     checker_env.push_cvar_env()
     checker_env.push_variable_provider(variable_provider)
 
-    marking_var = variable_provider.new_variable(type = checker_env.marking_type.type)
-    atom_var = variable_provider.new_variable(type = TypeInfo.get('Int'))
+    marking_var = variable_provider.new_variable(variable_type = checker_env.marking_type.type)
+    atom_var = variable_provider.new_variable(variable_type = TypeInfo.get('Int'))
 
     builder.begin_FunctionCDef(name = function_name,
                                args = (cyast.A(marking_var.name, type = checker_env.type2str(marking_var.type))
@@ -444,13 +443,13 @@ def produce_and_compile_pyx(checker_env, id_prop_map):
     TypeInfo.register_type('Marking')
 
 #    functions = []
-#    for identifier, prop in id_prop_map.iteritems():
-#        gen_check_function(checker_env, identifier, prop) # updates env
-#
-#    gen_main_check_function(checker_env, id_prop_map) # updates env
-#
-#    checker_module = cyast.Module(body=functions)
-#
+    for identifier, prop in id_prop_map.iteritems():
+        gen_check_function(checker_env, identifier, prop)    # updates env
+
+    gen_main_check_function(checker_env, id_prop_map)    # updates env
+
+#    checker_module = cyast.Module(body = functions)
+
     base_dir = "build/"
     try:
         os.mkdir(base_dir)

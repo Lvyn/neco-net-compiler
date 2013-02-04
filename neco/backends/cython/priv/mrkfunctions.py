@@ -6,17 +6,17 @@ def _gen_C_compare_aux(builder, tests):
     while tests:
         test = tests.pop()
         # l - r == 0 ?:
-        builder.emit(cyast.Assign(targets=[cyast.Name("tmp")],
-                                  value=test))
-        builder.begin_If(cyast.Compare(left=cyast.Name("tmp"),
-                                       ops=[cyast.Lt()],
-                                       comparators=[cyast.Num(0)])
+        builder.emit(cyast.Assign(targets = [cyast.Name("tmp")],
+                                  value = test))
+        builder.begin_If(cyast.Compare(left = cyast.Name("tmp"),
+                                       ops = [cyast.Lt()],
+                                       comparators = [cyast.Num(0)])
                          )
         builder.emit_Return(cyast.Num(-1))
         # l - r < 0 ?:
-        builder.begin_Elif(cyast.Compare(left=cyast.Name("tmp"),
-                                         ops=[cyast.Gt()],
-                                         comparators=[cyast.Num(0)])
+        builder.begin_Elif(cyast.Compare(left = cyast.Name("tmp"),
+                                         ops = [cyast.Gt()],
+                                         comparators = [cyast.Num(0)])
                            )
         builder.emit_Return(cyast.Num(1))
         builder.end_If()
@@ -30,15 +30,15 @@ class CompareGenerator(MarkingTypeMethodGenerator):
 
         vp = VariableProvider()
         builder = cyast.Builder()
-        left_marking_var  = vp.new_variable(marking_type.type, "self")
+        left_marking_var = vp.new_variable(marking_type.type, "self")
         right_marking_var = vp.new_variable(marking_type.type, "other")
 
-        builder.begin_FunctionCDef( name = "neco_marking_compare",
+        builder.begin_FunctionCDef(name = "neco_marking_compare",
                                     args = (cyast.A("self", type = env.type2str(marking_type.type))
                                             .param(right_marking_var.name, type = env.type2str(marking_type.type))),
                                     returns = cyast.E("int"),
-                                    public=True, api=True,
-                                    decl = [ cyast.Builder.CVar( name = 'tmp', type = env.type2str(TypeInfo.get('Int'))) ] )
+                                    public = True, api = True,
+                                    decl = [ cyast.Builder.CVar(name = 'tmp', type = env.type2str(TypeInfo.get('Int'))) ])
 
         compared = set()
         tests = []
@@ -46,22 +46,22 @@ class CompareGenerator(MarkingTypeMethodGenerator):
             attr, _, count = marking_type.chunk_manager.packed_attribute()
             compared.add(attr)
             for index in range(0, count):
-                left = cyast.E("{object}.{attribute}[{index}]".format(object=left_marking_var.name,
-                                                                      attribute=attr,
-                                                                      index=index)) 
-                right = cyast.E("{object}.{attribute}[{index}]".format(object=right_marking_var.name,
-                                                                       attribute=attr,
-                                                                       index=index))
-                tests.append(cyast.BinOp(left=left,
-                                         op=cyast.Sub(),
-                                         right=right))
+                left = cyast.E("{object}.{attribute}[{index}]".format(object = left_marking_var.name,
+                                                                      attribute = attr,
+                                                                      index = index))
+                right = cyast.E("{object}.{attribute}[{index}]".format(object = right_marking_var.name,
+                                                                       attribute = attr,
+                                                                       index = index))
+                tests.append(cyast.BinOp(left = left,
+                                         op = cyast.Sub(),
+                                         right = right))
 
         for place_type in marking_type.place_types.itervalues():
             if place_type.get_attribute_name() in compared:
                 continue
             tests.append(place_type.compare_expr(env,
-                                                 left_marking_var=left_marking_var,
-                                                 right_marking_var=right_marking_var)
+                                                 left_marking_var = left_marking_var,
+                                                 right_marking_var = right_marking_var)
                          )
 
         tests.reverse()
@@ -70,7 +70,7 @@ class CompareGenerator(MarkingTypeMethodGenerator):
         return cyast.to_ast(builder)
 
 #
-#def _gen_C_marked_aux(self, builder, tests, rs):
+# def _gen_C_marked_aux(self, builder, tests, rs):
 #    try:
 #        test = tests.pop()
 #        r = rs.pop()
@@ -84,8 +84,8 @@ class CompareGenerator(MarkingTypeMethodGenerator):
 #    except IndexError:
 #        builder.emit_Return(cyast.Num(0))
 #
-#class MarkedGenerator(MarkingTypeMethodGenerator):
-#    
+# class MarkedGenerator(MarkingTypeMethodGenerator):
+#
 #    def generate(self, env):
 #        marking_type = env.marking_type
 #
@@ -118,11 +118,11 @@ class DumpGenerator(MarkingTypeMethodGenerator):
     def generate(self, env):
         builder = cyast.Builder()
         builder.begin_FunctionCDef(name = "neco_marking_dump",
-                                   args = cyast.A("self", type="Marking"),
+                                   args = cyast.A("self", type = "Marking"),
                                    returns = cyast.Name("char*"),
-                                   decl = [ cyast.Builder.CVar( "c_string", type = "char*" ) ],
-                                   public=True, api=True)
-        builder.emit(cyast.E("py_unicode_string = str(self)"))
+                                   decl = [ cyast.Builder.CVar("c_string", type = "char*") ],
+                                   public = True, api = True)
+        builder.emit(cyast.E("py_unicode_string = self.__dump__()"))
         builder.emit(cyast.E("py_byte_string = py_unicode_string.encode('UTF-8')"))
         builder.emit(cyast.E("c_string = py_byte_string"))
         builder.emit_Return(cyast.E("c_string"))
@@ -130,25 +130,25 @@ class DumpGenerator(MarkingTypeMethodGenerator):
         return cyast.to_ast(builder)
 
 class HashGenerator(MarkingTypeMethodGenerator):
-    
+
     def generate(self, env):
         builder = cyast.Builder()
-        builder.begin_FunctionCDef( name = "neco_marking_hash",
+        builder.begin_FunctionCDef(name = "neco_marking_hash",
                                     args = cyast.A("self", type = "Marking"),
                                     returns = cyast.E("int"),
-                                    public=True, api=True)
+                                    public = True, api = True)
         builder.emit_Return(cyast.E('self.__hash__()'))
         builder.end_FunctionDef()
         return cyast.to_ast(builder)
 
 class CopyGenerator(MarkingTypeMethodGenerator):
-    
+
     def generate(self, env):
         builder = cyast.Builder()
-        builder.begin_FunctionCDef( name = "neco_marking_copy",
+        builder.begin_FunctionCDef(name = "neco_marking_copy",
                                     args = cyast.A("self", type = "Marking"),
                                     returns = cyast.E("Marking"),
-                                    public=True, api=True)
+                                    public = True, api = True)
         builder.emit_Return(cyast.E('self.copy()'))
         builder.end_FunctionDef()
         return cyast.to_ast(builder)

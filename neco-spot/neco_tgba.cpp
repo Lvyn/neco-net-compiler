@@ -80,8 +80,8 @@ namespace neco {
     //////////////////////////////////////////////////
 
     spot::state* tgba::get_init_state() const {
-	const struct Marking* m = Model::instance().initial_marking();
-	return new neco::state(m);
+        const struct Marking* m = Model::instance().initial_marking();
+        return new neco::state(m);
     }
 
     //////////////////////////////////////////////////
@@ -90,11 +90,13 @@ namespace neco {
                                               const spot::state*,
                                               const spot::tgba*) const
     {
+        static struct NecoCtx null_ctx;
+
         const neco::state* st = dynamic_cast<const neco::state*>(local_state);
         assert(st);
         bdd cond = state_condition(st);
 
-        neco_list_t* list = Model::instance().succs(st->get_marking());
+        neco_list_t* list = Model::instance().succs(st->get_marking(), &null_ctx);
         if (list->size() == 0) {
             cond &= m_dead_prop;
             // Add a self-loop.

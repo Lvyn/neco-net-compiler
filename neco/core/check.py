@@ -84,8 +84,14 @@ class CheckerCompiler(object):
 
         # write formula to file
         formula_file = open('neco_formula', 'w')
+        args = []
         if has_deadlocks(formula):
-            formula_file.write("#-d DEAD\n")
+            args.append("-d DEAD")
+        for arg in config.ns_args:
+            args.append(arg)
+        if args:
+            formula_file.write("# " + " ".join(args) + "\n")
+
         formula_file.write(spot_str)
         formula_file.write("\n")
         formula_file.close()

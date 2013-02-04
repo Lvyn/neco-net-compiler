@@ -27,7 +27,9 @@ public:
                                 ~Model();
 
 	const struct Marking*       initial_marking() const;
-	neco_list_t*                succs(const struct Marking* m) const;
+    struct NecoCtx*             initial_ctx() const;
+
+	neco_list_t*                succs(const struct Marking* m, struct NecoCtx* ctx) const;
 
 	int                         marking_hash(const struct Marking* m) const;
 	int                         marking_compare(const struct Marking* m1, const struct Marking* m2) const;

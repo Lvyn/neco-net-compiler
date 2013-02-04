@@ -3,6 +3,15 @@ import pprint
 import sys
 import pdb
 
+class NecoCtx(object):
+    __slots__ = ('state_space', 'pid_free_hash', 'remaining')
+
+    def __init__(self):
+        self.state_space = set()
+        self.pid_free_hash = set()
+        self.remaining = set()
+
+
 perm_log = open('perm_log', 'w')
 calls = 0
 def full_normalize_marking(marking, hash_set, current_set, todo_set, state_space):
@@ -33,7 +42,7 @@ def full_normalize_marking(marking, hash_set, current_set, todo_set, state_space
 #    calls += 1
 #    print calls
     for tree in iter_trees:
-        c+=1
+        c += 1
         perm_log.write("*")
         # print "tree ", c
         # tree.print_structure()
@@ -47,7 +56,7 @@ def full_normalize_marking(marking, hash_set, current_set, todo_set, state_space
             return tmp
         if tmp in todo_set:
             return tmp
-        
+
     perm_log.write("{}%".format(c))
 
     return default_marking
@@ -61,23 +70,28 @@ def normalize_marking(marking, current_set, state_space, hash_set, todo_set):
     return marking
 
 def state_space():
-    done = set()
-    todo = set([init()])
+    ctx = NecoCtx()
     succ = set()
     succs2 = set()
     count = 0
     start = time()
     last_time = start
 
+    done = set()
+    todo = set([init()])
     hash_set = set()
+
+    ctx.state_space = done
+    ctx.remaining = todo
+    ctx.pid_free_hash = hash_set
 
     try:
         while True:
             m = todo.pop()
-            count+=1
+            count += 1
 
             done.add(m)
-            succ = succs(m, done, hash_set, todo)
+            succ = succs(m, ctx)
             succs2 = succ.difference(done)
             todo.update(succs2)
             succ.clear()
@@ -88,7 +102,7 @@ def state_space():
                 sys.stdout.write('\r{}st {:5.3f}s (global {:5.0f}st/s, since last log {:5.0f}st/s)'.format(count,
                                                                                                            elapsed_time,
                                                                                                            count / elapsed_time,
-                                                                                                           100/(new_time-last_time)))
+                                                                                                           100 / (new_time - last_time)))
                 sys.stdout.flush()
                 last_time = new_time
 
@@ -99,7 +113,8 @@ def state_space():
 
 
 def state_space_graph():
-    visited = set()
+    ctx = NecoCtx()
+    done = set()
     count = 0
     next = 1
     graph = {}
@@ -107,23 +122,27 @@ def state_space_graph():
     succ_list = []
     start = time()
     last_time = start
-    hash_set = set()
 
     m = init()
 
-    visit = set([m])
+    todo = set([m])
     mrk_id_map[m] = next
     next += 1
+
+    hash_set = set()
+    ctx.state_space = done
+    ctx.remaining = todo
+    ctx.pid_free_hash = hash_set
 
     try:
         while True:
             count += 1
-            m = visit.pop()
-            visited.add(m)
+            m = todo.pop()
+            done.add(m)
 
             # new marking, get the id
             current_node_id = mrk_id_map[m]
-            succ = succs(m, visited, hash_set, visit)
+            succ = succs(m, ctx)
             succ_list = []
 
             for s_mrk in succ:
@@ -138,14 +157,14 @@ def state_space_graph():
 
             graph[current_node_id] = succ_list
 
-            visit.update(succ.difference(visited))
+            todo.update(succ.difference(done))
             if (count % 250 == 0):
                 new_time = time()
                 elapsed_time = new_time - start
                 sys.stdout.write('\r{}st {:5.3f}s (global {:5.0f}st/s, since last log {:5.0f}st/s)'.format(count,
                                                                                                             elapsed_time,
                                                                                                             count / elapsed_time,
-                                                                                                            250 / (new_time-last_time)))
+                                                                                                            250 / (new_time - last_time)))
                 sys.stdout.flush()
                 last_time = new_time
     except KeyError:

@@ -112,6 +112,8 @@ class CompilingEnvironment(core.CompilingEnvironment):
         self.register_cython_type(TypeInfo.get('UnsignedInt'), 'unsigned int')
         self.register_cython_type(TypeInfo.get('set'), 'set')
         self.register_cython_type(TypeInfo.get('dict'), 'dict')
+        self.register_cython_type(TypeInfo.get('NecoCtx'), 'NecoCtx')
+
         if marking_type.config.normalize_pids:
             self.register_cython_type(TypeInfo.get('Pid'), from_neco_lib('Pid'))
         else:

@@ -1,17 +1,38 @@
 import sys
 from time import time
 
+cdef class NecoCtx:
+    def __cinit__(self):
+        self.state_space = set()
+        self.pid_free_hash = set()
+        self.remaining = set() 
+
+cdef public api NecoCtx neco_ctx(Marking mrk):
+    cdef NecoCtx ctx = NecoCtx()
+    ctx.remaining = set([mrk])
+    return ctx
+
 cpdef dump(object obj):
     if hasattr(obj, '__dump__'):
         return obj.__dump__()
     else:
         return repr(obj)
+    
+cdef public api ctypes_ext.neco_list_t* neco_succs(Marking m, NecoCtx ctx):
+    cdef ctypes_ext.neco_list_t* l = new ctypes_ext.neco_list_t()
+    cdef Marking e
+
+    for e in succs(m, ctx):
+        ctypes_ext.__Pyx_INCREF(e)
+        l.push_back( <void*>e )
+    return l
 
 cpdef state_space():
     cdef set visited
     cdef set visit
     cdef set succ
     cdef int count
+    cdef NecoCtx ctx = NecoCtx()
     #cdef int last_count = 0
     start = time()
     last_time = start
@@ -25,7 +46,7 @@ cpdef state_space():
             count += 1
             m = visit.pop()
             visited.add(m)
-            succ = succs(m, None, None, None)
+            succ = succs(m, ctx)
             visit.update(succ.difference(visited))
             if (count % 250 == 0):
                 new_time = time()
@@ -43,6 +64,7 @@ cpdef state_space():
 
 cpdef state_space_graph():
     """ State space exploration function with on the fly marking dump. """
+    cdef NecoCtx ctx = NecoCtx() 
     cdef set visit
     cdef set visited = set()
     cdef set succ
@@ -69,7 +91,7 @@ cpdef state_space_graph():
 
             # new marking, get the id
             current_node_id = mrk_id_map[m]
-            succ = succs(m, None, None, None)
+            succ = succs(m, ctx)
             succ_list = []
 
             for s_mrk in succ:
@@ -98,4 +120,3 @@ cpdef state_space_graph():
         print
         return graph, mrk_id_map
     return graph, mrk_id_map
-

@@ -41,7 +41,7 @@ namespace neco {
 
     bool succ_iterator::done() const
     {
-        return m_node_index < m_list->size();
+        return m_node_index >= m_list->size();
     }
 
     //////////////////////////////////////////////////
@@ -49,6 +49,7 @@ namespace neco {
     spot::state* succ_iterator::current_state() const
     {
         void* elt = (*m_list)[m_node_index];
+        //std::cout << "dump " << Model::instance().marking_dump(static_cast<struct Marking*>(elt)) << std::endl;
         neco::state* st = new neco::state( static_cast<struct Marking*>(elt) );
         return st;
     }

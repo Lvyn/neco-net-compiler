@@ -20,6 +20,7 @@ import cPickle as pickle
 
 from neco import compile_checker
 import core.xmlproperties
+import compilecli
 
 def exclusive(elts, acc = False):
     try:
@@ -52,21 +53,23 @@ class Main(object):
 
         parser.add_argument('--trace', '-t', default = 'trace', dest = 'trace', metavar = 'TRACEFILE', type = str,
                             help = 'compilation trace file')
-
         parser.add_argument('--profile', '-p', default = 'profile', dest = 'profile', action = 'store_true',
                             help = 'enable profiling.')
-
         parser.add_argument('--include', '-I', default = ['.'], dest = 'includes', action = 'append', metavar = 'PATH',
-                            help = 'additionnal search paths (libs, files).')
-
-        parser.add_argument('--formula', metavar = formula_meta, type = str, help = 'formula', default = "false")
-
-        parser.add_argument('--xml', metavar = xml_formula_meta, default = None, dest = 'xml', type = str, help = 'xml formula file')
+                            help = 'additional search paths (libs, files).')
+        parser.add_argument('--formula', metavar = formula_meta, type = str, default = "false",
+                            help = 'formula to check')
+        parser.add_argument('--xml', metavar = xml_formula_meta, default = None, dest = 'xml', type = str,
+                            help = 'xml formula file')
+        parser.add_argument('--neco-spot-args', '-ns', dest = 'ns_args', action = 'append', metavar = 'ARG', default = [],
+                            help = 'additional arguments for neco-spot')
 
         if cli_args:
             args = parser.parse_args(cli_args)
         else:
             args = parser.parse_args()
+
+        print ">>>> ", args.ns_args
 
 
         trace_file = args.trace
@@ -96,10 +99,8 @@ class Main(object):
 
         net = None
         if pnml:
-            import compilecli
             net = compilecli.load_pnml_file(pnml)
         elif model:
-            import compilecli
             net = compilecli.load_snakes_net(model, 'net')
         assert(net)
 
@@ -132,7 +133,8 @@ class Main(object):
                            formula = formula,
                            trace_calls = False,
                            search_paths = args.includes,
-                           trace_file = trace_file)
+                           trace_file = trace_file,
+                           ns_args = args.ns_args)
 
         compile_checker(formula, net, config)
 

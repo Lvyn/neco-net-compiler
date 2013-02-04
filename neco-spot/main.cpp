@@ -1,5 +1,6 @@
 #include <Python.h>
 #include <ctime>
+#include <fstream>
 
 #include "ctypes.h"
 #include "neco_tgba.h"
@@ -30,6 +31,16 @@
 
 namespace po = boost::program_options;
 
+
+void readline(std::string* dst, std::ifstream& stream) {
+    char buf[1024];
+    do {
+        stream.clear();
+        stream.getline(buf, 1024);
+        *dst += buf;
+    } while( stream.fail() && !stream.eof() );
+}
+
 int
 main(int argc, char **argv)
 {
@@ -53,10 +64,11 @@ main(int argc, char **argv)
 
   po::options_description hidden;
   hidden.add_options()
-      ("formula", po::value<std::string>(&formula), "LTL formula to check")
+      // ("formula", po::value<std::string>(&formula), "LTL formula to check")
+      ("formula", po::value<std::string>(&formula), "one line file conaining a LTL formula to check")
   ;
 
-  po::options_description visible((boost::format("%s [OPTION]... FORMULA\nOptions") % argv[0]).str());
+  po::options_description visible((boost::format("%s [OPTION]... FORMULAFILE\nOptions") % argv[0]).str());
   visible.add_options()
       ("help,h", "produce help message")
       ("counterexample,C", "compute an accepting run (Counterexample) if it exists")
@@ -86,6 +98,35 @@ main(int argc, char **argv)
       std::cout << visible << std::endl;
       return 1;
   }
+
+  {
+      std::ifstream ifile(formula.c_str(), std::ifstream::in);
+      if (!ifile.good()) {
+          std::cerr << "unable to open formula file" << std::endl;
+          exit(1);
+      }
+
+      formula = "";
+      bool formula_found = false;
+      while (!formula_found && !ifile.eof()) {
+          readline(&formula, ifile);
+
+          if (formula[0] == '#' || formula == "") {
+              formula = "";
+              continue;
+          } else {
+              formula_found = true;
+          }
+      }
+      ifile.close();
+  }
+
+  if (formula == "") {
+      std::cout << visible << std::endl;
+      return 1;
+  }
+
+  std::cout << "Formula: " << formula << std::endl;
 
   if (vm.count("counterexample")) {
       accepting_run = true;
@@ -276,84 +317,84 @@ main(int argc, char **argv)
       bool search_many = echeck_inst->options().get("repeated");
       assert(ec);
       do {
-	  int memused = spot::memusage();
-	  tm.start("running emptiness check");
-	  spot::emptiness_check_result* res;
-	  try {
-	      res = ec->check();
-	  }
-	  catch (std::bad_alloc) {
-	      std::cerr << "Out of memory during emptiness check."
-			<< std::endl;
-	      exit_code = 2;
-	      exit(exit_code);
-	  }
-	  tm.stop("running emptiness check");
+          int memused = spot::memusage();
+          tm.start("running emptiness check");
+          spot::emptiness_check_result* res;
+          try {
+              res = ec->check();
+          }
+          catch (std::bad_alloc) {
+              std::cerr << "Out of memory during emptiness check."
+                        << std::endl;
+              exit_code = 2;
+              exit(exit_code);
+          }
+          tm.stop("running emptiness check");
 
-	  memused = spot::memusage() - memused;
+          memused = spot::memusage() - memused;
 
-	  if (output != DotCounterExample) {
-	      ec->print_stats(std::cout);
-	      std::cout << memused << " pages allocated for emptiness check"
-			<< std::endl;
-	  }
+          if (output != DotCounterExample) {
+              ec->print_stats(std::cout);
+              std::cout << memused << " pages allocated for emptiness check"
+                        << std::endl;
+          }
 
-	  if (expect_counter_example == !res &&
-	      (!expect_counter_example || ec->safe()))
-	      exit_code = 1;
+          if (expect_counter_example == !res &&
+              (!expect_counter_example || ec->safe()))
+              exit_code = 1;
 
-	  if (!res) {
-	      std::cout << "no counterexample found";
-	      if (!ec->safe() && expect_counter_example) {
-		  std::cout << " even if expected" << std::endl;
-		  std::cout << "this may be due to the use of the bit"
-			    << " state hashing technique" << std::endl;
-		  std::cout << "you can try to increase the heap size "
-			    << "or use an explicit storage"
-			    << std::endl;
+          if (!res) {
+              std::cout << "no counterexample found";
+              if (!ec->safe() && expect_counter_example) {
+                  std::cout << " even if expected" << std::endl;
+                  std::cout << "this may be due to the use of the bit"
+                            << " state hashing technique" << std::endl;
+                  std::cout << "you can try to increase the heap size "
+                            << "or use an explicit storage"
+                            << std::endl;
+              }
+              std::cout << std::endl;
+              break;
+          }
+          else if (accepting_run) {
+              spot::tgba_run* run;
+              tm.start("computing accepting run");
+              try {
+                  run = res->accepting_run();
+              } catch (std::bad_alloc) {
+                  std::cerr << "Out of memory while looking for counterexample."
+                            << std::endl;
+                  exit_code = 2;
+                  exit(exit_code);
 	      }
-	      std::cout << std::endl;
-	      break;
-	  }
-	  else if (accepting_run) {
-	      spot::tgba_run* run;
-	      tm.start("computing accepting run");
-	      try {
-		  run = res->accepting_run();
-	      } catch (std::bad_alloc) {
-		  std::cerr << "Out of memory while looking for counterexample."
-			    << std::endl;
-		  exit_code = 2;
-		  exit(exit_code);
-	      }
-	      tm.stop("computing accepting run");
+              tm.stop("computing accepting run");
 
-	      if (!run) {
-		  std::cout << "a counterexample exists" << std::endl;
-	      } else {
-		  tm.start("reducing accepting run");
-		  spot::tgba_run* redrun =
-		      spot::reduce_run(res->automaton(), run);
-		  tm.stop("reducing accepting run");
-		  delete run;
-		  run = redrun;
+              if (!run) {
+                  std::cout << "a counterexample exists" << std::endl;
+              } else {
+                  tm.start("reducing accepting run");
+                  spot::tgba_run* redrun =
+                      spot::reduce_run(res->automaton(), run);
+                  tm.stop("reducing accepting run");
+                  delete run;
+                  run = redrun;
 
-		  tm.start("printing accepting run");
-		  if (output == DotCounterExample) {
-		      spot::tgba_run_dotty_decorator deco(run);
-		      spot::dotty_reachable(std::cout, res->automaton(),
-					    false, &deco);
-		  } else
-		      spot::print_tgba_run(std::cout, product, run);
-		  tm.stop("printing accepting run");
+                  tm.start("printing accepting run");
+                  if (output == DotCounterExample) {
+                      spot::tgba_run_dotty_decorator deco(run);
+                      spot::dotty_reachable(std::cout, res->automaton(),
+                                            false, &deco);
+                  } else
+                      spot::print_tgba_run(std::cout, product, run);
+                  tm.stop("printing accepting run");
 	      }
-	      delete run;
-	  }
-	  else {
-	      std::cout << "a counterexample exists "
-			<< "(use -C to print it)" << std::endl;
-	  }
-	  delete res;
+              delete run;
+          }
+          else {
+              std::cout << "a counterexample exists "
+                        << "(use -C to print it)" << std::endl;
+          }
+          delete res;
       }
       while (search_many);
       delete ec;

@@ -20,16 +20,16 @@ class CompilingEnvironment(object):
     def __init__(self, config, net_info):
         """ Build a new compiling environment.
         """
-        self.config     = config
-        self.net_info   = net_info
-        
+        self.config = config
+        self.net_info = net_info
+
         self.successor_function_nodes = []
         self.process_successor_function_nodes = []
         self.main_successor_function_node = None
         self.init_function_node = None
         self.global_names = WordSet([])
         self.successor_functions = []
-        
+
         self._succ_function_names = {}
         self._process_succ_function_names = set()
 
@@ -39,7 +39,7 @@ class CompilingEnvironment(object):
         for node in self.process_successor_function_nodes:
             yield node
         yield self.main_successor_function_node
-        yield self.init_function_node    
+        yield self.init_function_node
 
     @property
     def succ_functions(self):
@@ -95,84 +95,74 @@ class ProcessSuccGenerator(object):
         @param marking_type: used marking type_info
         """
         self.env = env
-        self.config   = env.config
+        self.config = env.config
         self.net_info = env.net_info
-        self.process_info  = process_info
+        self.process_info = process_info
         self.function_name = function_name
-        self.marking_type  = marking_type
-        
-        variable_provider  = VariableProvider(set([function_name]))
+        self.marking_type = marking_type
+
+        variable_provider = VariableProvider(set([function_name]))
         self.variable_provider = variable_provider
-        self.flow_variable     = variable_provider.new_variable(variable_type = TypeInfo.Int)
-        
+        self.flow_variable = variable_provider.new_variable(variable_type = TypeInfo.Int)
+
         self.builder = netir.Builder()
 
-        self.arg_marking_var     = variable_provider.new_variable(variable_type = marking_type.type)
+        self.arg_marking_var = variable_provider.new_variable(variable_type = marking_type.type)
         self.arg_marking_acc_var = variable_provider.new_variable(variable_type = marking_type.container_type)
-
-        self.arg_pidfree_hash_set_var = variable_provider.new_variable(variable_type = marking_type.container_type)
-        self.arg_remaining_set_var = variable_provider.new_variable(variable_type = marking_type.container_type)
-        self.arg_state_space_var = variable_provider.new_variable(variable_type = marking_type.container_type)
+        self.arg_ctx_var = variable_provider.new_variable(variable_type = TypeInfo.get('NecoCtx'))
 
         env.register_process_succ_function(function_name)
 
     def __call__(self):
         """ Generate function.
         """
-        env                      = self.env
-        function_name            = self.function_name
-        arg_marking_var          = self.arg_marking_var
-        arg_marking_acc_var      = self.arg_marking_acc_var
-        process_info             = self.process_info
-        arg_pidfree_hash_set_var = self.arg_pidfree_hash_set_var
-        arg_remaining_set_var    = self.arg_remaining_set_var
-        arg_state_space_var      = self.arg_state_space_var
-        
+        env = self.env
+        function_name = self.function_name
+        arg_marking_var = self.arg_marking_var
+        arg_marking_acc_var = self.arg_marking_acc_var
+        process_info = self.process_info
+        arg_ctx_var = self.arg_ctx_var
 
         if not self.env.config.optimize_flow:
             return
 
         builder = self.builder
 
-        builder.begin_function_SuccP( function_name            = function_name,
-                                      arg_marking_var          = arg_marking_var,
-                                      arg_marking_acc_var      = arg_marking_acc_var,
-                                      arg_state_space_var      = arg_state_space_var,
-                                      arg_pidfree_hash_set_var = arg_pidfree_hash_set_var,
-                                      arg_remaining_set_var    = arg_remaining_set_var,
-                                      process_info             = process_info,
-                                      flow_variable            = self.flow_variable,
-                                      variable_provider        = self.variable_provider )
+        builder.begin_function_SuccP(function_name = function_name,
+                                      arg_marking_var = arg_marking_var,
+                                      arg_marking_acc_var = arg_marking_acc_var,
+                                      arg_ctx_var = arg_ctx_var,
+                                      process_info = process_info,
+                                      flow_variable = self.flow_variable,
+                                      variable_provider = self.variable_provider)
 
         # enumerate places with not empty post
-        ne_post = filter( lambda place : place.post,        process_info.flow_places )
+        ne_post = filter(lambda place : place.post, process_info.flow_places)
 
         current_flow = self.flow_variable
 
-        read = builder.ReadFlow(marking_var  = arg_marking_var,
+        read = builder.ReadFlow(marking_var = arg_marking_var,
                                 process_name = process_info.name)
         builder.emit_Assign(variable = current_flow,
-                            expr     = read)
+                            expr = read)
 
         for i, flow_place in enumerate(ne_post):
             if i == 0:
-                builder.begin_If( condition = builder.FlowCheck(marking_var  = arg_marking_var,
+                builder.begin_If(condition = builder.FlowCheck(marking_var = arg_marking_var,
                                                                 current_flow = current_flow,
-                                                                place_info   = flow_place) )
+                                                                place_info = flow_place))
             else:
-                builder.begin_Elif( condition = builder.FlowCheck(marking_var  = arg_marking_var,
+                builder.begin_Elif(condition = builder.FlowCheck(marking_var = arg_marking_var,
                                                                   current_flow = current_flow,
-                                                                  place_info   = flow_place) )
+                                                                  place_info = flow_place))
 
-            #produced inside each if block:
+            # produced inside each if block:
             for transition in flow_place.post:
-                name = env.get_succ_function_name( transition )
-                builder.emit_ProcedureCall( function_name = name,
-                                            arguments = [ netir.Name( name = arg_marking_var.name ),
-                                                          netir.Name( name = arg_marking_acc_var.name ),
-                                                          netir.Name( name = arg_state_space_var.name ),
-                                                          netir.Name( name = arg_pidfree_hash_set_var.name ),
-                                                          netir.Name( name = arg_remaining_set_var.name ) ] )
+                name = env.get_succ_function_name(transition)
+                builder.emit_ProcedureCall(function_name = name,
+                                            arguments = [ netir.Name(name = arg_marking_var.name),
+                                                          netir.Name(name = arg_marking_acc_var.name),
+                                                          netir.Name(name = arg_ctx_var.name) ])
 
         builder.end_all_blocks()
         builder.end_function()
@@ -198,39 +188,35 @@ class SuccTGenerator(object):
         @param ignore_flow: ignore flow control places ?
         @type_info ignore_flow: C{bool}
         """
-        self.env      = env
-        self.config   = config
+        self.env = env
+        self.config = config
         self.net_info = net_info
-        self.builder  = builder
-        self.transition    = transition
+        self.builder = builder
+        self.transition = transition
         self.function_name = function_name
-        self.marking_type  = marking_type
+        self.marking_type = marking_type
 
         # this helper will create new variables and take care of shared instances
-        helper = SharedVariableHelper( transition.shared_input_variables(),
-                                       WordSet(transition.variables().keys()) )
+        helper = SharedVariableHelper(transition.shared_input_variables(),
+                                       WordSet(transition.variables().keys()))
         self.variable_helper = helper
 
         if self.config.optimize:
             self.transition.order_inputs()
 
         # create new variables for function arguments
-        self.arg_marking_var      = helper.new_variable(variable_type = marking_type.type)
-        self.marking_acc_var      = helper.new_variable(variable_type = marking_type.container_type)
-        self.remaining_set_var    = helper.new_variable(variable_type = marking_type.container_type)
-        self.pidfree_hash_set_var = helper.new_variable(variable_type = TypeInfo.get('set'))
-        self.arg_state_space_var  = helper.new_variable(variable_type = marking_type.container_type)
+        self.arg_marking_var = helper.new_variable(variable_type = marking_type.type)
+        self.marking_acc_var = helper.new_variable(variable_type = marking_type.container_type)
+        self.ctx_var = helper.new_variable(variable_type = TypeInfo.get('NecoCtx'))
 
         # create function
 
-        self.builder.begin_function_SuccT( function_name            = self.function_name,
-                                           arg_marking_var          = self.arg_marking_var,
-                                           arg_marking_acc_var      = self.marking_acc_var,
-                                           arg_pidfree_hash_set_var = self.pidfree_hash_set_var,
-                                           arg_remaining_set_var    = self.remaining_set_var,
-                                           arg_state_space_var      = self.arg_state_space_var,
-                                           transition_info          = self.transition,
-                                           variable_provider        = helper )
+        self.builder.begin_function_SuccT(function_name = self.function_name,
+                                           arg_marking_var = self.arg_marking_var,
+                                           arg_marking_acc_var = self.marking_acc_var,
+                                           arg_ctx_var = self.ctx_var,
+                                           transition_info = self.transition,
+                                           variable_provider = helper)
 
         # remember this succ function
         env.register_succ_function(transition, function_name)
@@ -245,7 +231,7 @@ class SuccTGenerator(object):
         @param variable: initial variable (appearing in the model)
         @type variable: C{str}
         """
-        assert( isinstance(variable, VariableInfo) )
+        assert(isinstance(variable, VariableInfo))
         if self.variable_helper.is_shared(variable):
             if self.variable_helper.all_used(variable):
                 if not self.variable_helper.unified(variable):
@@ -253,15 +239,15 @@ class SuccTGenerator(object):
                     first_local = local_variables.pop(-1)
 
                     # compare values
-                    operators   = [ netir.EQ() ] * len(local_variables)
+                    operators = [ netir.EQ() ] * len(local_variables)
                     comparators = [ netir.Name(loc_var.name) for loc_var in local_variables ]
-                    self.builder.begin_If( netir.Compare(left = netir.Name(first_local.name),
-                                                         ops  = operators,
-                                                         comparators = comparators ) )
+                    self.builder.begin_If(netir.Compare(left = netir.Name(first_local.name),
+                                                         ops = operators,
+                                                         comparators = comparators))
 
                     # build a witness with the initial variable name
-                    self.builder.emit_Assign( variable = variable,
-                                              expr     = netir.Name(first_local.name) )
+                    self.builder.emit_Assign(variable = variable,
+                                              expr = netir.Name(first_local.name))
                     self.variable_helper.set_unified(variable)
                     return True
             return False
@@ -271,8 +257,8 @@ class SuccTGenerator(object):
         """
 
         builder = self.builder
-        trans   = self.transition
-        variable_helper       = self.variable_helper
+        trans = self.transition
+        variable_helper = self.variable_helper
 
         trans.variable_helper = variable_helper
 
@@ -291,32 +277,32 @@ class SuccTGenerator(object):
                 continue
 
             builder.emit_Comment("Enumerate {input_arc} - place: {place}".format(input_arc = input_arc,
-                                                                                 place     = input_arc.place_name))
+                                                                                 place = input_arc.place_name))
 
             # use index access if available
             place_type = self.marking_type.get_place_type_by_name(input_arc.place_info.name)
-            if ( place_type.provides_by_index_access and
-                 input_arc.place_info not in multi_places ):
+            if (place_type.provides_by_index_access and
+                 input_arc.place_info not in multi_places):
                 index = variable_helper.new_variable(variable_type = TypeInfo.Int)
             else:
                 index = None
 
             # produce the enumeration and tests according to the input_arc's type
-            
+
             # variable
             if input_arc.is_Variable:
                 variable = input_arc.variable
-                
+
                 # if the variable is shared a new variable is produced, the variable is used otherwise
                 local_variable = variable_helper.new_variable_occurence(variable)
 
                 # notify that the variable is used
                 variable_helper.mark_as_used(variable, local_variable)
 
-                builder.begin_TokenEnumeration( arc         = input_arc,
-                                                token_var   = local_variable,
+                builder.begin_TokenEnumeration(arc = input_arc,
+                                                token_var = local_variable,
                                                 marking_var = self.arg_marking_var,
-                                                place_name  = input_arc.place_name )
+                                                place_name = input_arc.place_name)
 
                 input_arc.data.register('local_variable', local_variable)
                 input_arc.data.register('index', index)
@@ -331,36 +317,36 @@ class SuccTGenerator(object):
                     variable = inner
 
                     local_variable = variable_helper.new_variable_occurence(variable)
-                    variable_helper.mark_as_used( variable, local_variable )
+                    variable_helper.mark_as_used(variable, local_variable)
 
-                    builder.begin_TokenEnumeration( arc         = input_arc,
-                                                    token_var   = local_variable,
+                    builder.begin_TokenEnumeration(arc = input_arc,
+                                                    token_var = local_variable,
                                                     marking_var = self.arg_marking_var,
-                                                    place_name  = input_arc.place_name )
+                                                    place_name = input_arc.place_name)
 
                     self.try_unify_shared_variable(variable)
                     input_arc.data.register('local_variable', local_variable)
                     input_arc.data.register('index', index)
 
                 elif inner.is_Value:
-                    place_info = self.net_info.place_by_name( input_arc.place_name )
-                    place_type = self.marking_type.get_place_type_by_name( place_info.name )
+                    place_info = self.net_info.place_by_name(input_arc.place_name)
+                    place_type = self.marking_type.get_place_type_by_name(place_info.name)
 
                     local_variable = variable_helper.new_variable(variable_type = place_type.token_type)
 
                     # get a token
-                    builder.begin_TokenEnumeration( arc         = input_arc,
-                                                    token_var   = local_variable,
+                    builder.begin_TokenEnumeration(arc = input_arc,
+                                                    token_var = local_variable,
                                                     marking_var = self.arg_marking_var,
-                                                    place_name  = input_arc.place_name )
+                                                    place_name = input_arc.place_name)
 
                     if not place_info.type.is_BlackToken:
                         # check token value
-                        builder.begin_If( netir.Compare( left = netir.Name( name = local_variable.name ),
-                                                         ops  = [ netir.EQ() ],
-                                                         comparators = [ netir.Value( value = input_arc.value,
-                                                                                      place_name = input_arc.place_name ) ] 
-                                                        ) 
+                        builder.begin_If(netir.Compare(left = netir.Name(name = local_variable.name),
+                                                         ops = [ netir.EQ() ],
+                                                         comparators = [ netir.Value(value = input_arc.value,
+                                                                                      place_name = input_arc.place_name) ]
+                                                        )
                                          )
                     # end if
 
@@ -369,21 +355,21 @@ class SuccTGenerator(object):
 
                 elif inner.is_Tuple:
                     # produce names for tuple components
-                    self._gen_names( inner )
+                    self._gen_names(inner)
 
-                    place_info = self.net_info.place_by_name( input_arc.place_name )
-                    place_type = self.marking_type.get_place_type_by_name( place_info.name )
-                    token_var  = inner.data['local_variable']
+                    place_info = self.net_info.place_by_name(input_arc.place_name)
+                    place_type = self.marking_type.get_place_type_by_name(place_info.name)
+                    token_var = inner.data['local_variable']
                     # get a tuple
-                    builder.begin_TokenEnumeration( arc         = input_arc,
-                                                    token_var   = token_var,
+                    builder.begin_TokenEnumeration(arc = input_arc,
+                                                    token_var = token_var,
                                                     marking_var = self.arg_marking_var,
-                                                    place_name  = input_arc.place_name )
+                                                    place_name = input_arc.place_name)
 
                     if not (inner.type.is_TupleType and len(inner.type) == len(inner)):
                         # check its type
-                        builder.begin_CheckTuple( tuple_var  = token_var,
-                                                  tuple_info = inner )
+                        builder.begin_CheckTuple(tuple_var = token_var,
+                                                  tuple_info = inner)
 
                     self._gen_tuple_decomposition(input_arc, inner)
 
@@ -398,20 +384,20 @@ class SuccTGenerator(object):
                 local_variable = variable_helper.new_variable(place_type.token_type)
 
                 # get a token
-                builder.begin_TokenEnumeration( arc         = input_arc,
-                                                token_var   = local_variable,
+                builder.begin_TokenEnumeration(arc = input_arc,
+                                                token_var = local_variable,
                                                 marking_var = self.arg_marking_var,
-                                                place_name  = input_arc.place_name )
+                                                place_name = input_arc.place_name)
 
                 input_arc.data.register('local_variable', local_variable)
                 input_arc.data.register('index', index)
 
                 if not place_info.type.is_BlackToken:
                     # check token value
-                    builder.begin_If( netir.Compare( left  = netir.Name( name = local_variable.name ),
-                                                     ops   = [ netir.EQ() ],
-                                                     comparators = [ netir.Value( value      = input_arc.value,
-                                                                                  place_name = input_arc.place_name ) ] ) )
+                    builder.begin_If(netir.Compare(left = netir.Name(name = local_variable.name),
+                                                     ops = [ netir.EQ() ],
+                                                     comparators = [ netir.Value(value = input_arc.value,
+                                                                                  place_name = input_arc.place_name) ]))
 
 
             # flush
@@ -422,32 +408,32 @@ class SuccTGenerator(object):
                         raise NotImplementedError
 
                     input_arc.data.register('local_variable', inner)
-                    builder.emit_FlushIn( token_var   = input_arc.data['local_variable'],
+                    builder.emit_FlushIn(token_var = input_arc.data['local_variable'],
                                           marking_var = self.arg_marking_var,
-                                          place_name  = input_arc.place_name )
+                                          place_name = input_arc.place_name)
                 else:
                     raise NotImplementedError, "flush %s" % repr(inner)
 
             # tuple
             elif input_arc.is_Tuple:
                 # produce names for tuple components
-                self._gen_names( input_arc.tuple )
+                self._gen_names(input_arc.tuple)
 
-                place_info = self.net_info.place_by_name( input_arc.place_name )
-                place_type = self.marking_type.get_place_type_by_name( place_info.name )
+                place_info = self.net_info.place_by_name(input_arc.place_name)
+                place_type = self.marking_type.get_place_type_by_name(place_info.name)
                 token_variable = input_arc.tuple.data['local_variable']
                 token_variable.update_type(place_type.token_type)
-                
+
                 # get a tuple
-                builder.begin_TokenEnumeration( arc         = input_arc,
-                                                token_var   = token_variable,
+                builder.begin_TokenEnumeration(arc = input_arc,
+                                                token_var = token_variable,
                                                 marking_var = self.arg_marking_var,
-                                                place_name  = input_arc.place_name ) # no index access
+                                                place_name = input_arc.place_name)    # no index access
 
                 if not (input_arc.tuple.type.is_TupleType and len(input_arc.tuple.type) == len(input_arc.tuple)):
                     # check its type
-                    builder.begin_CheckTuple( tuple_var  = token_variable,
-                                              tuple_info = input_arc.tuple )
+                    builder.begin_CheckTuple(tuple_var = token_variable,
+                                              tuple_info = input_arc.tuple)
 
 
                 self._gen_tuple_decomposition(input_arc, input_arc.tuple)
@@ -455,20 +441,20 @@ class SuccTGenerator(object):
 
             elif input_arc.is_MultiArc:
                 variables = set()
-                values = {} # variable -> value
+                values = {}    # variable -> value
                 # sub_arcs as variables
                 for sub_arc in input_arc.sub_arcs:
                     if sub_arc.is_Variable:
-                        variable       = sub_arc.variable
+                        variable = sub_arc.variable
                         local_variable = variable_helper.new_variable_occurence(variable)
-                        variable_helper.mark_as_used( variable, local_variable )
+                        variable_helper.mark_as_used(variable, local_variable)
 
                         variables.add(variable)
                         sub_arc.data.register('local_variable', local_variable)
                         sub_arc.data.register('index', variable_helper.new_variable(TypeInfo.Int))
 
                     elif sub_arc.is_Value:
-                        variable = variable_helper.new_variable( variable_type = place_type.token_type )
+                        variable = variable_helper.new_variable(variable_type = place_type.token_type)
 
                         variables.add(variable)
                         sub_arc.data.register('local_variable', variable)
@@ -481,15 +467,15 @@ class SuccTGenerator(object):
                         raise NotImplementedError, sub_arc
 
 
-                builder.begin_MultiTokenEnumeration( multiarc    = input_arc,
+                builder.begin_MultiTokenEnumeration(multiarc = input_arc,
                                                      marking_var = self.arg_marking_var,
-                                                     place_name  = input_arc.place_name )
+                                                     place_name = input_arc.place_name)
 
                 for variable, value in values.iteritems():
-                    builder.begin_If( netir.Compare( left = netir.Name( name = variable.name ),
-                                                     ops  = [ netir.EQ() ],
-                                                     comparators = [ netir.Value( value      = value,
-                                                                                  place_name = input_arc.place_name ) ]
+                    builder.begin_If(netir.Compare(left = netir.Name(name = variable.name),
+                                                     ops = [ netir.EQ() ],
+                                                     comparators = [ netir.Value(value = value,
+                                                                                  place_name = input_arc.place_name) ]
                                                     )
                                      )
                 # end for
@@ -530,17 +516,17 @@ class SuccTGenerator(object):
         @param tuple_info: tuple_info to decompose
         @inner_type tuple_info: C{tuple_info}
         """
-        builder         = self.builder
+        builder = self.builder
         variable_helper = self.variable_helper
 
-        builder.begin_Match( tuple_info = tuple_info )
+        builder.begin_Match(tuple_info = tuple_info)
 
         def base_names(token_info):
             if token_info.is_Tuple:
                 local_variable = token_info.data['local_variable']
-                local_names    = set( [ (local_variable, local_variable) ] )
+                local_names = set([ (local_variable, local_variable) ])
                 for component in token_info:
-                    local_names.union( base_names(component) )
+                    local_names.union(base_names(component))
                 return local_names
 
             elif token_info.is_Variable:
@@ -558,7 +544,7 @@ class SuccTGenerator(object):
         else:
             sub_types = tuple_info.type.split()
 
-        for (inner, inner_type) in izip_longest(tuple_info.split(), sub_types, fillvalue=TypeInfo.AnyType):
+        for (inner, inner_type) in izip_longest(tuple_info.split(), sub_types, fillvalue = TypeInfo.AnyType):
             if not inner_type.is_AnyType:
                 inner.update_type(inner_type)
 
@@ -567,8 +553,8 @@ class SuccTGenerator(object):
 
                 if not (inner.type.is_TupleType and len(inner.type) == len(inner)):
                     # check its type
-                    builder.begin_CheckTuple( tuple_var  = tuple_var,
-                                              tuple_info = inner )
+                    builder.begin_CheckTuple(tuple_var = tuple_var,
+                                              tuple_info = inner)
 
                 self._gen_tuple_decomposition(input_arc, inner)
 
@@ -595,7 +581,7 @@ class SuccTGenerator(object):
         if self.config.optimize_flow and output.place_info.flow_control:
             return
 
-        output_place = self.marking_type.get_place_type_by_name( output.place_info.name )
+        output_place = self.marking_type.get_place_type_by_name(output.place_info.name)
         output_impl_type = output_place.token_type
 
         if output.is_Expression:
@@ -603,8 +589,8 @@ class SuccTGenerator(object):
             variable = self.variable_helper.new_variable(output_impl_type)
 
             # evaluate and assign the result to the variable
-            builder.emit_Assign( variable = variable,
-                                 expr     = netir.PyExpr(output.expr) )
+            builder.emit_Assign(variable = variable,
+                                 expr = netir.PyExpr(output.expr))
             check = True
             try:
                 print ">>>> BEGIN TO DO %s <<<< " % (output.expr.raw)
@@ -616,17 +602,17 @@ class SuccTGenerator(object):
                 print "type of '{}' will be checked".format(output.expr.raw)
 
             if (not output_impl_type.is_AnyType) and check:
-                builder.begin_CheckType( variable = variable,
-                                         type     = output_impl_type )
+                builder.begin_CheckType(variable = variable,
+                                         type = output_impl_type)
 
 
-            computed_productions[output].append(netir.Name( variable.name ))
+            computed_productions[output].append(netir.Name(variable.name))
             # TO DO rafine tuples
 
         elif output.is_Value:
             value = output.value
             variable = self.variable_helper.new_variable(output_impl_type)
-            check    = True
+            check = True
 
             v = eval(repr(value.raw))
             if v == dot and output.place_info.type.is_BlackToken:
@@ -634,22 +620,22 @@ class SuccTGenerator(object):
 
             # check its type
             if check:
-                builder.emit_Assign( variable = variable,
-                                     expr     = netir.PyExpr( ExpressionInfo( repr(output.value.raw) ) ) )
+                builder.emit_Assign(variable = variable,
+                                     expr = netir.PyExpr(ExpressionInfo(repr(output.value.raw))))
 
-                r = netir.Name( variable.name )
+                r = netir.Name(variable.name)
             else:
-                r = netir.PyExpr( ExpressionInfo( repr(output.value.raw) ) )
+                r = netir.PyExpr(ExpressionInfo(repr(output.value.raw)))
 
             computed_productions[output].append(r)
 
         elif output.is_Variable:
             variable = output.variable
             if not (output_impl_type.is_AnyType or (variable.type == output_impl_type)):
-                builder.begin_CheckType( variable = variable,
-                                         type     = output_impl_type )
+                builder.begin_CheckType(variable = variable,
+                                         type = output_impl_type)
 
-            computed_productions[output].append(netir.Name( variable.name ))
+            computed_productions[output].append(netir.Name(variable.name))
 
         elif output.is_Flush:
             # no type check, object places
@@ -679,22 +665,22 @@ class SuccTGenerator(object):
         trans = self.transition
         builder = self.builder
 
-        builder.emit_Comment(message="Produce {output_arc} - place: {place}".format(output_arc = output_arc,
-                                                                                    place      = output_arc.place_name))
+        builder.emit_Comment(message = "Produce {output_arc} - place: {place}".format(output_arc = output_arc,
+                                                                                    place = output_arc.place_name))
         if self.config.optimize_flow and output_arc.place_info.flow_control:
             new_flow = [ place for place in trans.post if place.flow_control ]
             assert(len(new_flow) == 1)
-            builder.emit_UpdateFlow( marking_var = new_marking_var,
-                                     place_info  = new_flow[0] )
+            builder.emit_UpdateFlow(marking_var = new_marking_var,
+                                     place_info = new_flow[0])
 
 
         elif output_arc.is_Expression:
             if computed_productions.has_key(output_arc):
                 token_expr = computed_productions[output_arc]
 
-            builder.emit_AddToken( marking_var = new_marking_var,
-                                   place_name  = output_arc.place_name,
-                                   token_expr  = token_expr )
+            builder.emit_AddToken(marking_var = new_marking_var,
+                                   place_name = output_arc.place_name,
+                                   token_expr = token_expr)
 
         elif output_arc.is_Value:
             if computed_productions.has_key(output_arc):
@@ -704,35 +690,35 @@ class SuccTGenerator(object):
                 # TO DO TRY REPR
                 #
                 value = output_arc.value
-                token_expr = netir.PyExpr( ExpressionInfo( repr(value.raw) ))
+                token_expr = netir.PyExpr(ExpressionInfo(repr(value.raw)))
 
-            builder.emit_AddToken( marking_var = new_marking_var,
-                                   place_name  = output_arc.place_name,
-                                   token_expr  = token_expr )
+            builder.emit_AddToken(marking_var = new_marking_var,
+                                   place_name = output_arc.place_name,
+                                   token_expr = token_expr)
 
         elif output_arc.is_Variable:
             if computed_productions.has_key(output_arc):
                 token_expr = computed_productions[output_arc]
             else:
-                value      = output_arc.value
-                token_expr = netir.Name( output_arc.name )
+                value = output_arc.value
+                token_expr = netir.Name(output_arc.name)
 
-            builder.emit_AddToken( marking_var = new_marking_var,
-                                   place_name  = output_arc.place_name,
-                                   token_expr  = token_expr )
+            builder.emit_AddToken(marking_var = new_marking_var,
+                                   place_name = output_arc.place_name,
+                                   token_expr = token_expr)
 
         elif output_arc.is_Flush:
             inner = output_arc.inner
             if inner.is_Variable:
                 produced_token = inner.name
-                builder.emit_FlushOut( marking_var = new_marking_var,
-                                       place_name  = output_arc.place_name,
-                                       token_expr  = netir.Name(produced_token) )
+                builder.emit_FlushOut(marking_var = new_marking_var,
+                                       place_name = output_arc.place_name,
+                                       token_expr = netir.Name(produced_token))
 
             elif inner.is_Expression:
-                builder.emit_FlushOut( marking_var = new_marking_var,
-                                       place_name  = output_arc.place_name,
-                                       token_expr  = netir.PyExpr(inner) )
+                builder.emit_FlushOut(marking_var = new_marking_var,
+                                       place_name = output_arc.place_name,
+                                       token_expr = netir.PyExpr(inner))
             else:
                 raise NotImplementedError, "Flush.inner : %s" % inner
 
@@ -742,16 +728,16 @@ class SuccTGenerator(object):
                 pass
             # general case:
             else:
-                builder.emit_TupleOut( marking_var = new_marking_var,
-                                       place_name  = output_arc.place_name,
-                                       tuple_info  = output_arc.tuple )
+                builder.emit_TupleOut(marking_var = new_marking_var,
+                                       place_name = output_arc.place_name,
+                                       tuple_info = output_arc.tuple)
         elif output_arc.is_MultiArc:
 
             for subarc in output_arc.sub_arcs:
                 if subarc in computed_productions:
-                    builder.emit_AddToken( marking_var = new_marking_var,
-                                           place_name  = output_arc.place_name,
-                                           token_expr  = computed_productions[subarc] )
+                    builder.emit_AddToken(marking_var = new_marking_var,
+                                           place_name = output_arc.place_name,
+                                           token_expr = computed_productions[subarc])
                 else:
                     self.gen_produce(subarc)
 
@@ -759,9 +745,9 @@ class SuccTGenerator(object):
 
             for subarc in output_arc.sub_arcs:
                 if subarc in computed_productions:
-                    builder.emit_AddToken( marking_var = new_marking_var,
-                                           place_name  = output_arc.place_name,
-                                           token_expr  = computed_productions[subarc] )
+                    builder.emit_AddToken(marking_var = new_marking_var,
+                                           place_name = output_arc.place_name,
+                                           token_expr = computed_productions[subarc])
                 else:
                     self.gen_produce(subarc)
 
@@ -776,8 +762,8 @@ class SuccTGenerator(object):
 
         @return: successor function abstract representation.
         """
-        trans   = self.transition
-        helper  = self.variable_helper
+        trans = self.transition
+        helper = self.variable_helper
         builder = self.builder
 
 #        if self._trace_calls:
@@ -791,9 +777,9 @@ class SuccTGenerator(object):
         if trans.generator_arc:
             # ok, that looks like a process Petri net... you quack, you're a duck...
             generator_arc = trans.generator_arc
-            pid           = generator_arc.pid
-            new_pids      = generator_arc.new_pids
-            counter_var   = generator_arc.counter
+            pid = generator_arc.pid
+            new_pids = generator_arc.new_pids
+            counter_var = generator_arc.counter
             i = 0
             for new_pid in new_pids:
                 if i > 0:
@@ -805,12 +791,12 @@ class SuccTGenerator(object):
                 i += 1
 
         # guard
-        guard = ExpressionInfo( trans.trans.guard._str )
+        guard = ExpressionInfo(trans.trans.guard._str)
         try:
             if eval(guard.raw) != True:
-                builder.begin_GuardCheck( condition = netir.PyExpr(guard) )
+                builder.begin_GuardCheck(condition = netir.PyExpr(guard))
         except:
-            builder.begin_GuardCheck( condition = netir.PyExpr(guard) )
+            builder.begin_GuardCheck(condition = netir.PyExpr(guard))
 
         computed_productions = defaultdict(list)
         for output in trans.outputs:
@@ -823,58 +809,58 @@ class SuccTGenerator(object):
             normalized_marking_var = helper.new_variable(self.marking_type.type)
 
         self.new_marking_var = new_marking_var
-        builder.emit_MarkingCopy( dst = new_marking_var,
+        builder.emit_MarkingCopy(dst = new_marking_var,
                                   src = self.arg_marking_var,
-                                  mod = trans.modified_places() )
+                                  mod = trans.modified_places())
 
         # consume
         for arc in trans.input_arcs:
-            builder.emit_Comment(message = "Consume {arc} - place: {place}".format(arc=arc, place=arc.place_name))
+            builder.emit_Comment(message = "Consume {arc} - place: {place}".format(arc = arc, place = arc.place_name))
 
             if self.config.optimize_flow and arc.place_info.flow_control:
                 continue
             elif arc.is_Variable:
-                builder.emit_RemToken( marking_var = new_marking_var,
-                                       place_name  = arc.place_name,
-                                       token_expr  = netir.Name(arc.data['local_variable'].name),
-                                       use_index   = arc.data['index'] )
+                builder.emit_RemToken(marking_var = new_marking_var,
+                                       place_name = arc.place_name,
+                                       token_expr = netir.Name(arc.data['local_variable'].name),
+                                       use_index = arc.data['index'])
             elif arc.is_Test:
-                pass # do not consume !
+                pass    # do not consume !
 
             elif arc.is_Flush:
                 inner = arc.inner
                 if inner.is_Variable:
-                    builder.emit_RemAllTokens( token_var   = arc.data['local_variable'],
+                    builder.emit_RemAllTokens(token_var = arc.data['local_variable'],
                                                marking_var = new_marking_var,
-                                               place_name  = arc.place_name )
+                                               place_name = arc.place_name)
                 else:
                     raise NotImplementedError, "inner : %s" % repr(inner)
 
             elif arc.is_Value:
-                builder.emit_RemToken( marking_var = new_marking_var,
-                                       place_name  = arc.place_name,
-                                       token_expr  = netir.Value( value      = arc.value,
-                                                                  place_name = arc.place_name ),
-                                       use_index   = arc.data['index'] )
+                builder.emit_RemToken(marking_var = new_marking_var,
+                                       place_name = arc.place_name,
+                                       token_expr = netir.Value(value = arc.value,
+                                                                  place_name = arc.place_name),
+                                       use_index = arc.data['index'])
 
             elif arc.is_Tuple:
-                builder.emit_RemTuple( marking_var = new_marking_var,
-                                       place_name  = arc.place_name,
-                                       tuple_expr  = netir.Name(arc.tuple.data['local_variable'].name) )
+                builder.emit_RemTuple(marking_var = new_marking_var,
+                                       place_name = arc.place_name,
+                                       tuple_expr = netir.Name(arc.tuple.data['local_variable'].name))
 
             elif arc.is_MultiArc:
                 for sub_arc in arc.sub_arcs:
                     if sub_arc.is_Variable:
-                        builder.emit_RemToken( marking_var = new_marking_var,
-                                               place_name  = arc.place_name,
-                                               token_expr  = netir.Name(sub_arc.data['local_variable'].name),
-                                               use_index   = None )
+                        builder.emit_RemToken(marking_var = new_marking_var,
+                                               place_name = arc.place_name,
+                                               token_expr = netir.Name(sub_arc.data['local_variable'].name),
+                                               use_index = None)
                     elif sub_arc.is_Value:
-                        builder.emit_RemToken( marking_var = new_marking_var,
-                                               place_name  = arc.place_name,
-                                               token_expr  = netir.Value( value      = sub_arc.value,
-                                                                          place_name = arc.place_name ),
-                                               use_index   = None )
+                        builder.emit_RemToken(marking_var = new_marking_var,
+                                               place_name = arc.place_name,
+                                               token_expr = netir.Value(value = sub_arc.value,
+                                                                          place_name = arc.place_name),
+                                               use_index = None)
 
                     else:
                         raise NotImplementedError, sub_arc.arc_annotation
@@ -885,24 +871,24 @@ class SuccTGenerator(object):
         # produce
         for output_arc in trans.outputs:
             self.gen_produce(output_arc)
-        
+
         # add pid normalization step if needed
         if self.config.normalize_pids:
-            builder.emit_NormalizeMarking( normalized_marking_var = normalized_marking_var,
-                                           marking_var            = new_marking_var,
-                                           marking_acc_var        = self.marking_acc_var,
-                                           pidfree_hash_set_var   = self.pidfree_hash_set_var,
-                                           remaining_set_var      = self.remaining_set_var,
-                                           state_space_var        = self.arg_state_space_var)
-            
-            builder.emit_AddMarking( marking_set_var = self.marking_acc_var,
-                                     marking_var     = normalized_marking_var )
-            builder.emit_UpdateHashSet( pidfree_hash_set_var = self.pidfree_hash_set_var,
-                                        marking_var          = normalized_marking_var )
+            builder.emit_NormalizeMarking(normalized_marking_var = normalized_marking_var,
+                                           marking_var = new_marking_var,
+                                           marking_acc_var = self.marking_acc_var,
+                                           pidfree_hash_set_var = self.pidfree_hash_set_var,
+                                           remaining_set_var = self.remaining_set_var,
+                                           state_space_var = self.arg_state_space_var)
+
+            builder.emit_AddMarking(marking_set_var = self.marking_acc_var,
+                                     marking_var = normalized_marking_var)
+            builder.emit_UpdateHashSet(pidfree_hash_set_var = self.pidfree_hash_set_var,
+                                        marking_var = normalized_marking_var)
         else:
             # add marking to set
-            builder.emit_AddMarking( marking_set_var = self.marking_acc_var,
-                                     marking_var     = new_marking_var)
+            builder.emit_AddMarking(marking_set_var = self.marking_acc_var,
+                                     marking_var = new_marking_var)
         # end function
         builder.end_all_blocks()
         builder.end_function()
@@ -926,8 +912,8 @@ class Compiler(object):
         @type_info net: C{snakes.nets.PetriNet}
         """
 
-        self.config   = config
-        self.backend  = backend
+        self.config = config
+        self.backend = backend
         self.net_info = NetInfo(net)
 
         if self.config.normalize_pids:
@@ -939,7 +925,7 @@ class Compiler(object):
                 exit(-1)
 
         self.markingtype_class = "StaticMarkingType"
-        self.marking_type  = backend.new_marking_type(self.markingtype_class, self.config)
+        self.marking_type = backend.new_marking_type(self.markingtype_class, self.config)
         self.optimisations = []
 
         self.env = backend.new_compiling_environment(self.config, self.net_info, WordSet(), self.marking_type)
@@ -958,7 +944,7 @@ class Compiler(object):
                             print >> sys.stderr, "[E] nested tuples cannot contain pids. (this may be implemented in future)".format(place.name)
                             return False
         return True
-    
+
     def check_first_pid(self):
         for place in self.net_info.places:
             if place.type.is_AnyType:
@@ -972,16 +958,16 @@ class Compiler(object):
                             print >> sys.stderr, "[E] place {} accepts pids at position {}".format(place.name, i)
                             return False
         return True
-    
+
 
     def rebuild_marking_type(self):
         """ Rebuild the marking type. (places will be rebuild) """
         if self.config.dump_enabled:
             print self.marking_type
-            
+
         # add place types to the marking type
         for place_info in self.net_info.places:
-            self.marking_type.add( place_info ) # will not create duplicates
+            self.marking_type.add(place_info)    # will not create duplicates
 
         self.marking_type.gen_types()
         if self.config.dump_enabled:
@@ -1005,8 +991,8 @@ class Compiler(object):
                                              for node in env.successor_function_nodes ]
             env.process_successor_function_nodes = [ opt.transform_ast(net_info = self.net_info, node = node)
                                                      for node in env.process_successor_function_nodes ]
-            env.successor_function_nodes = flatten_lists( env.successor_function_nodes )
-            env.process_successor_function_nodes = flatten_lists( env.process_successor_function_nodes )
+            env.successor_function_nodes = flatten_lists(env.successor_function_nodes)
+            env.process_successor_function_nodes = flatten_lists(env.process_successor_function_nodes)
 
     def _gen_all_spec_succs(self):
         """ Build all needed instances of transition specific
@@ -1020,17 +1006,17 @@ class Compiler(object):
             function_name = "succs_{}".format(i)
             if self.config.dump_enabled:
                 print function_name + " <=> " + transition.name
-            assert( function_name not in env.global_names )
+            assert(function_name not in env.global_names)
             env.global_names.add(function_name)
 
-            gen = SuccTGenerator(env           = self.env,
-                                 net_info      = self.net_info,
-                                 builder       = netir.Builder(),
-                                 transition    = transition,
+            gen = SuccTGenerator(env = self.env,
+                                 net_info = self.net_info,
+                                 builder = netir.Builder(),
+                                 transition = transition,
                                  function_name = function_name,
-                                 marking_type  = self.marking_type,
-                                 config        = self.config)
-            acc.append( gen() )
+                                 marking_type = self.marking_type,
+                                 config = self.config)
+            acc.append(gen())
 
         return acc
 
@@ -1042,11 +1028,11 @@ class Compiler(object):
         if self.config.optimize_flow:
             for i, process in enumerate(self.net_info.process_info):
                 function_name = "succP_{}".format(i)
-                gen = ProcessSuccGenerator(env           = self.env,
-                                           process_info  = process,
+                gen = ProcessSuccGenerator(env = self.env,
+                                           process_info = process,
                                            function_name = function_name,
-                                           marking_type  = self.marking_type)
-                acc.append( gen() )
+                                           marking_type = self.marking_type)
+                acc.append(gen())
         return acc
 
     def _gen_main_succ(self):
@@ -1054,44 +1040,34 @@ class Compiler(object):
 
         self.succs_function = 'succs'
         vp = VariableProvider(set([self.succs_function]))
-        arg_marking_var          = vp.new_variable( variable_type = self.marking_type.type )
-        arg_marking_acc_var      = vp.new_variable( variable_type = self.marking_type.container_type )
-        arg_remaining_set_var    = vp.new_variable( variable_type = self.marking_type.container_type )
-        arg_pidfree_hash_set_var = vp.new_variable( variable_type = self.marking_type.container_type )
-        arg_state_space_var      = vp.new_variable( variable_type = self.marking_type.container_type )
+        arg_marking_var = vp.new_variable(variable_type = self.marking_type.type)
+        arg_marking_acc_var = vp.new_variable(variable_type = self.marking_type.container_type)
+        arg_ctx_var = vp.new_variable(variable_type = TypeInfo.get('NecoCtx'))
 
         builder = netir.Builder()
-        builder.begin_function_Succs( function_name             = "succs",
-                                      arg_marking_var           = arg_marking_var,
-                                      arg_marking_acc_var       = arg_marking_acc_var,
-                                      arg_state_space_var       = arg_state_space_var,
-                                      arg_pidfree_hash_set_var  = arg_pidfree_hash_set_var,
-                                      arg_remaining_set_var     = arg_remaining_set_var,
-                                      variable_provider         = vp )
+        builder.begin_function_Succs(function_name = "succs",
+                                      arg_marking_var = arg_marking_var,
+                                      arg_marking_acc_var = arg_marking_acc_var,
+                                      arg_ctx_var = arg_ctx_var,
+                                      variable_provider = vp)
 
-        marking_acc_node           = netir.Name(arg_marking_acc_var.name)
-        marking_arg_node          = netir.Name(arg_marking_var.name)
-        remaining_set_arg_node    = netir.Name(arg_remaining_set_var.name)
-        pidfree_hash_set_arg_node = netir.Name(arg_pidfree_hash_set_var.name)
-        state_space_arg_node      = netir.Name(arg_state_space_var.name)
+        marking_acc_node = netir.Name(arg_marking_acc_var.name)
+        marking_arg_node = netir.Name(arg_marking_var.name)
+        ctx_node = netir.Name(arg_ctx_var.name)
 
         if self.config.optimize_flow:
             for function_name in self.env.process_succ_functions:
-                builder.emit_ProcedureCall( function_name = function_name,
-                                            arguments     = [ marking_arg_node,
-                                                              marking_acc_node,
-                                                              state_space_arg_node,
-                                                              pidfree_hash_set_arg_node,
-                                                              remaining_set_arg_node ] )
+                builder.emit_ProcedureCall(function_name = function_name,
+                                           arguments = [ marking_arg_node,
+                                                         marking_acc_node,
+                                                         ctx_node ])
 
         else:
             for function_name in self.env.succ_functions:
-                builder.emit_ProcedureCall( function_name = function_name,
-                                            arguments = [ marking_arg_node,
-                                                          marking_acc_node,
-                                                          state_space_arg_node,
-                                                          pidfree_hash_set_arg_node,
-                                                          remaining_set_arg_node ] )
+                builder.emit_ProcedureCall(function_name = function_name,
+                                           arguments = [ marking_arg_node,
+                                                         marking_acc_node,
+                                                         ctx_node ])
 
         builder.end_function()
         return builder.ast()
@@ -1104,7 +1080,7 @@ class Compiler(object):
 
         builder = netir.Builder()
         builder.begin_function_Init(function_name = 'init',
-                                    marking_var   = marking_var,
+                                    marking_var = marking_var,
                                     variable_provider = variable_provider)
 
         for place_info in self.net_info.places:
@@ -1117,29 +1093,29 @@ class Compiler(object):
                 # handle other places
 
                 for token in place_info.tokens:
-                    info = TokenInfo.from_raw( token )
+                    info = TokenInfo.from_raw(token)
                     if info.is_Tuple:
-                        builder.emit_TupleOut( marking_var = marking_var,
+                        builder.emit_TupleOut(marking_var = marking_var,
                                                place_name = place_info.name,
-                                               tuple_info = info )
+                                               tuple_info = info)
                     elif info.is_Value:
                         t = info.type
                         if self.config.normalize_pids and t.is_Pid:
-                            builder.emit_AddPid( marking_var = marking_var, 
-                                                 place_name = place_info.name, 
+                            builder.emit_AddPid(marking_var = marking_var,
+                                                 place_name = place_info.name,
                                                  token_expr = netir.Token(value = token,
-                                                                          place_name = place_info.name) )
-                        
+                                                                          place_name = place_info.name))
+
                         elif t in [ TypeInfo.Int, TypeInfo.BlackToken ]:
-                            builder.emit_AddToken( marking_var = marking_var,
+                            builder.emit_AddToken(marking_var = marking_var,
                                                    place_name = place_info.name,
-                                                   token_expr = netir.Token( value = token,
-                                                                             place_name = place_info.name ) )
+                                                   token_expr = netir.Token(value = token,
+                                                                             place_name = place_info.name))
                         elif t.is_UserType or t.is_AnyType:
-                            expr = netir.Pickle( obj = info.raw )
-                            builder.emit_AddToken( marking_var = marking_var,
+                            expr = netir.Pickle(obj = info.raw)
+                            builder.emit_AddToken(marking_var = marking_var,
                                                    place_name = place_info.name,
-                                                   token_expr = expr )
+                                                   token_expr = expr)
                         else:
                             raise NotImplementedError, info.value.type()
                     else:
@@ -1152,11 +1128,11 @@ class Compiler(object):
         """ produce abstract representation nodes.
         """
         env = self.env
-        
-        env.successor_function_nodes         = flatten_lists( self._gen_all_spec_succs() )
-        env.process_successor_function_nodes = flatten_lists( self._gen_all_process_spec_succs() )
-        env.main_successor_function_node     = flatten_lists( self._gen_main_succ() )
-        env.init_function_node               = flatten_lists( self._gen_init() )
+
+        env.successor_function_nodes = flatten_lists(self._gen_all_spec_succs())
+        env.process_successor_function_nodes = flatten_lists(self._gen_all_process_spec_succs())
+        env.main_successor_function_node = flatten_lists(self._gen_main_succ())
+        env.init_function_node = flatten_lists(self._gen_init())
 
     def produce_compilation_trace(self, compilation_trace_name):
         trace_file = open(compilation_trace_name, 'wb')
@@ -1165,7 +1141,7 @@ class Compiler(object):
                          "model"        : self.config.model }
         pickle.dump(trace_object, trace_file, -1)
         trace_file.close()
-        
+
     def run(self):
         self.gen_netir()
         self.optimize_netir()
