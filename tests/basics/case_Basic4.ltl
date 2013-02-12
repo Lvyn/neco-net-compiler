@@ -1,0 +1,10 @@
+F (marking(s1) = [3])
+OK
+F (marking(s1) = [])
+OK
+
+F (marking(s2) = [7])
+OK
+F (marking(s2) = [])
+OK
+

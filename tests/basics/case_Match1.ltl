@@ -1,0 +1,4 @@
+F (marking(s1) = [dot] and X (marking(s2) = [dot]))
+OK
+marking(s1) = [dot] U marking(s2) = [dot]
+OK

@@ -1,0 +1,25 @@
+G (marking(s1) = [3] => marking(s2) = [11])
+OK
+G (marking(s1) = [5] => marking(s2) = [7])
+OK
+G (marking(s1) = [] => marking(s2) = [7, 11])
+OK
+
+F (marking(s1) = [3] or marking(s1) = [5])
+OK
+F (marking(s1) = [])
+OK
+F (marking(s2) = [7, 11])
+OK
+
+G (marking(s1) != [] => fireable(t1))
+OK
+F (deadlock)
+OK
+G (marking(s1) = [] => deadlock)
+OK
+! F (marking(s1) != [] and (deadlock))
+OK
+F (marking(s1) != [] and (deadlock))
+KO
+

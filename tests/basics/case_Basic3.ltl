@@ -1,0 +1,44 @@
+F (marking(s1) = [dot])
+OK
+F (marking(s1) = [])
+OK
+F (marking(s1) = [dot, dot])
+KO
+
+F (marking(s2) = [dot])
+OK
+F (marking(s2) = [])
+OK
+F (marking(s2) = [dot, dot])
+KO
+
+F (marking(s3) = [dot])
+OK
+F (marking(s3) = [])
+OK
+F (marking(s3) = [dot, dot])
+KO
+
+F (marking(s1) = [dot] and X marking(s2) = [dot] and X X marking(s3) = [dot])
+OK
+
+G (marking(s1) = [dot] => fireable(t1))
+OK
+G (marking(s2) = [dot] => fireable(t2))
+OK
+G (marking(s3) = [dot] => (! fireable(t1) and ! fireable(t2)))
+OK
+
+G (marking(s1) != [dot] => !fireable(t1))
+OK
+G (marking(s2) != [dot] => !fireable(t2))
+OK
+
+G (marking(s1) = [dot] => !fireable(t1))
+KO
+G (marking(s2) = [dot] => !fireable(t2))
+KO
+G (marking(s3) > [] => (! fireable(t1) and ! fireable(t2)))
+OK
+F (marking(s3) > [] and (fireable(t1) or fireable(t2)))
+KO

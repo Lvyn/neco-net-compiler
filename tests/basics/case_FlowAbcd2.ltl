@@ -1,0 +1,8 @@
+F (marking('gate().state') = <[ ctypes_ext.MultiSet({ "OPEN" : 1 }) ]>)
+OK
+F (marking('gate().state') = <[ ctypes_ext.MultiSet({ "MOVING" : 1}) ]>)
+OK
+F (marking('gate().state') = <[ ctypes_ext.MultiSet({ "CLOSED" : 1 }) ]>)
+OK
+G (marking('gate().e') = [dot] => X marking('gate().i#3') = [dot] and X X marking('gate().i#2') = [dot] and X X X marking('gate().i#1') = [dot] and X X X X marking('gate().e') = [dot])
+OK

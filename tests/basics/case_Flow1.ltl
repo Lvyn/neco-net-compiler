@@ -1,0 +1,6 @@
+F (marking(f1) = [dot])
+OK
+F (marking(f2) = [dot])
+OK
+G (card(marking(f1)) + card(marking(f2)) = 1)
+OK

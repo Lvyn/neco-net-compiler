@@ -1,0 +1,11 @@
+F (marking(s1) = [1, 2, 3] and marking(s2) = [])
+OK
+F (marking(s2) = [1, 1, 2, 2, 3, 3] and marking(s1) = [])
+OK
+F (marking(s2) = [1, 1, 2, 2] and marking(s1) = [])
+KO
+
+F (card(marking(s1)) = 3 and card(marking(s2)) = 0)
+OK
+F (card(marking(s1)) = 0 and card(marking(s2)) = 6)
+OK

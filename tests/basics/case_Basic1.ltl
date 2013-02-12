@@ -1,0 +1,16 @@
+F (marking(s1) = [dot])
+OK
+F (marking(s1) = [])
+OK
+F (marking(s1) = [dot, dot])
+KO
+F (marking(s2) = [dot])
+OK
+F (marking(s2) = [])
+OK
+F (marking(s2) = [dot, dot])
+KO
+F (marking(s1) = [dot] and marking(s2) = [dot])
+KO
+G (marking(s1) = [dot] or marking(s2) = [dot])
+OK
