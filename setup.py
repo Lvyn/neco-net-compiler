@@ -31,8 +31,10 @@ def gen_asdl():
 
 def create_local_symlinks():
     print 'creating local symlinks'
-    silent_symlink('neco/ctypes/ctypes.h',      'neco-spot/ctypes.h')
-    silent_symlink('neco/ctypes/ctypes.cpp',    'neco-spot/ctypes.cpp')
+    os.chdir('neco-spot')
+    silent_symlink('../neco/ctypes/ctypes.h',      'ctypes.h')
+    silent_symlink('../neco/ctypes/ctypes.cpp',    'ctypes.cpp')
+    os.chdir('..')
 
 std_paths = ['/usr', '/usr/', '/usr/local', '/usr/local/']
 def has_non_std_prefix():
