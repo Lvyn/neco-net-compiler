@@ -1,3 +1,4 @@
+#!/bin/bash
 VERBOSE=0
 HIDE_STDERR=1
 
@@ -214,7 +215,7 @@ run_tests() {
             OPTIONS="$NECOSPOT_OPTIONS $OPTIONS"
             # run neco spot
             NS_OUT=/tmp/neco_run_test$$.tmp
-            necospotcli $OPTIONS neco_formula > $NS_OUT
+            neco-spot $OPTIONS neco_formula > $NS_OUT
             RES=`tail -n 1 $NS_OUT`
             if [ "$RES" = "$EXPECTED" ]
             then
