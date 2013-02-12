@@ -1,3 +1,4 @@
+#include "debug.h"
 #include "neco_tgba.h"
 #include "neco_state.h"
 #include "neco_succiter.h"
@@ -13,6 +14,7 @@ namespace neco {
                const spot::ltl::formula* dead)
             : m_dict(dict)
     {
+        NECO_DEBUG_TRACE("tgba");
         assert(sap);
         assert(dict);
 
@@ -80,6 +82,7 @@ namespace neco {
     //////////////////////////////////////////////////
 
     spot::state* tgba::get_init_state() const {
+        NECO_DEBUG_TRACE("get_init_state");
         const struct Marking* m = Model::instance().initial_marking();
         return new neco::state(m);
     }
@@ -90,6 +93,7 @@ namespace neco {
                                               const spot::state*,
                                               const spot::tgba*) const
     {
+        NECO_DEBUG_TRACE("succ_iter");
         static struct NecoCtx null_ctx;
 
         const neco::state* st = dynamic_cast<const neco::state*>(local_state);
@@ -111,6 +115,7 @@ namespace neco {
 
     spot::bdd_dict* tgba::get_dict() const
     {
+        NECO_DEBUG_TRACE("get_dict");
         return m_dict;
     }
 
@@ -118,6 +123,7 @@ namespace neco {
 
     std::string tgba::format_state(const spot::state* state) const
     {
+        NECO_DEBUG_TRACE("format_state");
         const neco::state* st = dynamic_cast<const neco::state*>(state);
         assert(st);
         return std::string( Model::instance().marking_dump(st->get_marking()));
@@ -127,6 +133,7 @@ namespace neco {
 
     bdd tgba::state_condition(const spot::state* state) const
     {
+        NECO_DEBUG_TRACE("state_condition");
         const neco::state* st = dynamic_cast<const neco::state*>(state);
         assert(st);
 

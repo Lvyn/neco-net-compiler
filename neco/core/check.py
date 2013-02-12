@@ -39,6 +39,8 @@ def spot_formula(formula):
         return '(G ' + spot_formula(formula.formula) + ')'
     elif formula.isFuture():
         return '(F ' + spot_formula(formula.formula) + ')'
+    elif formula.isUntil():
+        return '(' + spot_formula(formula.left) + ' U ' + spot_formula(formula.right) + ')'
     elif formula.isBool():
         return 'true' if formula.value else 'false'
     else:

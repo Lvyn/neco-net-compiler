@@ -219,7 +219,6 @@ main(int argc, char **argv)
       std::cout << "negating the formula" << std::endl;
       std::stringstream ss;
       ss << "!(" << formula.c_str() << ")";
-
       f = spot::ltl::parse(ss.str(), pel, env, false);
       exit_code = spot::ltl::format_parse_errors(std::cerr, formula.c_str(), pel);
   }
@@ -251,6 +250,7 @@ main(int argc, char **argv)
   }
 
   tm.start("translating formula");
+
   prop = spot::ltl_to_tgba_fm(f, dict, true /* optimize determinism */);
   tm.stop("translating formula");
 
@@ -315,11 +315,13 @@ main(int argc, char **argv)
   {
       spot::emptiness_check* ec = echeck_inst->instantiate(product);
       bool search_many = echeck_inst->options().get("repeated");
+
       assert(ec);
       do {
           int memused = spot::memusage();
           tm.start("running emptiness check");
           spot::emptiness_check_result* res;
+
           try {
               res = ec->check();
           }
@@ -331,6 +333,7 @@ main(int argc, char **argv)
           }
           tm.stop("running emptiness check");
 
+
           memused = spot::memusage() - memused;
 
           if (output != DotCounterExample) {
@@ -338,6 +341,7 @@ main(int argc, char **argv)
               std::cout << memused << " pages allocated for emptiness check"
                         << std::endl;
           }
+
 
           if (expect_counter_example == !res &&
               (!expect_counter_example || ec->safe()))

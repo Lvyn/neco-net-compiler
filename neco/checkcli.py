@@ -19,6 +19,7 @@ from neco import g_logo
 import cPickle as pickle
 
 from neco import compile_checker
+from yappy.parser import LRParserError
 import core.xmlproperties
 import compilecli
 
@@ -69,9 +70,6 @@ class Main(object):
         else:
             args = parser.parse_args()
 
-        print ">>>> ", args.ns_args
-
-
         trace_file = args.trace
         profile = args.profile
         formula = args.formula
@@ -91,15 +89,24 @@ class Main(object):
         if ext == 'py':
             model = name
         elif ext == 'abcd':
-            abcd = name
+            abcd = model_file
         elif ext == 'pnml':
-            pnml = name
+            pnml = model_file
 
         assert(exclusive([model, abcd, pnml]))
+        if not model:
+            model = model_file
+        remove_pnml = False
+        if abcd and not pnml:
+            remove_pnml = True
+            pnml = "/tmp/__neco__tmp.{}.pnml".format(os.getpid())
 
         net = None
-        if pnml:
+        if abcd:
+            compilecli.produce_pnml_file(model, pnml)
             net = compilecli.load_pnml_file(pnml)
+        elif pnml:
+            net = compilecli.load_pnml_file(model)
         elif model:
             net = compilecli.load_snakes_net(model, 'net')
         assert(net)
@@ -113,8 +120,11 @@ class Main(object):
         args.includes.extend(env_includes)
 
         if formula:
-            formula = core.properties.PropertyParser().input(formula)
-
+            try:
+                formula = core.properties.PropertyParser().input(formula)
+            except LRParserError as e:
+                print >> sys.stderr, "Syntax error in formula."
+                exit(-1)
         elif xml_file:
             properties = core.xmlproperties.parse(xml_file)
             if not properties:
@@ -137,6 +147,13 @@ class Main(object):
                            ns_args = args.ns_args)
 
         compile_checker(formula, net, config)
+
+        if remove_pnml:
+            print "Removing PNML ({})".format(pnml)
+            try:
+                os.remove(pnml)
+            except IOError:
+                pass
 
 if __name__ == '__main__':
     Main()

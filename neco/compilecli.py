@@ -128,6 +128,12 @@ class Main(object):
 
         args.includes.extend(env_includes)
 
+        try:
+            if module and module[-3:] == '.py':
+                module = module[:-3]
+        except IndexError:
+            pass
+
         # checks for conflicts in options
         if module:
             model_file = module + '.py'

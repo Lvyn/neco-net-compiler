@@ -111,12 +111,12 @@ cdef class MultiSet:
         """
         return len(self._data)
 
-    cdef size(MultiSet self):
+    cdef int size(MultiSet self):
         """ number of elements, excluding repetitions
 
         @rtype: C{int}
         """
-        return dict.__len__(self)
+        return sum(self._data.values())
 
     cdef int hash(MultiSet self):
         cdef long x = 0x345678L
@@ -229,6 +229,19 @@ cdef class MultiSet:
 
     cdef has_key(MultiSet self, object key):
         return self._data.has_key(key)
+
+
+
+cdef MultiSet int_place_type_to_multiset(TGenericPlaceType[int]* place_type):
+    cdef MultiSet ms = MultiSet()
+    cdef int size = place_type.size()
+
+    for 0 <= i < size:
+        ms.add(<int> place_type.get(i))
+
+    return ms
+
+
 
 ################################################################################
 #

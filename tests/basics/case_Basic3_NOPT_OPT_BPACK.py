@@ -1,4 +1,6 @@
-from snakes.nets import *
+import snakes.plugins
+snakes.plugins.load("gv", "snakes.nets", "nets")
+from nets import *
 
 net = PetriNet('Net')
 net.processes = []
@@ -34,3 +36,7 @@ net.add_transition(transition)
 
 net.add_input('s2', 't2', Value(dot))
 net.add_output('s3', 't2', Value(dot))
+
+if __name__ == '__main__':
+    print 'writing net.ps'
+    net.draw("net.ps")

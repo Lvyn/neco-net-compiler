@@ -1,4 +1,5 @@
 #include "neco_succiter.h"
+#include "debug.h"
 #include <cstdlib>
 
 namespace neco {
@@ -27,6 +28,7 @@ namespace neco {
 
     void succ_iterator::first()
     {
+        NECO_DEBUG_TRACE("succ_iterator::first");
         m_node_index = 0;
     }
 
@@ -34,6 +36,7 @@ namespace neco {
 
     void succ_iterator::next()
     {
+        NECO_DEBUG_TRACE("succ_iterator::next");
         ++m_node_index;
     }
 
@@ -41,17 +44,18 @@ namespace neco {
 
     bool succ_iterator::done() const
     {
-        return m_node_index >= m_list->size();
+        NECO_DEBUG_TRACE("succ_iterator::done");
+        return m_list->size() <= m_node_index;
     }
 
     //////////////////////////////////////////////////
 
     spot::state* succ_iterator::current_state() const
     {
+        NECO_DEBUG_TRACE("succ_iterator::current_state");
         void* elt = (*m_list)[m_node_index];
-        //std::cout << "dump " << Model::instance().marking_dump(static_cast<struct Marking*>(elt)) << std::endl;
-        neco::state* st = new neco::state( static_cast<struct Marking*>(elt) );
-        return st;
+        assert(elt);
+        return new neco::state( static_cast<struct Marking*>(elt) );
     }
 
     //////////////////////////////////////////////////

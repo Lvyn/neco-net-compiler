@@ -76,15 +76,13 @@ cdef class MultiSet:
         cdef void add(MultiSet self, object elt)
         cdef add_items(self, items)
         cdef void remove(MultiSet self, elt)
-        cdef size(MultiSet self)
+        cdef int size(MultiSet self)
         cdef int hash(MultiSet self)
         cdef int compare(MultiSet self, MultiSet other)
         cdef void update(MultiSet self, MultiSet other)
         cdef list domain(MultiSet self)
         cpdef __dump__(MultiSet self)
         cdef has_key(MultiSet self, object key)
-
-
 
 cdef api class Pid[object Pid, type Pid]:
         cdef TPid[int]* mPid
@@ -122,3 +120,6 @@ cdef api class Pid[object Pid, type Pid]:
 # cdef generator_place_type_cstr(dict generator)
 # cdef int generator_place_type_cmp(dict left, dict right)
 # cdef pid_place_type_cstr(list pid)
+
+cdef MultiSet int_place_type_to_multiset(TGenericPlaceType[int]* place_type)
+

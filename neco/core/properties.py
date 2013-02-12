@@ -405,11 +405,11 @@ class PropertyParser(Yappy):
                           (" ms_elts -> INTEGER", lambda l, c : [ l[0] ]),
                           (" ms_elts -> DOT", lambda l, c : [ 'dot' ]),
                           (" ms_elts -> ID", lambda l, c : [ '"' + l[0] + '"' ]),
-                          (" ms_py_expr -> PY_EXPR", self.multiset_python_expression_rule)
+                          (" ms_py_expr -> PY_EXPR ", self.multiset_python_expression_rule)
                           ])
 
         tokenize = [(r'<\[.*\]>', lambda x : ('PY_EXPR', x)),
-                    (r'"[a-zA-Z]+(\s*[a-zA-Z_0-9]+)*"|\'[a-zA-Z]+(\s*[a-zA-Z_0-9]+)*\'', lambda x : ('ID', x[1:-1])),    # protected ids
+                    (r'"[a-zA-Z]+([.a-zA-Z_0-9]+)*"|\'[a-zA-Z]+([()#.a-zA-Z_0-9]+)*\'', lambda x : ('ID', x[1:-1])),    # protected ids
                     (r'\s', ""),    # skip white spaces
                     (r'<=>|<->', lambda x : ('EQUIV', x), ('EQUIV', 50, 'left')),
                     (r'=>|->', lambda x : ('IMPL', x), ('IMPL', 40, 'left')),
@@ -428,9 +428,9 @@ class PropertyParser(Yappy):
                     (r'F', lambda x : ('F', x), ('F', 500, 'noassoc')),
                     (r'X', lambda x : ('X', x), ('X', 500, 'noassoc')),
                     (r'U', lambda x : ('UNTIL', x), ('UNTIL', 400, 'left')),
-                    (r'/\\', lambda x : ('AND', x), ('AND', 300, 'left')),
-                    (r'\\/', lambda x : ('OR', x), ('OR', 200, 'left')),
-                    (r'\^', lambda x : ('XOR', x), ('XOR', 200, 'left')),
+                    (r'and', lambda x : ('AND', x), ('AND', 300, 'left')),
+                    (r'or', lambda x : ('OR', x), ('OR', 200, 'left')),
+                    (r'xor', lambda x : ('XOR', x), ('XOR', 200, 'left')),
                     (r';', lambda x : (x, x), (';', 10, 'left')),
                     (r',', lambda x : (x, x), (',', 10, 'left')),
                     (r'\(|\)|\[|\]|\{|\}', lambda x : (x, x)),
