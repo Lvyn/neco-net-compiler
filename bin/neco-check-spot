@@ -1,0 +1,37 @@
+#!/bin/sh
+
+options=""
+extract_options() {
+    TMP_FILE1=__neco_tmp1__$$
+    TMP_FILE2=__neco_tmp2__$$
+    touch $TMP_FILE1 $TMP_FILE2
+    grep "#" neco_formula > $TMP_FILE1
+    sed s/\#// $TMP_FILE1 > $TMP_FILE2
+    while read line
+    do
+        options="$options $line"
+    done < $TMP_FILE2
+    rm -f $TMP_FILE1 $TMP_FILE2
+}
+
+export THIS=$0
+
+echo "#########################################################################################"
+echo "### running neco-check (neco-check $@)"
+echo "#########################################################################################"
+neco-check "$@"
+if [ "$?" != "0" ]
+then
+    echo "neco-check error"
+    exit 1
+fi
+
+echo "#########################################################################################"
+echo "### parsing neco_formula"
+echo "#########################################################################################"
+extract_options
+
+echo "#########################################################################################"
+echo "### running neco-spot (neco-spot $options neco_formula)"
+echo "#########################################################################################"
+neco-spot $options neco_formula

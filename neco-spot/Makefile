@@ -19,8 +19,6 @@ endif
 
 all: $(OBJS)
 	$(CXX) $(CXXFLAGS) -o $(EXEC) $^ $(LDFLAGS)
-	ln -sf $(PWD)/$(EXEC) ../bin/
-	ln -sf $(PWD)/neco-spot ../bin/
 
 symlinks:
 	ln -s ../ctypes/ctypes.h .

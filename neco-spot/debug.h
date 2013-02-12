@@ -1,6 +1,7 @@
 #ifndef _DEBUG_H_
 #define _DEBUG_H_
 
+#include <Python.h>
 #include <iostream>
 
 #ifdef NECO_TRACE
