@@ -58,6 +58,9 @@ neco/ctypes/ctypes_ext.h
 neco/ctypes/ctypes_ext.cpp
 trace
 *.ig
+.metadata/*
+neco-spot-build/*
+*.user
 syntax: regexp
 .*/.gone/.*
 .gone/.*
