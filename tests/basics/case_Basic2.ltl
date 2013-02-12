@@ -22,13 +22,13 @@ F (marking(s1) = [1] and marking(s2) = [1])
 KO
 G (marking(s1) = [1] or marking(s2) = [1])
 OK
-F ( fireable(t) and X ( ! fireable(t) ) )
+F ( fireable(t) and X ( not fireable(t) ) )
 OK
 G (fireable(t))
 KO
 F (fireable(t))
 OK
-F (! fireable(t))
+F (not fireable(t))
 OK
 G (card(marking(s1)) + card(marking(s2)) = 1)
 OK

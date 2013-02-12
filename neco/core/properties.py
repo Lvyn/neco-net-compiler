@@ -423,7 +423,7 @@ class PropertyParser(Yappy):
                     (r'card', lambda x : ('CARD', x), ('CARD', 700, 'noassoc')),
                     (r'marking', lambda x : ('MARKING', x), ('MARKING', 700, 'noassoc')),
                     (r'dot|@', lambda x : ('DOT', x), ('DOT', 700, 'noassoc')),
-                    (r'!', lambda x : ('NOT', x), ('NOT', 600, 'noassoc')),
+                    (r'not', lambda x : ('NOT', x), ('NOT', 600, 'noassoc')),
                     (r'G', lambda x : ('G', x), ('G', 500, 'noassoc')),
                     (r'F', lambda x : ('F', x), ('F', 500, 'noassoc')),
                     (r'X', lambda x : ('X', x), ('X', 500, 'noassoc')),

@@ -18,7 +18,7 @@ F (deadlock)
 OK
 G (marking(s1) = [] => deadlock)
 OK
-! F (marking(s1) != [] and (deadlock))
+not F (marking(s1) != [] and (deadlock))
 OK
 F (marking(s1) != [] and (deadlock))
 KO

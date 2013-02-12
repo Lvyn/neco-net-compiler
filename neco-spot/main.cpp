@@ -111,7 +111,11 @@ main(int argc, char **argv)
       while (!formula_found && !ifile.eof()) {
           readline(&formula, ifile);
 
-          if (formula[0] == '#' || formula == "") {
+          if (formula == "# -d DEAD") {
+              dead = "DEAD";
+              formula = "";
+              continue;
+          } else if (formula[0] == '#' || formula == "") {
               formula = "";
               continue;
           } else {

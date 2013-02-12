@@ -26,19 +26,19 @@ G (marking(s1) = [dot] => fireable(t1))
 OK
 G (marking(s2) = [dot] => fireable(t2))
 OK
-G (marking(s3) = [dot] => (! fireable(t1) and ! fireable(t2)))
+G (marking(s3) = [dot] => (not fireable(t1) and not fireable(t2)))
 OK
 
-G (marking(s1) != [dot] => !fireable(t1))
+G (marking(s1) != [dot] => not fireable(t1))
 OK
-G (marking(s2) != [dot] => !fireable(t2))
+G (marking(s2) != [dot] => not fireable(t2))
 OK
 
-G (marking(s1) = [dot] => !fireable(t1))
+G (marking(s1) = [dot] => not fireable(t1))
 KO
-G (marking(s2) = [dot] => !fireable(t2))
+G (marking(s2) = [dot] => not fireable(t2))
 KO
-G (marking(s3) > [] => (! fireable(t1) and ! fireable(t2)))
+G (marking(s3) > [] => (not fireable(t1) and not fireable(t2)))
 OK
 F (marking(s3) > [] and (fireable(t1) or fireable(t2)))
 KO
