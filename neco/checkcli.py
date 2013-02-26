@@ -37,7 +37,6 @@ def exclusive(elts, acc = False):
 class Main(object):
 
     def __init__(self, progname = 'checkcli', logo = False, cli_args = None):
-
         print "{} uses python {}".format(progname, sys.version)
 
         if logo:
@@ -52,8 +51,8 @@ class Main(object):
                                          formatter_class = argparse.ArgumentDefaultsHelpFormatter,
                                          usage = "{} [OPTIONS]".format(prog))
 
-        parser.add_argument('--trace', '-t', default = 'trace', dest = 'trace', metavar = 'TRACEFILE', type = str,
-                            help = 'compilation trace file')
+        parser.add_argument('--net', '-n', default = 'net', dest = 'net', metavar = 'COMPILED_MODEL', type = str,
+                            help = 'compiled model')
         parser.add_argument('--profile', '-p', default = 'profile', dest = 'profile', action = 'store_true',
                             help = 'enable profiling.')
         parser.add_argument('--include', '-I', default = ['.'], dest = 'includes', action = 'append', metavar = 'PATH',
@@ -70,7 +69,16 @@ class Main(object):
         else:
             args = parser.parse_args()
 
-        trace_file = args.trace
+        import imp
+        fp, pathname, _ = imp.find_module(args.net)
+        mod = imp.load_module(args.net, fp, pathname, ('.so', 'rb', imp.C_EXTENSION))
+        if fp:
+            fp.close()
+        else:
+            print >> sys.stderr, "unable to find module {}".format(args.net)
+            exit(1)
+        compiled_model = mod
+
         profile = args.profile
         formula = args.formula
         xml_file = args.xml
@@ -78,8 +86,7 @@ class Main(object):
         if formula and xml_file:
             raise RuntimeError
 
-        trace_fd = open(trace_file)
-        trace = pickle.load(trace_fd)
+        trace = pickle.loads(compiled_model._neco_trace_)
         model_file = trace['model']
         i = model_file.rfind('.')
         ext = model_file[i + 1:]
@@ -136,14 +143,13 @@ class Main(object):
             formula = properties[0].formula
 
         # setup config
-
         config = Config()
         config.set_options(profile = profile,
                            backend = 'cython',    # force cython
                            formula = formula,
                            trace_calls = False,
                            search_paths = args.includes,
-                           trace_file = trace_file,
+                           trace = trace,
                            ns_args = args.ns_args)
 
         compile_checker(formula, net, config)

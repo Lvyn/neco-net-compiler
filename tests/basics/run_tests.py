@@ -3,7 +3,6 @@
 from StringIO import StringIO
 from glob import glob
 from snakes.nets import dot    # @UnusedImport needed to rebuild markings
-import compare
 import neco
 import os
 import sys
@@ -19,7 +18,49 @@ except KeyError:
 backend_prefix = { 'python' : 'py_',
                    'cython' : 'cy_' }
 
-def MarkingSet(state_space):
+
+class Marking(object):
+    def __init__(self, init):
+        self.data = { p : sorted(ms) for p, ms in init.iteritems() }
+
+    def __repr__(self):
+        return repr(self.data)
+
+    def __str__(self):
+        return str(self.data)
+
+    def __eq__(self, other):
+        return self.data == other.data
+
+
+class MarkingSet(object):
+    def __init__(self, init):
+        self.data = set( [ Marking(d) for d in init ] )
+
+    def add(self, marking):
+        self.data.add(marking)
+
+    def __contains__(self, marking):
+        for m in self.data:
+            if marking == m:
+                return True
+        return False
+
+    def __eq__(self, other):
+        if len(self.data) != len(other.data):
+            return False
+        for marking in other.data:
+            if not marking in self:
+                return False
+        return True
+
+    def __str__(self):
+        return str(self.data)
+
+    def __repr__(self):
+        return repr(self.data)
+
+def read_marking_set(state_space):
     """ Build a set of markings from a state space. """
 
     out = StringIO()
@@ -28,7 +69,7 @@ def MarkingSet(state_space):
         out.write(s.__dump__())
         out.write(', ')
     out.write(']')
-    return compare.MarkingSet(eval(out.getvalue()))
+    return MarkingSet(eval(out.getvalue()))
 
 class Entry:
     """ A file used as a test. """
@@ -97,32 +138,32 @@ class NecoTestCase(object):
         net = neco.compile_net(model, config)
         self.test.assert_(net, 'compilation_check')
         # state space computation
-        markings = MarkingSet(net.state_space())
+        markings = read_marking_set(net.state_space())
         self.test.assertEqual(expected, markings, "correct markings")
 
     def load_net(self):
         module_file = self.entry.module_name
-        out_file = self.entry.module_name + '.out'
+        out_file = self.entry.module_name + '.ss'
 
         model = neco.load_snakes_net(module_file, 'net')
-        expected = compare.MarkingSet(eval(open(out_file).read()))
+        expected = MarkingSet(eval(open(out_file).read()))
 
         return model, expected
 
     def load_abcd(self):
         model_file = self.entry.module_name
-        out_file = self.entry.module_name + '.out'
+        out_file = self.entry.module_name + '.ss'
 
         pnml = neco.produce_pnml_file(model_file + '.abcd')
         model = neco.load_pnml_file(pnml, True)
-        expected = compare.MarkingSet(eval(open(out_file).read()))
+        expected = MarkingSet(eval(open(out_file).read()))
 
         return model, expected
 
     def compile_net(self):
         net = neco.compile_net(net = self.model)
         self.test.assert_(net, 'compilation_check')
-        self.markings = MarkingSet(net.state_space())
+        self.markings = read_marking_set(net.state_space())
 
 
 def config_NOPT(backend, entry):

@@ -417,13 +417,18 @@ class CompilerVisitor(coreir.CompilerVisitor):
 
     def compile_NormalizeMarking(self, node):
         function = mrkpidmethods.select_normalization_function(self.config)
+
+        pidfree_hash_set = "{}.pid_free_hash".format(node.arg_ctx_var.name)
+        state_space = "{}.state_space".format(node.arg_ctx_var.name)
+        remaining_set = "{}.remaining".format(node.arg_ctx_var.name)
+
         return pyast.E("{dst} = {fun}({mrk}, {hs}, {acc}, {todo}, {ss})".format(dst = node.normalized_marking_var.name,
                                                                                 fun = function,
                                                                                 mrk = node.marking_var.name,
-                                                                                hs = node.pidfree_hash_set_var.name,
+                                                                                hs = pidfree_hash_set,
                                                                                 acc = node.marking_acc_var.name,
-                                                                                todo = node.remaining_set_var.name,
-                                                                                ss = node.state_space_var.name))
+                                                                                todo = remaining_set,
+                                                                                ss = state_space))
 
     def compile_AddPid(self, node):
         place_type = self.env.marking_type.get_place_type_by_name(node.place_name)
@@ -436,7 +441,8 @@ class CompilerVisitor(coreir.CompilerVisitor):
 
     def compile_UpdateHashSet(self, node):
         # return []
-        return pyast.stmt(pyast.E("{}.add({}.__pid_free_hash__())".format(node.pidfree_hash_set_var.name, node.marking_var.name)))
+        pidfree_hash_set = "{}.pid_free_hash".format(node.ctx_var.name)
+        return pyast.stmt(pyast.E("{}.add({}.__pid_free_hash__())".format(pidfree_hash_set, node.marking_var.name)))
 
 ################################################################################
 # EOF

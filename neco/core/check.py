@@ -51,9 +51,7 @@ class CheckerCompiler(object):
     """
 
     def __init__(self, formula, net, config, backend):
-        trace_file = open(config.trace_file, 'rb')
-
-        trace = pickle.load(trace_file)
+        trace = config.trace
         self.marking_type = trace['marking_type']
         self.config = config
 

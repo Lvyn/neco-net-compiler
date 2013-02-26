@@ -26,7 +26,7 @@ def new_compiling_environment(config, net_info, word_set, marking_type):
     env.register_cython_type(marking_type.type, "Marking")
     return env
 
-def compile_IR(env, config):
+def compile_IR(env, config, compiler_):
     search_paths = config.search_paths
     module_name = config.out_module
 
@@ -108,6 +108,8 @@ def compile_IR(env, config):
     compiler = netir.CompilerVisitor(env)
     for node in env.function_nodes():
         module_pyx_file.body.append(compiler.compile(node))
+
+    module_pyx_file.body.append(cyast.E('_neco_trace_ = {!r}'.format(compiler_.produce_compilation_trace())))
 
     ################################################################################
     # produce code

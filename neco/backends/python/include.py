@@ -16,8 +16,8 @@ perm_log = open('perm_log', 'w')
 calls = 0
 def full_normalize_marking(marking, hash_set, current_set, todo_set, state_space):
     pid_tree = marking.buildPidTree()
+    pid_tree.strip()
     pid_tree.order_tree(pid_free_marking_order)
-
     default_tree = pid_tree
     bijection = default_tree.build_map()
     default_marking = marking.copy()

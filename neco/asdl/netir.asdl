@@ -92,7 +92,7 @@ module netir version "$Revision: 1 $"
 	| AddMarking(VariableInfo 		marking_set_var,
 		     	 VariableInfo 		marking_var)
 
-	| UpdateHashSet(VariableInfo 	pidfree_hash_set_var,
+	| UpdateHashSet(VariableInfo 	ctx_var,
 		     	 	VariableInfo 	marking_var)
 
 	| FlushIn(VariableInfo 			token_var,
@@ -145,9 +145,7 @@ module netir version "$Revision: 1 $"
 	| NormalizeMarking(VariableInfo 	normalized_marking_var,
 					   VariableInfo 	marking_var,
 					   VariableInfo 	marking_acc_var,
-					   VariableInfo 	state_space_var,
-					   VariableInfo 	pidfree_hash_set_var,
-					   VariableInfo 	remaining_set_var)
+					   VariableInfo 	arg_ctx_var)
 
     Expr = PyExpr(string expr)
 

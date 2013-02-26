@@ -10,6 +10,7 @@ from info import *
 from itertools import izip_longest
 
 from netir import PyExpr
+import StringIO
 
 ################################################################################
 
@@ -875,16 +876,14 @@ class SuccTGenerator(object):
         # add pid normalization step if needed
         if self.config.normalize_pids:
             builder.emit_NormalizeMarking(normalized_marking_var = normalized_marking_var,
-                                           marking_var = new_marking_var,
-                                           marking_acc_var = self.marking_acc_var,
-                                           pidfree_hash_set_var = self.pidfree_hash_set_var,
-                                           remaining_set_var = self.remaining_set_var,
-                                           state_space_var = self.arg_state_space_var)
+                                          marking_var = new_marking_var,
+                                          marking_acc_var = self.marking_acc_var,
+                                          arg_ctx_var = self.ctx_var)
 
             builder.emit_AddMarking(marking_set_var = self.marking_acc_var,
-                                     marking_var = normalized_marking_var)
-            builder.emit_UpdateHashSet(pidfree_hash_set_var = self.pidfree_hash_set_var,
-                                        marking_var = normalized_marking_var)
+                                    marking_var = normalized_marking_var)
+            builder.emit_UpdateHashSet(ctx_var = self.ctx_var,
+                                       marking_var = normalized_marking_var)
         else:
             # add marking to set
             builder.emit_AddMarking(marking_set_var = self.marking_acc_var,
@@ -1134,19 +1133,21 @@ class Compiler(object):
         env.main_successor_function_node = flatten_lists(self._gen_main_succ())
         env.init_function_node = flatten_lists(self._gen_init())
 
-    def produce_compilation_trace(self, compilation_trace_name):
-        trace_file = open(compilation_trace_name, 'wb')
+    def produce_compilation_trace(self):
         trace_object = { "marking_type" : self.marking_type,
                          "optimize"     : self.config.optimize,
                          "model"        : self.config.model }
-        pickle.dump(trace_object, trace_file, -1)
-        trace_file.close()
+
+        io = StringIO.StringIO()
+        pickle.dump(trace_object, io, -1)
+        v = io.getvalue()
+        io.close()
+        return v
 
     def run(self):
         self.gen_netir()
         self.optimize_netir()
-        net = self.backend.compile_IR(self.env, self.config)
-        self.produce_compilation_trace(self.config.trace_file)
+        net = self.backend.compile_IR(self.env, self.config, self)
         return net
 
 ################################################################################

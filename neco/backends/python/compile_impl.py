@@ -13,10 +13,10 @@ class Env(CompilingEnvironment):
 
     def __init__(self, config, net_info, word_set, marking_type):
         CompilingEnvironment.__init__(self, config, net_info)
-        
+
         self.marking_type = marking_type
         self.marking_set_type = nettypes.MarkingSetType(marking_type)
-        
+
         self._imports = set([])
         self._declarations = set([])
         self._variable_provider = []
@@ -44,8 +44,8 @@ class Env(CompilingEnvironment):
             nodes.append(stmt)
 
         for module in self._imports:
-            nodes.append(ast.Import(names=[ ast.alias(name=module,
-                                                           asname=None) ]))
+            nodes.append(ast.Import(names = [ ast.alias(name = module,
+                                                           asname = None) ]))
         return nodes
 
 
@@ -55,7 +55,7 @@ def new_marking_type(name, config):
 def new_compiling_environment(config, net_info, word_set, marking_type):
     return Env(config, net_info, word_set, marking_type)
 
-def compile_IR(env, config):
+def compile_IR(env, config, compiler_):
     search_paths = config.search_paths
 
     for decl in env.net_info.declare:
@@ -82,10 +82,10 @@ def compile_IR(env, config):
 
     for node in env.function_nodes():
         compiled_nodes.append(compiler.compile(node))
-    
+
     compiled_nodes = env.gen_imports() + compiled_nodes
-    
-    module_ast = ast.Module(body=compiled_nodes)
+
+    module_ast = ast.Module(body = compiled_nodes)
     module_ast = ast.fix_missing_locations(module_ast)
 
     module_name = config.out_module
