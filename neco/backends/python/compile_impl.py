@@ -7,6 +7,7 @@ import imp
 import netir
 import nettypes
 import re
+import StringIO, cPickle
 
 class Env(CompilingEnvironment):
     """ Compiling environment used for co1mpiling with the python backend. """
@@ -76,7 +77,11 @@ def compile_IR(env, config, compiler_):
         env.add_declaration('from {} import *'.format(mod))
 
     for name, value  in compiler_.net.globals:
-        env.add_declaration("{} = {}".format(name, value))
+        string_io = StringIO.StringIO()
+        cPickle.dump(value, string_io)
+        value = string_io.getvalue()
+        string_io.close()
+        env.add_declaration("{} = cPickle.load(StringIO.StringIO({!r}))".format(name, value))
 
     compiled_nodes = []
 

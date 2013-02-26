@@ -912,8 +912,8 @@ class Compiler(object):
         """
 
         self.config = config
-        self.backend = backend
         self.net = net
+        self.backend = backend
         self.net_info = NetInfo(net)
 
         if self.config.normalize_pids:

@@ -12,6 +12,8 @@ from neco.utils import flatten_ast, search_file, OutputProvider, \
 import imp
 import nettypes
 import os
+import StringIO
+import cPickle
 from distutils.sysconfig import get_config_vars
 
 _backend_ = "cython"
@@ -71,7 +73,11 @@ def compile_IR(env, config, compiler_):
 
     module_pyx_file.declarations.append("")
     for name, value  in compiler_.net.globals:
-        module_pyx_file.declarations.append("{} = {}".format(name, value))
+        string_io = StringIO.StringIO()
+        cPickle.dump(value, string_io)
+        value = string_io.getvalue()
+        string_io.close()
+        module_pyx_file.declarations.append("{} = cPickle.load(StringIO.StringIO({!r}))".format(name, value))
     module_pyx_file.declarations.append("")
 
 
