@@ -69,6 +69,12 @@ def compile_IR(env, config, compiler_):
     # model imports
     module_pyx_file.declarations.extend(env.net_info.declare)
 
+    module_pyx_file.declarations.append("")
+    for name, value  in compiler_.net.globals:
+        module_pyx_file.declarations.append("{} = {}".format(name, value))
+    module_pyx_file.declarations.append("")
+
+
     ################################################################################
     # inline hand written code into pyx
     ################################################################################

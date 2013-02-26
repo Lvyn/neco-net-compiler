@@ -17,8 +17,8 @@ class Env(CompilingEnvironment):
         self.marking_type = marking_type
         self.marking_set_type = nettypes.MarkingSetType(marking_type)
 
-        self._imports = set([])
-        self._declarations = set([])
+        self._imports = []
+        self._declarations = []
         self._variable_provider = []
 
     @property
@@ -32,10 +32,10 @@ class Env(CompilingEnvironment):
         self._variable_provider.pop()
 
     def add_import(self, module):
-        self._imports.add(module)
+        self._imports.append(module)
 
     def add_declaration(self, decl):
-        self._declarations.add(decl)
+        self._declarations.append(decl)
 
     def gen_imports(self):
         nodes = []
@@ -74,6 +74,9 @@ def compile_IR(env, config, compiler_):
 
     for mod in config.imports:
         env.add_declaration('from {} import *'.format(mod))
+
+    for name, value  in compiler_.net.globals:
+        env.add_declaration("{} = {}".format(name, value))
 
     compiled_nodes = []
 
