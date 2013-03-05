@@ -36,6 +36,23 @@ class mydefaultdict(dict):
 
 NEXT_PID = "next_pid"
 
+def perm(l):
+    if not l:
+        yield l
+    for i, e in enumerate(l):
+        tail = l[0:i] + l[i + 1:]
+        for t in perm(tail):
+            yield [e] + t
+
+def prod_perm(l):
+    if not l:
+        yield l
+    else:
+        for p in perm(l[0]):
+            for tail in prod_perm(l[1:]):
+                yield p + tail
+
+
 class PidTree(object):
 
     def __init__(self, frag):
@@ -137,14 +154,15 @@ class PidTree(object):
             identity = id(value)
             if not identity in identities:
                 identities.add(identity)
-                permutable_children.append(value)
+                permutable_children.append(list(value))
 
         return permutable_children
 
     def permutations(self):
         permutable = self.permutable_children()
-        for permutation in itertools.product(*[itertools.permutations(p) for p in permutable]):
-            yield itertools.chain.from_iterable(permutation)
+        return prod_perm(permutable)
+        # for permutation in itertools.product(*[itertools.permutations(p) for p in permutable]):
+        #      yield itertools.chain.from_iterable(permutation)
 
     def itertrees(self, n = 0):
         for permutation in self.permutations():
