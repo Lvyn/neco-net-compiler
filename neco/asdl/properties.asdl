@@ -8,7 +8,7 @@ module Properties version "0.1"
 
     UnaryTemporalLogicOperator = Globally(Formula formula) | Future(Formula formula) | Next(Formula formula)
 
-    BinaryTemporalLogicOperator = Until(Formula left, Formula right)
+    BinaryTemporalLogicOperator = Until(Formula left, Formula right) | Release(Formula left, Formula right)
 
     LogicOperator = UnaryLogicOperator | BinaryLogicOperator | NaryLogicOperator
 

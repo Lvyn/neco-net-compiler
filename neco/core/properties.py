@@ -377,6 +377,7 @@ class PropertyParser(Yappy):
                           (" formula -> F formula", self.future_rule),
                           (" formula -> X formula", self.next_rule),
                           (" formula -> formula UNTIL formula", self.until_rule),
+                          (" formula -> formula RELEASE formula", self.release_rule),
                           (" formula -> formula AND formula", self.and_rule),
                           (" formula -> formula OR formula", self.or_rule),
                           (" formula -> formula XOR formula", self.xor_rule),
@@ -408,7 +409,7 @@ class PropertyParser(Yappy):
                           (" ms_py_expr -> PY_EXPR ", self.multiset_python_expression_rule)
                           ])
 
-        tokenize = [(r'<\[.*\]>', lambda x : ('PY_EXPR', x)),
+        tokenize = [(r'\$[^$]*\$', lambda x : ('PY_EXPR', x)),
                     (r'"[a-zA-Z]+([.a-zA-Z_0-9]+)*"|\'[a-zA-Z]+([()#.a-zA-Z_0-9]+)*\'', lambda x : ('ID', x[1:-1])),    # protected ids
                     (r'\s', ""),    # skip white spaces
                     (r'<=>|<->', lambda x : ('EQUIV', x), ('EQUIV', 50, 'left')),
@@ -427,6 +428,7 @@ class PropertyParser(Yappy):
                     (r'G', lambda x : ('G', x), ('G', 500, 'noassoc')),
                     (r'F', lambda x : ('F', x), ('F', 500, 'noassoc')),
                     (r'X', lambda x : ('X', x), ('X', 500, 'noassoc')),
+                    (r'R', lambda x : ('RELEASE', x), ('RELEASE', 440, 'left')),
                     (r'U', lambda x : ('UNTIL', x), ('UNTIL', 400, 'left')),
                     (r'and', lambda x : ('AND', x), ('AND', 300, 'left')),
                     (r'or', lambda x : ('OR', x), ('OR', 200, 'left')),
@@ -437,11 +439,11 @@ class PropertyParser(Yappy):
                     (r'[a-zA-Z]+[a-zA-Z_0-9]*', lambda x : ('ID', x)),
                     (r'[0-9]+', lambda x : ('INTEGER', x)),
                     ]
-#        import os
-#        try:
-#            os.remove("YappyTab")
-#        except:
-#            pass
+        import os
+        try:
+            os.remove("YappyTab")
+        except:
+            pass
         Yappy.__init__(self, tokenize = tokenize, grammar = grammar)
 
     def default_rule(self, tokens, ctx):
@@ -488,6 +490,13 @@ class PropertyParser(Yappy):
         Until(left=Deadlock(), right=Deadlock())
         """
         return Until(tokens[0], tokens[2])
+
+    def release_rule(self, tokens, ctx):
+        """
+        >>> print ast.dump(PropertyParser().input('deadlock R deadlock'))
+        Release(left=Deadlock(), right=Deadlock())
+        """
+        return Release(tokens[0], tokens[2])
 
     def and_rule(self, tokens, ctx):
         """

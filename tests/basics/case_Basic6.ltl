@@ -1,4 +1,4 @@
-F (marking(s1) = <[ ctypes_ext.MultiSet({ (1,2) : 1 }) ]> and marking(s2) = [1] and marking(s3) = [2])
+F (marking(s1) = $ ctypes_ext.MultiSet({ (1,2) : 1 }) $ and marking(s2) = [1] and marking(s3) = [2])
 OK
 F (marking(s1) = [] and marking(s2) = [] and marking(s3) = [])
 OK

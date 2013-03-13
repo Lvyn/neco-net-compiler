@@ -77,6 +77,7 @@ def compile_IR(env, config, compiler_):
         env.add_declaration('from {} import *'.format(mod))
 
     for name, value  in compiler_.net.globals:
+        print "GLOBALS {} {}".format(name, value)
         string_io = StringIO.StringIO()
         cPickle.dump(value, string_io)
         value = string_io.getvalue()

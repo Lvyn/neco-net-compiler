@@ -130,7 +130,8 @@ class Main(object):
             try:
                 formula = core.properties.PropertyParser().input(formula)
             except LRParserError as e:
-                print >> sys.stderr, "Syntax error in formula."
+                import pprint
+                pprint.pprint("Syntax error in formula.")
                 exit(-1)
         elif xml_file:
             properties = core.xmlproperties.parse(xml_file)

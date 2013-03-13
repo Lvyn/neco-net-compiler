@@ -459,6 +459,7 @@ def produce_and_compile_pyx(checker_env, id_prop_map):
     f = open(base_dir + "checker.pyx", "w")
 
     f.write("cimport net\n")
+    f.write("import net\n")
     f.write("cimport neco.ctypes.ctypes_ext as ctypes_ext\n")
     f.write("import sys, StringIO\n")
     f.write("import cPickle as pickle\n")
