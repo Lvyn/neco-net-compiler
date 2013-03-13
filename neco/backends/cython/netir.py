@@ -417,7 +417,7 @@ class CompilerVisitor(coreir.CompilerVisitor):
         result = cyast.to_ast(cyast.Builder.FunctionDef(name = node.function_name,
                                                         args = self.succ_function_args(node),
                                                         body = stmts,
-                                                        lang = cyast.CpDef(public = True),
+                                                        lang = cyast.CDef(public = True),
                                                         returns = cyast.Name(""),
                                                         decl = decl))
         return result
@@ -448,6 +448,7 @@ class CompilerVisitor(coreir.CompilerVisitor):
         f1 = cyast.Builder.FunctionCDef(name = node.function_name,
                                         args = self.main_succ_function_args(node),
                                         body = body,
+                                        lang = cyast.CpDef(public = True),
                                         returns = cyast.Name("set"),
                                         decl = [ cyast.CVar(name = node.arg_marking_acc_var.name,
                                                             type = self.env.type2str(node.arg_marking_acc_var.type),
