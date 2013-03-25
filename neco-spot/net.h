@@ -8,8 +8,8 @@ struct Marking;
  * cimport neco.ctypes.ctypes_ext as ctypes_ext
  * 
  * cdef public class NecoCtx(object)[object NecoCtx, type NecoCtxType]:             # <<<<<<<<<<<<<<
- *     cdef set state_space
- *     cdef set pid_free_hash
+ *     cdef public set state_space
+ *     cdef public set pid_free_hash
  */
 struct NecoCtx {
   PyObject_HEAD
@@ -22,13 +22,14 @@ struct NecoCtx {
  * 
  * 
  * cdef public class Marking(object)[object Marking, type MarkingType]:             # <<<<<<<<<<<<<<
- *     cdef unsigned char _n1__packed[1]
- * 
+ *     cdef short _n2 	# s2 - BlackToken
+ *     cdef short _n3 	# s1 - BlackToken
  */
 struct Marking {
   PyObject_HEAD
   struct __pyx_vtabstruct_3net_Marking *__pyx_vtab;
-  unsigned char _n1__packed[1];
+  short _n2;
+  short _n3;
 };
 
 #ifndef __PYX_HAVE_API__net
@@ -50,11 +51,8 @@ __PYX_EXTERN_C DL_IMPORT(char) *neco_marking_dump(struct Marking *);
 __PYX_EXTERN_C DL_IMPORT(struct Marking) *neco_marking_copy(struct Marking *);
 __PYX_EXTERN_C DL_IMPORT(int) neco_marking_compare(struct Marking *, struct Marking *);
 __PYX_EXTERN_C DL_IMPORT(int) neco_marking_hash(struct Marking *);
-__PYX_EXTERN_C DL_IMPORT(PyObject) *succs_0(struct Marking *, PyObject *, struct NecoCtx *, int __pyx_skip_dispatch);
-__PYX_EXTERN_C DL_IMPORT(PyObject) *succs_1(struct Marking *, PyObject *, struct NecoCtx *, int __pyx_skip_dispatch);
-__PYX_EXTERN_C DL_IMPORT(PyObject) *succs_2(struct Marking *, PyObject *, struct NecoCtx *, int __pyx_skip_dispatch);
-__PYX_EXTERN_C DL_IMPORT(PyObject) *succs_3(struct Marking *, PyObject *, struct NecoCtx *, int __pyx_skip_dispatch);
-__PYX_EXTERN_C DL_IMPORT(PyObject) *succs(struct Marking *, struct NecoCtx *);
+__PYX_EXTERN_C DL_IMPORT(PyObject) *succs_0(struct Marking *, PyObject *, struct NecoCtx *);
+__PYX_EXTERN_C DL_IMPORT(PyObject) *succs(struct Marking *, struct NecoCtx *, int __pyx_skip_dispatch);
 __PYX_EXTERN_C DL_IMPORT(struct Marking) *neco_init(void);
 
 #endif /* !__PYX_HAVE_API__net */

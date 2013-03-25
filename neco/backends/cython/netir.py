@@ -445,15 +445,15 @@ class CompilerVisitor(coreir.CompilerVisitor):
         body = []
         body.extend(self.compile(node.body))
         body.append(cyast.E("return " + node.arg_marking_acc_var.name))
-        f1 = cyast.Builder.FunctionCDef(name = node.function_name,
-                                        args = self.main_succ_function_args(node),
-                                        body = body,
-                                        lang = cyast.CpDef(public = True),
-                                        returns = cyast.Name("set"),
-                                        decl = [ cyast.CVar(name = node.arg_marking_acc_var.name,
-                                                            type = self.env.type2str(node.arg_marking_acc_var.type),
-                                                            init = self.env.marking_set_type.new_marking_set_expr(self.env)) ]
-                                        )
+        f1 = cyast.Builder.FunctionCpDef(name = node.function_name,
+                                         args = self.main_succ_function_args(node),
+                                         body = body,
+                                         lang = cyast.CpDef(public = True),
+                                         returns = cyast.Name("set"),
+                                         decl = [ cyast.CVar(name = node.arg_marking_acc_var.name,
+                                                             type = self.env.type2str(node.arg_marking_acc_var.type),
+                                                             init = self.env.marking_set_type.new_marking_set_expr(self.env)) ]
+                                         )
 
         body = [ cyast.E("l = ctypes_ext.neco_list_new()") ]
 
