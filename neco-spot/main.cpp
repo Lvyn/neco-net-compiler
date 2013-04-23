@@ -14,12 +14,11 @@
 #include <spot/ltlparse/public.hh>
 #include <spot/ltlvisit/simplify.hh>
 #include <spot/tgbaalgos/ltl2tgba_fm.hh>
-#include <spot/tgbaalgos/sccfilter.hh>
 #include <spot/tgbaalgos/emptiness.hh>
-#include <spot/tgbaalgos/minimize.hh>
 #include <spot/tgbaalgos/rundotdec.hh>
 #include <spot/tgbaalgos/reducerun.hh>
 #include <spot/tgbaalgos/stats.hh>
+#include <spot/tgbaalgos/postproc.hh>
 #include <spot/tgba/tgbatba.hh>
 #include <spot/tgba/tgbaproduct.hh>
 #include <spot/misc/timer.hh>
@@ -83,8 +82,7 @@ main(int argc, char **argv)
                                          " m: draw the model state-space\n"
                                          " p: draw the product state-space")
       ("ss-size,k", "compute size of state-space")
-      ("times,T", "time the different phases of the execution")
-      ("minimize-wdba,W", "enable WDBA minimization")
+      ("times,T", "time the different phases of the execution")      
   ;
 
   po::options_description cmdline_options;
@@ -189,7 +187,7 @@ main(int argc, char **argv)
   int exit_code = 0;
   const spot::ltl::formula* f = 0;
   const spot::ltl::formula* deadf = 0;
-
+  spot::postprocessor post;
 
   Py_Initialize();
   neco::Model::instance(); // force model instantiation
@@ -258,26 +256,10 @@ main(int argc, char **argv)
   prop = spot::ltl_to_tgba_fm(f, dict, true /* optimize determinism */);
   tm.stop("translating formula");
 
-  tm.start("reducing A_f w/ SCC");
-  {
-      const spot::tgba* aut_scc = spot::scc_filter(prop, true);
-      delete prop;
-      prop = aut_scc;
+  if (false) { // TO DO options
+    post.set_pref(spot::postprocessor::Deterministic);
   }
-  tm.stop("reducing A_f w/ SCC");
-
-  if (wdba) {
-      tm.start("WDBA minimization");
-      const spot::tgba* minimized = 0;
-      minimized = minimize_obligation(prop, f);
-
-      if (minimized != prop) {
-	  delete prop;
-	  prop = minimized;
-      }
-
-      tm.stop("WDBA minimization");
-  }
+  prop = post.run(prop, f);
 
   if (output == DotFormula) {
       tm.start("dotty output");
