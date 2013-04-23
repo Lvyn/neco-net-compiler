@@ -1,5 +1,3 @@
-from snakes.nets import *
-
 const MAX = 5
 const OPEN = 2
 const MOVING = 1
