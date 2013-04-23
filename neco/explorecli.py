@@ -133,14 +133,14 @@ class Main(object):
 
     def explore(self):
         """ Explore state space. """
-
         net = self.compiled_net
-        start = time()
-        ss = net.state_space()
-        end = time()
         if self.print_mcc:
-            print len(ss)
+            ss = net.state_space_mcc()
+            print len(ss)            
         else:
+            start = time()
+            ss = net.state_space()
+            end = time()        
             print "exploration time: ", end - start
             print "len visited = %d" % (len(ss))
 

@@ -120,3 +120,24 @@ cpdef state_space_graph():
         print
         return graph, mrk_id_map
     return graph, mrk_id_map
+
+cpdef state_space_mcc():
+    cdef set visited
+    cdef set visit
+    cdef set succ
+    cdef int count
+    cdef NecoCtx ctx = NecoCtx()
+    try:
+        visited = set()
+        visit = set([init()])
+        succ = set()
+        count = 0
+        while True:
+            count += 1
+            m = visit.pop()
+            visited.add(m)
+            succ = succs(m, ctx)
+            visit.update(succ.difference(visited))
+    except KeyError:
+        return visited
+    return visited
