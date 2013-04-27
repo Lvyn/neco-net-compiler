@@ -111,6 +111,35 @@ def state_space():
     print
     return done
 
+def state_space_mcc():
+    ctx = NecoCtx()
+    succ = set()
+    succs2 = set()
+    count = 0
+
+    done = set()
+    todo = set([init()])
+    hash_set = set()
+
+    ctx.state_space = done
+    ctx.remaining = todo
+    ctx.pid_free_hash = hash_set
+
+    try:
+        while True:
+            m = todo.pop()
+            count += 1
+
+            done.add(m)
+            succ = succs(m, ctx)
+            succs2 = succ.difference(done)
+            todo.update(succs2)
+            succ.clear()
+            succs2.clear()
+
+    except KeyError:
+        pass
+    return done
 
 def state_space_graph():
     ctx = NecoCtx()
