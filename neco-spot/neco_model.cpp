@@ -10,12 +10,12 @@ namespace neco {
     Model::Model()
     {
         NECO_DEBUG_TRACE("Model::Model");
-        std::cout << "importing net" << std::endl;
+        // std::cout << "importing net" << std::endl;
         if (import_net() != 0 ) {
             PyErr_Print();
         }
 
-        std::cout << "importing checker" << std::endl;
+        // std::cout << "importing checker" << std::endl;
         if (import_checker() != 0) {
             PyErr_Print();
         }
