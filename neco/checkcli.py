@@ -133,6 +133,7 @@ class Main(object):
                 import pprint
                 pprint.pprint("Syntax error in formula.")
                 exit(-1)
+                
         elif xml_file:
             properties = core.xmlproperties.parse(xml_file)
             if not properties:
@@ -154,13 +155,14 @@ class Main(object):
                            ns_args = args.ns_args)
 
         compile_checker(formula, net, config)
-
+        
         if remove_pnml:
             print "Removing PNML ({})".format(pnml)
             try:
                 os.remove(pnml)
             except IOError:
                 pass
-
+        exit(0)
+        
 if __name__ == '__main__':
     Main()
