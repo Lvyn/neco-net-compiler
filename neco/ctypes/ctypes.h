@@ -325,12 +325,11 @@ void TGenericPlaceType_CLS::remove_by_value(DataType value)
     int index = 0;
     for (; index < mSize; index++) {
 		if (mData[index] == value) {
-			mSize--;
-			mData[index] = mData[mSize];
+            mSize--;
+            memmove(mData + index, mData + index + 1, mSize - index);
 			break;
 		}
     }
-    qsort(mData, mSize, sizeof(int), int_cmp);
 }
 
 TGenericPlaceType_TARGS
