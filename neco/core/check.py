@@ -16,6 +16,9 @@ def has_deadlocks(formula):
                                   False)
 
 def spot_formula(formula):
+    
+    # Neco-Spot prints True if there is no counter example, so it assumes that
+    # all formulas are prefixed by "A" operator.
 
     if formula.isAtomicProposition():
         return '(p' + str(formula.identifier) + ')'
@@ -43,6 +46,10 @@ def spot_formula(formula):
         return '(' + spot_formula(formula.left) + ' U ' + spot_formula(formula.right) + ')'
     elif formula.isBool():
         return 'true' if formula.value else 'false'
+    elif formula.isAllPaths():
+        return spot_formula(formula.formula)
+    elif formula.isExistsPath():
+        return '(!' + spot_formula(formula.formula) + ')'
     else:
         raise NotImplementedError
 
@@ -72,6 +79,7 @@ class CheckerCompiler(object):
         formula = properties.extract_atoms(formula)
         self.formula = formula
         self.id_prop_map = properties.build_atom_map(formula, IDProvider(), {})
+        self.expected = not formula.isExistsPath()
 
         print "compiled formula: {!s}".format(self.formula)
         spot_str = spot_formula(self.formula)
@@ -87,10 +95,12 @@ class CheckerCompiler(object):
         args = []
         if has_deadlocks(formula):
             args.append("-d DEAD")
+            args.append("--expected {}".format("TRUE" if self.expected else "FALSE"))
         for arg in config.ns_args:
             args.append(arg)
         if args:
-            formula_file.write("# " + " ".join(args) + "\n")
+            for arg in args:            
+                formula_file.write("# " + arg + "\n")
 
         formula_file.write(spot_str)
         formula_file.write("\n")

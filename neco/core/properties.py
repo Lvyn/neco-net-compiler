@@ -69,6 +69,10 @@ def formula_to_str(formula):
         return '(F {})'.format(formula_to_str(formula.formula))
     elif formula.isNext():
         return '(X {})'.format(formula_to_str(formula.formula))
+    elif formula.isAllPaths():
+        return '(A {})'.format(formula_to_str(formula.formula))
+    elif formula.isExistsPath():
+        return '(E {})'.format(formula_to_str(formula.formula))
     # BinaryTemporalLogicOperator
     elif formula.isUntil():
         return "({} U {})".format(formula_to_str(formula.left),
@@ -292,6 +296,8 @@ def transform_formula(formula):
           formula.isNext() or
           formula.isGlobally() or
           formula.isFuture() or
+          formula.isAllPaths() or
+          formula.isExistsPath() or
           formula.isNegation() or
           formula.isUntil() or
           formula.isMultisetCardinality() or
@@ -376,6 +382,8 @@ class PropertyParser(Yappy):
         grammar = grules([(" formula -> G formula", self.globally_rule),
                           (" formula -> F formula", self.future_rule),
                           (" formula -> X formula", self.next_rule),
+                          (" formula -> A formula", self.allpath_rule),
+                          (" formula -> E formula", self.existspath_rule),
                           (" formula -> formula UNTIL formula", self.until_rule),
                           (" formula -> formula RELEASE formula", self.release_rule),
                           (" formula -> formula AND formula", self.and_rule),
@@ -425,6 +433,8 @@ class PropertyParser(Yappy):
                     (r'marking', lambda x : ('MARKING', x), ('MARKING', 700, 'noassoc')),
                     (r'dot|@', lambda x : ('DOT', x), ('DOT', 700, 'noassoc')),
                     (r'not', lambda x : ('NOT', x), ('NOT', 600, 'noassoc')),
+                    (r'A', lambda x : ('A', x), ('A', 500, 'noassoc')),
+                    (r'E', lambda x : ('E', x), ('E', 500, 'noassoc')),
                     (r'G', lambda x : ('G', x), ('G', 500, 'noassoc')),
                     (r'F', lambda x : ('F', x), ('F', 500, 'noassoc')),
                     (r'X', lambda x : ('X', x), ('X', 500, 'noassoc')),
@@ -462,6 +472,21 @@ class PropertyParser(Yappy):
         Globally(formula=Deadlock())
         """
         return Globally(tokens[1])
+    
+    
+    def allpath_rule(self, tokens, ctx):
+        """
+        >>> print ast.dump(PropertyParser().input('A deadlock'))
+        AllPaths(formula=Deadlock())
+        """
+        return AllPaths(tokens[1])
+    
+    def existspath_rule(self, tokens, ctx):
+        """
+        >>> print ast.dump(PropertyParser().input('E deadlock'))
+        ExistsPath(formula=Deadlock())
+        """
+        return ExistsPath(tokens[1])
 
     def future_rule(self, tokens, ctx):
         """

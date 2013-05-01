@@ -6,7 +6,11 @@ module Properties version "0.1"
 
     TemporalLogicOperator = UnaryTemporalLogicOperator | BinaryTemporalLogicOperator
 
-    UnaryTemporalLogicOperator = Globally(Formula formula) | Future(Formula formula) | Next(Formula formula)
+    UnaryTemporalLogicOperator = AllPaths(Formula formula) | 
+    							 ExistsPath(Formula formula) | 
+    							 Globally(Formula formula) | 
+							 	 Future(Formula formula) | 
+							 	 Next(Formula formula)
 
     BinaryTemporalLogicOperator = Until(Formula left, Formula right) | Release(Formula left, Formula right)
 

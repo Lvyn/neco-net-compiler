@@ -40,6 +40,24 @@ void readline(std::string* dst, std::ifstream& stream) {
     } while( stream.fail() && !stream.eof() );
 }
 
+
+void printExpected(bool no_counter_example, const std::string& expected_str)
+{
+    if (no_counter_example) {
+        if (expected_str == "TRUE") {
+            std::cout << "TRUE" << std::endl;
+        } else {
+            std::cout << "FALSE" << std::endl;
+        }
+    } else {
+        if (expected_str == "TRUE") {
+            std::cout << "FALSE" << std::endl;
+        } else {
+            std::cout << "TRUE" << std::endl;
+        }
+    }
+}
+
 int
 main(int argc, char **argv)
 {
@@ -55,6 +73,7 @@ main(int argc, char **argv)
 	bool wdba = false;
 	char draw = 0;
 	bool mcc = false;
+    std::string expected_str = "TRUE";
 	std::string formula = "";
 	std::string dead = "true";
 	std::string echeck_algo = "Cou99";
@@ -85,7 +104,8 @@ main(int argc, char **argv)
 		("ss-size,k", "compute size of state-space")
 		("times,T", "time the different phases of the execution")
 		("mcc", "prints TRUE if no counterexample found, FALSE otherwise")
-		;
+        ("expected", po::value<std::string>(&expected_str), "expected result hint, TRUE means no counter example (accepts TRUE or FALSE, default: TRUE)")
+        ;
 
 	po::options_description cmdline_options;
 	cmdline_options.add(hidden).add(visible);
@@ -94,7 +114,7 @@ main(int argc, char **argv)
 	po::store(po::command_line_parser(argc, argv).options(cmdline_options).positional(pos_options).run(), vm);
 	po::notify(vm);
 
-	mcc = vm.count("mcc");
+    mcc = vm.count("mcc");
 
 	if (vm.count("help") || formula == "") {
 		std::cout << visible << std::endl;
@@ -117,7 +137,11 @@ main(int argc, char **argv)
 				dead = "DEAD";
 				formula = "";
 				continue;
-			} else if (formula[0] == '#' || formula == "") {
+            } else if (formula == "# --expected FALSE") {
+                expected_str = "FALSE";
+                formula = "";
+                continue;
+            } else if (formula[0] == '#' || formula == "") {
 				formula = "";
 				continue;
 			} else {
@@ -343,10 +367,15 @@ main(int argc, char **argv)
 
 			if (!res) {
 	    
-				if (mcc) {
-					std::cout << "TRUE" << std::endl;
+                if (mcc) {
+                    printExpected(true, expected_str);
 				} else {
-					std::cout << "no counterexample found";
+                    std::cout << "no counterexample found";
+                    if (expected_str == "TRUE") {
+                        std::cout << " (OK, no counterexample expected)";
+                    } else {
+                        std::cout << " (KO, counterexample expected)";
+                    }
 					if (!ec->safe() && expect_counter_example) {
 						std::cout << " even if expected" << std::endl;
 						std::cout << "this may be due to the use of the bit"
@@ -373,10 +402,16 @@ main(int argc, char **argv)
 				tm.stop("computing accepting run");
 
 				if (!run) {
-					if (mcc) {
-						std::cout << "FALSE" << std::endl;
+                    if (mcc) {
+                        printExpected(false, expected_str);
 					} else {
-						std::cout << "a counterexample exists" << std::endl;
+                        std::cout << "a counterexample exists";
+                        if (expected_str == "FALSE") {
+                            std::cout << " (OK, counterexample expected)";
+                        } else {
+                            std::cout << " (KO, no counterexample expected)";
+                        }
+                        std::cout << std::endl;
 					}
 				} else {
 					tm.start("reducing accepting run");
@@ -393,16 +428,27 @@ main(int argc, char **argv)
 											  false, &deco);
 					} else
 						spot::print_tgba_run(std::cout, product, run);
-					tm.stop("printing accepting run");
+                    if (expected_str == "FALSE") {
+                        std::cout << "(OK, counterexample expected)";
+                    } else {
+                        std::cout << "(KO, no counter expected)";
+                    }
+                    std::cout << std::endl;
+                    tm.stop("printing accepting run");
 				}
 				delete run;
 			}
 			else {
-				if (mcc) {
-					std::cout << "FALSE" << std::endl;
-				} else {
-					std::cout << "a counterexample exists "
-							  << "(use -C to print it)" << std::endl;
+                if (mcc) {
+                    printExpected(false, expected_str);
+                } else {
+                    std::cout << "a counterexample exists ";
+                    if (expected_str == "FALSE") {
+                        std::cout << " (OK, counterexample expected, ";
+                    } else {
+                        std::cout << " (KO, no counterexample expected, ";
+                    }
+                    std::cout << "use -C to print it)" << std::endl;
 				}
 			}
 			delete res;
