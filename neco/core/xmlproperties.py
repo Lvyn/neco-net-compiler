@@ -74,16 +74,21 @@ VALUE_CONSTANT = "value-constant"
 
 
 FORMULA_HEAD = [ INVARIANT, IMPOSSIBILITY,
-                 # LOGIC OPERATORS
                  CONJUNCTION, DISJUNCTION, EXCLUSIVE_DISJUNCTION, EQUIVALENCE, IMPLICATION, NEGATION,
-                 # INTEGER COMPARISON
                  INTEGER_LE, INTEGER_LT, INTEGER_EQ, INTEGER_NE, INTEGER_GT, INTEGER_GE,
-                 # ATOMS
                  IS_LIVE, IS_FIREABLE,
-                 #CTL:
                  ALL_PATHS, EXISTS_PATH ]
-
 NAME_ATTRIBUTE = "name"
+
+def tag2str(tag):
+    if tag == STRUCTURAL_ONLY:
+        return "struct"
+    elif tag == LTL_ONLY:
+        return "ltl"
+    elif tag == CTL_ONLY:
+        return "ctl"
+    elif tag == REACHABILITY_ONLY:
+        return "reach"
 
 class ReachabilityHelper(object):
 
@@ -134,9 +139,7 @@ class ParserError(Exception):
 
     @classmethod
     def should_have_exaclty_n_childs(node, n):
-        return ParserError("{!s} should have exaclty {!s} child{!s}".format(node,
-                                                                            n,
-                                                                            '' if n == 1 else 's'))
+        return ParserError("{!s} should have exaclty {!s} child{!s}".format(node, n, '' if n == 1 else 's'))
 
 class RunOnce(object):
 
@@ -205,9 +208,7 @@ class Property(object):
         self._property_tag = new_tag
 
     def __str__(self):
-        return "id : {!s}\ntag : {!s}\nformula : {!s}".format(self._id,
-                                                              self._property_tag,
-                                                              self._formula)
+        return "{tag} {id!s}: {formula!s}".format(id=self._id, tag=tag2str(self._property_tag), formula=self._formula)
 
 def parse_node_name(elt):
     if elt.nodeName == PLACE_NAME:
@@ -373,10 +374,14 @@ def parse_formula(elt):
     elif elt.nodeName == IS_DEADLOCK:
         return properties.Deadlock()
 
-    elif elt.nodeName in [ALL_PATHS, EXISTS_PATH]:
-        print >> sys.stderr, "{!s} should not appear here".format(elt.nodeName)
-        exit(-1)
-
+    elif elt.nodeName == ALL_PATHS:
+        subformulas = parse_subformulas(elt, 1)
+        return properties.AllPaths( subformulas[0] )
+    
+    elif elt.nodeName == EXISTS_PATH:
+        subformulas = parse_subformulas(elt, 1)
+        return properties.ExistsPath( subformulas[0] )
+        
     elif elt.nodeName == CONJUNCTION:
         return properties.Conjunction( parse_subformulas(elt) )
 
@@ -422,9 +427,9 @@ def parse_formula(elt):
         name = parse_node_name(elt.childNodes[0])
         return properties.PlaceBound(name)
 
-#    elif elt.nodeName == MULTISET_CARDINALITY:
-#        subformulas = parse_subformulas(elt, 1)
-#        return properties.MultisetCard( subformulas[0] )
+    elif elt.nodeName == MULTISET_CARDINALITY:
+        subformulas = parse_subformulas(elt, 1)
+        return properties.MultisetCardinality( subformulas[0] )
 
     elif elt.nodeName == PLACE_MARKING:
         if len(elt.childNodes) != 1:
@@ -526,6 +531,6 @@ def parse(filename):
     return props
 
 if __name__ == "__main__":
-    props = parse('../../tests/check/lamport_fmea-2.23.xml')
+    props = parse('/home/lukasz/mcc/BenchKit/INPUTS/Railroad-PT-005/LTLMix.xml')
     for prop in props:
         print str(prop)

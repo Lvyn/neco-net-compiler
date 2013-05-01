@@ -79,7 +79,7 @@ def formula_to_str(formula):
                                   formula_to_str(formula.right))
     # UnaryLogicOperator
     elif formula.isNegation():
-        return '(!{})'.format(formula_to_str(formula.formula))
+        return '(not {})'.format(formula_to_str(formula.formula))
     # BinaryLogicOperator
     elif formula.isImplication():
         return "({} => {})".format(formula_to_str(formula.left),
@@ -89,11 +89,11 @@ def formula_to_str(formula):
                                     formula_to_str(formula.right))
     # NaryLogicOperator
     elif formula.isConjunction():
-        return "(" + " /\\ ".join(map(formula_to_str, formula.operands)) + ")"
+        return "(" + " and ".join(map(formula_to_str, formula.operands)) + ")"
     elif formula.isDisjunction():
-        return "(" + " \\/ ".join(map(formula_to_str, formula.operands)) + ")"
+        return "(" + " or ".join(map(formula_to_str, formula.operands)) + ")"
     elif formula.isExclusiveDisjunction():
-        return "(" + " ^ ".join(map(formula_to_str, formula.operands)) + ")"
+        return "(" + " xor ".join(map(formula_to_str, formula.operands)) + ")"
     # BooleanExpression
     elif (formula.isIntegerComparison() or
           formula.isMultisetComparison()):
@@ -103,11 +103,11 @@ def formula_to_str(formula):
     elif formula.isBool():
         return "{!s}".format(formula.value)
     elif formula.isLive():
-        return "Live{!s}({!r})".format(formula.level, formula.transition_name)
+        return 'live{!s}("{!s}")'.format(formula.level, formula.transition_name)
     elif formula.isFireable():
-        return "Fireable({!r})".format(formula.transition_name)
+        return 'fireable("{!s}")'.format(formula.transition_name)
     elif formula.isDeadlock():
-        return "Deadlock"
+        return "deadlock"
     elif formula.isAtomicProposition():
         return "AtomicProposition<{}>".format(formula_to_str(formula.formula))
     # ComparisonOperator
@@ -125,21 +125,21 @@ def formula_to_str(formula):
         return ">"
     # IntegerExpression
     elif formula.isPlaceBound():
-        return "PlaceBound({!r})".format(formula.place_name)
+        return 'bound("{!s}")'.format(formula.place_name)
     elif formula.isIntegerConstant():
-        return "Int({!s})".format(formula.value)
+        return "{!s}".format(formula.value)
     elif formula.isSum():
         return "(" + " + ".join(map(formula_to_str, formula.operands)) + ")"
     elif formula.isMultisetCardinality():
-        return "MultisetCardinality({!s})".format(formula_to_str(formula.multiset))
+        return "card({!s})".format(formula_to_str(formula.multiset))
     # MultisetExpression
     elif formula.isPlaceMarking():
-        return "PlaceMarking({!r})".format(formula.place_name)
+        return 'marking("{!s}")'.format(formula.place_name)
     elif formula.isMultisetConstant():
         ms_str = '[' + ', '.join(map(str, formula.elements)) + ']'
-        return "MultisetConstant({})".format(ms_str)
+        return "[{}]".format(ms_str)
     elif formula.isMultisetPythonExpression():
-        return "MultisetPythonExpression({})".format(formula.expr)
+        return "${}$".format(formula.expr)
     else:
         raise NotImplementedError('cannot handle {}'.format(formula.__class__))
 
