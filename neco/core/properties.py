@@ -425,7 +425,8 @@ class PropertyParser(Yappy):
                           ])
 
         tokenize = [(r'\$[^$]*\$', lambda x : ('PY_EXPR', x)),
-                    (r'"[a-zA-Z]+([.a-zA-Z_0-9]+)*"|\'[a-zA-Z]+([()#.a-zA-Z_0-9]+)*\'', lambda x : ('ID', x[1:-1])),    # protected ids
+                    #(r'"[a-zA-Z]+([()#.a-zA-Z_0-9]+)*"|\'[a-zA-Z]+([()#.a-zA-Z_0-9]+)*\'', lambda x : ('ID', x[1:-1])),    # protected ids
+                    (r'"[^"]+"|\'[^\']+\'', lambda x : ('ID', x[1:-1])),    # protected ids
                     (r'\s', ""),    # skip white spaces
                     (r'<=>|<->', lambda x : ('EQUIV', x), ('EQUIV', 50, 'left')),
                     (r'=>|->', lambda x : ('IMPL', x), ('IMPL', 40, 'left')),
