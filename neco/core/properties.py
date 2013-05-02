@@ -77,6 +77,9 @@ def formula_to_str(formula):
     elif formula.isUntil():
         return "({} U {})".format(formula_to_str(formula.left),
                                   formula_to_str(formula.right))
+    elif formula.isWeakUntil():
+        return "({} W {})".format(formula_to_str(formula.left),
+                                  formula_to_str(formula.right))
     # UnaryLogicOperator
     elif formula.isNegation():
         return '(not {})'.format(formula_to_str(formula.formula))
@@ -140,6 +143,8 @@ def formula_to_str(formula):
         return "[{}]".format(ms_str)
     elif formula.isMultisetPythonExpression():
         return "${}$".format(formula.expr)
+    elif formula.isUnsupported():
+        return "Unsupported: {!s}".format(formula.exception)
     else:
         raise NotImplementedError('cannot handle {}'.format(formula.__class__))
 
@@ -300,6 +305,7 @@ def transform_formula(formula):
           formula.isExistsPath() or
           formula.isNegation() or
           formula.isUntil() or
+          formula.isWeakUntil() or
           formula.isMultisetCardinality() or
           formula.isIntegerConstant() or
           formula.isImplication() or
@@ -385,6 +391,7 @@ class PropertyParser(Yappy):
                           (" formula -> A formula", self.allpath_rule),
                           (" formula -> E formula", self.existspath_rule),
                           (" formula -> formula UNTIL formula", self.until_rule),
+                          (" formula -> formula WEAK_UNTIL formula", self.weak_until_rule),
                           (" formula -> formula RELEASE formula", self.release_rule),
                           (" formula -> formula AND formula", self.and_rule),
                           (" formula -> formula OR formula", self.or_rule),
@@ -440,6 +447,7 @@ class PropertyParser(Yappy):
                     (r'X', lambda x : ('X', x), ('X', 500, 'noassoc')),
                     (r'R', lambda x : ('RELEASE', x), ('RELEASE', 440, 'left')),
                     (r'U', lambda x : ('UNTIL', x), ('UNTIL', 400, 'left')),
+                    (r'W', lambda x : ('WEAK_UNTIL', x), ('WEAK_UNTIL', 400, 'left')),
                     (r'and', lambda x : ('AND', x), ('AND', 300, 'left')),
                     (r'or', lambda x : ('OR', x), ('OR', 200, 'left')),
                     (r'xor', lambda x : ('XOR', x), ('XOR', 200, 'left')),
@@ -515,6 +523,13 @@ class PropertyParser(Yappy):
         Until(left=Deadlock(), right=Deadlock())
         """
         return Until(tokens[0], tokens[2])
+
+    def weak_until_rule(self, tokens, ctx):
+        """
+        >>> print ast.dump(PropertyParser().input('deadlock W deadlock'))
+        WeakUntil(left=Deadlock(), right=Deadlock())
+        """
+        return WeakUntil(tokens[0], tokens[2])
 
     def release_rule(self, tokens, ctx):
         """

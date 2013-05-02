@@ -44,6 +44,8 @@ def spot_formula(formula):
         return '(F ' + spot_formula(formula.formula) + ')'
     elif formula.isUntil():
         return '(' + spot_formula(formula.left) + ' U ' + spot_formula(formula.right) + ')'
+    elif formula.isWeakUntil():
+        return '(' + spot_formula(formula.left) + ' W ' + spot_formula(formula.right) + ')'
     elif formula.isBool():
         return 'true' if formula.value else 'false'
     elif formula.isAllPaths():

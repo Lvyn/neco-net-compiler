@@ -1,6 +1,6 @@
 module Properties version "0.1"
 {
-    LTLFormula = Operator | BooleanExpression
+    LTLFormula = Operator | BooleanExpression | Helper
 
     Operator = TemporalLogicOperator | LogicOperator
 
@@ -12,7 +12,7 @@ module Properties version "0.1"
 							 	 Future(Formula formula) | 
 							 	 Next(Formula formula)
 
-    BinaryTemporalLogicOperator = Until(Formula left, Formula right) | Release(Formula left, Formula right)
+    BinaryTemporalLogicOperator = Until(Formula left, Formula right) | WeakUntil(Formula left, Formula right) | Release(Formula left, Formula right)
 
     LogicOperator = UnaryLogicOperator | BinaryLogicOperator | NaryLogicOperator
 
@@ -35,4 +35,11 @@ module Properties version "0.1"
     IntegerExpression = PlaceBound(identifier place_name) | IntegerConstant(int value) | MultisetCardinality(Multiset multiset) | Sum(IntegerExpression* operands)
 
     MultisetExpression = PlaceMarking(identifier place_name) | MultisetConstant(object* elements) | MultisetPythonExpression(str expr)
+    
+    Helper = IfNoSuccessor(bool value) |
+    		 Steps(int value) |
+		 	 Unsupported(exception exception) | 
+		 	 Strength(string value) | 
+		 	 Before(formula formula) | 
+		 	 Reach(formula formula) 
 }

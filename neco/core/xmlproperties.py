@@ -33,6 +33,12 @@ FINALLY = "finally"
 NEXT = "next"
 UNTIL = "until"
 
+BEFORE = "before"
+REACH = "reach"
+STRENGTH = "strength"
+STRONG = "strong"
+WEAK = "weak"
+
 IS_DEADLOCK = "is-deadlock"
 IS_LIVE = "is-live"
 IS_FIREABLE = "is-fireable"
@@ -72,6 +78,13 @@ BINDING = "binding"
 VALUE_VARIABLE = "value-variable"
 VALUE_CONSTANT = "value-constant"
 
+#booleans
+TRUE="true"
+FALSE="false"
+
+#next operator specials
+IF_NO_SUCCESSOR = "if-no-successor"
+STEPS = "steps"
 
 FORMULA_HEAD = [ INVARIANT, IMPOSSIBILITY,
                  CONJUNCTION, DISJUNCTION, EXCLUSIVE_DISJUNCTION, EQUIVALENCE, IMPLICATION, NEGATION,
@@ -140,6 +153,18 @@ class ParserError(Exception):
     @classmethod
     def should_have_exaclty_n_childs(node, n):
         return ParserError("{!s} should have exaclty {!s} child{!s}".format(node, n, '' if n == 1 else 's'))
+
+class UnsupportedNode(Exception):
+    
+    def __init__(self, node, msg = None):
+        self.node = node
+        self.msg = msg
+        
+    def __str__(self):
+        if self.msg:
+            return self.msg
+        else:
+            return "Unsupported node {}.".format(self.node)
 
 class RunOnce(object):
 
@@ -356,9 +381,41 @@ def parse_formula(elt):
         return ReachabilityHelper( elt.nodeName, subformulas[0] )
 
     elif elt.nodeName == NEXT:
-        subformulas = parse_subformulas(elt, 1)
-        return properties.Next( subformulas[0] )
-
+        subformulas = parse_subformulas(elt)
+        if len(subformulas) == 1:
+            return properties.Next( subformulas[0] )
+        else:
+            steps = 1
+            body = None
+            for subformula in subformulas:
+                if subformula.isIfNoSuccessor():
+                    if not subformula.value:
+                        raise UnsupportedNode(subformula, "False if-no-successor nodes are not supported")
+                elif subformula.isSteps():
+                    steps = subformula.value
+                else:               
+                    if (body):
+                        raise SyntaxError("Multiple formulae in Next node")
+                    body = subformula
+                    
+            def rec(steps, body):
+                if steps == 0:
+                    return body
+                else:
+                    return properties.Next( rec(steps-1, body) )
+            return rec(steps, body)
+            
+            
+    elif elt.nodeName == IF_NO_SUCCESSOR:
+        result = [ e.data for e in elt.childNodes ]
+        result_str = "".join(result)
+        return properties.IfNoSuccessor(result_str == 'true')
+    
+    elif elt.nodeName == STEPS:
+        result = [ e.data for e in elt.childNodes ]
+        result_int = int("".join(result))
+        return properties.Steps(result_int)
+        
     elif elt.nodeName == GLOBALLY:
         subformulas = parse_subformulas(elt, 1)
         return properties.Globally( subformulas[0] )
@@ -368,9 +425,46 @@ def parse_formula(elt):
         return properties.Future( subformulas[0] )
 
     elif elt.nodeName == UNTIL:
+        subformulas = parse_subformulas(elt)
+        before, reach, strength = None, None, None
+        for subformula in subformulas:
+            if subformula.isBefore():
+                before = subformula.formula
+            elif subformula.isReach():
+                reach = subformula.formula
+            elif subformula.isStrength():
+                strength = subformula.value
+            else:
+                raise SyntaxError("illformed until node.")
+        if before and reach and strength:
+            if strength == STRONG:
+                return properties.Until( before, reach )
+            elif strength == WEAK:
+                return properties.WeakUntil( before, reach )
+            else:
+                 raise SyntaxError("illformed until::strength node.")
+        else:
+            raise SyntaxError("illformed until node.")
+    
+    elif elt.nodeName == BEFORE:
         subformulas = parse_subformulas(elt, 1)
-        return properties.Until( subformulas[0] )
-
+        return properties.Before( subformulas[0] )
+    
+    elif elt.nodeName == REACH:
+        subformulas = parse_subformulas(elt, 1)
+        return properties.Reach( subformulas[0] )
+    
+    elif elt.nodeName == STRENGTH:
+        result = [ e.data for e in elt.childNodes ]
+        result_str = "".join(result)
+        return properties.Strength( result_str )
+    
+    elif elt.nodeName == TRUE:
+        return properties.Bool(True)
+    
+    elif elt.nodeName == FALSE:
+        return properties.Bool(False)
+    
     elif elt.nodeName == IS_DEADLOCK:
         return properties.Deadlock()
 
@@ -472,7 +566,7 @@ def typebased_transformation(prop):
     elif prop.tag == CTL_ONLY:
         # CTL properties are not supported
         print >> sys.stderr, "CTL formulae are not supported"
-        exit(-1)
+        exit(1)
 
     elif prop.tag == REACHABILITY_ONLY:
         helper = prop.formula
@@ -509,11 +603,14 @@ def get_properties(property_set):
                 prop.tag = elt.nodeName
                 if prop.tag == CTL_ONLY:
                     print >> sys.stderr, "CTL Formulae are not supported"
-                    exit(-1)
+                    exit(1)
 
             else: # elif elt.nodeName in FORMULA_HEAD:
-                formula_found()
-                prop._formula = parse_formula(elt)
+                try:
+                    formula_found()
+                    prop._formula = parse_formula(elt)
+                except UnsupportedNode as e:
+                    prop._formula = properties.Unsupported(e)
 
         if not formula_found.called():
             raise ParserError("no formula found in {!s}".format(child.nodeName))
@@ -531,6 +628,6 @@ def parse(filename):
     return props
 
 if __name__ == "__main__":
-    props = parse('/home/lukasz/mcc/BenchKit/INPUTS/Railroad-PT-005/LTLMix.xml')
+    props = parse('/home/lukasz/mcc/BenchKit/INPUTS/Railroad-PT-010/LTLMix2.xml')
     for prop in props:
         print str(prop)
