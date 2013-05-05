@@ -432,7 +432,7 @@ class PropertyParser(Yappy):
                     (r'=>|->', lambda x : ('IMPL', x), ('IMPL', 40, 'left')),
                     (r'<=|<|=|!=|>=|>', lambda x : ('CMP', x), ('CMP', 800, 'left')),
                     (r'\+', lambda x : (x, x), ('+', 750, 'left')),
-                    (r'true|false', lambda x : ('BOOL', x), ('BOOL', 700, 'noassoc')),
+                    (r'true|false|True|False|TRUE|FALSE', lambda x : ('BOOL', x), ('BOOL', 700, 'noassoc')),
                     (r'live', lambda x : ('LIVE', x), ('LIVE', 700, 'noassoc')),
                     (r'fireable', lambda x : ('FIREABLE', x), ('FIREABLE', 700, 'noassoc')),
                     (r'deadlock', lambda x : ('DEADLOCK', x), ('DEADLOCK', 700, 'noassoc')),
