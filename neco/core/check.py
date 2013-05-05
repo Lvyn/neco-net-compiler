@@ -93,11 +93,11 @@ class CheckerCompiler(object):
         print
 
         # write formula to file
-        formula_file = open('neco_formula', 'w')
+        formula_file = open('neco_formula', 'w')        
         args = []
         if has_deadlocks(formula):
             args.append("-d DEAD")
-            args.append("--expected {}".format("TRUE" if self.expected else "FALSE"))
+        args.append("--expected {}".format("TRUE" if self.expected else "FALSE"))
         for arg in config.ns_args:
             args.append(arg)
         if args:
