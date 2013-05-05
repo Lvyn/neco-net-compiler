@@ -325,8 +325,8 @@ void TGenericPlaceType_CLS::remove_by_value(DataType value)
     int index = 0;
     for (; index < mSize; index++) {
 		if (mData[index] == value) {
+			memmove(mData + index, mData + index + 1, (mSize - index - 1) * sizeof(DataType));
             mSize--;
-            memmove(mData + index, mData + index + 1, mSize - index);
 			break;
 		}
     }

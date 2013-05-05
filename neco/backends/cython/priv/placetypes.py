@@ -679,7 +679,7 @@ class BTPlaceType(coretypes.BTPlaceType, CythonPlaceType):
                                        type_info = TypeInfo.get(BTPlaceTypeCType),
                                        token_type = TypeInfo.get(BTPlaceTypeCType))
 
-        if packed:
+        if place_info.one_safe and packed:
             cython_type = TypeInfo.get('Bool')
             packed = True
         else:
@@ -814,10 +814,12 @@ class BTPlaceType(coretypes.BTPlaceType, CythonPlaceType):
                         orelse = [])
 
     def card_expr(self, env, marking_var):
-        return cyast.IfExp(test = self.not_empty_expr(env, marking_var),
-                           body = [ cyast.E('1') ],
-                           orelse = [ cyast.E('0')])
-
+        if self.info.one_safe:
+            return cyast.IfExp(test = self.not_empty_expr(env, marking_var),
+                               body = [ cyast.E('1') ],
+                               orelse = [ cyast.E('0')])
+        else:
+            return cyast.E("{}.{}".format(marking_var.name, self.chunk.get_attribute_name()))
 
     def multiset_expr(self, env, marking_var):
         if self.chunk.packed:
