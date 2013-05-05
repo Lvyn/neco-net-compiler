@@ -665,6 +665,7 @@ class OneSafePlaceType(coretypes.OneSafePlaceType, CythonPlaceType):
 
 ################################################################################
 
+BTPlaceTypeCType = 'Char'
 class BTPlaceType(coretypes.BTPlaceType, CythonPlaceType):
     """ Python black token place type implementation.
 
@@ -675,14 +676,14 @@ class BTPlaceType(coretypes.BTPlaceType, CythonPlaceType):
         coretypes.BTPlaceType.__init__(self,
                                        place_info = place_info,
                                        marking_type = marking_type,
-                                       type_info = TypeInfo.get('Short'),
-                                       token_type = TypeInfo.get('Short'))
+                                       type_info = TypeInfo.get(BTPlaceTypeCType),
+                                       token_type = TypeInfo.get(BTPlaceTypeCType))
 
         if packed:
             cython_type = TypeInfo.get('Bool')
             packed = True
         else:
-            cython_type = TypeInfo.get('Short')
+            cython_type = TypeInfo.get(BTPlaceTypeCType)
             packed = False
 
         self.chunk = marking_type.chunk_manager.new_chunk(marking_type.id_provider.get(self),
