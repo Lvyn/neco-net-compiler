@@ -822,7 +822,7 @@ class BTPlaceType(coretypes.BTPlaceType, CythonPlaceType):
             return cyast.E("{}.{}".format(marking_var.name, self.chunk.get_attribute_name()))
 
     def multiset_expr(self, env, marking_var):
-        if self.chunk.packed:
+        if self.chunk.packed and self.info.one_safe:
             ifexp = cyast.IfExp(test = self.not_empty_expr(env, marking_var),
                                 body = [ cyast.E('{dot : 1}') ],
                                 orelse = [ cyast.E('{}')])
@@ -839,16 +839,48 @@ class BTPlaceType(coretypes.BTPlaceType, CythonPlaceType):
             return cyast.Call(func = cyast.E(env.type2str(TypeInfo.get('MultiSet'))),
                               args = [ ifexp ])
 
+
+    def fast_multiset_comparison(self, env, marking_var, cython_op, right):
+        def int_ms_expr(pt):
+            if pt.chunk.packed and pt.info.one_safe:
+                return cyast.IfExp(test = pt.not_empty_expr(env, marking_var),
+                                   body = [ cyast.E('1') ],
+                                   orelse = [ cyast.E('0')])
+            else:
+                return cyast.E('{}.{}'.format(marking_var.name, pt.chunk.get_attribute_name()))
+
+        left_expr  = int_ms_expr(self)
+        right_expr = int_ms_expr(right)
+        
+        return cyast.Compare(left_expr, ops=[cython_op], comparators=[right_expr])
+    
+        if self.chunk.packed and self.info.one_safe:
+            left = cyast.IfExp(test = self.not_empty_expr(env, marking_var),
+                               body = [ cyast.E('{dot : 1}') ],
+                               orelse = [ cyast.E('{}')])
+            return cyast.Call(func = cyast.E(env.type2str(TypeInfo.get('MultiSet'))),
+                              args = [ ifexp ])
+
+        else:
+            dict_expr = cyast.Dict([cyast.E('dot')], [])
+
+            ifexp = cyast.IfExp(test = self.not_empty_expr(env, marking_var),
+                                body = [ dict_expr ],
+                                orelse = [ cyast.E('{}')])
+            return cyast.Call(func = cyast.E(env.type2str(TypeInfo.get('MultiSet'))),
+                              args = [ ifexp ])
+
+
     def enumerate(self, env, marking_var, token_var, compiled_body):
-        if self.chunk.packed:
+        if self.chunk.packed and self.info.one_safe:
             ifnode = cyast.Builder.If(test = self.not_empty_expr(env = env, marking_var = marking_var),
                                       body = [ compiled_body ])
             return [ ifnode ]
         else:
             place_expr = cyast.E('{}.{}'.format(marking_var.name, self.chunk.get_attribute_name()))
             ifnode = cyast.Builder.If(test = cyast.Builder.Compare(left = place_expr,
-                                                                 ops = [ cyast.Gt() ],
-                                                                 comparators = [ cyast.Num(n = 0) ]),
+                                                                   ops = [ cyast.Gt() ],
+                                                                   comparators = [ cyast.Num(n = 0) ]),
                                       body = [ compiled_body ])
             return [ ifnode ]
 

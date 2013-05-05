@@ -237,6 +237,12 @@ def multiset_expr_from_place_name(checker_env, marking_var, place_name):
 
 def gen_multiset_comparison(checker_env, marking_var, cython_op, left, right):
 
+    if left.isPlaceMarking() and right.isPlaceMarking():
+        left_place_type  = checker_env.marking_type.get_place_type_by_name(left.place_name)
+        right_place_type = checker_env.marking_type.get_place_type_by_name(right.place_name)
+        if left_place_type.__class__ == right_place_type.__class__:
+            return left_place_type.fast_multiset_comparison(checker_env, marking_var, cython_op, right_place_type)
+
     if left.isPlaceMarking():
         left_multiset = multiset_expr_from_place_name(checker_env, marking_var, left.place_name)
 
