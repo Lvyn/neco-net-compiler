@@ -185,10 +185,10 @@ run_tests() {
 
             if [ "$EXPECTED" = "OK" ]
             then
-                EXPECTED="no counterexample found"
+                EXPECTED="TRUE"
             elif [ "$EXPECTED" = "KO" ]
             then
-                EXPECTED="a counterexample exists (use -C to print it)"
+                EXPECTED="FALSE"
             else
                 echo -e "\n[E] bad entry in $LTL_FILE ($FORMULA - $EXPECTED)"
                 continue
@@ -215,7 +215,7 @@ run_tests() {
             OPTIONS="$NECOSPOT_OPTIONS $OPTIONS"
             # run neco spot
             NS_OUT=/tmp/neco_run_test$$.tmp
-            neco-spot $OPTIONS neco_formula > $NS_OUT
+            neco-spot --mcc $OPTIONS neco_formula > $NS_OUT
             RES=`tail -n 1 $NS_OUT`
             if [ "$RES" = "$EXPECTED" ]
             then
