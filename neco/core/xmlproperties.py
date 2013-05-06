@@ -3,6 +3,9 @@ import re
 import sys
 import xml.dom.minidom as dom
 
+PLACE_PREFIX='(p)'
+TRANSITION_PREFIX='(t)'
+
 PROPERTY_SET_NAME = "property-set"
 PROPERTY_NAME = "property"
 ID_NAME = "id"
@@ -293,7 +296,7 @@ def parse_is_fireable(node):
     for child in node.childNodes:
         if child.nodeName == TRANSITION_NAME:
             transition_found()
-            transition = get_attribute(child, NAME_ATTRIBUTE)
+            transition = TRANSITION_PREFIX + get_attribute(child, NAME_ATTRIBUTE)
         else:
             raise ParserError.expected(TRANSITION_NAME, child.nodeName)
 
@@ -529,7 +532,7 @@ def parse_formula(elt):
         if len(elt.childNodes) != 1:
             raise ParserError.should_have_exaclty_n_childs(elt, 1)
 
-        name = parse_node_name(elt.childNodes[0])
+        name = PLACE_PREFIX + parse_node_name(elt.childNodes[0])
         return properties.PlaceMarking(name)
 
     elif elt.nodeName == INTEGER_CONSTANT:
