@@ -220,8 +220,8 @@ class CompilerVisitor(coreir.CompilerVisitor):
 
         inner = current
         if len(indices) > 1:
-            _, inner = self.gen_different(indices)
-            current.body.append(base)
+            inner_base, inner = self.gen_different(indices)
+            current.body.append(inner_base)
 
         return base, inner
 

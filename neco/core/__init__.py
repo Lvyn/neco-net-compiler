@@ -467,11 +467,11 @@ class SuccTGenerator(object):
                     else:
                         raise NotImplementedError, sub_arc
 
-
+ 
                 builder.begin_MultiTokenEnumeration(multiarc = input_arc,
-                                                     marking_var = self.arg_marking_var,
-                                                     place_name = input_arc.place_name)
-
+                                                    marking_var = self.arg_marking_var,
+                                                    place_name = input_arc.place_name)
+ 
                 for variable, value in values.iteritems():
                     builder.begin_If(netir.Compare(left = netir.Name(name = variable.name),
                                                      ops = [ netir.EQ() ],

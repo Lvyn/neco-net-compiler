@@ -187,7 +187,6 @@ class CompilerVisitor(coreir.CompilerVisitor):
 
         base = None
         current = None
-
         first_index = indices.pop()
         for index in indices:
             check = pyast.If(test = pyast.Compare(left = pyast.Name(first_index),
@@ -204,8 +203,8 @@ class CompilerVisitor(coreir.CompilerVisitor):
 
         inner = current
         if len(indices) > 1:
-            _, inner = self.gen_different(indices)
-            current.body.append(base)
+            inner_base, inner = self.gen_different(indices)
+            current.body.append(inner_base)
 
         return base, inner
 
