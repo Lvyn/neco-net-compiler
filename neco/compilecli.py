@@ -73,6 +73,8 @@ class Main(object):
                                     help = 'enable bit packing. [cython only]')
         optimize_group.add_argument('--optimize-flow', '-Of', default = False, dest = 'optimize_flow', action = 'store_true',
                                     help = 'enable flow control optimizations.')
+        optimize_group.add_argument('--safe-net', '-S', default = False, dest = 'safe_net', action = 'store_true',
+                                    help = 'all places are 1-bounded.')
 
         pid_group = parser.add_argument_group('Dynamic process creation')
         pid_group.add_argument('--detect-pid-symmetries', '-dps', default = False, dest = 'detect_pid_symmetries', action = 'store_true',
@@ -164,6 +166,7 @@ class Main(object):
                                 pid_sibling = args.pid_sibling,
                                 normalize_only = args.normalize_only,
                                 pid_first = args.pid_first,
+                                safe_net = args.safe_net,
                                 model = model_file)
 
         # retrieve the Petri net from abcd file (produces a pnml file)

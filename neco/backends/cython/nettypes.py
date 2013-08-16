@@ -19,7 +19,7 @@ class StaticMarkingType(coretypes.MarkingType):
     def __init__(self, config):
         coretypes.MarkingType.__init__(self,
                                        TypeInfo.register_type("Marking"),
-                                       TypeInfo.register_type("MarkingSet"),
+                                       TypeInfo.get("set"),
                                        config)
 
         # id provider for class attributes
@@ -165,6 +165,8 @@ class StaticMarkingType(coretypes.MarkingType):
         # attributes
         ################################################################################
 
+        #cls.add_decl(cyast.CVar(name="_h", type=env.type2str(TypeInfo.get("Int"))))
+        
         if self.chunk_manager.packed_bits() > 0:
             (attr_name, attr_type, count) = self.chunk_manager.packed_attribute()
             cls.add_decl(cyast.CVar(attr_name + '[' + str(count) + ']', type=env.type2str(attr_type)))  

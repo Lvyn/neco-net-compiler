@@ -363,7 +363,7 @@ class Unparser:
         self.write(")")
 
     binop = { "Add":"+", "Sub":"-", "Mult":"*", "Div":"/", "Mod":"%",
-                    "LShift":">>", "RShift":"<<", "BitOr":"|", "BitXor":"^", "BitAnd":"&",
+                    "LShift":"<<", "RShift":">>", "BitOr":"|", "BitXor":"^", "BitAnd":"&",
                     "FloorDiv":"//", "Pow": "**"}
     def _BinOp(self, t):
         self.write("(")

@@ -592,15 +592,15 @@ class SuccTGenerator(object):
             # evaluate and assign the result to the variable
             builder.emit_Assign(variable = variable,
                                  expr = netir.PyExpr(output.expr))
-            check = True
-            try:
-                print ">>>> BEGIN TO DO %s <<<< " % (output.expr.raw)
-                value = eval(output.expr.raw)
-                if output.place_info.type.contains(value):
-                    check = False
-                print ">>>> END TO DO <<<< "
-            except:
-                print "type of '{}' will be checked".format(output.expr.raw)
+            check = False
+#             try:
+#                 print ">>>> BEGIN TO DO %s <<<< " % (output.expr.raw)
+#                 value = eval(output.expr.raw)
+#                 if output.place_info.type.contains(value):
+#                     check = False
+#                 print ">>>> END TO DO <<<< "
+#             except:
+#                 print "type of '{}' will be checked".format(output.expr.raw)
 
             if (not output_impl_type.is_AnyType) and check:
                 builder.begin_CheckType(variable = variable,
@@ -914,7 +914,7 @@ class Compiler(object):
         self.config = config
         self.net = net
         self.backend = backend
-        self.net_info = NetInfo(net)
+        self.net_info = NetInfo(net, config)
 
         if self.config.normalize_pids:
             if self.config.pid_first and not self.check_first_pid():

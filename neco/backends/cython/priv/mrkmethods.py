@@ -32,8 +32,9 @@ class InitGenerator(MarkingTypeMethodGenerator):
 
         builder = cyast.Builder()
         builder.begin_FunctionDef( name = "__cinit__",
-                                   args = cyast.A("self").param("alloc", default = "False"))
+                                   args = cyast.A("self", type="Marking").param("alloc", default = "False", type="bint") )
 
+        #builder.emit(cyast.stmt(cyast.Name("self._h = 0")))
         builder.begin_If( cyast.Name('alloc') )
 
         initialized = set()
@@ -71,7 +72,7 @@ class CopyGenerator(MarkingTypeMethodGenerator):
         marking_var = vp.new_variable(variable_type=marking_type.type, name='m')
 
         builder.begin_FunctionCDef( name = "copy",
-                                    args = cyast.A(self_var.name),
+                                    args = cyast.A(self_var.name, type="Marking"),
                                     returns = cyast.E(env.type2str( marking_type.type )),
                                     decl = [ cyast.Builder.CVar( name = 'm', type = 'Marking' ) ])
 
@@ -150,6 +151,10 @@ class HashGenerator(MarkingTypeMethodGenerator):
                                    args = cyast.A("self", type = "Marking"),
                                    decl = [ cyast.Builder.CVar( name = 'h', type = 'int' ) ])
 
+        #builder.begin_If( test = cyast.Name("self._h != 0") )
+        #builder.emit_Return(cyast.Name("self._h"))
+        #builder.end_If()
+        
         builder.emit( cyast.E("h = 0xDEADDAD") )
         mult = 0xBADBEEF
         i = 0
@@ -168,6 +173,12 @@ class HashGenerator(MarkingTypeMethodGenerator):
                                                                                 right=attr_expr ),
                                                              op = cyast.Mult(),
                                                              right = cyast.Num(mult) ) ) )
+#                 builder.emit( cyast.Assign(targets=[cyast.Name('h')],
+#                                            value=cyast.BinOp(left =  cyast.Name('(h << 1)'),
+#                                                              op = cyast.BitXor(),
+#                                                              right = cyast.BinOp(left=attr_expr,
+#                                                                                  op=cyast.Mult(),
+#                                                                                  right=cyast.Num(mult) ) ) ) )
                 mult = (mult + (82520L + i + i)) % sys.maxint
                 i += 1
 
@@ -193,9 +204,17 @@ class HashGenerator(MarkingTypeMethodGenerator):
                                                         right=cyast.Num(mult))
                                       )
                          )
+
+#             builder.emit( cyast.Assign(targets=[cyast.Name('h')],
+#                                        value=cyast.BinOp(left =  cyast.Name('(h << 1)'),
+#                                                          op = cyast.BitXor(),
+#                                                          right = cyast.BinOp(left=place_hash,
+#                                                                              op=cyast.Mult(),
+#                                                                              right=cyast.Num(mult) ) ) ) )
             mult = (mult + (82521 * i + i)) % sys.maxint
             i += 1
 
+        #builder.emit(cyast.stmt(cyast.Name("self._h = h")))
         builder.emit_Return(cyast.E("h"))
         builder.end_FunctionDef()
         return cyast.to_ast(builder)

@@ -85,7 +85,7 @@ class HashGenerator(MarkingTypeMethodGenerator):
 
         for (name, place_type) in marking_type.place_types.iteritems():
             magic = hash(name)
-            builder.emit(pyast.E('h ^= hash(' + place_type.field.access_from(self_var) + ') * ' + str(magic)))
+            builder.emit(pyast.E('h = (h << 1) ^ hash(' + place_type.field.access_from(self_var) + ') * ' + str(magic)))
 
         # builder.emit(pyast.E("print h"))
         builder.emit_Return(pyast.E("h"))

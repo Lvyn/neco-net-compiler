@@ -1101,14 +1101,14 @@ class PlaceInfo(object):
 
 class NetInfo(object):
 
-    def __init__(self, net):
+    def __init__(self, net, config):
         # self.net = net
 
         self.declare = getattr(net, '_declare', [])
         self.places = []
 
         for p in net.place():
-            self.places.append(PlaceInfo(p))
+            self.places.append(PlaceInfo(p, one_safe=config.safe_net))
 
         self.transitions = []
         for t in net.transition():

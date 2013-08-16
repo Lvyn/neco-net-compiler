@@ -18,6 +18,7 @@ class Config(object):
                          trace_file='trace',
                          imports=[],
                          model=[],
+                         safe_net=False,
                          normalize_pids=False,
                          out_module='net')
         self.set_options(**kwargs)
