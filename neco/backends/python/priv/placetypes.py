@@ -122,8 +122,8 @@ class ObjectPlaceType(coretypes.ObjectPlaceType, PythonPlaceType):
         elif self.token_type.is_TupleType:
             print "!!! TUPLE >> ", self.token_type
             
+            body = []
             for index, subtype in enumerate(self.token_type):
-                body = []
                 if subtype.is_Pid:
                     if index == 0:
                         # head is pid, owned token
@@ -132,11 +132,10 @@ class ObjectPlaceType(coretypes.ObjectPlaceType, PythonPlaceType):
                                                                                                                    index=index)) 
                         body.append( pyast.stmt(pyast.E( "{marking}.add({token})".format( marking=place_in_dict_marking, token=token_var.name )) ))
                     else:
-                        place_in_dict_marking = "{pid_dict}[ {token}[{index}] ]".format(pid_dict=dict_var.name,
-                                                                                        token=token_var.name,
-                                                                                        index=index)
-                        body.append( pyast.E( "{marking} = Marking(True)".format( marking=place_in_dict_marking )) )
-                return pyast.For(target=pyast.E(token_var.name), iter=place_expr, body=body)
+                        body.append( pyast.stmt(pyast.E( "{pid_dict}[ {token}[{index}] ]".format(pid_dict=dict_var.name,
+                                                                                                 token=token_var.name,
+                                                                                                 index=index)) ))
+            return pyast.For(target=pyast.E(token_var.name), iter=place_expr, body=body)
         
         else:
             print "!!! DATA >> ", self.token_type

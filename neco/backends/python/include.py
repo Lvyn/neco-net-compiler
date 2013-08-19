@@ -15,14 +15,25 @@ class NecoCtx(object):
 perm_log = open('perm_log', 'w')
 calls = 0
 def full_normalize_marking(marking, hash_set, current_set, todo_set, state_space):
+    #print "mrk"
+    #print marking
     pid_tree = marking.buildPidTree()
+    # pid_tree.print_structure()
+    #print "strip"
     pid_tree.strip()
+    # pid_tree.print_structure()
     pid_tree.order_tree(pid_free_marking_order)
+    #print "order"
+    # pid_tree.print_structure()
     default_tree = pid_tree
-    bijection = default_tree.build_map()
+    bijection = default_tree.build_map()    
+    #print "MAP: ", bijection
     default_marking = marking.copy()
+    #print "copy : ", default_marking
     default_marking.update_pids(bijection)
-
+    #print "norm"
+    #print default_marking
+    
     if not default_marking.__pid_free_hash__() in hash_set:
         perm_log.write("h")
         return default_marking
@@ -63,6 +74,7 @@ def full_normalize_marking(marking, hash_set, current_set, todo_set, state_space
 
 def normalize_marking(marking, current_set, state_space, hash_set, todo_set):
     pid_tree = marking.buildPidTree()
+    pid_tree.strip()
     pid_tree.order_tree_without_orbits(pid_free_marking_order)
     bijection = pid_tree.build_map()
     marking.update_pids(bijection)

@@ -510,7 +510,7 @@ def neco__tuple_update_pids(tup, new_pid_dict):
     new_iterable = []
     for tok in tup:
         if isinstance(tok, Pid):
-            new_tok = Pid.from_list(new_pid_dict[tuple(tok.data)])
+            new_tok = new_pid_dict[tok]
         elif isinstance(tok, tuple):
             new_tok = neco__tuple_update_pids(tok, new_pid_dict)
         else:
@@ -530,10 +530,11 @@ def neco__multiset_update_pids(ms, new_pid_dict):
     
     See L{neco__iterable_update_pids}.
     """
+    # print "hum"
     new_ms = multiset()
     for tok, count in ms.iteritems():
         if isinstance(tok, Pid):
-            new_tok = Pid.from_list(new_pid_dict[tuple(tok.data)])
+            new_tok = new_pid_dict[tok]
         elif isinstance(tok, tuple):
             new_tok = neco__tuple_update_pids(tok, new_pid_dict)
         else:
@@ -542,37 +543,15 @@ def neco__multiset_update_pids(ms, new_pid_dict):
     return new_ms
 
 def pid_place_type_update_pids(ms, new_pid_dict):
+    # print "pid !"
     new_ms = multiset()
     for tok, count in ms.iteritems():
-        new_tok = Pid.from_list(new_pid_dict[tuple(tok.data)])
+        # print "tok ", tok, " c :", count
+        new_tok = new_pid_dict[tok]
         new_ms[new_tok] = count
+    # print "rn !"
     return new_ms
     
-
-def generator_place_update_pids(ms, new_pid_dict):
-    """
-    This function updated a generator place multiset C{ms} with resepect to C{new_pid_dict}.
-
-    >>> sgen = multiset([ (Pid.from_str('1'), 6), (Pid.from_str('1.4'), 2) ])
-    >>> pid_tree = neco__create_pid_tree() 
-    >>> neco__generator_multiset_update_pid_tree(sgen, pid_tree)
-    >>> new_pid_dict = neco__normalize_pid_tree(pid_tree)
-    >>> new_pid_dict
-    {Pid.from_str('1'): Pid.from_str('1'), Pid.from_str('1.7'): Pid.from_str('1.3'), Pid.from_str('1.4.3'): Pid.from_str('1.1.1'),
-    Pid.from_str('1.4'): Pid.from_str('1.1')}
-    >>> neco__generator_token_transformer(sgen, new_pid_dict)
-    multiset([(Pid.from_str('1.1'), 0), (Pid.from_str('1'), 2)])
-
-    """
-    # print ">>> ", new_pid_dict
-    new_ms = multiset()
-    for pid, n in ms:
-        new_pid = Pid.from_list(new_pid_dict[tuple(pid.data)])
-        new_n = Pid.from_list(new_pid_dict[ tuple(pid.next(n).data) ]).ends_with() - 1
-        new_ms.add((new_pid, new_n))
-    return new_ms
-
-
 def neco__generator_multiset_update_pid_tree(ms, pid_tree):
     """
     This function updates a pid tree (C{pid_tree}) retrieving data from a generator place multiset C{ms}.

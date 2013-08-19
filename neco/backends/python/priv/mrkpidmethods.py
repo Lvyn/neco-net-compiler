@@ -34,17 +34,11 @@ class UpdatePidsGenerator(MarkingTypeMethodGenerator):
                                    args=pyast.A(self_var.name).param(new_pid_dict_var.name).ast())
             
         body = []
-        for name, place_type in marking_type.place_types.iteritems():
+        for place_type in marking_type.place_types.itervalues():
             print place_type
             if not place_type.allow_pids:
                 continue
-            if name == GENERATOR_PLACE:
-                body.append( pyast.Assign(targets = [ place_type.place_expr(env, self_var) ],
-                                          value   = pyast.Call(func = pyast.Name(stubs['generator_place_update_pids']),
-                                                               args = [ place_type.place_expr(env, self_var),
-                                                                        pyast.Name(new_pid_dict_var.name) ])) )
-            else:
-                body.append( place_type.update_pids_stmt(env, self_var, new_pid_dict_var) )
+            body.append( place_type.update_pids_stmt(env, self_var, new_pid_dict_var) )
         
         if not body:
             body = [pyast.Pass()]
@@ -73,17 +67,15 @@ class BuildPidTreeGenerator(MarkingTypeMethodGenerator):
         body.append( pyast.E("{} = PidTree(0)".format(tree_var.name)) )
         # build the tree
         for name, place_type in marking_type.place_types.iteritems():
-            if not place_type.allow_pids:
-                continue
-
-            if name == GENERATOR_PLACE:
-                enum_body = [ pyast.If(test=pyast.E('not {}.has_key({}[0])'.format(pid_dict_var.name, token_var.name)),
-                                       body=[pyast.E("{}[ {}[0] ] = Marking(True)".format(pid_dict_var.name, token_var.name))]),
-                              pyast.E("{}[ Pid.from_list({}[0].data + [{}[1] + 1]) ] = 'next_pid'".format(pid_dict_var.name, token_var.name, token_var.name)) ]
-
-                body.append( place_type.enumerate( env, self_var, token_var, enum_body ) )
-            else:
-                body.append( place_type.extract_pids(env, self_var, pid_dict_var) )
+            
+#             if name == GENERATOR_PLACE:
+#                 enum_body = [ pyast.If(test=pyast.E('not {}.has_key({}[0])'.format(pid_dict_var.name, token_var.name)),
+#                                        body=[pyast.E("{}[ {}[0] ] = Marking(True)".format(pid_dict_var.name, token_var.name))]),
+#                               pyast.stmt(pyast.E("{}[ {}[0].concat({}[1]).concat(Pid(1)) ]".format(pid_dict_var.name, token_var.name, token_var.name))) ]
+# 
+#                 body.append( place_type.enumerate( env, self_var, token_var, enum_body ) )
+#             else:
+            body.append( place_type.extract_pids(env, self_var, pid_dict_var) )
 
         # body.append(pyast.E("print {}".format(pid_dict_var.name)))
         body.append(pyast.For(target=pyast.E('{}, {}'.format(tmp_pid_var.name, tmp_marking_var.name)),
