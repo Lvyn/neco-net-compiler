@@ -423,7 +423,7 @@ class MemoryChunk(object):
         return (self.field_offset, self.bit_offset)
 
     def mask(self):
-        (_, chunk_type, _) = self.chunk_manager.packed_attribute()
+        (_, chunk_type, _) = self.chunk_manager.packed_attribute()         
         return Mask.build_mask(self.bit_offset, self.bits, bits_sizeof(chunk_type))
 
 class ChunkManager(object):

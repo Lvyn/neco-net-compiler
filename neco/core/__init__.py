@@ -593,14 +593,14 @@ class SuccTGenerator(object):
             builder.emit_Assign(variable = variable,
                                  expr = netir.PyExpr(output.expr))
             check = False
-#             try:
-#                 print ">>>> BEGIN TO DO %s <<<< " % (output.expr.raw)
-#                 value = eval(output.expr.raw)
-#                 if output.place_info.type.contains(value):
-#                     check = False
-#                 print ">>>> END TO DO <<<< "
-#             except:
-#                 print "type of '{}' will be checked".format(output.expr.raw)
+            try:
+                print ">>>> BEGIN TO DO %s <<<< " % (output.expr.raw)
+                value = eval(output.expr.raw)
+                if output.place_info.type.contains(value):
+                    check = False
+                print ">>>> END TO DO <<<< "
+            except:
+                print "type of '{}' will be checked".format(output.expr.raw)
 
             if (not output_impl_type.is_AnyType) and check:
                 builder.begin_CheckType(variable = variable,
@@ -783,11 +783,7 @@ class SuccTGenerator(object):
             counter_var = generator_arc.counter
             i = 0
             for new_pid in new_pids:
-                if i > 0:
-                    expr = ExpressionInfo('{}.next({} + {})'.format(pid.name, counter_var.name, i))
-                else:
-                    expr = ExpressionInfo('{}.next({})'.format(pid.name, counter_var.name))
-
+                expr = ExpressionInfo('{}.incr({})'.format(counter_var.name, i))
                 builder.emit_Assign(variable = new_pid, expr = PyExpr(expr))
                 i += 1
 
@@ -1106,7 +1102,7 @@ class Compiler(object):
                                                  token_expr = netir.Token(value = token,
                                                                           place_name = place_info.name))
 
-                        elif t in [ TypeInfo.Int, TypeInfo.BlackToken ]:
+                        elif t in [ TypeInfo.Int, TypeInfo.BlackToken, TypeInfo.Pid ]:
                             builder.emit_AddToken(marking_var = marking_var,
                                                    place_name = place_info.name,
                                                    token_expr = netir.Token(value = token,

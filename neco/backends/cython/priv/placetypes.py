@@ -904,8 +904,8 @@ class FlowPlaceType(coretypes.PlaceType, CythonPlaceType):
 
         # this chunk will be updated when adding places
         self.chunk = marking_type.chunk_manager.new_chunk(marking_type.id_provider.get(self),
-                                                 TypeInfo.get('Bool'),
-                                                 packed = True)
+                                                          TypeInfo.get('Bool'),
+                                                          packed = True)
     @property
     def max(self):
         assert(self._counter != 0)
@@ -964,7 +964,7 @@ class FlowPlaceType(coretypes.PlaceType, CythonPlaceType):
         byte_offset, bit_offset = self.chunk.offset()
         mask = int(Mask.from_int(value, self.chunk.bits) << bit_offset)
         attr_name = self.chunk.get_attribute_name()
-
+        
         if current_flow:
             return cyast.E("{} == {}".format(current_flow.name,
                                              mask))
@@ -987,7 +987,9 @@ class FlowPlaceType(coretypes.PlaceType, CythonPlaceType):
         chunk_mask = int(~self.chunk.mask())
         value_mask = int(Mask.from_int(value, self.chunk.bits) << bit_offset)
         attr_name = self.chunk.get_attribute_name()
-
+        
+        # print "CHUNK mask : ", self.chunk.mask(), "value mask ", self._counter,Mask.from_int(value, self.chunk.bits) << bit_offset  
+        
         comment = cyast.Builder.Comment("mask: {mask:#0{anw}b} vmask:{vmask:#0{anw}b} - place:{place}"
                                         .format(mask = chunk_mask, vmask = value_mask, anw = 10, place = place_info.name))
 
@@ -1004,9 +1006,9 @@ class FlowPlaceType(coretypes.PlaceType, CythonPlaceType):
         mask = int(self.chunk.mask())
         attr_name = self.chunk.get_attribute_name()
         return cyast.E("{}.{}[{}] & {}".format(marking_var.name,
-                                                 attr_name,
-                                                 byte_offset,
-                                                 mask))
+                                               attr_name,
+                                               byte_offset,
+                                               mask))
 
 
     def dump_expr(self, env, marking_var, place_info):

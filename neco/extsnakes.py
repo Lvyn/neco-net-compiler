@@ -18,7 +18,7 @@ PetriNet = nets.PetriNet
 
 class Pid(object):
 
-    def __init__(self, l=None):
+    def __init__(self, *l):
         """
 
         >>> pid = Pid()
@@ -26,7 +26,7 @@ class Pid(object):
         []
 
         """
-        self.data = l if l else [] 
+        self.data = l if l else tuple()
 
     @classmethod
     def from_str(self, str_repr=None):
@@ -35,7 +35,7 @@ class Pid(object):
         '1.2.3'
         """
         pid = Pid()
-        pid.data = [ int(s) for s in str_repr.split('.') ] if str_repr else []
+        pid.data = tuple([ int(s) for s in str_repr.split('.') ]) if str_repr else tuple()
         return pid
 
     @classmethod
@@ -45,7 +45,7 @@ class Pid(object):
         '1.2.3'
         """
         pid = Pid()
-        pid.data = list(frag_list) if frag_list else []
+        pid.data = tuple(frag_list) if frag_list else tuple()
         return pid
 
     def copy(self):
@@ -57,7 +57,7 @@ class Pid(object):
         ('1.2', '1.1')
         """
         p = Pid()
-        p.data = [ x for x in self.data ]
+        p.data = tuple([ x for x in self.data ])
         return p
 
     def __iter__(self):
@@ -71,10 +71,10 @@ class Pid(object):
 #        return self.data[0]
 
     def __add__(self, frag):
-        pid = self.copy()
+        elts = list(self.data)        
         for e in frag.data:
-            pid.data.append(int(e))
-        return pid
+            elts.append(int(e))
+        return Pid(*elts)
 
     def __len__(self):
         return len(self.data)
@@ -96,6 +96,12 @@ class Pid(object):
 
     def at(self, i):
         return self.data[i]
+    
+    def concat(self, pid):
+        p = Pid()
+        p.data = tuple(self.data)
+        p.data += pid.data
+        return p
 
     def subpid(self, begin=0, end=None):
         """
@@ -162,7 +168,7 @@ class Pid(object):
         False
         """
         # return reduce(operator.xor, (hash(x) for x in self.data), 0)
-        return hash(tuple(self.data))
+        return hash(self.data)
 
     def __eq__(self, other):
         """
@@ -187,15 +193,15 @@ class Pid(object):
 #        """
 #        return self.data != other.data
 
-    def next(self, pid_component):
+    def incr(self, value):
         """
         >>> Pid.from_str('1').next('0') == Pid.from_str('1.1')
         True
         >>> Pid.from_str('1.2').next('2').next(3) == Pid.from_str('1.2.3.4')
         True
         """
-        p = self.copy()
-        p.data.append(int(pid_component) + 1)
+        p = Pid()
+        p.data = self.data[:-1] + tuple(value)
         return p
 
     def parent(self, other):
@@ -313,12 +319,12 @@ class Pid(object):
 
     def __repr__(self):
         """
-        >>> repr(Pid([1,1,1]))
-        'Pid([1,1,1])'
-        >>> Pid([1,1,1]) == eval(repr(Pid.from_str('1.1.1')))
+        >>> repr(Pid(1,1,1))
+        'Pid(1,1,1)'
+        >>> Pid(1,1,1) == eval(repr(Pid.from_str('1.1.1')))
         True
         """
-        return 'Pid([' + ','.join([repr(e) for e in self.data]) + '])'
+        return 'Pid(' + ','.join([repr(e) for e in self.data]) + ')'
 
     def __str__(self):
         """
@@ -329,6 +335,16 @@ class Pid(object):
 
     def __getitem__(self, index):
         return self.data[index]
+    
+    def incr(self, value):         
+        l = list(self.data)
+        l[-1] += value
+        return Pid(*l)
+    
+    def extend(self, value):
+        l = list(self.data)
+        l.append(value)
+        return Pid(*l)
 
 tPid = Instance(Pid) 
 
@@ -368,8 +384,8 @@ class GeneratorMultiArc(ArcAnnotation):
             str_list.append(str(self.components[0]))
             components = self.components[1:]
 
-        for pid_var, component in zip(self.new_pids, components):
-            str_list.append('{} := next({}) : {}'.format(str(pid_var), str(pid), str(component)))
+        for i, (pid_var, component) in enumerate(zip(self.new_pids, components)):
+            str_list.append('{} := {}.iter({}) : {}'.format(str(pid_var), str(self.counter), i, str(component)))
         return '<' + ', '.join(str_list) + '>'
 
     def __eq__(self, other):
@@ -450,24 +466,24 @@ class DPCPetriNet(nets.PetriNet):
         return self._initial_pid
 
     def add_get_pid(self, trans):
-        pid_var, count_var = Variable('x'), Variable('x')
+        pid_var, next_var = Variable('x'), Variable('x')
         # override names, begins with _ which is usually illegal
         pid_var.name = self.name_provider.new()
-        count_var.name = self.name_provider.new()
+        next_var.name = self.name_provider.new()
         # remember variables to use
-        self.get_operations[trans].append((pid_var, count_var))
+        self.get_operations[trans].append((pid_var, next_var))
         self.spawn_operations[trans][pid_var] # force output arc creation
         # return variables
-        return pid_var, count_var
+        return pid_var, next_var
 
     def add_get_pid_transition(self, trans, guard, count=1):
         pids = []
         pids_dict = {}
         for i in range(1, count + 1):
-            pid, c = self.add_get_pid(trans)
-            pids.append((pid, c))
+            pid, next = self.add_get_pid(trans)
+            pids.append((pid, next))
             pids_dict[ "_p{}".format(i) ] = pid
-            pids_dict[ "_c{}".format(i) ] = c
+            pids_dict[ "_n{}".format(i) ] = next
 
         t = Transition(trans, Expression(guard.format(**pids_dict)))
         self.add_transition(t)
@@ -490,25 +506,25 @@ class DPCPetriNet(nets.PetriNet):
     def add_terminate(self, trans, pid_var):
         self.terminate_operations[trans].add(pid_var)
 
-    def _get_counter_var(self, trans, pid_var):
-        for p, c in self.get_operations[trans]:
+    def _get_next_var(self, trans, pid_var):
+        for p, n in self.get_operations[trans]:
             if p == pid_var:
-                return c
+                return n
         print >> sys.stderr, ("counter for {} not found, user should specify a get"
                               " operation and use the returned variable to create new threads.")
         raise RuntimeError
 
     def finalize_net(self):
         # create generator place
-        self._generator_place = Place("sgen", self._generator_tokens, CrossProduct(tPid, tNatural))
+        self._generator_place = Place("sgen", self._generator_tokens, CrossProduct(tPid, tPid))
         self.add_place(self._generator_place)
 
         # add arcs
         for trans in self._trans:
             # from generator place to transition.
-            pc_pairs = self.get_operations[trans]
-            if pc_pairs:
-                tuple_list = [Tuple([p, c]) for p, c in pc_pairs]
+            pn_pairs = self.get_operations[trans]
+            if pn_pairs:
+                tuple_list = [Tuple([p, n]) for p, n in pn_pairs]
                 if len(tuple_list) > 1:
                     self.add_input(self._generator_place.name, trans, MultiArc(tuple_list))
                 else:
@@ -517,34 +533,37 @@ class DPCPetriNet(nets.PetriNet):
             # from transition to generator place.
             spawn_ops = self.spawn_operations[trans]
             for pid_var, new_pids in spawn_ops.iteritems():
-                counter_var = self._get_counter_var(trans, pid_var)
+                next_var = self._get_next_var(trans, pid_var)
                 # update thread counter
                 if pid_var in self.terminate_operations[trans]:
                     tuple_list = []
                 else:
                     if len(new_pids) == 0:
-                        expr = Expression(str(counter_var))
+                        expr = Expression(next_var)
                     else:
-                        expr = Expression("{} + {}".format(str(counter_var), str(len(new_pids))))
+                        expr = Expression("{}.incr(1)".format(str(new_pids[-1])))
                     tuple_list = [ Tuple([ pid_var, expr ]) ]
                 # add new thread coutners
-                tuple_list.extend([ Tuple([new_pid_var, Value(0)]) for new_pid_var in new_pids ])
+                tuple_list.extend([ Tuple([new_pid_var, Expression("{}.extend(1)".format(new_pid_var))]) for new_pid_var in new_pids ])
 
                 if not tuple_list:
                     continue
                 # add generator arc
-                generator_arc = GeneratorMultiArc(pid_var, counter_var, new_pids, tuple_list)
+                generator_arc = GeneratorMultiArc(pid_var, next_var, new_pids, tuple_list)
                 self.add_output(self._generator_place.name, trans, generator_arc)
                 self.transition(trans).generator_arc = generator_arc
 
     def setup_initial_hierarchy(self, hierarchy = None):
         if not hierarchy:
             hierarchy = {}
-        prefix = Pid([1])
+        prefix = Pid(1)
         pids = set()
 
         def gen_pids(acc, prefix, hierarchy):
-            pids.add( (prefix, max( [ int(x[0]) for x in hierarchy.keys() ] + [0] ) ) )
+            m = max( [ int(x[0])+1 for x in hierarchy.keys() ] + [1] )
+            # print m, prefix, prefix.data
+            
+            pids.add( (prefix, Pid.from_str(str(prefix) + '.' + str(m)) ) )
             for frag, subhierarchy in hierarchy.iteritems():
                 subpid = prefix + Pid.from_str(frag)
                 gen_pids(acc, subpid, subhierarchy)

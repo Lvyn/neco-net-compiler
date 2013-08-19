@@ -1132,7 +1132,7 @@ class NetInfo(object):
 
             if process_name != None:
                 process_names.add(process_name)
-
+            
         self.process_info = []
         for process_name in process_names:
             self.process_info.append(ProcessInfo(name = process_name,
