@@ -101,7 +101,10 @@ def compile_IR(env, config, compiler_):
     f = open(module_name + '.py', "w")
     Unparser(module_ast, f)
 
-    include_file_path = search_file("include.py", search_paths)
+    if config.no_stats:
+        include_file_path = search_file("include_no_stats.py", search_paths)
+    else:
+        include_file_path = search_file("include.py", search_paths)
     include_file = open(include_file_path, 'r')
     f.write('\n')
     for line in include_file:
