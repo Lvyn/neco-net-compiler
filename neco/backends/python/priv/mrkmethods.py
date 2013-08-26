@@ -88,6 +88,7 @@ class HashGenerator(MarkingTypeMethodGenerator):
             builder.emit(pyast.E('h = (h << 1) ^ hash(' + place_type.field.access_from(self_var) + ') * ' + str(magic)))
 
         # builder.emit(pyast.E("print h"))
+        builder.emit(pyast.E('self.' + marking_type.get_field('_hash').name + " = h"))
         builder.emit_Return(pyast.E("h"))
         builder.end_FunctionDef()
         return builder.ast()
