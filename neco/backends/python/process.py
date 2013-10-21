@@ -5,7 +5,6 @@ def sibling_order(left, right):
     return left.frag - right.frag
 
 def pid_free_marking_order(left, right):
-    # forbids
     if left.is_next_pid():
         if right.is_next_pid():
             return 0
@@ -18,11 +17,15 @@ def pid_free_marking_order(left, right):
     else:
         res = -1 if right.marking else 0
     if res == 0:
-        tmp = len(left.children) - len(right.children)
+        l1 = len(left.children)
+        l2 = len(right.children)
+        tmp = l1 - l2
         if tmp != 0:
             return -tmp
 
-        for li, ri in zip(left.children, right.children):
+        for i in xrange(l1):
+            li = left.children[i]
+            ri = right.children[i]
             tmp = pid_free_marking_order(li, ri)
             if tmp != 0:
                 return tmp
@@ -240,7 +243,6 @@ class PidTree(object):
         """
 
         bijection = {}        
-        
         i = 1
         for child in self.children:
             old_pid = child.frag
@@ -248,7 +250,7 @@ class PidTree(object):
             i += 1
             bijection[ old_pid ] = new_pid
             child._update_map( old_pid, new_pid, bijection)
-            
+
         return bijection
 
     def _update_map(self, old_prefix, new_prefix, bijection):

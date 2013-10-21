@@ -214,8 +214,8 @@ class PidFreeCmpGenerator(MarkingTypeMethodGenerator):
         builder = pyast.Builder()
         builder.begin_FunctionDef(name = 'pid_free_compare',
                                   args = pyast.A(self_var.name).param(other_var.name).ast())
-
-        for place_type in marking_type.place_types.values():
+        
+        for place_type in sorted(marking_type.place_types.values(), key = lambda x : (x.token_type.is_Pid * 1000 + x.token_type.has_pids * 100) ):
             type_info = place_type.token_type
             print type_info, place_type
             if type_info.is_Pid:

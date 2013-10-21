@@ -103,6 +103,10 @@ class ObjectPlaceType(coretypes.ObjectPlaceType, PythonPlaceType):
         self_place_expr = pyast.E(self.field.access_from(left_marking_var))
         other_place_expr = pyast.E(self.field.access_from(right_marking_var))
         return pyast.B(self_place_expr).attr('pid_free_tuple_compare').call([other_place_expr, pyast.E(repr(ignore))]).ast()
+
+    def compare_expr(self, env, left_mrk_var, right_mrk_var):
+        return pyast.E("{}.__cmp__({})".format(self.field.access_from(left_mrk_var), 
+                                               self.field.access_from(right_mrk_var)))
     
     def pid_free_hash_expr(self, env, marking_var, ignore):
         self_place_expr = pyast.E(self.field.access_from(marking_var))
@@ -294,6 +298,11 @@ class BTPlaceType(coretypes.BTPlaceType, PythonPlaceType):
         return pyast.E("{} = {}".format(self.field.access_from(dst_marking_var),
                                         self.field.access_from(src_marking_var))) 
 
+    def compare_expr(self, env, left_marking_var, right_marking_var):
+        return pyast.E("{} - {}".format(self.field.access_from(left_marking_var),
+                                         self.field.access_from(right_marking_var))) 
+
+
     def token_expr(self, env, value):
         return pyast.E('dot')
 
@@ -310,6 +319,8 @@ class BTPlaceType(coretypes.BTPlaceType, PythonPlaceType):
                           body=[ getnode, compiled_body ])
         return [ ifnode ]
 
+    def extract_pids(self, env, marking_var, dict_var):
+        return []
 
 ################################################################################
 

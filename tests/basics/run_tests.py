@@ -7,6 +7,7 @@ import neco
 import os
 import sys
 import unittest
+from UserDefined import *
 
 # Static config
 

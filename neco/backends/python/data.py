@@ -32,9 +32,9 @@ def build_pid_count_map(place):
     pid_count_map = {}
     for token in place:
         try:
-            pid_count_map[token] += 1
+            pid_count_map[len(token)] += 1
         except KeyError:
-            pid_count_map[token] = 0
+            pid_count_map[len(token)] = 0
     return pid_count_map
 
 def pid_free_pid_count_compare(left_pair, right_pair):
@@ -407,27 +407,21 @@ class multiset(hdict):
         
 
     def pid_free_pid_compare(self, other):
-        self_keys  = self.keys()
-        other_keys = other.keys()
-        
-        self_len  = len(self_keys)
-        other_len = len(other_keys)
-        
-        tmp = self_len - other_len
-        if tmp != 0:
-            return tmp
+        self_pid_count_map = {}
+        for k, v in self.iteritems():
+            try:
+                self_pid_count_map[k.__len__()] += v
+            except KeyError:
+                self_pid_count_map[k.__len__()] = v
 
-        left_map = build_pid_count_map(self_keys)
-        right_map = build_pid_count_map(other_keys)
-
-        left  = sorted(left_map.iteritems(), cmp = pid_free_pid_count_compare )
-        right = sorted(right_map.iteritems(), cmp = pid_free_pid_count_compare )
+        other_pid_count_map = {}
+        for k, v in other.iteritems():
+            try:
+                other_pid_count_map[k.__len__()] += v
+            except KeyError:
+                other_pid_count_map[k.__len__()] = v
         
-        for i in range(self_len):
-            tmp = pid_free_pid_count_compare(left[i], right[i])
-            if tmp != 0:
-                return tmp
-        return 0
+        return self_pid_count_map.__cmp__(other_pid_count_map)
 
     def pid_free_first_tuple_compare(self, other):
         self_keys = self.keys()
@@ -546,7 +540,6 @@ def pid_place_type_update_pids(ms, new_pid_dict):
     # print "pid !"
     new_ms = multiset()
     for tok, count in ms.iteritems():
-        # print "tok ", tok, " c :", count
         new_tok = new_pid_dict[tok]
         new_ms[new_tok] = count
     # print "rn !"

@@ -244,14 +244,14 @@ echo -e "\nrunning FLOW cases"
 run_tests "$FLOW_CASES" "-O -Op -Of" "" ""
 echo
 
-#MODEL="case_FlowAbcd2_NOPT_OPT_BPACK_FLOW.abcd"
-#echo -e "running NOPT cases"
-#run_tests "$MODEL" "" "" ""
-#echo -e "\nrunning OPT cases"
-#run_tests "$MODEL" "-O" "" ""
-#echo -e "\nrunning BPACK cases"
-#run_tests "$MODEL" "-O -Op" "" ""
-#echo -e "\nrunning FLOW cases"
-#run_tests "$MODEL" "-O -Op -Of" "" ""
+# MODEL="case_Basic1_NOPT_OPT_BPACK.py"
+# echo -e "running NOPT cases"
+# run_tests "$MODEL" "" "" ""
+# echo -e "\nrunning OPT cases"
+# run_tests "$MODEL" "-O" "" ""
+# echo -e "\nrunning BPACK cases"
+# run_tests "$MODEL" "-O -Op" "" ""
+# echo -e "\nrunning FLOW cases"
+# run_tests "$MODEL" "-O -Op -Of" "" ""
 
 print_stats
