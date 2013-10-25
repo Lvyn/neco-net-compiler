@@ -1,4 +1,3 @@
-CXX=g++ 
 SPOT_BASE?=/usr/local
 LIBS= -lpython2.7 $(SPOT_BASE)/lib/libspot.a -lbdd -lboost_program_options
 LIBPATHS=-L. -L/usr/local/lib -L$(SPOT_BASE)/lib -L../ctypes/
