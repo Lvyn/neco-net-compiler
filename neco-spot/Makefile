@@ -1,7 +1,8 @@
-CXX=g++
-LIBS= -lpython2.7 /usr/local/lib/libspot.a /usr/local/lib/libbdd.a -lboost_program_options
-LIBPATHS=-L.
-INCLUDES= -I/usr/include/python2.7 -I/usr/local/include/spot -L../ctypes/
+CXX=g++ 
+SPOT_BASE?=/usr/local
+LIBS= -lpython2.7 $(SPOT_BASE)/lib/libspot.a -lbdd -lboost_program_options
+LIBPATHS=-L. -L/usr/local/lib -L$(SPOT_BASE)/lib -L../ctypes/
+INCLUDES= -I/usr/include/python2.7 -I$(SPOT_BASE)/include/spot -I$(SPOT_BASE)/include/ -I/usr/local/include/spot
 LDFLAGS= $(LIBPATHS) $(LIBS)
 CXXFLAGS=$(INCLUDES)
 PWD=$(shell pwd)
