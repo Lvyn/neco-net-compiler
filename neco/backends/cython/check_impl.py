@@ -43,8 +43,11 @@ class CheckerEnv(common.CompilingEnvironment):
         self.net_info = net_info
         self.id_provider = IDProvider()
         self.check_functions = {}
-
+        self.all_functions = {}
+        self.any_functions = {}
         self.transition_id_provider = IDProvider()
+        self.place_id_provider = IDProvider()
+        self.function_id_provider = IDProvider()
         self._is_fireable_functions = {}
 
     def get_check_function(self, name):
@@ -79,6 +82,38 @@ class CheckerEnv(common.CompilingEnvironment):
             self._is_fireable_functions[transition_name] = function
 
         return function.call([ cyast.Name(marking_var.name) ])
+    
+    def is_all_expression(self, marking_var, place_name, arg_function_name):
+        try:
+            function = self.all_functions[(place_name, arg_function_name)]
+        except KeyError:
+            # function does not exist            
+            place_id = self.place_id_provider.get(place_name)
+            function_id = self.function_id_provider.get(arg_function_name)            
+            function_name = "isAll_p{}_f{}".format(place_id, function_id)
+
+            function_ast = gen_All_function(self, function_name, place_name, arg_function_name)
+
+            function = FunctionWrapper(function_name, function_ast)
+            self.all_functions[(place_name, arg_function_name)] = function
+
+        return function.call([ cyast.Name(marking_var.name) ])
+    
+    def is_any_expression(self, marking_var, place_name, arg_function_name):
+        try:
+            function = self.any_functions[(place_name, arg_function_name)]
+        except KeyError:
+            # function does not exist            
+            place_id = self.place_id_provider.get(place_name)
+            function_id = self.function_id_provider.get(arg_function_name)            
+            function_name = "isAny_p{}_f{}".format(place_id, function_id)
+
+            function_ast = gen_Any_function(self, function_name, place_name, arg_function_name)
+
+            function = FunctionWrapper(function_name, function_ast)
+            self.any_functions[(place_name, arg_function_name)] = function
+
+        return function.call([ cyast.Name(marking_var.name) ])
 
     def gen_multiset_card_expression(self, marking_var, multiset):
 
@@ -92,6 +127,12 @@ class CheckerEnv(common.CompilingEnvironment):
 
     def is_fireable_functions(self):
         for fun in self._is_fireable_functions.itervalues():
+            yield fun.ast()
+    def get_all_functions(self):
+        for fun in self.all_functions.itervalues():
+            yield fun.ast()
+    def get_any_functions(self):
+        for fun in self.any_functions.itervalues():
             yield fun.ast()
 
 class FunctionWrapper(object):
@@ -129,11 +170,11 @@ def gen_InPlace_function(checker_env, function_name, place_name):
     checker_env.push_variable_provider(variable_provider)
 
     builder = cyast.Builder()
-    marking_var = variable_provider.new_variable(type = marking_type.type)
+    marking_var = variable_provider.new_variable(variable_type = marking_type.type)
 
     place_type = marking_type.get_place_type_by_name(place_name)
-    token_var = variable_provider.new_variable(type = place_type.token_type)
-    # check_var = variable_provider.new_variable(type=TypeInfo.Int)
+    token_var = variable_provider.new_variable(variable_type = place_type.token_type)
+    # check_var = variable_provider.new_variable(variable_type=TypeInfo.Int)
 
     builder.begin_FunctionCDef(name = function_name,
                                args = (cyast.A(marking_var.name,
@@ -146,7 +187,7 @@ def gen_InPlace_function(checker_env, function_name, place_name):
 
     main_body = []
 
-    loop_var = variable_provider.new_variable(type = place_type.token_type)
+    loop_var = variable_provider.new_variable(variable_type = place_type.token_type)
     inner_body = cyast.If(cyast.Compare(cyast.Name(token_var.name),
                                         [ cyast.Eq() ],
                                         [ cyast.Name(loop_var.name) ]),
@@ -220,6 +261,94 @@ class IsFireableGenerator(core.SuccTGenerator):
         builder.emit_Return(core.netir.PyExpr(failure))
         builder.end_function()
         return builder.ast()
+
+################################################################################
+#
+################################################################################
+def gen_All_function(checker_env, function_name, place_name, arg_function_name):
+    marking_type = checker_env.marking_type
+    variable_provider = VariableProvider()
+
+    checker_env.push_cvar_env()
+    checker_env.push_variable_provider(variable_provider)
+
+    builder = cyast.Builder()
+    marking_var = variable_provider.new_variable(variable_type = marking_type.type)
+
+    place_type = marking_type.get_place_type_by_name(place_name)
+    token_var = variable_provider.new_variable(variable_type = place_type.token_type)
+    # check_var = variable_provider.new_variable(variable_type=TypeInfo.Int)
+
+    builder.begin_FunctionCDef(name = function_name,
+                               args = (cyast.A(marking_var.name,
+                                             type = checker_env.type2str(marking_var.type))),
+                               returns = cyast.Name("int"),
+                               decl = [],
+                               public = False, api = False)
+
+    main_body = []
+
+    loop_var = variable_provider.new_variable(variable_type = place_type.token_type)
+    inner_body = cyast.If( cyast.UnaryOp( cyast.Not(), cyast.Name(arg_function_name + '(' + loop_var.name + ')') ),
+                          [ cyast.Return(cyast.Num(0)) ])
+    node = place_type.enumerate_tokens(checker_env,
+                                       loop_var,
+                                       marking_var,
+                                       body = inner_body)
+
+    main_body.append(node)
+    main_body.append(cyast.Return(value = cyast.Num(1)))
+
+    for stmt in main_body:
+        builder.emit(stmt)
+
+    builder.end_FunctionDef()
+    return cyast.to_ast(builder)
+
+################################################################################
+#
+################################################################################
+def gen_Any_function(checker_env, function_name, place_name, arg_function_name):
+    marking_type = checker_env.marking_type
+    variable_provider = VariableProvider()
+
+    checker_env.push_cvar_env()
+    checker_env.push_variable_provider(variable_provider)
+
+    builder = cyast.Builder()
+    marking_var = variable_provider.new_variable(variable_type = marking_type.type)
+
+    place_type = marking_type.get_place_type_by_name(place_name)
+    token_var = variable_provider.new_variable(variable_type = place_type.token_type)
+    # check_var = variable_provider.new_variable(variable_type=TypeInfo.Int)
+
+    builder.begin_FunctionCDef(name = function_name,
+                               args = (cyast.A(marking_var.name,
+                                             type = checker_env.type2str(marking_var.type))),
+                               returns = cyast.Name("int"),
+                               decl = [],
+                               public = False, api = False)
+
+    main_body = []
+
+    loop_var = variable_provider.new_variable(variable_type = place_type.token_type)
+    inner_body = cyast.If( cyast.Name(arg_function_name + '(' + loop_var.name + ')'),
+                          [ cyast.Return(cyast.Num(1)) ])
+    node = place_type.enumerate_tokens(checker_env,
+                                       loop_var,
+                                       marking_var,
+                                       body = inner_body)
+
+    main_body.append(node)
+    main_body.append(cyast.Return(value = cyast.Num(0)))
+
+    for stmt in main_body:
+        builder.emit(stmt)
+
+    builder.end_FunctionDef()
+    return cyast.to_ast(builder)
+
+
 
 def build_multiset(elements):
     def zero(): return 0
@@ -310,6 +439,12 @@ def gen_check_expression(checker_env, marking_var, formula):
     elif formula.isFireable():
         return checker_env.is_fireable_expression(marking_var,
                                                   formula.transition_name)
+
+    elif formula.isAll():
+        return checker_env.is_all_expression(marking_var, formula.place_name, formula.function_name)
+
+    elif formula.isAny():
+        return checker_env.is_any_expression(marking_var, formula.place_name, formula.function_name)
 
     elif formula.isMultisetCard():
         return checker_env.gen_multiset_card_expression(marking_var,
@@ -464,8 +599,15 @@ def produce_and_compile_pyx(checker_env, id_prop_map):
     f.write("import sys, StringIO\n")
     f.write("import cPickle as pickle\n")
     f.write("from snakes.nets import *\n")
+    
+    for imp in config.checker_imports:
+        f.write("from {} import *\n".format(imp))
 
     for function_ast in checker_env.is_fireable_functions():
+        cyast.Unparser(function_ast, f)
+    for function_ast in checker_env.get_all_functions():
+        cyast.Unparser(function_ast, f)
+    for function_ast in checker_env.get_any_functions():
         cyast.Unparser(function_ast, f)
     for function_ast in checker_env.functions():
         cyast.Unparser(function_ast, f)

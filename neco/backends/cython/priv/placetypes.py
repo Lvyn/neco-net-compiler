@@ -383,8 +383,8 @@ class GenericPlaceType(coretypes.PlaceType, CythonPlaceType):
     def add_items_stmt(self, env, multiset, marking_type, marking_var): pass
 
     def enumerate_tokens(self, env, token_var, marking_var, body):
-        index_var = env.variable_provider.new_variable(type = TypeInfo.get('Int'))
-        size_var = env.variable_provider.new_variable(type = TypeInfo.get('Int'))
+        index_var = env.variable_provider.new_variable(variable_type = TypeInfo.get('Int'))
+        size_var = env.variable_provider.new_variable(variable_type = TypeInfo.get('Int'))
 
         env.try_declare_cvar(token_var.name, token_var.type)
         env.try_declare_cvar(index_var.name, TypeInfo.get('Int'))
@@ -1269,8 +1269,8 @@ class FlowPlaceTypeHelper(coretypes.PlaceType, CythonPlaceType):
 #    def add_items_stmt(self, env, multiset, marking_type, marking_var): pass
 #
 #    def enumerate_tokens(self, env, token_var, marking_var, body):
-#        index_var = env.variable_provider.new_variable(type=TypeInfo.get('Int'))
-#        size_var = env.variable_provider.new_variable(type=TypeInfo.get('Int'))
+#        index_var = env.variable_provider.new_variable(variable_type=TypeInfo.get('Int'))
+#        size_var = env.variable_provider.new_variable(variable_type=TypeInfo.get('Int'))
 #
 #        env.try_declare_cvar(token_var.name, token_var.type)
 #        env.try_declare_cvar(index_var.name, TypeInfo.get('Int'))

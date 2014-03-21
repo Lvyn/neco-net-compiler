@@ -22,6 +22,8 @@ module Properties version "0.1"
     		        	MultisetComparison(ComparisonOperator operator, MultisetExpression left, MultisetExpression right) |
 						Live(int level, identifier transition_name) |
 						Fireable(identifier transition_name) |
+						All(identifier place_name, identifier function_name) |
+						Any(identifier place_name, identifier function_name) |
 						Deadlock |
 						Bool(bool value) |
 	                	AtomicProposition(Formula formula)

@@ -102,6 +102,10 @@ def formula_to_str(formula):
         return "Live{!s}({!r})".format(formula.level, formula.transition_name)
     elif formula.isFireable():
         return "Fireable({!r})".format(formula.transition_name)
+    elif formula.isAll():
+        return "All({!r}, {!r})".format(formula.place_name, formula.function_name)
+    elif formula.isAny():
+        return "Any({!r}, {!r})".format(formula.place_name, formula.function_name)
     elif formula.isDeadlock():
         return "Deadlock"
     elif formula.isAtomicProposition():
@@ -153,6 +157,8 @@ def __match_atom(formula):
              formula.isMultisetComparison() or
              formula.isLive() or
              formula.isFireable() or
+             formula.isAll() or
+             formula.isAny() or
              formula.isPlaceMarking() or
              formula.isMultisetCardinality())
 
@@ -287,6 +293,8 @@ def transform_formula(formula):
 
     elif (formula.isDeadlock() or
           formula.isFireable() or
+          formula.isAll() or
+          formula.isAny() or
           formula.isPlaceMarking() or
           formula.isMultisetConstant() or
           formula.isNext() or
@@ -392,6 +400,8 @@ class PropertyParser(Yappy):
                           (" bool_expr -> ms_expr CMP ms_py_expr", self.multiset_cmp_rule),
                           (" bool_expr -> LIVE ( INTEGER , ID )", self.live_rule),
                           (" bool_expr -> FIREABLE ( ID )", self.fireable_rule),
+                          (" bool_expr -> ALL ( ID , ID )", self.all_rule),
+                          (" bool_expr -> ANY ( ID , ID )", self.any_rule),
                           (" bool_expr -> DEADLOCK", self.deadlock_rule),
                           (" bool_expr -> BOOL", self.bool_rule),
                           (" int_expr -> int_expr + int_expr", self.plus_rule),
@@ -420,6 +430,8 @@ class PropertyParser(Yappy):
                     (r'live', lambda x : ('LIVE', x), ('LIVE', 700, 'noassoc')),
                     (r'fireable', lambda x : ('FIREABLE', x), ('FIREABLE', 700, 'noassoc')),
                     (r'deadlock', lambda x : ('DEADLOCK', x), ('DEADLOCK', 700, 'noassoc')),
+                    (r'all', lambda x : ('ALL', x), ('ALL', 700, 'noassoc')),
+                    (r'any', lambda x : ('ANY', x), ('ANY', 700, 'noassoc')),
                     (r'bound', lambda x : ('BOUND', x), ('BOUND', 700, 'noassoc')),
                     (r'card', lambda x : ('CARD', x), ('CARD', 700, 'noassoc')),
                     (r'marking', lambda x : ('MARKING', x), ('MARKING', 700, 'noassoc')),
@@ -479,7 +491,7 @@ class PropertyParser(Yappy):
 
     def not_rule(self, tokens, ctx):
         """
-        >>> print ast.dump(PropertyParser().input('! deadlock'))
+        >>> print ast.dump(PropertyParser().input('not deadlock'))
         Negation(formula=Deadlock())
         """
         return Negation(tokens[1])
@@ -500,21 +512,21 @@ class PropertyParser(Yappy):
 
     def and_rule(self, tokens, ctx):
         """
-        >>> print ast.dump(PropertyParser().input('deadlock /\\ deadlock'))
+        >>> print ast.dump(PropertyParser().input('deadlock and deadlock'))
         Conjunction(operands=[Deadlock(), Deadlock()])
         """
         return Conjunction([ tokens[0], tokens[2] ])
 
     def or_rule(self, tokens, ctx):
         """
-        >>> print ast.dump(PropertyParser().input('deadlock \\/ deadlock'))
+        >>> print ast.dump(PropertyParser().input('deadlock or deadlock'))
         Disjunction(operands=[Deadlock(), Deadlock()])
         """
         return Disjunction([ tokens[0], tokens[2] ])
 
     def xor_rule(self, tokens, ctx):
         """
-        >>> print ast.dump(PropertyParser().input('deadlock ^ deadlock'))
+        >>> print ast.dump(PropertyParser().input('deadlock xor deadlock'))
         ExclusiveDisjunction(operands=[Deadlock(), Deadlock()])
         """
         return ExclusiveDisjunction([ tokens[0], tokens[2] ])
@@ -579,6 +591,20 @@ class PropertyParser(Yappy):
         Fireable(transition_name='t')
         """
         return Fireable(tokens[2])
+    
+    def all_rule(self, tokens, ctx):
+        """
+        >>> print ast.dump(PropertyParser().input('all(p, f)'))
+        All(place_name='p', function_name='f')
+        """
+        return All(tokens[2], tokens[4])
+    
+    def any_rule(self, tokens, ctx):
+        """
+        >>> print ast.dump(PropertyParser().input('any(p, f)'))
+        Any(place_name='p', function_name='f')
+        """
+        return Any(tokens[2], tokens[4])
 
     def deadlock_rule(self, tokens, ctx):
         """

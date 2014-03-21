@@ -57,6 +57,8 @@ class Main(object):
                             help = 'enable profiling.')
         parser.add_argument('--include', '-I', default = ['.'], dest = 'includes', action = 'append', metavar = 'PATH',
                             help = 'additional search paths (libs, files).')
+        parser.add_argument('--import', '-i', default = [], dest = 'imports', action = 'append', metavar = 'MODULE',
+                            help = 'additional modules to import.')
         parser.add_argument('--formula', metavar = formula_meta, type = str, default = "false",
                             help = 'formula to check')
         parser.add_argument('--xml', metavar = xml_formula_meta, default = None, dest = 'xml', type = str,
@@ -150,6 +152,7 @@ class Main(object):
                            formula = formula,
                            trace_calls = False,
                            search_paths = args.includes,
+                           checker_imports = args.imports,
                            trace = trace,
                            ns_args = args.ns_args)
 
