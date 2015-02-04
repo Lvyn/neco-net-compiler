@@ -27,6 +27,7 @@ def gen_asdl():
     compile_asdl('neco/asdl/netir.asdl',        'neco/asdl/netir.py')
     compile_asdl('neco/asdl/cython.asdl',       'neco/asdl/cython.py')
     compile_asdl('neco/asdl/cpp.asdl',          'neco/asdl/cpp.py')
+    compile_asdl('neco/asdl/stub.asdl',         'neco/asdl/stub.py')
 
 
 def create_local_symlinks():
@@ -101,7 +102,9 @@ setup(name='Neco',
                 'neco.backends.python',
                 'neco.backends.python.priv',
                 'neco.backends.cython',
-                'neco.backends.cython.priv',],
+                'neco.backends.cython.priv',
+                'neco.backends.stub',
+                'neco.backends.stub.priv',],
       package_data={'neco.ctypes' : ['include.pxd',
                                      'include.pyx',
                                      'include_no_stats.pyx',

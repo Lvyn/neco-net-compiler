@@ -1,0 +1,7 @@
+module stub version "0.1"
+{
+	Stub = (Stmt* body)
+	
+	Stmt = StubDef(identifier name, Stmt* body)
+	     | StubEntry(identifier* names)
+}

@@ -31,7 +31,8 @@ g_produced_files = ["*.pyc",
                     "net.pyo",
                     "ctypes.h",
                     "ctypes_ext.pxd",
-                    "trace"]
+                    "trace",
+                    "net.stub"]
 class Main(object):
 
     _instance_ = None    # unique instance
@@ -51,7 +52,7 @@ class Main(object):
                                          argument_default = argparse.SUPPRESS,
                                          formatter_class = argparse.ArgumentDefaultsHelpFormatter)
 
-        parser.add_argument('--lang', '-l', default = 'python', dest = 'language', choices = ['python', 'cython'],
+        parser.add_argument('--lang', '-l', default = 'python', dest = 'language', choices = ['python', 'cython', 'stub'],
                             help = 'set target language')
 
         model_group = parser.add_argument_group('Model related options')
@@ -204,9 +205,6 @@ class Main(object):
         compiled_net = compile_net(net = self.petri_net, config = self.config)
         end = time()
 
-        if not compiled_net:
-            print "Error during compilation."
-            exit(-1)
         print "compilation time: ", end - start
         return end - start
 
