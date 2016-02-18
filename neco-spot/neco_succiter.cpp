@@ -26,18 +26,20 @@ namespace neco {
 
     //////////////////////////////////////////////////
 
-    void succ_iterator::first()
+    bool succ_iterator::first()
     {
         NECO_DEBUG_TRACE("succ_iterator::first");
         m_node_index = 0;
+	return !done();
     }
 
     //////////////////////////////////////////////////
 
-    void succ_iterator::next()
+    bool succ_iterator::next()
     {
         NECO_DEBUG_TRACE("succ_iterator::next");
         ++m_node_index;
+	return !done();
     }
 
     //////////////////////////////////////////////////
@@ -50,7 +52,7 @@ namespace neco {
 
     //////////////////////////////////////////////////
 
-    spot::state* succ_iterator::current_state() const
+    spot::state* succ_iterator::dst() const
     {
         NECO_DEBUG_TRACE("succ_iterator::current_state");
         void* elt = (*m_list)[m_node_index];

@@ -5,8 +5,7 @@
 #include "neco_state.h"
 
 #include <spot/kripke/kripke.hh>
-#include <spot/tgba/state.hh>
-#include <bdd.h>
+#include <bddx.h>
 
 #include "ctypes.h"
 
@@ -18,35 +17,33 @@ class state;
 //!
 //! This iterator enumerates successor states of a state,
 //! modes of Petri net transitions are not stored.
-class succ_iterator
+class succ_iterator final
     : public spot::kripke_succ_iterator
 {
 public:
                                 //! Constructor.
                                 //!
-                            	//! \param state current state in the tgba.
-                            	//! \param condition is the one returned bu current_condition().
-                            	//! \param list list of successor markings, states will be build on the fly.
+				//! \param state current state in the tgba.
+				//! \param condition is the one returned bu current_condition().
+				//! \param list list of successor markings, states will be build on the fly.
                                 succ_iterator(const state* current_state_tgba,
                                               bdd current_condition,
                                               neco_list_t* successor_list);
 	virtual                     ~succ_iterator();
 
-                            	//! Set the iterator at the beginning.
-	virtual void                first();
+				//! Set the iterator at the beginning.
+	virtual bool                first() override;
                                 //! Advance by one.
-	virtual void                next();
+	virtual bool                next() override;
                                 //! All enumerated ?
-	virtual	bool                done() const;
+	virtual	bool                done() const override;
 
-                            	//! Get the current state.
-	virtual spot::state*        current_state() const;
+				//! Get the current state.
+	virtual spot::state*        dst() const override;
 
 private:
-                                //! Copy constructor, disabled: non copyable.
-                                succ_iterator(const succ_iterator& other);
-                                //! Assignment operator, disabled: non copyable.
-	const succ_iterator&        operator=(const succ_iterator& other);
+				    succ_iterator(const succ_iterator& other) = delete;
+	const succ_iterator&        operator=(const succ_iterator& other) = delete;
 
 private:
 	const state*                m_state;        //!< current state.
