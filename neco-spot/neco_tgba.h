@@ -2,45 +2,40 @@
 #define _NECO_TGBA_H_
 
 #include "neco_model.h"
-#include <bdd.h>
+#include <bddx.h>
 #include <vector>
-#include <spot/tgba/bdddict.hh>
+#include <spot/twa/bdddict.hh>
 #include <spot/kripke/kripke.hh>
-#include <spot/tgba/state.hh>
-#include <spot/ltlvisit/apcollect.hh>
+#include <spot/tl/apcollect.hh>
 
 namespace neco
 {
 
 //! Class representing a tgba containing neco states.
-class tgba
+class tgba final
     : public spot::kripke
 {
 public:
-                                            tgba(const spot::ltl::atomic_prop_set* sap,
-                                                 spot::bdd_dict* dict,
-                                                 const spot::ltl::formula* dead);
+                                            tgba(const spot::atomic_prop_set* sap,
+                                                 spot::bdd_dict_ptr dict,
+                                                 spot::formula dead);
 
 	virtual                                 ~tgba();
 
-	virtual spot::state*                    get_init_state() const;
-	virtual spot::tgba_succ_iterator*       succ_iter(const spot::state* local_state,
-                                                      const spot::state*,
-                                                      const spot::tgba*) const;
+	virtual spot::state*                    get_init_state() const override;
+	virtual spot::twa_succ_iterator*       succ_iter(const spot::state* local_state) const override;
 
                                             //! Get the condition of a \a state.
-	virtual bdd                             state_condition(const spot::state* state) const;
+	virtual bdd                             state_condition(const spot::state* state) const override;
 
 
-	virtual spot::bdd_dict*                 get_dict() const;
 	virtual std::string                     format_state(const spot::state* state) const;
 
 private:
-                                            tgba(const tgba& other);        //!< disabled: non copyable
-	const tgba&                             operator=(const tgba& other);   //!< disabled: non copyable
+                                                tgba(const tgba& other) = delete;
+        const tgba&                             operator=(const tgba& other) = delete;
 
 private:
-	spot::bdd_dict*                         m_dict;         //!< bdd dict used by the tgba
 	std::vector<std::string>                m_name;         //!< names of atomic propositions
 	std::vector<int>                        m_bddvar;	    //!< associated BDD variables
 	std::vector<int>                        m_necovar;	    //!< associated neco model variables, ie., atomic propositions IDs.

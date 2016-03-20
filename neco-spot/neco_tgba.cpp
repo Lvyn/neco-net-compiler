@@ -2,17 +2,16 @@
 #include "neco_tgba.h"
 #include "neco_state.h"
 #include "neco_succiter.h"
-#include <spot/ltlast/constant.hh>
 #include <cstdio>
 
 namespace neco {
 
     //////////////////////////////////////////////////
 
-    tgba::tgba(const spot::ltl::atomic_prop_set* sap,
-               spot::bdd_dict* dict,
-               const spot::ltl::formula* dead)
-            : m_dict(dict)
+    tgba::tgba(const spot::atomic_prop_set* sap,
+               spot::bdd_dict_ptr dict,
+               const spot::formula dead)
+      : spot::kripke(dict)
     {
         NECO_DEBUG_TRACE("tgba");
         assert(sap);
@@ -23,13 +22,12 @@ namespace neco {
         m_bddvar.reserve(s);
         m_necovar.reserve(s);
 
-        spot::ltl::atomic_prop_set::iterator it;
-        for(it = sap->begin(); it != sap->end(); ++it) {
-            if (*it == dead)
+        for (auto f: *sap) {
+            if (f == dead)
                 continue;
 
             int id = -1; /* neco atomic proposition identifier */
-            const std::string& name = (*it)->name(); /* atomic proposition name, ex. "p 42" */
+            const std::string& name = f.ap_name(); /* atomic proposition name, ex. "p 42" */
 
             m_name.push_back(name);
             sscanf(name.c_str(), "p %d", &id); /* extract neco proposition identifier */
@@ -39,20 +37,20 @@ namespace neco {
                 exit(-1);
             }
 
-            m_bddvar.push_back(m_dict->register_proposition(*it, this)); // variable in BDD
+            m_bddvar.push_back(register_ap(name)); // variable in BDD
             m_necovar.push_back(id); // variable in neco
         }
 
-        if (dead == spot::ltl::constant::false_instance()) {
+        if (dead == spot::formula::ff()) {
             m_alive_prop = bddtrue;
             m_dead_prop = bddfalse;
 
-        } else if (dead == spot::ltl::constant::true_instance()) {
+        } else if (dead == spot::formula::tt()) {
             m_alive_prop = bddtrue;
             m_dead_prop = bddtrue;
 
         } else {
-            int var = m_dict->register_proposition(dead, this);
+	    int var = register_ap(dead);
             m_dead_prop = bdd_ithvar(var);
             m_alive_prop = bdd_nithvar(var);
         }
@@ -62,21 +60,6 @@ namespace neco {
 
     tgba::~tgba()
     {
-        m_dict->unregister_all_my_variables(this);
-    }
-
-    //////////////////////////////////////////////////
-
-    const tgba& tgba::operator=(const tgba& other)
-    {
-        assert(false);
-    }
-
-    //////////////////////////////////////////////////
-
-    tgba::tgba(const tgba& other)
-    {
-        assert(false);
     }
 
     //////////////////////////////////////////////////
@@ -89,9 +72,7 @@ namespace neco {
 
     //////////////////////////////////////////////////
 
-    spot::tgba_succ_iterator* tgba::succ_iter(const spot::state* local_state,
-                                              const spot::state*,
-                                              const spot::tgba*) const
+    spot::twa_succ_iterator* tgba::succ_iter(const spot::state* local_state) const
     {
         NECO_DEBUG_TRACE("succ_iter");
         static struct NecoCtx null_ctx;
@@ -109,14 +90,6 @@ namespace neco {
             cond &= m_alive_prop;
         }
         return new neco::succ_iterator(st, cond, list);
-    }
-
-    //////////////////////////////////////////////////
-
-    spot::bdd_dict* tgba::get_dict() const
-    {
-        NECO_DEBUG_TRACE("get_dict");
-        return m_dict;
     }
 
     //////////////////////////////////////////////////

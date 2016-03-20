@@ -1,7 +1,7 @@
 SPOT_BASE?=/usr/local
-LIBS= -lpython2.7 $(SPOT_BASE)/lib/libspot.a -lbdd -lboost_program_options
+LIBS= -lpython2.7 -L$(SPOT_BASE)/lib -lspot -lbddx -lboost_program_options
 LIBPATHS=-L. -L/usr/local/lib -L$(SPOT_BASE)/lib -L../ctypes/
-INCLUDES= -I/usr/include/python2.7 -I$(SPOT_BASE)/include/spot -I$(SPOT_BASE)/include/ -I/usr/local/include/spot
+INCLUDES= -I/usr/include/python2.7 -I$(SPOT_BASE)/include/
 LDFLAGS= $(LIBPATHS) $(LIBS)
 PWD=$(shell pwd)
 EXEC=necospotcli
@@ -11,9 +11,9 @@ OBJS=main.o neco_model.o neco_state.o neco_succiter.o neco_tgba.o ctypes.o
 
 DEBUG ?= 0
 ifeq ($(DEBUG), 1)
-	CXXFLAGS = -ggdb -DNECO_TRACE
+	CXXFLAGS = -ggdb -DNECO_TRACE -std=c++11
 else
-	CXXFLAGS = -O3
+	CXXFLAGS = -O3 -std=c++11
 endif
 
 all: $(OBJS)
