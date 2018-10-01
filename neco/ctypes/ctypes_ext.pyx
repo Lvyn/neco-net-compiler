@@ -22,6 +22,9 @@ cpdef __neco_compare__(object left, object right):
 cdef class MultiSet:
     # cdef dict _data
 
+    def __call__(MultiSet self, object value) :
+        return self._data.get(value, 0)
+
     def __cinit__(MultiSet self, dict initial_data = {}):
         """ builds a brand new MultiSet from some initial data
 
@@ -157,20 +160,20 @@ cdef class MultiSet:
         cdef int l1 = len(self_keys)
         cdef int l2 = len(other_keys)
         cdef int i = 0
-        
+
         if l1 < l2:
             return -1
         elif l1 > l2:
             return 1
-        
+
         # ensure we are working on sorted domain
         self_keys.sort()
         other_keys.sort()
-        
+
         for 0 <= i < l1:
             lkey = self_keys[i]
             rkey = other_keys[i]
-            
+
             if lkey.__class__ < rkey.__class__:
                 return -1
             elif lkey.__class__ > rkey.__class__:
@@ -180,7 +183,7 @@ cdef class MultiSet:
                 return -1
             elif lkey > rkey:
                 return 1
-        
+
         for 0 <= i < l1:
             key = self_keys[i]
             v1 = self._data[key]
@@ -194,9 +197,9 @@ cdef class MultiSet:
                 return -1
             elif v1 > v2:
                 return 1
-            
+
         return 0
-        
+
     def __richcmp__(MultiSet self, MultiSet other, int op):
         cdef int res = self.compare(other)
         if op == 0:
@@ -475,7 +478,7 @@ cdef MultiSet int_place_type_to_multiset(TGenericPlaceType[int]* place_type):
 #    cpdef Pid prefix(Pid self):
 #        cdef Pid pid = Pid()
 #        cdef int size = len(self.data)
-# 
+#
 #        for i in range(0, size-1):
 #            pid.data.append( self.data[i] )
 #        return pid
@@ -501,7 +504,7 @@ cdef MultiSet int_place_type_to_multiset(TGenericPlaceType[int]* place_type):
 #        cdef int len_self  = len(self.data)
 #        cdef int len_other = len(other.data)
 #        cdef int diff
-#        
+#
 #        if len_self < len_other:
 #            return -1
 #        elif len_self > len_other:
@@ -553,7 +556,7 @@ cdef MultiSet int_place_type_to_multiset(TGenericPlaceType[int]* place_type):
 #        cdef int self_size  = len(self.data)
 #        cdef int other_size = len(other.data)
 #        cdef int i
-#        
+#
 #        if (self_size + 1) != other_size:
 #            return 0
 #
@@ -632,7 +635,7 @@ cdef MultiSet int_place_type_to_multiset(TGenericPlaceType[int]* place_type):
 #    for pid in place:
 #        h ^= (pid.hash() ^ i) * mult
 #        mult = mult + i
-#        i = i + i 
+#        i = i + i
 #    return h
 #
 #cdef int list_hash(list l):
@@ -665,12 +668,12 @@ cdef MultiSet int_place_type_to_multiset(TGenericPlaceType[int]* place_type):
 #        # pids are never modified,
 #        # values are integers,
 #        # so we can assign
-#        cp[key] = value 
+#        cp[key] = value
 #    return cp
-#    
+#
 #cdef pid_place_type_cstr(list l):
 #    return '[' + ', '.join([ str(pid) for pid in l ]) + ']'
-#    
+#
 #cdef int pid_place_type_cmp(list left, list right):
 #    cdef int i = 0
 #    cdef int j = 0
@@ -681,7 +684,7 @@ cdef MultiSet int_place_type_to_multiset(TGenericPlaceType[int]* place_type):
 #        return -1
 #    elif mleft > mright:
 #        return 1
-#    
+#
 #    for 0 <= i < mleft:
 #        elt = right[i]
 #        if left[i] < elt:
@@ -697,20 +700,20 @@ cdef MultiSet int_place_type_to_multiset(TGenericPlaceType[int]* place_type):
 #    cdef int count
 #    cdef list kleft
 #    cdef list kright
-#    cdef int i 
+#    cdef int i
 #
 #    if mleft < mright:
 #        return -1
 #    elif mleft > mright:
 #        return 1
-#    
+#
 #    kleft  = sorted(left.keys())
 #    kright = sorted(right.keys())
-#    
+#
 #    i = pid_place_type_cmp(kleft, kright)
 #    if i != 0:
 #        return i
-#    
+#
 #    for key, count in left.iteritems():
 #        rcount = right[key]
 #        if count < rcount:
@@ -723,14 +726,3 @@ cdef MultiSet int_place_type_to_multiset(TGenericPlaceType[int]* place_type):
 cdef class Pid:
     def __cinit__(self):
         self.mPid = new TPid[int]()
-    
-    
-        
-        
-        
-        
-        
-        
-        
-        
-        
