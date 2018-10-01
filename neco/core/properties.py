@@ -1,7 +1,7 @@
 import neco.asdl.properties as properties_gen
 from neco.asdl.properties import *
-import yappy.parser
-from yappy.parser import Yappy, grules
+import FAdo.yappy_parser
+from FAdo.yappy_parser import Yappy, grules
 import inspect, sys, copy
 
 def __new(obj, *args, **kwargs):
@@ -591,14 +591,14 @@ class PropertyParser(Yappy):
         Fireable(transition_name='t')
         """
         return Fireable(tokens[2])
-    
+
     def all_rule(self, tokens, ctx):
         """
         >>> print ast.dump(PropertyParser().input('all(p, f)'))
         All(place_name='p', function_name='f')
         """
         return All(tokens[2], tokens[4])
-    
+
     def any_rule(self, tokens, ctx):
         """
         >>> print ast.dump(PropertyParser().input('any(p, f)'))

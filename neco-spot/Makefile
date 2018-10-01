@@ -11,9 +11,9 @@ OBJS=main.o neco_model.o neco_state.o neco_succiter.o neco_tgba.o ctypes.o
 
 DEBUG ?= 0
 ifeq ($(DEBUG), 1)
-	CXXFLAGS = -ggdb -DNECO_TRACE -std=c++11
+	CXXFLAGS = -ggdb -DNECO_TRACE -std=c++14
 else
-	CXXFLAGS = -O3 -std=c++11
+	CXXFLAGS = -O3 -std=c++14
 endif
 
 all: $(OBJS)

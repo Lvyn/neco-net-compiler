@@ -19,7 +19,7 @@ from neco import g_logo
 import cPickle as pickle
 
 from neco import compile_checker
-from yappy.parser import LRParserError
+from FAdo.yappy_parser import LRParserError
 import core.xmlproperties
 import compilecli
 
