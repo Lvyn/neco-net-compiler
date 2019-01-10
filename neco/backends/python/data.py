@@ -11,7 +11,7 @@ import operator
 def pid_free_tuple_count_compare(ignore_set, left_pair, right_pair):
     left,  left_count  = left_pair
     right, right_count = right_pair
-    
+
     length = len(left)
     for i in xrange(length):
         if i in ignore_set:
@@ -55,6 +55,9 @@ def dump(e):
 class multiset(hdict):
     """
     """
+    
+    def __call__ (self, value) :
+        return self.get(value, 0)
 
     def __hash__(self):
         return reduce(operator.xor, (hash(i) for i in self.items()), 252756382)
@@ -361,18 +364,18 @@ class multiset(hdict):
         self_keys = self.keys()
         other_keys = other.keys()
         self_len = len(self_keys)
-        
+
         tmp = len(self_keys) - len(other_keys)
         if tmp != 0:
             return tmp
         if self_len == 0:
             return 0
-        
+
         # order items x values
         cmp_fun = partial(pid_free_tuple_count_compare, ignore)
         left  = sorted( self.iteritems(),  cmp = cmp_fun )
         right = sorted( other.iteritems(), cmp = cmp_fun )
-        
+
         for i in xrange(self_len):
             tmp = cmp_fun(left[i], right[i])
             if tmp != 0:
@@ -383,10 +386,10 @@ class multiset(hdict):
         # ignore = [1]
         h = len(self)
         for elt, count in self.items():
-            h ^= reduce(operator.xor, (hash(e) for i, e in enumerate(elt) if i not in ignore), 0xDEED1337) ^ count 
+            h ^= reduce(operator.xor, (hash(e) for i, e in enumerate(elt) if i not in ignore), 0xDEED1337) ^ count
         #h = reduce(operator.xor, (hash(e) for e in self.items()), 0x252756382)
         return h
-    
+
     def pid_pid_free_hash(self):
         def f(p1, p2):
             a1, a2 = p1
@@ -395,24 +398,24 @@ class multiset(hdict):
             if tmp != 0:
                 return tmp
             return a2 - b2
-            
+
         sitems = sorted( self.iteritems(),  cmp = f)
-        
+
         h = len(self)
         magic = 0xC0FFEE
         for i, (_, c) in enumerate(sitems):
             h ^= c ^ (i * magic)
 
         return h
-        
+
 
     def pid_free_pid_compare(self, other):
         self_keys  = self.keys()
         other_keys = other.keys()
-        
+
         self_len  = len(self_keys)
         other_len = len(other_keys)
-        
+
         tmp = self_len - other_len
         if tmp != 0:
             return tmp
@@ -422,7 +425,7 @@ class multiset(hdict):
 
         left  = sorted(left_map.iteritems(), cmp = pid_free_pid_count_compare )
         right = sorted(right_map.iteritems(), cmp = pid_free_pid_count_compare )
-        
+
         for i in range(self_len):
             tmp = pid_free_pid_count_compare(left[i], right[i])
             if tmp != 0:
@@ -481,31 +484,31 @@ class multiset(hdict):
             l.append(dump(token))
             l.append(', ')
         l.append(']')
-        return "".join(l) 
+        return "".join(l)
 
 def neco__tuple_update_pids(tup, new_pid_dict):
     """
-    This function updates pids, with respect to C{new_pid_dict}, of a tuple object (C{tup}). 
-    
+    This function updates pids, with respect to C{new_pid_dict}, of a tuple object (C{tup}).
+
     For example lets consider the dictionary
 
     >>> pid_dict = { Pid.from_str('2') : Pid.from_str('1'), Pid.from_str('2.4') : Pid.from_str('1.1') }
-    
-    and token 
+
+    and token
 
     >>> token = (Pid.from_str('2'), Pid.from_str('2.4'), 42, Pid.from_str('2'))
-    
+
     then this function updates the tuple in the following way
 
     >>> neco__tuple_update_pids(token, pid_dict)
     (Pid.from_str('1'), Pid.from_str('1.1'), 42, Pid.from_str('1'))
-    
+
     The transformation is recursive on tuples
 
     >>> token = (Pid.from_str('2'), Pid.from_str('2.4'), (42, Pid.from_str('2.4'), (Pid.from_str('2'), )), Pid.from_str('2'))
     >>> neco__tuple_update_pids(token, pid_dict)
     (Pid.from_str('1'), Pid.from_str('1.1'), (42, Pid.from_str('1.1'), (Pid.from_str('1'),)), Pid.from_str('1'))
-    
+
     """
     new_iterable = []
     for tok in tup:
@@ -522,12 +525,12 @@ def neco__tuple_update_pids(tup, new_pid_dict):
 def neco__multiset_update_pids(ms, new_pid_dict):
     """
     This function updates pids within a multiset C{ms} with resepect to C{new_pid_dict}.
-    
+
     >>> ms = multiset()
     >>> ms.add_items([1, 2, Pid.from_str('2'), Pid.from_str('3')])
     >>> neco__multiset_update_pids(ms, {Pid.from_str('2') : Pid.from_str('1'), Pid.from_str('3') : Pid.from_str('2')})
     multiset([Pid.from_str('1'), 1, 2, Pid.from_str('2')])
-    
+
     See L{neco__iterable_update_pids}.
     """
     new_ms = multiset()
@@ -547,14 +550,14 @@ def pid_place_type_update_pids(ms, new_pid_dict):
         new_tok = Pid.from_list(new_pid_dict[tuple(tok.data)])
         new_ms[new_tok] = count
     return new_ms
-    
+
 
 def generator_place_update_pids(ms, new_pid_dict):
     """
     This function updated a generator place multiset C{ms} with resepect to C{new_pid_dict}.
 
     >>> sgen = multiset([ (Pid.from_str('1'), 6), (Pid.from_str('1.4'), 2) ])
-    >>> pid_tree = neco__create_pid_tree() 
+    >>> pid_tree = neco__create_pid_tree()
     >>> neco__generator_multiset_update_pid_tree(sgen, pid_tree)
     >>> new_pid_dict = neco__normalize_pid_tree(pid_tree)
     >>> new_pid_dict
@@ -576,9 +579,9 @@ def generator_place_update_pids(ms, new_pid_dict):
 def neco__generator_multiset_update_pid_tree(ms, pid_tree):
     """
     This function updates a pid tree (C{pid_tree}) retrieving data from a generator place multiset C{ms}.
-    
+
     >>> sgen = multiset([ (Pid.from_str('1'), 6), (Pid.from_str('1.4'), 2) ])
-    >>> pid_tree = neco__create_pid_tree() 
+    >>> pid_tree = neco__create_pid_tree()
     >>> neco__generator_multiset_update_pid_tree(sgen, pid_tree)
     >>> pid_tree.print_structure()
     <active=F>
@@ -594,14 +597,14 @@ def neco__generator_multiset_update_pid_tree(ms, pid_tree):
 
 def neco__iterable_update_pid_tree(iterable, pid_tree):
     """
-    This function inserts pids to a pid tree (C{pid_tree}) from an iterable object (C{iterable}). 
-    
+    This function inserts pids to a pid tree (C{pid_tree}) from an iterable object (C{iterable}).
+
     For example consider an empty tree and the token
 
     >>> tree = PidTree()
     >>> token = (Pid.from_str('1.1'), 42, Pid.from_str('1.2'), Pid.from_str('1.1'))
-    
-    then the call of the function modifies the tree as follows  
+
+    then the call of the function modifies the tree as follows
 
     >>> neco__iterable_update_pid_tree(token, tree)
     >>> tree.print_structure()
@@ -609,7 +612,7 @@ def neco__iterable_update_pid_tree(iterable, pid_tree):
     |-1-<active=F>
       |-1-<active=T>
       |-2-<active=T>
-    
+
     Pids are also grabed from inner tuples if the iterable object is a tuple.
 
     >>> token = (Pid.from_str('1.1'), (42, Pid.from_str('1'), (Pid.from_str('1.1.1'),)), Pid.from_str('1.2'), Pid.from_str('1.1'))
@@ -633,7 +636,7 @@ def neco__create_pid_tree():
 def neco__normalize_pid_tree(pid_tree):
     return pid_tree.reduce_sibling_offsets()
 
-            
+
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
