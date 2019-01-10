@@ -220,8 +220,8 @@ checked_main(int argc, char **argv)
     // Are we using an emptiness check that requires a Büchi
     // automaton?
     if (echeck_inst &&
-	((echeck_inst->max_acceptance_conditions() == 0) ||
-	 (echeck_inst->max_acceptance_conditions() == 1)))
+	((echeck_inst->max_sets() == 0) ||
+	 (echeck_inst->max_sets() == 1)))
       tr.set_type(spot::postprocessor::BA);
 
     prop = tr.run(f);
