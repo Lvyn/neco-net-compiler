@@ -7,16 +7,16 @@ nb() {
 }
 
 echo -n "normalize_marking calls: "
-./nb "\." ${perm_log}
+nb "\." ${perm_log}
 
 echo -n "hash detected new_state: "
-./nb "h" ${perm_log}
+nb "h" ${perm_log}
 
 echo -n "unknown marking: "
-./nb "\+" ${perm_log}
+nb "\+" ${perm_log}
 
 echo -n "permutations: "
-./nb "\*" ${perm_log}
+nb "\*" ${perm_log}
 
 echo -n "wasteful enumeration: "
-./nb "\%" ${perm_log}
+nb "\%" ${perm_log}
