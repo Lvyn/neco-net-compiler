@@ -432,7 +432,10 @@ class DPCPetriNet(nets.PetriNet):
 
     def __init__(self, name):
         """
-        >>> DPCPetriNet('net').place()
+        >>> dpc = DPCPetriNet('net')
+        >>> dpc.setup_initial_hierarchy()
+        >>> dpc.finalize_net()
+        >>> dpc.place()
         [Place('sgen', MultiSet([(Pid([1]), 0)]), CrossProduct(Instance(Pid), (Instance(int) & GreaterOrEqual(0))))]
 
         """
