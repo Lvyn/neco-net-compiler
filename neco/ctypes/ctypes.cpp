@@ -1,14 +1,15 @@
 #include "ctypes.h"
 
-
 void neco_list_delete_elts(neco_list_t* list, deletion_callback_t del)
 {
-	if (del == 0) {
-		return;
-	}
-	for (size_t i = 0; i < list->size(); ++i) {
-		del( (*list)[i] );
-	}
+    if (del == 0)
+    {
+        return;
+    }
+    for (size_t i = 0; i < list->size(); ++i)
+    {
+        del((*list)[i]);
+    }
 }
 
 // /////////////////////////////////////////////////////
@@ -106,8 +107,6 @@ void neco_list_delete_elts(neco_list_t* list, deletion_callback_t del)
 // {
 //     printf("true: %d \tfalse: %d \n", pt->positives, pt->negatives);
 // }
-
-
 
 //////////////////////////////////////////////////
 // lists with iterators
