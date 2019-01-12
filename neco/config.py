@@ -27,10 +27,10 @@ class Config(object):
         
         >>> config = Config()
         >>> config.config = {} # force reset
-        >>> set(ultimate_answer=42, enigma=23)
-        >>> get('ultimate_answer')
+        >>> config.set_options(ultimate_answer=42, enigma=23)
+        >>> config.ultimate_answer
         42
-        >>> get('enigma')
+        >>> config.enigma
         23
         """
         for (name, value) in kwargs.iteritems():
