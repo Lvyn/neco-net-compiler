@@ -64,3 +64,11 @@ neco-spot-build/*
 syntax: regexp
 .*/.gone/.*
 .gone/.*
+*#*#
+.#*
+perm_log
+tests/basics/build
+tests/pids/cNsN/results_*
+tests/pids/cNsN/begin_run_all
+tests/pids/cNsN/end_run_all
+
